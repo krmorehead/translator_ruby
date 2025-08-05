@@ -1,0 +1,49 @@
+---
+globs: tests/**/*.py
+alwaysApply: false
+---
+
+
+Write unit tests that are tight, isolated, and follow best practices in Python development.
+
+Never name tests after phases or milestones. Test names should be informative.
+
+Avoid mocks when possible. Prefer testing real implementations with in-memory data or lightweight test doubles. Use mocks only when interaction with external systems or complex dependencies makes it necessary.
+
+Keep tests tight and focused. Each test should validate a single behavior or responsibility. Do not combine multiple concerns in a single test.
+
+Ensure test isolation but maintain performance. Test suites must not depend on shared state. Each test suite should set up and tear down its own context cleanly and independently and quickly. A test should never take more than 2 seconds to execute.
+
+Use standard Python testing practices. Follow idiomatic patterns using pytest or unittest. Prefer pytest for conciseness and fixture support where applicable.
+
+Write clear, readable code. Maintain high code quality within tests, just as in production code. Use descriptive names, consistent formatting, and minimal duplication.
+
+Aim for meaningful assertions. Tests should fail only when the behavior under test is incorrect, and the failure message should clearly indicate what went wrong.
+
+Avoid read sleeps where possible.
+
+At the end of a feature set create integration tests where they make sense. Make sure that they are well designed and scaleable and that they pass.
+
+reference bounty_hunting/docs/testing_strategy.md
+
+for tests that require a fake website reference
+docs/guides/testing_quick_reference.md
+
+do not mock
+only mock things outside of the app
+do not mock if we can avoid it
+avoid mocking
+user real data
+try not to mock
+do not stub
+no stubs
+no mocks
+no mocking
+no stubs
+use real data
+do not mock
+avoid making stubs
+use real data and factories
+create tests with actual data
+do not stub anything
+avoid mocking

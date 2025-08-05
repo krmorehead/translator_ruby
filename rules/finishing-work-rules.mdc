@@ -1,0 +1,11 @@
+---
+description: When finishing a task or updating documentation
+alwaysApply: false
+---
+When finishing work on a feature, fix, or file change:
+
+Examine new code, make sure it follows good python coding practices
+
+Run the linter make sure that everything is clean
+
+Run unit tests to make sure they pass after cleanup and linting
