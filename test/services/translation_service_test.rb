@@ -168,4 +168,134 @@ class TranslationServiceTest < ActiveSupport::TestCase
     result = @service.send(:translate_text, "   ")
     assert_equal "   ", result
   end
+
+  test "should preserve injection variables during translation" do
+    text_with_variables = "{school_name} has shared a new form with you"
+    result = @service.send(:translate_text, text_with_variables)
+    
+    # Should preserve the injection variable
+    assert_includes result, "{school_name}", "Injection variable should be preserved"
+    # Should not be the same as original (translation should occur for other parts)
+    assert_not_equal text_with_variables, result, "Text should be translated except for injection variables"
+  end
+
+  test "should preserve multiple injection variables" do
+    text_with_variables = "Hello {user_name}, welcome to {school_name}"
+    result = @service.send(:translate_text, text_with_variables)
+    
+    assert_includes result, "{user_name}", "First injection variable should be preserved"
+    assert_includes result, "{school_name}", "Second injection variable should be preserved"
+  end
+
+  test "should preserve protected strings during translation" do
+    # Test with default protected string "Brightwheel"
+    text_with_protected = "Welcome to Brightwheel, your educational platform"
+    result = @service.send(:translate_text, text_with_protected)
+    
+    assert_includes result, "Brightwheel", "Protected string 'Brightwheel' should be preserved"
+  end
+
+  test "should preserve custom protected strings" do
+    service_with_protected = TranslationService.new(protected_strings: ["CustomApp", "SpecialTerm"])
+    text_with_protected = "CustomApp is the best SpecialTerm for learning"
+    result = service_with_protected.send(:translate_text, text_with_protected)
+    
+    assert_includes result, "CustomApp", "Custom protected string 'CustomApp' should be preserved"
+    assert_includes result, "SpecialTerm", "Custom protected string 'SpecialTerm' should be preserved"
+  end
+
+  test "should handle both injection variables and protected strings together" do
+    service_with_protected = TranslationService.new(protected_strings: ["MyApp"])
+    text_mixed = "Hello {user_name}, welcome to MyApp"
+    result = service_with_protected.send(:translate_text, text_mixed)
+    
+    assert_includes result, "{user_name}", "Injection variable should be preserved"
+    assert_includes result, "MyApp", "Protected string should be preserved"
+    assert_not_equal text_mixed, result, "Text should be translated except for protected elements"
+  end
+
+  test "should translate to specified target language" do
+    json_doc = '{"message": "Hello world", "greeting": "Good morning"}'
+    
+    result = @service.translate_document(
+      doc_content: json_doc,
+      input_format: "application/json",
+      export_format: "JSON",
+      target_language: "French"
+    )
+    
+    parsed_result = JSON.parse(result)
+    assert_not_equal "Hello world", parsed_result["message"], "Message should be translated"
+    assert_not_equal "Good morning", parsed_result["greeting"], "Greeting should be translated"
+  end
+
+  test "should handle injection variables in document translation" do
+    json_doc = '{"message": "{school_name} has shared a new assignment", "title": "Notification from {app_name}"}'
+    
+    result = @service.translate_document(
+      doc_content: json_doc,
+      input_format: "application/json",
+      export_format: "JSON",
+      target_language: "Spanish"
+    )
+    
+    parsed_result = JSON.parse(result)
+    assert_includes parsed_result["message"], "{school_name}", "Injection variable in message should be preserved"
+    assert_includes parsed_result["title"], "{app_name}", "Injection variable in title should be preserved"
+  end
+
+  test "should handle protected strings in document translation with custom protected strings" do
+    yaml_doc = "welcome: Welcome to CustomSchool\napp_name: Using MySpecialApp"
+    
+    result = @service.translate_document(
+      doc_content: yaml_doc,
+      input_format: "application/x-yaml",
+      export_format: "YAML",
+      protected_strings: ["CustomSchool", "MySpecialApp"],
+      target_language: "Spanish"
+    )
+    
+    parsed_result = YAML.safe_load(result)
+    assert_includes parsed_result["welcome"], "CustomSchool", "Protected string 'CustomSchool' should be preserved"
+    assert_includes parsed_result["app_name"], "MySpecialApp", "Protected string 'MySpecialApp' should be preserved"
+  end
+
+  test "should preserve Brightwheel by default in any context" do
+    text = "Brightwheel is an educational platform"
+    result = @service.send(:translate_text, text)
+    
+    assert_includes result, "Brightwheel", "Brightwheel should always be preserved"
+    assert_not_equal text, result, "Text should be translated except for Brightwheel"
+  end
+
+  test "should handle complex injection variables with underscores and numbers" do
+    text = "Your {student_name_1} has completed {assignment_2} in {subject_area}"
+    result = @service.send(:translate_text, text)
+    
+    assert_includes result, "{student_name_1}", "Complex injection variable should be preserved"
+    assert_includes result, "{assignment_2}", "Numbered injection variable should be preserved"
+    assert_includes result, "{subject_area}", "Underscore injection variable should be preserved"
+  end
+
+  test "should handle edge case with empty injection variables" do
+    text = "Hello {} and {user_name}"
+    result = @service.send(:translate_text, text)
+    
+    assert_includes result, "{}", "Empty braces should be preserved"
+    assert_includes result, "{user_name}", "Valid injection variable should be preserved"
+  end
+
+  test "should default target language to Spanish" do
+    json_doc = '{"message": "Hello world"}'
+    
+    # Don't specify target_language, should default to Spanish
+    result = @service.translate_document(
+      doc_content: json_doc,
+      input_format: "application/json",
+      export_format: "JSON"
+    )
+    
+    parsed_result = JSON.parse(result)
+    assert_not_equal "Hello world", parsed_result["message"], "Should translate to default Spanish"
+  end
 end
