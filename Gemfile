@@ -35,6 +35,15 @@ gem "thruster", require: false
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 # gem "rack-cors"
 
+# OpenAI API client for LLM communication
+gem "ruby-openai", "~> 7.0"
+
+# LLM client for llama.cpp servers
+gem "llm_client", "~> 0.1"
+
+# Load environment variables from .env file
+gem "dotenv-rails", groups: [ :development, :test ]
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
@@ -45,4 +54,6 @@ group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
 end
-gem "factory_bot_rails", groups: [:development, :test]
+
+
+gem "factory_bot_rails", groups: [ :development, :test ]
