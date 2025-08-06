@@ -4,23 +4,29 @@ require "logger"
 require "openai"
 require "net/http"
 require "uri"
+require "iso639"
 
 class TranslationService
-  def initialize(llm_url: nil, timeout: 30, protected_strings: [])
+  def initialize(llm_url: nil, timeout: 30, protected_strings: [], target_language: "es")
     @llm_url = llm_url || ENV["LLM_URL"] || "http://localhost:52003"
     @timeout = timeout
     @protected_strings = protected_strings + ["Brightwheel"] # Always protect Brightwheel
+    @target_language = convert_language_code_to_name(target_language)
   end
 
-  def translate_document(doc_content:, input_format:, export_format: "JSON", protected_strings: [], target_language: "Spanish")
+  def translate_document(doc_content:, input_format:, export_format: "JSON", protected_strings: [], target_language: nil)
     # Validate export format
     unless %w[JSON YAML].include?(export_format.upcase)
       raise ArgumentError, "export_format must be JSON or YAML"
     end
 
+    # Override target language if provided in method call
+    if target_language
+      @target_language = convert_language_code_to_name(target_language)
+    end
+    
     # Merge protected strings
     @current_protected_strings = @protected_strings + protected_strings
-    @target_language = target_language
 
     # Parse input document
     parsed_doc = parse_document(doc_content, input_format)
@@ -35,52 +41,7 @@ class TranslationService
     convert_to_export_format(translated_doc, export_format.upcase)
   end
 
-  private
-
-  def parse_document(doc, format_hint)
-    return JSON.parse(doc) if format_hint&.include?("json")
-    return YAML.safe_load(doc) if format_hint&.include?("yaml") || format_hint&.include?("yml")
-
-    # Try to parse as JSON first, then YAML if that fails
-    begin
-      JSON.parse(doc)
-    rescue JSON::ParserError
-      YAML.safe_load(doc)
-    end
-  end
-
-  def convert_to_yaml(data)
-    if data.is_a?(String)
-      # If it's already a string, try to parse it
-      begin
-        YAML.safe_load(data)
-      rescue
-        # If parsing fails, treat as plain text
-        { "text" => data }
-      end
-    else
-      data
-    end
-  end
-
-  def translate_yaml_tree(node, path = [])
-    case node
-    when Hash
-      result = {}
-      node.each do |key, value|
-        result[key] = translate_yaml_tree(value, path + [ key ])
-      end
-      result
-    when Array
-      node.map.with_index do |value, index|
-        translate_yaml_tree(value, path + [ index ])
-      end
-    else
-      # This is a leaf node - translate it
-      translate_text(node.to_s)
-    end
-  end
-
+  # Public methods for testing and external use
   def translate_text(text)
     return text if text.strip.empty?
 
@@ -88,7 +49,7 @@ class TranslationService
       client = create_llm_client
       
       # Build system prompt for structured output
-      system_prompt = build_system_prompt(@target_language || "Spanish", @current_protected_strings || @protected_strings)
+      system_prompt = build_system_prompt(@target_language, @current_protected_strings || @protected_strings)
       
       response = client.chat(
         parameters: {
@@ -138,38 +99,34 @@ class TranslationService
       else
         puts error_msg  # For debugging in tests
       end
-      # Return original text if translation fails
-      text
+      # Re-raise the error so tests can see what's actually failing
+      raise e
     end
   end
 
-  def create_llm_client
-    OpenAI::Client.new(
-      access_token: "not-needed", # llama.cpp doesn't validate this but ruby-openai requires it
-      uri_base: @llm_url,
-      request_timeout: @timeout
-    )
+  def parse_document(doc, format_hint)
+    return JSON.parse(doc) if format_hint&.include?("json")
+    return YAML.safe_load(doc) if format_hint&.include?("yaml") || format_hint&.include?("yml")
+
+    # Try to parse as JSON first, then YAML if that fails
+    begin
+      JSON.parse(doc)
+    rescue JSON::ParserError
+      YAML.safe_load(doc)
+    end
   end
 
-  def get_available_model
-    @available_model ||= fetch_first_available_model
-  end
-
-  def get_random_available_model
-    available_models = fetch_all_available_models
-    available_models.sample || "phi4-mini-1" # fallback if no models found
-  end
-
-  def fetch_first_available_model
-    available_models = fetch_all_available_models
-    available_models.first || "phi4-mini-1" # fallback to a known working model
-  end
-
-  def fetch_all_available_models
-    @all_available_models ||= begin
-      # For llama-swap, we can use a generic model name that it will route automatically
-      # Based on your config, use the first model from your group as a representative
-      [ "phi4-mini-1" ] # llama-swap will handle distribution internally
+  def convert_to_yaml(data)
+    if data.is_a?(String)
+      # If it's already a string, try to parse it
+      begin
+        YAML.safe_load(data)
+      rescue
+        # If parsing fails, treat as plain text
+        { "text" => data }
+      end
+    else
+      data
     end
   end
 
@@ -182,6 +139,62 @@ class TranslationService
     else
       raise ArgumentError, "Unsupported export format: #{format}"
     end
+  end
+
+  private
+
+  def convert_language_code_to_name(language_code)
+    # Default to Spanish if no language is provided or if it's nil/empty
+    return "Spanish" if language_code.nil? || language_code.strip.empty?
+    
+    # Convert to string and downcase for consistency
+    code = language_code.to_s.downcase.strip
+    
+    # Default to Spanish for common Spanish codes
+    return "Spanish" if code == "es" || code == "spa"
+    
+    # Try to look up the language
+    language_entry = Iso639[code]
+    
+    if language_entry
+      language_entry.name
+    else
+      # If we can't find the code, treat it as already an English name
+      # or default to Spanish if it doesn't look like a language name
+      if code.length <= 3
+        # Looks like a code we don't recognize, default to Spanish
+        "Spanish"
+      else
+        # Assume it's already an English language name
+        language_code.to_s.capitalize
+      end
+    end
+  end
+
+  def translate_yaml_tree(node, path = [])
+    case node
+    when Hash
+      result = {}
+      node.each do |key, value|
+        result[key] = translate_yaml_tree(value, path + [ key ])
+      end
+      result
+    when Array
+      node.map.with_index do |value, index|
+        translate_yaml_tree(value, path + [ index ])
+      end
+    else
+      # This is a leaf node - translate it
+      translate_text(node.to_s)
+    end
+  end
+
+  def create_llm_client
+    OpenAI::Client.new(
+      access_token: "not-needed", # llama.cpp doesn't validate this but ruby-openai requires it
+      uri_base: @llm_url,
+      request_timeout: @timeout
+    )
   end
 
   def logger

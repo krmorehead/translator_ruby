@@ -5,12 +5,13 @@ class Api::V1::TranslationController < ApplicationController
       doc_to_translate = params[:doc_to_translate]
       header_format = request.headers["Content-Type"]&.downcase || "application/json"
       export_format = params[:export_format] || "JSON"
+      target_language = params[:target_language] || "es" # Default to Spanish
 
       # Validate required parameters
       return render json: { error: "doc_to_translate is required" }, status: :bad_request if doc_to_translate.blank?
 
-      # Use the translation service
-      service = TranslationService.new
+      # Use the translation service with target language
+      service = TranslationService.new(target_language: target_language)
       result = service.translate_document(
         doc_content: doc_to_translate,
         input_format: header_format,
