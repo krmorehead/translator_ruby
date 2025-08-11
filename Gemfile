@@ -36,7 +36,7 @@ gem "thruster", require: false
 # gem "rack-cors"
 
 # OpenAI API client for LLM communication
-gem "ruby-openai", "~> 7.0"
+gem "ruby-openai", "~> 8.2"
 
 # LLM client for llama.cpp servers
 gem "llm_client", "~> 0.1"
