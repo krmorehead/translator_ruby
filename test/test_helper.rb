@@ -1,4 +1,9 @@
 ENV["RAILS_ENV"] ||= "test"
+
+# Load test environment variables from .env.test
+require "dotenv"
+Dotenv.load(".env.test")
+
 require_relative "../config/environment"
 require "rails/test_help"
 

@@ -41,6 +41,9 @@ gem "ruby-openai", "~> 7.0"
 # LLM client for llama.cpp servers
 gem "llm_client", "~> 0.1"
 
+# ISO 639 language codes
+gem "iso639"
+
 # Load environment variables from .env file
 gem "dotenv-rails", groups: [ :development, :test ]
 

@@ -8,9 +8,9 @@ require "iso639"
 
 class TranslationService
   def initialize(llm_url: nil, timeout: 30, protected_strings: [], target_language: "es")
-    @llm_url = llm_url || ENV["LLM_URL"] || "http://localhost:52003"
+    @llm_url = llm_url || ENV["LLM_URL"]
     @timeout = timeout
-    @protected_strings = protected_strings + ["Brightwheel"] # Always protect Brightwheel
+    @protected_strings = protected_strings + [ "Brightwheel" ] # Always protect Brightwheel
     @target_language = convert_language_code_to_name(target_language)
   end
 
@@ -24,7 +24,7 @@ class TranslationService
     if target_language
       @target_language = convert_language_code_to_name(target_language)
     end
-    
+
     # Merge protected strings
     @current_protected_strings = @protected_strings + protected_strings
 
@@ -34,29 +34,45 @@ class TranslationService
     # Convert to YAML for processing
     yaml_doc = convert_to_yaml(parsed_doc)
 
-    # Traverse and translate leaf nodes
-    translated_doc = translate_yaml_tree(yaml_doc)
+    # Traverse and translate leaf nodes using TranslationTreeService
+    tree_service = TranslationTreeService.new(
+      target_language: @target_language,
+      protected_strings: @current_protected_strings
+    )
+    
+    # Create a callback that calls translate_text
+    translation_callback = ->(context) { translate_text(context) }
+    
+    translated_doc = tree_service.traverse(yaml_doc, translation_callback)
 
     # Convert to requested export format
     convert_to_export_format(translated_doc, export_format.upcase)
   end
 
   # Public methods for testing and external use
-  def translate_text(text)
-    return text if text.strip.empty?
+  def translate_text(translation_context)
+    return translation_context.text if translation_context.text.strip.empty?
 
     begin
       client = create_llm_client
-      
+
+      # Use target_lang from context if present, otherwise fall back to @target_language
+      target_lang = translation_context.target_lang || @target_language
+
       # Build system prompt for structured output
-      system_prompt = build_system_prompt(@target_language, @current_protected_strings || @protected_strings)
-      
+      system_prompt = build_system_prompt(
+        target_lang,
+        @current_protected_strings || @protected_strings,
+        translation_context.source_lang,
+        translation_context.formality
+      )
+
       response = client.chat(
         parameters: {
-          model: "auto",
+          model: ENV["LLM_MODEL"] || "qwen30b",
           messages: [
             { role: "system", content: system_prompt },
-            { role: "user", content: text }
+            { role: "user", content: translation_context.text }
           ],
           response_format: {
             type: "json_schema",
@@ -71,7 +87,7 @@ class TranslationService
                     description: "The translated text with preserved variables and protected terms"
                   }
                 },
-                required: ["translation"],
+                required: [ "translation" ],
                 additionalProperties: false
               }
             }
@@ -84,12 +100,12 @@ class TranslationService
 
       # Extract translation from structured JSON response
       raw_content = response.dig("choices", 0, "message", "content")&.strip
-      
+
       if raw_content && !raw_content.empty?
         parsed_response = JSON.parse(raw_content)
-        parsed_response["translation"] || text
+        parsed_response["translation"] || translation_context.text
       else
-        text
+        translation_context.text
       end
 
     rescue => e
@@ -144,48 +160,14 @@ class TranslationService
   private
 
   def convert_language_code_to_name(language_code)
-    # Default to Spanish if no language is provided or if it's nil/empty
-    return "Spanish" if language_code.nil? || language_code.strip.empty?
-    
-    # Convert to string and downcase for consistency
-    code = language_code.to_s.downcase.strip
-    
-    # Default to Spanish for common Spanish codes
-    return "Spanish" if code == "es" || code == "spa"
-    
-    # Try to look up the language
-    language_entry = Iso639[code]
-    
+    # Try to look up the language by code
+    language_entry = Iso639[language_code]
+
     if language_entry
       language_entry.name
     else
-      # If we can't find the code, treat it as already an English name
-      # or default to Spanish if it doesn't look like a language name
-      if code.length <= 3
-        # Looks like a code we don't recognize, default to Spanish
-        "Spanish"
-      else
-        # Assume it's already an English language name
-        language_code.to_s.capitalize
-      end
-    end
-  end
-
-  def translate_yaml_tree(node, path = [])
-    case node
-    when Hash
-      result = {}
-      node.each do |key, value|
-        result[key] = translate_yaml_tree(value, path + [ key ])
-      end
-      result
-    when Array
-      node.map.with_index do |value, index|
-        translate_yaml_tree(value, path + [ index ])
-      end
-    else
-      # This is a leaf node - translate it
-      translate_text(node.to_s)
+      # Fall back to Spanish if lookup fails
+      "Spanish"
     end
   end
 
@@ -201,11 +183,21 @@ class TranslationService
     @logger ||= defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
   end
 
-  def build_system_prompt(target_language, protected_strings)
+  def build_system_prompt(target_language, protected_strings, source_lang = nil, formality = nil)
     protected_list = protected_strings&.any? ? protected_strings.join(", ") : "Brightwheel"
+
+    prompt = +"Translate text to #{target_language}."
     
-    <<~PROMPT
-      Translate text to #{target_language}.
+    if source_lang
+      prompt << " Source language: #{source_lang}."
+    end
+    
+    if formality && formality != "default"
+      prompt << " Use #{formality} formality level."
+    end
+
+    prompt << <<~RULES
+
 
       Rules:
       1. Always translate to #{target_language}
@@ -217,6 +209,8 @@ class TranslationService
       "Hello" → {"translation": "Hola"}
       "{school_name} shared a form" → {"translation": "{school_name} compartió un formulario"}
       "Welcome to Brightwheel" → {"translation": "Bienvenido a Brightwheel"}
-    PROMPT
+    RULES
+
+    prompt
   end
 end
