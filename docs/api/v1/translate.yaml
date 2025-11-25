@@ -1,0 +1,232 @@
+openapi: 3.0.3
+info:
+  title: Document Translation API
+  description: |
+    API endpoint for translating entire documents (JSON or YAML) with support for nested structures,
+    pluralization patterns, and custom translation contexts via `translation_hash` markers.
+  version: 1.0.0
+  contact:
+    name: API Support
+servers:
+  - url: http://73.190.101.126:52020/api/v1
+    description: Development server
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+
+paths:
+  /translate:
+    post:
+      summary: Translate document
+      description: |
+        Translate an entire document (JSON or YAML format) with support for:
+        - Nested structures (hashes and arrays)
+        - Variable preservation (`{variable}`, `{{count}}`)
+        - Pluralization patterns (i18n format)
+        - Custom translation contexts via `translation_hash: true` marker
+        - Protected strings (e.g., "Brightwheel")
+      operationId: translateDocument
+      tags:
+        - Translation
+      parameters:
+        - name: Content-Type
+          in: header
+          description: Content type of the document (application/json or application/x-yaml)
+          schema:
+            type: string
+            enum:
+              - application/json
+              - application/x-yaml
+            default: application/json
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TranslateDocumentRequest'
+            examples:
+              basic:
+                summary: Basic JSON document
+                value:
+                  doc_to_translate: '{"greeting": "Hello world"}'
+                  export_format: "JSON"
+                  target_language: "es"
+              withVariables:
+                summary: Document with variables
+                value:
+                  doc_to_translate: '{"message": "Hello {user_name}"}'
+                  export_format: "JSON"
+                  target_language: "es"
+              pluralization:
+                summary: Pluralization patterns
+                value:
+                  doc_to_translate: '{"student_count_one": "{{count}} student", "student_count_other": "{{count}} students"}'
+                  export_format: "JSON"
+                  target_language: "es"
+              withTranslationHash:
+                summary: Custom translation context
+                value:
+                  doc_to_translate: '{"custom": {"translation_hash": true, "text": "Welcome", "formality": "formal", "context": "app.welcome"}}'
+                  export_format: "JSON"
+                  target_language: "es"
+      responses:
+        '200':
+          description: Translation successful
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Translated document in JSON format
+              example:
+                greeting: "Hola mundo"
+            application/x-yaml:
+              schema:
+                type: string
+                description: Translated document in YAML format
+              example: |
+                ---
+                greeting: Hola mundo
+        '400':
+          description: Bad request - missing required parameters or invalid format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingDoc:
+                  summary: Missing document
+                  value:
+                    error: "doc_to_translate is required"
+                invalidFormat:
+                  summary: Invalid format
+                  value:
+                    error: "export_format must be JSON or YAML"
+                invalidJSON:
+                  summary: Invalid JSON
+                  value:
+                    error: "Invalid JSON format"
+                invalidYAML:
+                  summary: Invalid YAML
+                  value:
+                    error: "Invalid YAML format"
+        '500':
+          description: Internal server error - translation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDetailed'
+
+components:
+  schemas:
+    TranslateDocumentRequest:
+      type: object
+      required:
+        - doc_to_translate
+      properties:
+        doc_to_translate:
+          type: string
+          description: |
+            The document to translate in JSON or YAML format. Supports:
+            - Simple key-value pairs
+            - Nested structures
+            - Arrays
+            - Translation hash objects with `translation_hash: true`
+          example: '{"greeting": "Hello world"}'
+        export_format:
+          type: string
+          description: Output format for the translated document
+          enum:
+            - JSON
+            - YAML
+          default: "JSON"
+        target_language:
+          type: string
+          description: |
+            Target language code (ISO 639-1 or language name).
+            Common codes: es (Spanish), fr (French), de (German), en (English)
+          default: "es"
+          example: "es"
+    
+    TranslationHashObject:
+      type: object
+      description: |
+        Custom translation context object. When present in a document with `translation_hash: true`,
+        allows fine-grained control over translation parameters.
+      required:
+        - translation_hash
+        - text
+      properties:
+        translation_hash:
+          type: boolean
+          description: Marker to indicate this is a translation context object
+          enum:
+            - true
+          example: true
+        text:
+          type: string
+          description: The text to translate
+          example: "Welcome to our application"
+        target_lang:
+          type: string
+          description: Override target language for this specific text
+          nullable: true
+          example: "es"
+        source_lang:
+          type: string
+          description: Source language of the text
+          default: "en"
+          example: "en"
+        context:
+          type: string
+          description: Context path for semantic meaning
+          nullable: true
+          example: "app.onboarding.welcome"
+        formality:
+          type: string
+          description: Formality level for this translation
+          enum:
+            - formal
+            - less
+            - default
+            - more
+            - prefer_more
+            - prefer_less
+          default: "formal"
+          example: "formal"
+        model_type:
+          type: string
+          description: Model type (reserved for future use)
+          nullable: true
+          example: "gpt4"
+    
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "doc_to_translate is required"
+    
+    ErrorResponseDetailed:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: High-level error message
+          example: "Translation failed"
+        details:
+          type: string
+          description: Detailed error information for debugging
+          example: "LLM service unavailable"
+
+tags:
+  - name: Translation
+    description: Document translation operations
+
+externalDocs:
+  description: Find out more about the Translation Service
+  url: https://github.com/example/translator_ruby
+

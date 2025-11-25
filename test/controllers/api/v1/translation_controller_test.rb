@@ -235,5 +235,140 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_match(/gracias|agradec/i, result["custom_formal"])
   end
 
+  # Tests for the new translate_text endpoint
+  test "should translate single text with required parameters only" do
+    post "/api/v1/translate_text",
+      params: { text: "Hello world", target_lang: "es" }
+
+    assert_response :success
+    
+    result = JSON.parse(response.body)
+    assert result.key?("translation")
+    assert_not_equal "Hello world", result["translation"]
+    assert_match(/hola|mundo/i, result["translation"])
+  end
+
+  test "should require text parameter" do
+    post "/api/v1/translate_text",
+      params: { target_lang: "es" }
+
+    assert_response :bad_request
+    result = JSON.parse(response.body)
+    assert_equal "text is required", result["error"]
+  end
+
+  test "should require target_lang parameter" do
+    post "/api/v1/translate_text",
+      params: { text: "Hello world" }
+
+    assert_response :bad_request
+    result = JSON.parse(response.body)
+    assert_equal "target_lang is required", result["error"]
+  end
+
+  test "should handle all optional parameters" do
+    post "/api/v1/translate_text",
+      params: {
+        text: "Thank you for your help",
+        target_lang: "es",
+        source_lang: "en",
+        context: "customer.support.thanks",
+        formality: "formal"
+      }
+
+    assert_response :success
+    
+    result = JSON.parse(response.body)
+    assert result.key?("translation")
+    assert_not_equal "Thank you for your help", result["translation"]
+    assert_match(/gracias|agradec/i, result["translation"])
+  end
+
+  test "should handle less formal translations" do
+    post "/api/v1/translate_text",
+      params: {
+        text: "Thanks!",
+        target_lang: "es",
+        formality: "less"
+      }
+
+    assert_response :success
+    
+    result = JSON.parse(response.body)
+    assert result.key?("translation")
+    assert_not_empty result["translation"]
+  end
+
+  test "should preserve variables in single text translation" do
+    post "/api/v1/translate_text",
+      params: {
+        text: "Hello {user_name}, welcome back",
+        target_lang: "es"
+      }
+
+    assert_response :success
+    
+    result = JSON.parse(response.body)
+    assert_includes result["translation"], "{user_name}"
+    assert_not_equal "Hello {user_name}, welcome back", result["translation"]
+  end
+
+  test "should handle different target languages for single text" do
+    # Test French
+    post "/api/v1/translate_text",
+      params: { text: "Good morning", target_lang: "fr" }
+
+    assert_response :success
+    result = JSON.parse(response.body)
+    assert_match(/bonjour|matin/i, result["translation"])
+
+    # Test German
+    post "/api/v1/translate_text",
+      params: { text: "Good morning", target_lang: "de" }
+
+    assert_response :success
+    result = JSON.parse(response.body)
+    assert_not_equal "Good morning", result["translation"]
+  end
+
+  test "should handle context parameter for single text" do
+    post "/api/v1/translate_text",
+      params: {
+        text: "Submit",
+        target_lang: "es",
+        context: "form.button.submit"
+      }
+
+    assert_response :success
+    
+    result = JSON.parse(response.body)
+    assert_not_equal "Submit", result["translation"]
+    assert_not_empty result["translation"]
+  end
+
+  test "should handle empty string gracefully" do
+    post "/api/v1/translate_text",
+      params: { text: "", target_lang: "es" }
+
+    assert_response :bad_request
+    result = JSON.parse(response.body)
+    assert_equal "text is required", result["error"]
+  end
+
+  test "should translate with source language specified" do
+    post "/api/v1/translate_text",
+      params: {
+        text: "Bonjour le monde",
+        target_lang: "en",
+        source_lang: "fr"
+      }
+
+    assert_response :success
+    
+    result = JSON.parse(response.body)
+    assert_not_equal "Bonjour le monde", result["translation"]
+    assert_match(/hello|world/i, result["translation"])
+  end
+
   # Note: These tests work with the real TranslationService and LLM - no mocking involved
 end

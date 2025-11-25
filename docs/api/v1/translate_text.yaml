@@ -1,0 +1,221 @@
+openapi: 3.0.3
+info:
+  title: Single Text Translation API
+  description: |
+    API endpoint for translating a single text string with full control over translation context, 
+    formality, and source language. Uses TranslationContext internally for maximum flexibility.
+  version: 1.0.0
+  contact:
+    name: API Support
+servers:
+  - url: http://73.190.101.126:52020/api/v1
+    description: Development server
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+
+paths:
+  /translate_text:
+    post:
+      summary: Translate single text
+      description: |
+        Translate a single text string with control over context, formality, and source language.
+        Preserves variables like `{user_name}` and `{{count}}` in the output.
+      operationId: translateText
+      tags:
+        - Translation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslateTextRequest'
+            examples:
+              basic:
+                summary: Basic translation
+                value:
+                  text: "Hello world"
+                  target_lang: "es"
+              withVariables:
+                summary: With variables
+                value:
+                  text: "Hello {user_name}, welcome back"
+                  target_lang: "es"
+              withContext:
+                summary: With context and formality
+                value:
+                  text: "Thank you for your payment"
+                  target_lang: "es"
+                  context: "payment.confirmation"
+                  formality: "formal"
+              casual:
+                summary: Casual translation
+                value:
+                  text: "Thanks!"
+                  target_lang: "es"
+                  formality: "less"
+              withSourceLang:
+                summary: With source language
+                value:
+                  text: "Bonjour le monde"
+                  target_lang: "en"
+                  source_lang: "fr"
+              allParameters:
+                summary: All parameters
+                value:
+                  text: "Thank you for your help"
+                  target_lang: "es"
+                  source_lang: "en"
+                  context: "customer.support.thanks"
+                  formality: "formal"
+                  model_type: "gpt4"
+      responses:
+        '200':
+          description: Translation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslateTextResponse'
+              examples:
+                basic:
+                  summary: Basic translation result
+                  value:
+                    translation: "Hola mundo"
+                withVariables:
+                  summary: Translation with preserved variables
+                  value:
+                    translation: "Hola {user_name}, bienvenido de nuevo"
+                formal:
+                  summary: Formal translation
+                  value:
+                    translation: "Gracias por su pago"
+        '400':
+          description: Bad request - missing required parameters or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingText:
+                  summary: Missing text parameter
+                  value:
+                    error: "text is required"
+                missingTargetLang:
+                  summary: Missing target_lang parameter
+                  value:
+                    error: "target_lang is required"
+                invalidParameter:
+                  summary: Invalid parameter value
+                  value:
+                    error: "Invalid formality level"
+        '500':
+          description: Internal server error - translation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDetailed'
+              examples:
+                translationFailed:
+                  summary: Translation service error
+                  value:
+                    error: "Translation failed"
+                    details: "LLM service unavailable"
+
+components:
+  schemas:
+    TranslateTextRequest:
+      type: object
+      required:
+        - text
+        - target_lang
+      properties:
+        text:
+          type: string
+          description: The text to translate
+          minLength: 1
+          example: "Hello world"
+        target_lang:
+          type: string
+          description: |
+            Target language code (ISO 639-1 or language name).
+            Common codes: es (Spanish), fr (French), de (German), en (English)
+          minLength: 2
+          example: "es"
+        source_lang:
+          type: string
+          description: Source language code (ISO 639-1 or language name)
+          default: "en"
+          example: "en"
+        context:
+          type: string
+          description: |
+            Context path for the translation to provide semantic meaning.
+            Format: dot-separated path (e.g., "app.onboarding.welcome", "payment.confirmation")
+          nullable: true
+          example: "app.onboarding.welcome"
+        formality:
+          type: string
+          description: |
+            Formality level for the translation.
+            - `formal`: Standard formal tone (default)
+            - `less`: Casual/informal tone
+            - `default`: Neutral tone
+            - `more`: Very formal tone
+            - `prefer_more`: Prefer formal but flexible
+            - `prefer_less`: Prefer casual but flexible
+          enum:
+            - formal
+            - less
+            - default
+            - more
+            - prefer_more
+            - prefer_less
+          default: "formal"
+          example: "formal"
+        model_type:
+          type: string
+          description: Model type to use for translation (reserved for future use, currently no-op)
+          nullable: true
+          example: "gpt4"
+    
+    TranslateTextResponse:
+      type: object
+      required:
+        - translation
+      properties:
+        translation:
+          type: string
+          description: The translated text with preserved variables and protected terms
+          example: "Hola mundo"
+    
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "text is required"
+    
+    ErrorResponseDetailed:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: High-level error message
+          example: "Translation failed"
+        details:
+          type: string
+          description: Detailed error information for debugging
+          example: "LLM service unavailable"
+
+tags:
+  - name: Translation
+    description: Translation operations
+
+externalDocs:
+  description: Find out more about the Translation Service
+  url: https://github.com/example/translator_ruby
+

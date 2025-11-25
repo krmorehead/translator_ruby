@@ -3,6 +3,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       get "hello/index"
       post "translate", to: "translation#translate"
+      post "translate_text", to: "translation#translate_text"
     end
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
