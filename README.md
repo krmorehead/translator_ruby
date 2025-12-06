@@ -64,11 +64,14 @@ rails db:migrate
 ### 4. Start the Server
 
 ```bash
-# Using the custom server script (loads .env automatically)
-rvm use 3.4.4 && ruby lib/server.rb
+# Using the custom server script (loads .env automatically, binds to 0.0.0.0:52020)
+rvm use 3.4.4 && PORT=52020 ruby lib/server.rb
 
 # Or using Rails directly with environment variables
-rvm use 3.4.4 && PORT=52020 rails server
+rvm use 3.4.4 && rails server -p 52020 -b 0.0.0.0
+
+# With explicit host and port environment variables
+rvm use 3.4.4 && PORT=52020 HOST=0.0.0.0 ruby lib/server.rb
 ```
 
 ## 🌐 API Endpoints
@@ -169,7 +172,7 @@ DB_HOST=localhost
 DB_PORT=5432
 
 # LLM Service Configuration  
-LLM_URL=http://73.37.10.3:52003
+LLM_URL=http://73.190.101.126:52003
 
 # Rails Environment
 RAILS_ENV=development

@@ -53,12 +53,9 @@ Install the "OpenAPI (Swagger) Editor" extension for syntax highlighting and val
 
 ```bash
 # Single text translation
-curl -X POST http://73.190.101.126:52020/api/v1/translate_text \
+curl -X POST http://localhost:52020/api/v1/translate_text \
   -H "Content-Type: application/json" \
-  -d '{
-    "text": "Hello world",
-    "target_lang": "es"
-  }'
+  -d '{ "text": "Hello world", "target_lang": "es" }'
 
 # Document translation
 curl -X POST http://73.190.101.126:52020/api/v1/translate \
