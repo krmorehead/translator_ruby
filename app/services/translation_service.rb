@@ -172,8 +172,11 @@ class TranslationService
   end
 
   def create_llm_client
+    # Use API_KEY from environment for authorization
+    api_key = ENV["API_KEY"] || ENV["AUTHORIZATION"]
+    
     OpenAI::Client.new(
-      access_token: "not-needed", # llama.cpp doesn't validate this but ruby-openai requires it
+      access_token: api_key,
       uri_base: @llm_url,
       request_timeout: @timeout
     )
