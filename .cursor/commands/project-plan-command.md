@@ -51,7 +51,7 @@ Requirements:
 - Include test files in planned files
 - Reference the step number where each planned file is created
 - Keep descriptions concise (one line)
-- Add Document Tree sections that show **Before** and **After** layouts of the full relevant file structure, following the tree style in `rules/update-documentation.mdc` and `docs/references/base_references.md`
+- Add Document Tree sections that show **Before** and **Added** layouts of the full relevant file structure, following the tree style in `rules/update-documentation.mdc` and `docs/references/base_references.md`
 - Example:
 ```
 Before
@@ -60,7 +60,7 @@ project/
 └── docs/
     └── file_references.md
 
-After
+Added
 project/
 ├── existing_file.rb
 ├── new_feature.rb

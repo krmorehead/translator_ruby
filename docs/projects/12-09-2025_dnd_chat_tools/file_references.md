@@ -20,7 +20,7 @@ docs/
         └── project_plan.md
 ```
 
-**After**
+**Added**
 ```
 app/
 ├── models/
