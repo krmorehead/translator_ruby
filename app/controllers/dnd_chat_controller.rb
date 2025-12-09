@@ -50,23 +50,19 @@ class DndChatController < ApplicationController
     tool_payload = parse_tool_payload(llm_response)
     tool_args = normalize_tool_arguments(tool_payload, user_message)
     tool_result = tool_call_service.execute(tool_name: tool_payload[:tool], arguments: tool_args)
-    reply_text = render_reply_text(tool_result)
+    reply_text = render_narrative(tool_payload: tool_payload, tool_result: tool_result)
 
     convo << Message.new(
       source: "assistant",
       target: "user",
-      message: reply_text,
-      context: { tool: tool_payload[:tool], result: tool_result }
+      message: reply_text
     )
     persist_conversation!(convo)
 
     render json: {
       success: true,
       reply: reply_text,
-      conversation: convo.to_h,
-      tool: tool_payload[:tool],
-      arguments: tool_payload[:arguments],
-      result: tool_result
+      conversation: convo.to_h
     }
   rescue => e
     render json: { success: false, error: e.message }, status: :internal_server_error
@@ -191,6 +187,51 @@ class DndChatController < ApplicationController
     JSON.pretty_generate(tool_result[:result])
   rescue
     tool_result[:result].to_s
+  end
+
+  def render_narrative(tool_payload:, tool_result:)
+    return "The action failed: #{tool_result[:error]}" unless tool_result[:success]
+
+    summary_prompt = <<~PROMPT
+      You are the Dungeon Master. Given the outcome of an action, write a brief (1-2 sentences) in-world narration for the player.
+      Do not mention tools, dice rolls, DCs, files, or mechanics. Make it immersive and story-focused.
+    PROMPT
+
+    user_content = {
+      tool: tool_payload[:tool],
+      arguments: tool_payload[:arguments],
+      result: tool_result[:result]
+    }.to_json
+
+    response = openai_client.chat(
+      parameters: {
+        model: ENV["LLM_MODEL"] || "qwen30b",
+        messages: [
+          { role: "system", content: summary_prompt },
+          { role: "user", content: user_content }
+        ]
+      }
+    )
+
+    response.dig("choices", 0, "message", "content").presence || fallback_narrative(tool_result)
+  rescue => e
+    fallback_narrative(tool_result, error: e)
+  end
+
+  def fallback_narrative(tool_result, error: nil)
+    return "The action failed: #{tool_result[:error]}" unless tool_result[:success]
+
+    result = tool_result[:result]
+    text = if result.is_a?(Hash)
+      result[:description] || result[:content] || result[:summary]
+    elsif result.is_a?(Array) && result.last.is_a?(Hash)
+      result.last[:text] || result.last["text"]
+    else
+      result
+    end
+
+    base = text.is_a?(String) ? text : "The story moves forward."
+    error ? "#{base} (narration fallback)" : base
   end
 
   def agent_version_value

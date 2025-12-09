@@ -48,7 +48,9 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
     assert_equal true, body["success"]
     assert body["reply"].present?
     assert body["conversation"]["messages"].size >= 2
-    assert body["tool"].present?
+    refute body.key?("tool")
+    refute body.key?("result")
+    refute body.key?("arguments")
   end
 
   test "agent endpoint returns state and version" do

@@ -12,12 +12,13 @@ class Message
   end
 
   def to_h
-    {
+    payload = {
       source: source,
       target: target,
-      message: message,
-      context: context
+      message: message
     }
+    payload[:context] = context if context
+    payload
   end
 
   private

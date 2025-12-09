@@ -26,7 +26,7 @@ describe("ChatPage", () => {
 
     const input = screen.getByPlaceholderText(/Type your action/i);
     fireEvent.change(input, { target: { value: "Attack" } });
-    fireEvent.submit(input.closest("form"));
+    fireEvent.click(screen.getByRole("button", { name: /send/i }));
 
     expect(handleSend).toHaveBeenCalledWith("Attack");
   });
