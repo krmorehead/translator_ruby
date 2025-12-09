@@ -109,7 +109,7 @@ test/
 | File Path | Description | Created In |
 |-----------|-------------|------------|
 | `app/models/conversation.rb` | Conversation aggregate storing message array | Step 1.1 |
-| `app/models/message.rb` | Message model with `source`, `target`, `message`, `context` fields | Step 1.1 |
+| `app/models/message.rb` | Message model with `source`, `target`, `message` fields | Step 1.1 |
 | `docs/api/contracts/dnd_chat_messages.yml` | OpenAPI for messages (GET/POST, conversation) | Step 1.1 |
 | `docs/api/contracts/dnd_chat_agent.yml` | OpenAPI for agent + version | Step 1.1 |
 | `app/controllers/dnd_chat_controller.rb` | Chat JSON endpoints (messages, agent, version) | Step 1.2 |

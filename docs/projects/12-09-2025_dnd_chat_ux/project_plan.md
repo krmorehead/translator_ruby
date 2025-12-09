@@ -31,7 +31,8 @@ project/
 ## Architecture Guardrails
 - Keep controllers thin: delegate to service objects (`DndChatWorkflow`, `ToolCallService`) and plain POROs like `Conversation` for aggregation.
 - Contracts-first: add `/contract` endpoints and OpenAPI docs before implementing behaviors; keep request/response schemas aligned to the conversation and agent payloads.
-- Single-purpose models: `Conversation` manages message arrays/ordering; `Message` encapsulates `source`, `target`, `message`, `context`; memory/inventory remain in their dedicated stores.
+- Single-purpose models: `Conversation` manages message arrays/ordering; `Message` encapsulates `source`, `target`, `message`; memory/inventory remain in their dedicated stores.
+- Narrative-only chat thread: tool execution drives state, but the conversation API returns only story narration. Tool metadata belongs in the agent/inspector endpoints, not the chat messages.
 - Shared abstractions: reuse existing tool registry and memory/inventory stores instead of duplicating logic in the chat layer.
 - Frontend layers separate concerns: API client, state store, and UI components remain decoupled; avoid coupling state polling/version logic into view components directly.
 
@@ -46,12 +47,12 @@ Deliver a working dark-mode React SPA and backend endpoints that use the existin
 **Details**:
 - Add routes:
   - `/dnd_chat/messages/contract` (GET) returns OpenAPI contract for message endpoints
-  - `/dnd_chat/messages` (GET) returns full conversation thread (Conversation -> array of messages with `source`, `target`, `message`, `context`)
-  - `/dnd_chat/messages` (POST) sends a message; returns assistant reply plus updated conversation
+  - `/dnd_chat/messages` (GET) returns full conversation thread (Conversation -> array of messages with `source`, `target`, `message`)
+  - `/dnd_chat/messages` (POST) sends a message; returns assistant reply plus updated conversation (narration only, no tool metadata)
   - `/dnd_chat/agent/contract` and `/dnd_chat/agent/version/contract` return OpenAPI contracts
   - `/dnd_chat/agent` (GET) and `/dnd_chat/agent/version` (GET) existing behavior
-- Implement a `Conversation` class responsible for storing an array of message objects (`source`, `target`, `message`, `context`) and appending new messages
-- Implement a `Message` model/PORO to encapsulate `source`, `target`, `message`, and optional `context`, with basic validation/normalization
+- Implement a `Conversation` class responsible for storing an array of message objects (`source`, `target`, `message`) and appending new messages
+- Implement a `Message` model/PORO to encapsulate `source`, `target`, `message`, with basic validation/normalization
 - Build `/contract` endpoints first when implementing any new API
 - Error handling returns `success: false` with message
 
@@ -63,10 +64,10 @@ Deliver a working dark-mode React SPA and backend endpoints that use the existin
 
 **Condensed API Contracts (endpoints + schemas)**:
 - Schemas:
-  - `Message`: `{ source: string, target: string, message: string, context: object|null }`
+  - `Message`: `{ source: string, target: string, message: string }`
   - `Conversation`: `{ messages: Message[] }`
   - `PostMessageRequest`: `{ message: string }`
-  - `PostMessageResponse`: `{ success: boolean, reply: string, conversation: Conversation, tool?: string, arguments?: object, result?: object, error?: string }`
+  - `PostMessageResponse`: `{ success: boolean, reply: string, conversation: Conversation, error?: string }`
   - `AgentState`: `{ success: true, version: number, state: object }`
   - `AgentVersion`: `{ success: true, version: number }`
   - `Error`: `{ success: false, error: string }`
@@ -84,7 +85,7 @@ Deliver a working dark-mode React SPA and backend endpoints that use the existin
 
 **Tests**:
 - `/dnd_chat/messages/contract` returns a valid OpenAPI document for GET/POST
-- `Message` object accepts required fields and rejects missing `message` or `source/target`; `context` optional
+- `Message` object accepts required fields and rejects missing `message` or `source/target`
 - Contracts include schemas for `Message`, `Conversation`, `PostMessageRequest/Response`, `AgentState`, `AgentVersion`
 
 ---
@@ -96,7 +97,7 @@ Deliver a working dark-mode React SPA and backend endpoints that use the existin
 - Implement `DndChatController` actions for GET/POST `/dnd_chat/messages`, GET `/dnd_chat/agent`, GET `/dnd_chat/agent/version`, plus `/contract` twins.
 - Wire `config/routes.rb` for the chat endpoints and contract routes.
 - Integrate `DndChatWorkflow` and `ToolCallService` in the controller; return JSON only.
-- Use `Conversation`/`Message` models for payload shape and validation; ensure `context` is optional.
+- Use `Conversation`/`Message` models for payload shape and validation.
 - Error handling returns `success: false` with message.
 
 **Files**:
@@ -106,7 +107,7 @@ Deliver a working dark-mode React SPA and backend endpoints that use the existin
 
 **Tests**:
 - POST `/dnd_chat/messages` with real LLM returns `success: true`, reply payload, and conversation array
-- GET `/dnd_chat/messages` returns the conversation array with message objects (schema: `source`, `target`, `message`, `context`)
+- GET `/dnd_chat/messages` returns the conversation array with message objects (schema: `source`, `target`, `message`)
 - GET `/dnd_chat/agent` returns serialized state with version; `/contract` variants return valid OpenAPI
 
 ---

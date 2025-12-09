@@ -72,10 +72,6 @@ components:
           type: string
         message:
           type: string
-        context:
-          type: object
-          nullable: true
-          additionalProperties: true
     Conversation:
       type: object
       required: [messages]
@@ -101,17 +97,6 @@ components:
           type: string
         conversation:
           $ref: "#/components/schemas/Conversation"
-        tool:
-          type: string
-          nullable: true
-        arguments:
-          type: object
-          nullable: true
-          additionalProperties: true
-        result:
-          type: object
-          nullable: true
-          additionalProperties: true
         error:
           type: string
           nullable: true

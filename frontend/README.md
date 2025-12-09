@@ -12,6 +12,7 @@ React + Vite SPA for the DnD chat experience.
 ## Dev Notes
 - API requests proxy to the Rails backend (port 3000) via Vite dev server.
 - Requires Node 18+.
+- Chat responses are narration-only; tool metadata stays on the server/inspector endpoints.
 
 ## cURL quickstart (Rails port 4000 in test/dev)
 - Send a message:
