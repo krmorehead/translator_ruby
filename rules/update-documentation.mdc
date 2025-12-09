@@ -2,23 +2,23 @@
 globs: docs/references/**/*.md
 alwaysApply: false
 ---
-Update or Create Leaf Node Docs for all files changed
+[DOC][!LEAF-UPDATE] Update or create leaf-node docs for all files changed.
 
-Never mention milestones or phases in documentation
+[DOC][!NO-PHASES] Never mention milestones or phases in documentation.
 
-- For each file added or changed:
-  - Update its corresponding `.md` file in `docs/references/`
-    - If no `.md` exists yet, create one in the correct subdirectory.
-    - Keep content concise, structured, and AI-friendly.
+- [DOC][!PER-FILE] For each file added or changed:
+  - Update its corresponding `.md` in `docs/references/`.
+  - If none exists, create one in the correct subdirectory.
+  - Keep content concise, structured, and AI-friendly.
 
-- Update `base_references.md`:
+- [DOC][!BASE] Update `base_references.md`:
   - Ensure the file is represented in the leaf-node tree.
   - Maintain correct indentation and placement within its folder tree.
 
-- Follow the 1:1 file-to-doc rule:
-  - Each file in the codebase should have one `.md` doc.
-  - Each `.md` doc should refer only to that file.
+- [DOC][!1-TO-1] Follow the 1:1 file-to-doc rule:
+  - Each code file has one `.md` doc.
+  - Each `.md` doc refers only to that file.
 
-- If system architecture is affected:
-  - Add or modify notes in `architecture_diagram.md`
+- [DOC][!ARCH] If system architecture is affected:
+  - Add or modify notes in `architecture_diagram.md`.
   - Ensure updated architectural understanding is reflected.

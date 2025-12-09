@@ -3,24 +3,12 @@ alwaysApply: true
 ---
 ## Researching the Codebase
 
-- Begin research by locating the nearest `base_references.md`:
-  - This serves as a directory index.
-  - Follow the tree to locate the file or concept of interest.
+- [RESEARCH][!BASE] Begin research by locating the nearest `base_references.md` (directory index); follow the tree to locate the file or concept of interest.
 
-- Use the corresponding `.md` leaf node:
-  - Each code file has a 1:1 markdown summary file.
-  - These should describe purpose, responsibilities, and integration points.
-  - Designed for fast context loading and AI parsing.
+- [RESEARCH][!LEAF] Use the corresponding `.md` leaf node (1:1 per code file) for purpose, responsibilities, and integration points; designed for fast context loading and AI parsing.
 
-- Limit memory usage:
-  - Do not load all reference docs at once.
-  - Always use the base reference file to narrow your scope.
-  - Only pull in the specific leaf node(s) needed.
+- [RESEARCH][!SCOPED] Limit memory usage: do not load all reference docs at once; use the base reference to narrow scope; pull only needed leaf nodes.
 
-- Defer to source code only when necessary:
-  - Follow the 1:1 reference to open the original code file.
-  - Only do this if the documentation does not answer your question.
+- [RESEARCH][!SOURCE-LAST] Defer to source code only when necessary; open the original code file if the doc doesn’t answer your question.
 
-- For high-level system or cross-cutting questions:
-  - Start with `docs/references/architecture_diagram.md`
-  - Use this for understanding system flow, integration, and major roles.
+- [RESEARCH][!ARCH] For high-level system/cross-cutting questions, start with `docs/references/architecture_diagram.md` for flow/integration/roles.

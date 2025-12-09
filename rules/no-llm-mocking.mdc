@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+---
+
+# Testing Rule: Never Mock LLM
+
+- [CRITICAL][!NO-MOCKS] Do NOT mock, stub, fake, or otherwise simulate the LLM in any test (unit, integration, feature, system, smoke).
+- [CRITICAL][!REAL-LLM] All tests must call the real LLM endpoint. If the LLM is unavailable, skip or fail explicitly rather than mocking.
+- [CRITICAL][!NO-SYNTHETIC] Do NOT inject canned tool_call payloads or synthetic LLM responses in tests.
+- [CRITICAL][!ALL-SCOPES] Apply this rule across all scopes (backend, frontend/system, integration, CI/local).
+
+- [EXECUTE][!NO-CONFIRM] Default to execute: run all needed commands/tests/fixes end-to-end without asking for confirmation.
+- [BLOCK-ONLY-IF][!PAUSE] Pause only if an action is destructive (data loss), needs missing credentials, or requirements conflict.
+- [RESILIENT][!RETRY] If blocked (e.g., endpoint down, missing key), try safe mitigations (retries/backoff) once; otherwise report the block with what was tried.
+- [TESTS][!FULL-SUITE] For tests, always run the relevant suite (or full suite if unspecified) after changes; rerun after fixes.

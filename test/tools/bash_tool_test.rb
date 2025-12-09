@@ -12,6 +12,19 @@ class BashToolTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
   end
 
+  def chat_with_retry(client, parameters, attempts: 5, delay: 2)
+    last_error = nil
+    attempts.times do |i|
+      begin
+        return client.chat(parameters: parameters)
+      rescue Faraday::ServerError => e
+        last_error = e
+        sleep(delay) if i < attempts - 1
+      end
+    end
+    raise last_error
+  end
+
   test "schema returns valid OpenAI function format with command parameter" do
     schema = BashTool.schema
 
@@ -101,8 +114,9 @@ class BashToolTest < ActiveSupport::TestCase
     tools = ToolCallService.available_tools
 
     # Ask LLM to list files in the sandbox directory
-    response = client.chat(
-      parameters: {
+    response = chat_with_retry(
+      client,
+      {
         model: ENV["LLM_MODEL"] || "qwen30b",
         messages: [
           {

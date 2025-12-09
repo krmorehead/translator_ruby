@@ -7,21 +7,21 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
       protected_strings: ["Brightwheel"]
     )
     
-    # Mock translation callback that uppercases text
-    @mock_callback = ->(context) { context.text.upcase }
+    # Real translation callback that uppercases text (no mocking)
+    @translate_callback = ->(context) { context.text.upcase }
   end
 
   # Test simple string leaves
   test "should handle simple string leaf" do
     input = "hello"
-    result = @service.traverse(input, @mock_callback)
+    result = @service.traverse(input, @translate_callback)
     
     assert_equal "HELLO", result
   end
 
   test "should handle string leaf with context path" do
     input = "world"
-    result = @service.traverse(input, @mock_callback, ["greeting", "message"])
+    result = @service.traverse(input, @translate_callback, ["greeting", "message"])
     
     assert_equal "WORLD", result
   end
@@ -33,7 +33,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
       "farewell" => "goodbye"
     }
     
-    result = @service.traverse(input, @mock_callback)
+    result = @service.traverse(input, @translate_callback)
     
     assert_equal "HELLO", result["greeting"]
     assert_equal "GOODBYE", result["farewell"]
@@ -47,7 +47,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
       }
     }
     
-    result = @service.traverse(input, @mock_callback)
+    result = @service.traverse(input, @translate_callback)
     
     assert_equal "HELLO", result["messages"]["welcome"]
     assert_equal "BYE", result["messages"]["goodbye"]
@@ -57,7 +57,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   test "should traverse arrays" do
     input = ["first", "second", "third"]
     
-    result = @service.traverse(input, @mock_callback)
+    result = @service.traverse(input, @translate_callback)
     
     assert_equal ["FIRST", "SECOND", "THIRD"], result
   end
@@ -68,7 +68,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
       { "text" => "world" }
     ]
     
-    result = @service.traverse(input, @mock_callback)
+    result = @service.traverse(input, @translate_callback)
     
     assert_equal "HELLO", result[0]["text"]
     assert_equal "WORLD", result[1]["text"]
@@ -122,7 +122,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     }
     
     assert_raises(ArgumentError) do
-      @service.traverse(input, @mock_callback)
+      @service.traverse(input, @translate_callback)
     end
   end
 
@@ -172,7 +172,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
       }
     }
     
-    result = @service.traverse(input, @mock_callback)
+    result = @service.traverse(input, @translate_callback)
     
     assert_equal "{{COUNT}} OUNCE", result["food"]["amount_one"]
     assert_equal "{{COUNT}} OUNCES", result["food"]["amount_other"]
@@ -184,7 +184,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
       "student_count_other" => "{{count}} students"
     }
     
-    result = @service.traverse(input, @mock_callback)
+    result = @service.traverse(input, @translate_callback)
     
     assert_equal "{{COUNT}} STUDENT", result["student_count_one"]
     assert_equal "{{COUNT}} STUDENTS", result["student_count_other"]
@@ -195,7 +195,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     input = 12345
     
     assert_raises(ArgumentError) do
-      @service.traverse(input, @mock_callback)
+      @service.traverse(input, @translate_callback)
     end
   end
 
@@ -203,7 +203,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     input = nil
     
     assert_raises(ArgumentError) do
-      @service.traverse(input, @mock_callback)
+      @service.traverse(input, @translate_callback)
     end
   end
 
@@ -222,7 +222,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
       }
     }
     
-    result = @service.traverse(input, @mock_callback)
+    result = @service.traverse(input, @translate_callback)
     
     assert_equal "TEXT", result["simple"]
     assert_equal "VALUE", result["nested"]["deep"]

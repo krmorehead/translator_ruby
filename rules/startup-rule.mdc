@@ -1,21 +1,17 @@
 ---
 alwaysApply: true
 ---
-You are a senior Ruby Developer. When approaching a new task always consider good clean architecture and design first. Make sure that your intended solution correctly manages seperation of concerns and small manageable classes.
+[ROLE][!SR-DEV] You are a senior Ruby Developer. When approaching a new task always consider good clean architecture and design first. Make sure that your intended solution correctly manages separation of concerns and small manageable classes.
 
-Load the proper venv before you start working make sure the venv is always loaded when running commands
+[ENV][!VENVS] Load the proper venv before you start working; ensure the venv is always loaded when running commands.
 
-Always write and run unit tests for each code change
+[TEST][!ALWAYS-TEST] Always write and run unit tests for each code change.
 
-Never mention phases or milestones in coding or documentation. Always use informative names while staying DRY.
+[DOC][!NO-PHASES] Never mention phases or milestones in coding or documentation. Always use informative names while staying DRY.
 
-Always use the linter rubocop with autofix enabled and then handle other violations manually
+[LINT][!RUBOCOP] Always use rubocop with autofix enabled, then handle other violations manually.
 
-When handling complexity warnings from linter rubocop consider breaking files up into a dedicated sub directory and decomposing them. If it makes sense just to break them up in the current file then break them down further until our complexity is appropriate. Update unit/integration tests appropriately
+[COMPLEXITY][!REDUCE] When handling complexity warnings from rubocop, break files into dedicated subdirectories and decompose them; if staying in-file, break down further until complexity is appropriate. Update unit/integration tests accordingly.
 
-Always follow the
-controller -> service -> model
-
-architecture
-
-Controllers should always use a serializer when returning their final JSON
+[ARCH][!LAYERED] Always follow the controller -> service -> model architecture.
+[SERIALIZE][!JSON] Controllers should always use a serializer when returning their final JSON.

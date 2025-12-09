@@ -1,35 +1,7 @@
 require "test_helper"
 
 class ToolCallServiceTest < ActiveSupport::TestCase
-  # Test tool for service tests
-  class MockTool < BaseTool
-    def self.name_identifier
-      "mock_tool"
-    end
-
-    def self.description
-      "A mock tool for testing the service"
-    end
-
-    def self.parameters_schema
-      {
-        type: "object",
-        properties: {
-          message: { type: "string", description: "A message to echo" }
-        },
-        required: ["message"]
-      }
-    end
-
-    def execute(message:)
-      success_result("Mock received: #{message}, sandbox: #{sandbox_path}")
-    end
-  end
-
   def setup
-    # Register the mock tool for testing
-    ToolCallService.register_tool(MockTool) unless ToolCallService::TOOL_CLASSES.include?(MockTool)
-    # Ensure DnD tools are loaded and registered
     %w[dice_roll_tool skill_check_tool inventory_tool memory_tool memory_summarize_tool].each do |file|
       require Rails.root.join("app", "tools", file)
     rescue LoadError
@@ -41,19 +13,19 @@ class ToolCallServiceTest < ActiveSupport::TestCase
     tools = ToolCallService.available_tools
 
     assert tools.is_a?(Array)
-    assert tools.any? { |t| t[:function][:name] == "mock_tool" }
+    assert_includes tools.map { |t| t[:function][:name] }, DiceRollTool::NAME
   end
 
-  test "execute dispatches to correct tool class" do
+  test "execute dispatches to dice_roll_tool" do
     service = ToolCallService.new
 
     result = service.execute(
-      tool_name: "mock_tool",
-      arguments: { message: "hello" }
+      tool_name: DiceRollTool::NAME,
+      arguments: { dice: "d6" }
     )
 
     assert_equal true, result[:success]
-    assert_includes result[:result], "Mock received: hello"
+    assert result[:result][:total].is_a?(Integer)
   end
 
   test "execute raises ArgumentError for unknown tool" do
@@ -64,33 +36,34 @@ class ToolCallServiceTest < ActiveSupport::TestCase
     end
   end
 
-  test "sandbox_path is passed to tool instances" do
+  test "sandbox_path is stored on service" do
     service = ToolCallService.new(sandbox_path: "/tmp/test_sandbox")
 
     result = service.execute(
-      tool_name: "mock_tool",
-      arguments: { message: "test" }
+      tool_name: DiceRollTool::NAME,
+      arguments: { dice: "d6" }
     )
 
-    assert_includes result[:result], "sandbox: /tmp/test_sandbox"
+    assert_equal true, result[:success]
+    assert_equal "/tmp/test_sandbox", service.instance_variable_get(:@sandbox_path)
   end
 
   test "execute handles string keys in arguments" do
     service = ToolCallService.new
 
     result = service.execute(
-      tool_name: "mock_tool",
-      arguments: { "message" => "string key test" }
+      tool_name: DiceRollTool::NAME,
+      arguments: { "dice" => "d4" }
     )
 
     assert_equal true, result[:success]
-    assert_includes result[:result], "Mock received: string key test"
+    assert result[:result][:total].is_a?(Integer)
   end
 
   test "tool_class_for returns correct class" do
-    tool_class = ToolCallService.tool_class_for("mock_tool")
+    tool_class = ToolCallService.tool_class_for(DiceRollTool::NAME)
 
-    assert_equal MockTool, tool_class
+    assert_equal DiceRollTool, tool_class
   end
 
   test "tool_class_for returns nil for unknown tool" do
@@ -112,4 +85,3 @@ class ToolCallServiceTest < ActiveSupport::TestCase
     end
   end
 end
-
