@@ -29,6 +29,12 @@ class ToolCallServiceTest < ActiveSupport::TestCase
   def setup
     # Register the mock tool for testing
     ToolCallService.register_tool(MockTool) unless ToolCallService::TOOL_CLASSES.include?(MockTool)
+    # Ensure DnD tools are loaded and registered
+    %w[dice_roll_tool skill_check_tool inventory_tool memory_tool memory_summarize_tool].each do |file|
+      require Rails.root.join("app", "tools", file)
+    rescue LoadError
+      # Some tools may already be loaded; ignore
+    end
   end
 
   test "available_tools returns array of tool schemas" do
@@ -91,6 +97,19 @@ class ToolCallServiceTest < ActiveSupport::TestCase
     tool_class = ToolCallService.tool_class_for("unknown")
 
     assert_nil tool_class
+  end
+
+  test "available_tools includes new DnD tools" do
+    names = ToolCallService.available_tools.map { |t| t[:function][:name] }
+    [
+      DiceRollTool::NAME,
+      SkillCheckTool::NAME,
+      InventoryTool::NAME,
+      MemoryTool::NAME,
+      MemorySummarizeTool::NAME
+    ].each do |tool_name|
+      assert_includes names, tool_name
+    end
   end
 end
 
