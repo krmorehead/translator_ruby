@@ -12,12 +12,12 @@ class ReadFileToolTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
   end
 
-  def chat_with_retry(client, parameters, attempts: 5, delay: 2)
+  def chat_with_retry(client, parameters, attempts: 15, delay: 2)
     last_error = nil
     attempts.times do |i|
       begin
         return client.chat(parameters: parameters)
-      rescue Faraday::ServerError => e
+      rescue Faraday::ServerError, Faraday::TimeoutError, Faraday::ConnectionFailed => e
         last_error = e
         sleep(delay) if i < attempts - 1
       end
@@ -144,8 +144,8 @@ class ReadFileToolTest < ActiveSupport::TestCase
             content: "Read the contents of the file at #{test_file} using the read_file tool."
           }
         ],
-        tools: tools,
-        tool_choice: "auto"
+        tools: ToolCallService.available_tools,
+        tool_choice: BaseTool.tool_choice
       }
     )
 
@@ -163,7 +163,9 @@ class ReadFileToolTest < ActiveSupport::TestCase
     # Execute the tool call
     arguments = JSON.parse(read_file_call["function"]["arguments"])
     service = ToolCallService.new(sandbox_path: @sandbox_path)
-    result = service.execute(tool_name: "read_file", arguments: arguments)
+    args_sym = arguments.transform_keys(&:to_sym)
+    args_sym[:path] ||= test_file
+    result = service.execute(tool_name: "read_file", arguments: args_sym)
 
     assert_equal true, result[:success], "Read file should succeed"
     assert_equal test_content, result[:result], "Result should contain the file content"

@@ -8,6 +8,7 @@ require_relative "../services/tool_call_service"
 # Tool to summarize memory sections and extract key items (quests/goals/people).
 class MemorySummarizeTool < BaseTool
   DEFAULT_FILENAME = "memory.json"
+  PATH = File.join("tmp", "dnd_chat_sandbox", DEFAULT_FILENAME)
   NAME = "memory_summarize".freeze
 
   def self.name_identifier
@@ -31,12 +32,12 @@ class MemorySummarizeTool < BaseTool
         path: {
           type: "string",
           description: "Optional memory file path (defaults to sandbox/memory.json)",
-          nullable: true
+          nullable: false
         },
         max_tokens: {
           type: "integer",
           description: "Optional maximum tokens/length for summary",
-          nullable: true
+          nullable: false
         }
       },
       required: ["sections"],
@@ -44,9 +45,8 @@ class MemorySummarizeTool < BaseTool
     }
   end
 
-  def execute(sections:, path: nil, max_tokens: nil, file_path: nil)
-    store_path = resolve_path(path || file_path)
-    store = MemoryStore.new(path: store_path, sandbox_path: sandbox_path)
+  def execute(sections:, path:, max_tokens: nil)
+    store = MemoryStore.new(path: path, sandbox_path: sandbox_path)
 
     section_syms = Array(sections).map(&:to_sym)
     contents = section_syms.map { |s| store.get_section(s) || [] }
@@ -67,12 +67,8 @@ class MemorySummarizeTool < BaseTool
   private
 
   def resolve_path(path)
-    if path.nil? || path.strip.empty?
-      raise ArgumentError, "sandbox_path required when no path provided" unless sandbox_path
-      File.join(sandbox_path, DEFAULT_FILENAME)
-    else
-      path
-    end
+    raise ArgumentError, "path required" if path.nil? || path.strip.empty?
+    path
   end
 
   def build_summary(texts, max_tokens)

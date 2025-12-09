@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>DnD Chat Inspector</title>
+    <style>
+      body {
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        background: #0d0f12;
+        color: #e8ecf2;
+        margin: 0;
+        padding: 24px;
+      }
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      pre {
+        background: #0d1628;
+        border: 1px solid #1f2a3c;
+        border-radius: 12px;
+        padding: 12px;
+        overflow: auto;
+      }
+      button {
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: none;
+        background: linear-gradient(135deg, #2b84ff, #864cff);
+        color: #ffffff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .muted {
+        color: #8a93a7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Agent Inspector</h1>
+      <p class="muted">View current memories, inventory, and conversation.</p>
+      <button id="refresh">Refresh</button>
+      <h3>Agent Payload</h3>
+      <pre id="payload">Loading...</pre>
+    </div>
+    <script>
+      async function loadAgent() {
+        const res = await fetch("/dnd_chat/agent");
+        const data = await res.json();
+        document.getElementById("payload").textContent = JSON.stringify(data, null, 2);
+      }
+      document.getElementById("refresh").addEventListener("click", loadAgent);
+      loadAgent();
+    </script>
+  </body>
+</html>
+

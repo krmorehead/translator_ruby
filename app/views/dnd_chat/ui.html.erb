@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>DnD Chat</title>
+    <style>
+      body {
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        background: #0d0f12;
+        color: #e8ecf2;
+        margin: 0;
+        padding: 24px;
+      }
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin-bottom: 4px;
+      }
+      .muted {
+        color: #8a93a7;
+      }
+      .chat-box {
+        border: 1px solid #1f2a3c;
+        background: #111621;
+        border-radius: 12px;
+        padding: 12px;
+        max-height: 420px;
+        overflow-y: auto;
+        margin-bottom: 12px;
+      }
+      .msg {
+        padding: 8px 10px;
+        border-radius: 10px;
+        margin-bottom: 6px;
+      }
+      .user {
+        background: #2647ff;
+        color: #f8f9ff;
+      }
+      .assistant {
+        background: #0d1628;
+        border: 1px solid #1f2a3c;
+      }
+      form {
+        display: flex;
+        gap: 8px;
+      }
+      textarea {
+        flex: 1;
+        min-height: 70px;
+        border-radius: 10px;
+        border: 1px solid #1f2a3c;
+        background: #0b0f17;
+        color: #e8ecf2;
+        padding: 10px;
+      }
+      button {
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, #2b84ff, #864cff);
+        color: #ffffff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .error {
+        color: #ffb4be;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>DnD Chat</h1>
+      <p class="muted">Simple HTML fallback for interacting with the workflow.</p>
+      <div id="error" class="error"></div>
+      <div id="chat" class="chat-box"></div>
+      <form id="chat-form">
+        <textarea id="message" placeholder="Type a message to the DM..."></textarea>
+        <button type="submit">Send</button>
+      </form>
+    </div>
+
+    <script>
+      async function loadConversation() {
+        const res = await fetch("/dnd_chat/messages");
+        const data = await res.json();
+        renderMessages(data.messages || []);
+      }
+
+      function renderMessages(messages) {
+        const box = document.getElementById("chat");
+        box.innerHTML = "";
+        messages.forEach((m) => {
+          const div = document.createElement("div");
+          div.className = "msg " + (m.source === "user" ? "user" : "assistant");
+          div.textContent = m.message;
+          box.appendChild(div);
+        });
+        box.scrollTop = box.scrollHeight;
+      }
+
+      async function sendMessage(msg) {
+        const res = await fetch("/dnd_chat/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        if (!res.ok || data.success === false) {
+          document.getElementById("error").textContent = data.error || "Request failed";
+        } else {
+          document.getElementById("error").textContent = "";
+          renderMessages(data.conversation.messages || []);
+        }
+      }
+
+      document.getElementById("chat-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const textarea = document.getElementById("message");
+        const text = textarea.value.trim();
+        if (!text) return;
+        await sendMessage(text);
+        textarea.value = "";
+      });
+
+      loadConversation();
+    </script>
+  </body>
+</html>
+

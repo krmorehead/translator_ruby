@@ -7,6 +7,7 @@ require_relative "../services/tool_call_service"
 # LLM-callable tool for managing inventory via InventoryStore.
 class InventoryTool < BaseTool
   DEFAULT_FILENAME = "inventory.json"
+  PATH = File.join("tmp", "dnd_chat_sandbox", DEFAULT_FILENAME)
   NAME = "inventory".freeze
   OP_ADD_ITEM = "add_item".freeze
   OP_REMOVE_ITEM = "remove_item".freeze
@@ -40,20 +41,20 @@ class InventoryTool < BaseTool
         path: {
           type: "string",
           description: "Optional inventory file path (defaults to sandbox/inventory.json)",
-          nullable: true
+          nullable: false
         },
-        name: { type: "string", description: "Item name", nullable: true },
-        weight: { type: "number", description: "Item weight", nullable: true },
-        description: { type: "string", description: "Item description", nullable: true },
-        property_type: { type: "string", description: "Item type", nullable: true },
-        quantity: { type: "integer", description: "Item quantity", nullable: true }
+        name: { type: "string", description: "Item name" },
+        weight: { type: "number", description: "Item weight" },
+        description: { type: "string", description: "Item description" },
+        property_type: { type: "string", description: "Item type" },
+        quantity: { type: "integer", description: "Item quantity" }
       },
       required: ["operation"],
       additionalProperties: false
     }
   end
 
-  def execute(operation:, path: nil, name: nil, weight: nil, description: nil, property_type: nil, quantity: nil)
+  def execute(operation:, path:, name: nil, weight: nil, description: nil, property_type: nil, quantity: nil)
     op, store_path, normalized = normalize_args(operation, path, name, weight, description, property_type, quantity)
     store = InventoryStore.new(path: store_path, sandbox_path: sandbox_path)
 

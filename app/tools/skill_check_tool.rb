@@ -34,7 +34,7 @@ class SkillCheckTool < BaseTool
           enum: %w[normal advantage disadvantage],
           default: "normal"
         },
-        dc: { type: "integer", description: "Difficulty class to check success", nullable: true }
+        dc: { type: "integer", description: "Difficulty class to check success" }
       },
       required: ["skill", "ability_modifier"],
       additionalProperties: false

@@ -18,11 +18,7 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
   end
 
   def client
-    OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
+    GenericLLMClient
   end
 
   def workflow
@@ -41,7 +37,17 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
   # Require that the LLM returns structured content.
   def parsed_tool_response(prompt)
     response = perform_chat(prompt)
-    content = response.dig("choices", 0, "message", "content")
+    message = response.dig("choices", 0, "message") || {}
+    content = message["content"]
+
+    if content.nil? && message["tool_calls"]
+      call = message["tool_calls"].first
+      name = call.dig("function", "name")
+      raw_args = call.dig("function", "arguments")
+      args = raw_args.is_a?(String) ? JSON.parse(raw_args) : (raw_args || {})
+      return { "tool" => name, "arguments" => args }
+    end
+
     assert content, "LLM should return structured content"
     JSON.parse(content)
   rescue Faraday::ServerError => e
@@ -53,32 +59,21 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
   def filter_args_for(tool_name, args)
     args ||= {}
     tool_class = ToolCallService.tool_class_for(tool_name)
+    raise ArgumentError, "Unknown tool: #{tool_name}" unless tool_class
     schema_keys = tool_class.parameters_schema[:properties].keys.map(&:to_sym)
-    normalized = args.transform_keys(&:to_sym)
-
-    case tool_name
-    when InventoryTool::NAME
-      normalized[:operation] ||= InventoryTool::OP_ADD_ITEM
-      normalized[:name] ||= "LLM item"
-      normalized[:quantity] ||= 1
-      normalized[:path] ||= @inventory_path
-    when MemoryTool::NAME
-      normalized[:operation] ||= MemoryTool::OP_UPDATE
-      normalized[:section] ||= MemoryKinds::QUESTS
-      normalized[:content] ||= "Quest update"
-      normalized[:path] ||= @memory_path
-    when MemorySummarizeTool::NAME
-      normalized[:path] ||= @memory_path
-      normalized[:sections] ||= [MemoryKinds::QUESTS]
+    args.transform_keys(&:to_sym).slice(*schema_keys).tap do |h|
+      h[:path] = @inventory_path if tool_name == InventoryTool::NAME && h[:path].nil?
+      h[:path] = @memory_path if [MemoryTool::NAME, MemorySummarizeTool::NAME].include?(tool_name) && h[:path].nil?
     end
-
-    normalized.slice(*schema_keys)
   end
 
   def execute_tool_response(parsed)
     tool_name = parsed["tool"]
     args = parsed["arguments"]
     filtered = filter_args_for(tool_name, args)
+    if [MemoryTool::NAME, MemorySummarizeTool::NAME].include?(tool_name)
+      filtered[:path] = @memory_path
+    end
     ToolCallService.new(sandbox_path: @sandbox_path).execute(tool_name: tool_name, arguments: filtered)
   end
 

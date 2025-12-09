@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../tools/base_tool"
+require_relative "../models/memory_kinds"
 
 # Service that orchestrates tool registration and execution.
 # Provides a central interface for the LLM to discover and execute tools.
@@ -9,6 +10,7 @@ class ToolCallService
 
   # Registry of all available tool classes
   TOOL_CLASSES = []
+  DND_TOOL_NAMES = %w[dice_roll skill_check inventory memory memory_summarize].freeze
 
   def self.register_tool(tool_class)
     TOOL_CLASSES << tool_class unless TOOL_CLASSES.include?(tool_class)
@@ -16,6 +18,10 @@ class ToolCallService
 
   def self.available_tools
     TOOL_CLASSES.map(&:schema)
+  end
+
+  def self.available_dnd_tools
+    TOOL_CLASSES.select { |t| DND_TOOL_NAMES.include?(t.name_identifier) }.map(&:schema)
   end
 
   def self.tool_class_for(name)
@@ -36,7 +42,7 @@ class ToolCallService
     raise ArgumentError, "Unknown tool: #{tool_name}" unless tool_class
 
     tool = tool_class.new(sandbox_path: sandbox_path)
-    tool.execute(**arguments.transform_keys(&:to_sym))
+    tool.execute(**arguments)
   end
 end
 

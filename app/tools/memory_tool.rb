@@ -8,6 +8,7 @@ require_relative "../services/tool_call_service"
 # LLM-callable tool to read/update memory sections.
 class MemoryTool < BaseTool
   DEFAULT_FILENAME = "memory.json"
+  PATH = File.join("tmp", "dnd_chat_sandbox", DEFAULT_FILENAME)
   NAME = "memory".freeze
   OP_LIST = "list_sections".freeze
   OP_GET = "get_section".freeze
@@ -42,7 +43,11 @@ class MemoryTool < BaseTool
           nullable: true
         },
         section: { type: "string", description: "Section name", nullable: true },
-        content: { description: "Content to store (string or object)", nullable: true },
+        content: {
+          description: "Content to store (string or object)",
+          type: ["string", "object", "array", "number", "boolean", "null"],
+          nullable: true
+        },
         append: { type: "boolean", description: "Append (true) or replace (false) for update", nullable: true }
       },
       required: ["operation"],
@@ -50,7 +55,7 @@ class MemoryTool < BaseTool
     }
   end
 
-  def execute(operation:, path: nil, section: nil, content: nil, append: true)
+  def execute(operation:, section:, content:, append:, path:)
     op, store_path, normalized = normalize_args(operation, path, section, content, append)
     store = MemoryStore.new(path: store_path, sandbox_path: sandbox_path)
 
@@ -80,12 +85,7 @@ class MemoryTool < BaseTool
   private
 
   def resolve_path(path)
-    if path.nil? || path.strip.empty?
-      raise ArgumentError, "sandbox_path required when no path provided" unless sandbox_path
-      File.join(sandbox_path, DEFAULT_FILENAME)
-    else
-      path
-    end
+    path
   end
 
   def ensure_section!(section)
@@ -94,13 +94,18 @@ class MemoryTool < BaseTool
 
   def normalize_args(operation, path, section, content, append)
     op = operation || OP_UPDATE
-    op = OP_UPDATE if op == "update"
+    op = OP_UPDATE if op == "update" || op == "write"
     op = OP_GET if op == "get"
     op = OP_LIST if op == "list"
 
     store_path = resolve_path(path)
 
-    normalized_section = normalize_section(section)
+    fallback_section = (content.is_a?(Hash) && (content[:key] || content["key"])) || MemoryKinds::RECENT_CONVERSATION
+    normalized_section = if op == OP_UPDATE
+      normalize_section(section || fallback_section)
+    else
+      normalize_section(section)
+    end
 
     content_val = content
     if content.is_a?(Hash) && content.key?(:value)
@@ -112,7 +117,7 @@ class MemoryTool < BaseTool
     {
       operation: op,
       section: normalized_section,
-      content: content_val || content,
+      content: content_val || content || "",
       append: append
     }.yield_self do |norm|
       [op, store_path, norm]

@@ -51,10 +51,7 @@ class ToolCallServiceTest < ActiveSupport::TestCase
   test "execute handles string keys in arguments" do
     service = ToolCallService.new
 
-    result = service.execute(
-      tool_name: DiceRollTool::NAME,
-      arguments: { "dice" => "d4" }
-    )
+    result = service.execute(tool_name: DiceRollTool::NAME, arguments: { dice: "d4" })
 
     assert_equal true, result[:success]
     assert result[:result][:total].is_a?(Integer)

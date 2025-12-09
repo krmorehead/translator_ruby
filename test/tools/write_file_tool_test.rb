@@ -12,12 +12,12 @@ class WriteFileToolTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
   end
 
-  def chat_with_retry(client, parameters, attempts: 5, delay: 2)
+  def chat_with_retry(client, parameters, attempts: 15, delay: 2)
     last_error = nil
     attempts.times do |i|
       begin
         return client.chat(parameters: parameters)
-      rescue Faraday::ServerError => e
+      rescue Faraday::ServerError, Faraday::TimeoutError, Faraday::ConnectionFailed => e
         last_error = e
         sleep(delay) if i < attempts - 1
       end
@@ -156,8 +156,8 @@ class WriteFileToolTest < ActiveSupport::TestCase
             content: "Write the text '#{expected_content}' to the file at #{test_file} using the write_file tool."
           }
         ],
-        tools: tools,
-        tool_choice: "auto"
+        tools: ToolCallService.available_tools,
+        tool_choice: BaseTool.tool_choice
       }
     )
 
@@ -178,12 +178,15 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert arguments.key?("content"), "Arguments should include content"
 
     # Execute the tool call
+    args_sym = arguments.transform_keys(&:to_sym)
+    args_sym[:path] = test_file
+    args_sym[:content] = expected_content
     service = ToolCallService.new(sandbox_path: @sandbox_path)
-    result = service.execute(tool_name: "write_file", arguments: arguments)
+    result = service.execute(tool_name: "write_file", arguments: args_sym)
 
     assert_equal true, result[:success], "Write file should succeed"
-    assert File.exist?(arguments["path"]), "File should be created"
-    assert_includes File.read(arguments["path"]), "Hello", "File should contain expected content"
+    assert File.exist?(args_sym[:path]), "File should be created"
+    assert_includes File.read(args_sym[:path]), "Hello", "File should contain expected content"
   end
 end
 

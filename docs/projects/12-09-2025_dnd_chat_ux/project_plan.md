@@ -402,6 +402,10 @@ Provide steps and examples for interacting with the live endpoints manually usin
 **Details**:
 - Document cURL commands to send chat messages to `/dnd_chat/messages`
 - Document polling `/dnd_chat/agent/version` and fetching `/dnd_chat/agent` when the version changes
+- Example commands (adjust host/port):
+  - `curl -X POST http://localhost:4000/dnd_chat/messages -H "Content-Type: application/json" -d '{"message":"Scout the tavern"}'`
+  - `curl http://localhost:4000/dnd_chat/agent/version`
+  - `curl http://localhost:4000/dnd_chat/agent`
 
 **Files**:
 - `docs/projects/12-09-2025_dnd_chat_ux/file_references.md`

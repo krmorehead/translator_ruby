@@ -1,0 +1,148 @@
+openapi: 3.1.0
+info:
+  title: DnD Chat Messages API
+  version: "1.0.0"
+  description: Contracts for chat conversation read/write endpoints.
+paths:
+  /dnd_chat/messages:
+    get:
+      summary: Get full conversation thread
+      responses:
+        "200":
+          description: Conversation thread
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Send a user message and receive assistant reply
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostMessageRequest"
+      responses:
+        "200":
+          description: Assistant reply with updated conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostMessageResponse"
+        "400":
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /dnd_chat/messages/contract:
+    get:
+      summary: Get OpenAPI contract for message endpoints
+      responses:
+        "200":
+          description: OpenAPI document
+          content:
+            application/yaml:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+components:
+  schemas:
+    Message:
+      type: object
+      required: [source, target, message]
+      properties:
+        source:
+          type: string
+        target:
+          type: string
+        message:
+          type: string
+        context:
+          type: object
+          nullable: true
+          additionalProperties: true
+    Conversation:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+    PostMessageRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+    PostMessageResponse:
+      type: object
+      required: [success, reply, conversation]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        reply:
+          type: string
+        conversation:
+          $ref: "#/components/schemas/Conversation"
+        tool:
+          type: string
+          nullable: true
+        arguments:
+          type: object
+          nullable: true
+          additionalProperties: true
+        result:
+          type: object
+          nullable: true
+          additionalProperties: true
+        error:
+          type: string
+          nullable: true
+    AgentState:
+      type: object
+      required: [success, version, state]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        version:
+          type: integer
+        state:
+          type: object
+          additionalProperties: true
+    AgentVersion:
+      type: object
+      required: [success, version]
+      properties:
+        success:
+          type: boolean
+          enum: [true]
+        version:
+          type: integer
+    Error:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+        error:
+          type: string
+

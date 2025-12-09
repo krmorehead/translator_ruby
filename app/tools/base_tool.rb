@@ -5,6 +5,15 @@
 class BaseTool
   attr_reader :sandbox_path
 
+  # Base tool config for OpenAI tool calling
+  def self.tool_choice
+    "auto"
+  end
+
+  def self.tools
+    [schema]
+  end
+
   def initialize(sandbox_path: nil)
     @sandbox_path = sandbox_path
   end

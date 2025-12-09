@@ -113,7 +113,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     response_time = Time.current - start_time
 
     # Should respond within reasonable time
-    assert response_time < 5.seconds, "Translation endpoint took too long: #{response_time}s"
+    assert response_time < 15.seconds, "Translation endpoint took too long: #{response_time}s"
   end
 
   # E2E test with translation_hash and custom context

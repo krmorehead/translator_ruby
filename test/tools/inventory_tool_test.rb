@@ -19,7 +19,7 @@ class InventoryToolTest < ActiveSupport::TestCase
   end
 
   test "add item creates inventory file" do
-    result = @tool.execute(operation: InventoryTool::OP_ADD_ITEM, name: "Torch", weight: 1, description: "Light", property_type: "gear", quantity: 2)
+    result = @tool.execute(operation: InventoryTool::OP_ADD_ITEM, path: File.join(@sandbox_path, "inventory.json"), name: "Torch", weight: 1, description: "Light", property_type: "gear", quantity: 2)
 
     assert result[:success]
     file_path = File.join(@sandbox_path, "inventory.json")
@@ -31,32 +31,35 @@ class InventoryToolTest < ActiveSupport::TestCase
   end
 
   test "update quantity" do
-    @tool.execute(operation: InventoryTool::OP_ADD_ITEM, name: "Arrow", weight: 0.1, description: "Ammo", property_type: "ammo", quantity: 5)
-    result = @tool.execute(operation: InventoryTool::OP_UPDATE_QUANTITY, name: "Arrow", quantity: 10)
+    inv_path = File.join(@sandbox_path, "inventory.json")
+    @tool.execute(operation: InventoryTool::OP_ADD_ITEM, path: inv_path, name: "Arrow", weight: 0.1, description: "Ammo", property_type: "ammo", quantity: 5)
+    result = @tool.execute(operation: InventoryTool::OP_UPDATE_QUANTITY, path: inv_path, name: "Arrow", quantity: 10)
 
     assert result[:success]
     assert_equal 10, result[:result][:quantity]
   end
 
   test "remove item" do
-    @tool.execute(operation: InventoryTool::OP_ADD_ITEM, name: "Potion", weight: 0.5, description: "Healing", property_type: "consumable", quantity: 1)
-    result = @tool.execute(operation: InventoryTool::OP_REMOVE_ITEM, name: "Potion")
+    inv_path = File.join(@sandbox_path, "inventory.json")
+    @tool.execute(operation: InventoryTool::OP_ADD_ITEM, path: inv_path, name: "Potion", weight: 0.5, description: "Healing", property_type: "consumable", quantity: 1)
+    result = @tool.execute(operation: InventoryTool::OP_REMOVE_ITEM, path: inv_path, name: "Potion")
 
     assert result[:success]
-    list = @tool.execute(operation: "list_inventory")
+    list = @tool.execute(operation: "list_inventory", path: inv_path)
     assert_equal [], list[:result]
   end
 
   test "get item returns error when missing" do
-    result = @tool.execute(operation: InventoryTool::OP_GET, name: "Missing")
+    result = @tool.execute(operation: InventoryTool::OP_GET, path: File.join(@sandbox_path, "inventory.json"), name: "Missing")
 
     refute result[:success]
     assert_includes result[:error], "Item not found"
   end
 
   test "list inventory returns items" do
-    @tool.execute(operation: InventoryTool::OP_ADD_ITEM, name: "Rope", weight: 10, description: "50ft", property_type: "gear", quantity: 1)
-    result = @tool.execute(operation: InventoryTool::OP_LIST)
+    inv_path = File.join(@sandbox_path, "inventory.json")
+    @tool.execute(operation: InventoryTool::OP_ADD_ITEM, path: inv_path, name: "Rope", weight: 10, description: "50ft", property_type: "gear", quantity: 1)
+    result = @tool.execute(operation: InventoryTool::OP_LIST, path: inv_path)
 
     assert result[:success]
     assert_equal 1, result[:result].size
@@ -71,7 +74,7 @@ class InventoryToolTest < ActiveSupport::TestCase
   end
 
   test "requires name for update operations" do
-    result = @tool.execute(operation: InventoryTool::OP_UPDATE_QUANTITY, quantity: 1)
+    result = @tool.execute(operation: InventoryTool::OP_UPDATE_QUANTITY, path: File.join(@sandbox_path, "inventory.json"), quantity: 1)
 
     refute result[:success]
     assert_includes result[:error], "name"

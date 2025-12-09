@@ -55,7 +55,7 @@ docs/
         ├── file_references.md
         └── project_plan.md
 frontend/
-├── .eslintrc.json
+├── eslint.config.js
 ├── e2e/
 │   └── chat.spec.js
 ├── package.json
@@ -63,6 +63,8 @@ frontend/
 ├── README.md
 ├── src/
 │   ├── App.jsx
+│   ├── App.css
+│   ├── index.css
 │   ├── api/
 │   │   └── dndChatApi.js
 │   ├── components/
@@ -76,6 +78,7 @@ frontend/
 │   │       ├── AgentInspector.test.jsx
 │   │       ├── ChatPage.test.jsx
 │   │       └── MessageInput.test.jsx
+│   ├── components/chat.css
 │   ├── store/
 │   │   └── chatStore.js
 │   └── test/
@@ -115,7 +118,7 @@ test/
 | `frontend/index.html` | Vite entry HTML shell | Step 1.3 |
 | `frontend/src/main.jsx` | Vite bootstrap entry point | Step 1.3 |
 | `frontend/package.json` | Scripts: dev/build/lint/test, dependencies | Step 1.4 |
-| `frontend/.eslintrc.json` | ESLint rules (React/JSX/testing) | Step 1.4 |
+| `frontend/eslint.config.js` | ESLint rules (React/JSX/testing) | Step 1.4 |
 | `frontend/README.md` | Frontend usage notes | Step 1.4 |
 
 ## React Frontend Files (Milestone 1)
@@ -124,15 +127,18 @@ test/
 |-----------|-------------|------------|
 | `frontend/package.json` | React app dependencies and scripts | Step 1.3 |
 | `frontend/vite.config.js` | Vite build configuration with proxy | Step 1.3 |
-| `frontend/.eslintrc.json` | ESLint configuration | Step 1.4 |
+| `frontend/eslint.config.js` | ESLint configuration | Step 1.4 |
 | `frontend/README.md` | Frontend-specific documentation | Step 1.4 |
 | `frontend/src/App.jsx` | Root React component | Step 1.5 |
+| `frontend/src/App.css` | App-level styles | Step 1.5 |
+| `frontend/src/index.css` | Global styles | Step 1.5 |
 | `frontend/src/components/ChatPage.jsx` | Main chat page container | Step 1.5 |
 | `frontend/src/components/ChatLog.jsx` | Scrollable message history | Step 1.5 |
 | `frontend/src/components/Message.jsx` | Individual message bubble | Step 1.5 |
 | `frontend/src/components/MessageInput.jsx` | Text input + send button | Step 1.6 |
 | `frontend/src/components/LoadingIndicator.jsx` | Loading state display | Step 1.6 |
 | `frontend/src/components/AgentInspector.jsx` | Memory/inventory view | Step 1.6 |
+| `frontend/src/components/chat.css` | Dark theme layout styles | Step 1.6 |
 | `frontend/src/api/dndChatApi.js` | API client for Rails backend | Step 1.7 |
 | `frontend/src/store/chatStore.js` | State management (Context/Zustand) | Step 1.7 |
 | `frontend/src/test/setup.js` | Vitest test setup | Step 1.8 |

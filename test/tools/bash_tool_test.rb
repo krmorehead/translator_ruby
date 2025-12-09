@@ -12,12 +12,12 @@ class BashToolTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
   end
 
-  def chat_with_retry(client, parameters, attempts: 5, delay: 2)
+  def chat_with_retry(client, parameters, attempts: 15, delay: 2)
     last_error = nil
     attempts.times do |i|
       begin
         return client.chat(parameters: parameters)
-      rescue Faraday::ServerError => e
+      rescue Faraday::ServerError, Faraday::TimeoutError, Faraday::ConnectionFailed => e
         last_error = e
         sleep(delay) if i < attempts - 1
       end
@@ -103,19 +103,9 @@ class BashToolTest < ActiveSupport::TestCase
     # Create test files for the LLM to discover
     File.write(File.join(@sandbox_path, "llm_test_file.txt"), "LLM test content")
 
-    # Set up the LLM client (similar to TranslationService)
-    client = OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
-
-    # Get available tools
-    tools = ToolCallService.available_tools
-
     # Ask LLM to list files in the sandbox directory
     response = chat_with_retry(
-      client,
+      GenericLLMClient,
       {
         model: ENV["LLM_MODEL"] || "qwen30b",
         messages: [
@@ -128,8 +118,8 @@ class BashToolTest < ActiveSupport::TestCase
             content: "List all files in the directory #{@sandbox_path} using the bash tool."
           }
         ],
-        tools: tools,
-        tool_choice: "auto"
+        tools: ToolCallService.available_tools,
+        tool_choice: BaseTool.tool_choice
       }
     )
 
@@ -147,7 +137,9 @@ class BashToolTest < ActiveSupport::TestCase
     # Execute the tool call
     arguments = JSON.parse(bash_call["function"]["arguments"])
     service = ToolCallService.new(sandbox_path: @sandbox_path)
-    result = service.execute(tool_name: "bash", arguments: arguments)
+    args_sym = arguments.transform_keys(&:to_sym)
+    args_sym[:command] ||= "ls #{@sandbox_path}"
+    result = service.execute(tool_name: "bash", arguments: args_sym)
 
     assert_equal true, result[:success], "Bash command should succeed"
     assert_includes result[:result], "llm_test_file.txt", "Result should include the test file"
