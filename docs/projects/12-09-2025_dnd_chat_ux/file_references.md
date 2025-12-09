@@ -1,5 +1,91 @@
 # File References: DnD Chat UX
 
+## Document Trees
+
+**Before**
+```
+app/
+├── models/
+│   ├── inventory_item.rb
+│   ├── memory_kinds.rb
+│   ├── memory_store.rb
+│   └── memories/
+│       └── ...
+├── services/
+│   ├── dnd_chat_workflow.rb
+│   └── tool_call_service.rb
+├── tools/
+│   └── ...
+config/
+└── routes.rb
+docs/
+└── projects/
+    └── 12-09-2025_dnd_chat_ux/
+        ├── file_references.md
+        └── project_plan.md
+```
+
+**After**
+```
+app/
+├── controllers/
+│   └── dnd_chat_controller.rb
+├── models/
+│   ├── inventory_item.rb
+│   ├── memory_kinds.rb
+│   ├── memory_store.rb
+│   └── memories/
+│       └── ...
+├── services/
+│   ├── dnd_chat_workflow.rb
+│   └── tool_call_service.rb
+├── tools/
+│   └── ...
+config/
+└── routes.rb
+docs/
+├── api/
+│   └── contracts/
+│       ├── dnd_chat_agent.yml
+│       └── dnd_chat_messages.yml
+└── projects/
+    └── 12-09-2025_dnd_chat_ux/
+        ├── file_references.md
+        └── project_plan.md
+frontend/
+├── .eslintrc.json
+├── e2e/
+│   └── chat.spec.js
+├── package.json
+├── playwright.config.js
+├── README.md
+├── src/
+│   ├── App.jsx
+│   ├── api/
+│   │   └── dndChatApi.js
+│   ├── components/
+│   │   ├── AgentInspector.jsx
+│   │   ├── ChatLog.jsx
+│   │   ├── ChatPage.jsx
+│   │   ├── LoadingIndicator.jsx
+│   │   ├── Message.jsx
+│   │   ├── MessageInput.jsx
+│   │   └── __tests__/
+│   │       ├── AgentInspector.test.jsx
+│   │       ├── ChatPage.test.jsx
+│   │       └── MessageInput.test.jsx
+│   ├── store/
+│   │   └── chatStore.js
+│   └── test/
+│       └── setup.js
+├── vite.config.js
+└── dist/
+    └── ... (build output)
+test/
+└── controllers/
+    └── dnd_chat_controller_test.rb
+```
+
 ## Existing Files
 
 | File Path | Description | Relevance |

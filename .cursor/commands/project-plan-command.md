@@ -51,6 +51,22 @@ Requirements:
 - Include test files in planned files
 - Reference the step number where each planned file is created
 - Keep descriptions concise (one line)
+- Add Document Tree sections that show **Before** and **After** layouts of the full relevant file structure, following the tree style in `rules/update-documentation.mdc` and `docs/references/base_references.md`
+- Example:
+```
+Before
+project/
+├── existing_file.rb
+└── docs/
+    └── file_references.md
+
+After
+project/
+├── existing_file.rb
+├── new_feature.rb
+└── docs/
+    └── file_references.md
+```
 
 ## Step 4: Create project_plan.md
 

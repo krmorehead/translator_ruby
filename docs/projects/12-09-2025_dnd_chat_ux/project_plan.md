@@ -9,6 +9,25 @@ Build a dark-themed web chat experience to play D&D with the LLM, leveraging the
 - Validate the end-to-end flow with request tests
 - DO NOT MOCK THE LLM in any tests (all time, all scopes)
 
+## File Reference Guidance
+- Each project `file_references.md` must include Document Tree sections with clear **Before** and **After** layouts that list every relevant file path (existing and planned), matching the style used in `rules/update-documentation.mdc` and `docs/references/base_references.md`.
+- Keep the trees in sync with the tables so the structure and descriptions do not drift.
+- Example tree snippets:
+```
+Before
+project/
+├── existing_file.rb
+└── docs/
+    └── file_references.md
+
+After
+project/
+├── existing_file.rb
+├── new_feature.rb
+└── docs/
+    └── file_references.md
+```
+
 ---
 
 ## Milestone 1 - Ship React Chat UX (Vite)

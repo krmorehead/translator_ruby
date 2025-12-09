@@ -1,5 +1,50 @@
 # File References: Tool Calling Service
 
+## Document Trees
+
+**Before**
+```
+app/
+└── services/
+    └── translation_service.rb
+test/
+└── test_helper.rb
+docs/
+└── projects/
+    └── 12-7-2025_tool_call_service/
+        ├── file_references.md
+        └── project_plan.md
+```
+
+**After**
+```
+app/
+├── services/
+│   ├── tool_call_service.rb
+│   └── translation_service.rb
+└── tools/
+    ├── base_tool.rb
+    ├── bash_tool.rb
+    ├── read_file_tool.rb
+    └── write_file_tool.rb
+test/
+├── test_helper.rb
+├── tool_test/
+│   └── ...
+├── services/
+│   └── tool_call_service_test.rb
+└── tools/
+    ├── base_tool_test.rb
+    ├── bash_tool_test.rb
+    ├── read_file_tool_test.rb
+    └── write_file_tool_test.rb
+docs/
+└── projects/
+    └── 12-7-2025_tool_call_service/
+        ├── file_references.md
+        └── project_plan.md
+```
+
 ## Existing Files
 
 | File Path | Description | Relevance |
