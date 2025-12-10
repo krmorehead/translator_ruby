@@ -37,7 +37,7 @@ class TranslationPrompt < BasePrompt
           description: "Translated text with variables and protected terms preserved"
         }
       },
-      required: ["translation"],
+      required: [ "translation" ],
       additionalProperties: false
     }
   end
@@ -56,5 +56,3 @@ class TranslationPrompt < BasePrompt
     "Context:\n#{JSON.pretty_generate(data)}"
   end
 end
-
-

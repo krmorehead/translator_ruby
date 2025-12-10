@@ -29,7 +29,7 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     params = workflow.chat_parameters(user_prompt: user_content)
     BasePrompt.new.send(:default_client).chat(parameters: params)
   end
-  
+
   # Require that the LLM returns structured content.
   def parsed_tool_response(prompt)
     response = perform_chat(prompt)
@@ -46,10 +46,6 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
 
     assert content, "LLM should return structured content"
     JSON.parse(content)
-  rescue Faraday::ServerError => e
-    skip "LLM server error: #{e.message}"
-  rescue Faraday::ConnectionFailed => e
-    skip "LLM connection failed: #{e.message}"
   end
 
   def filter_args_for(tool_name, args)
@@ -59,9 +55,9 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     schema_keys = tool_class.parameters_schema[:properties].keys.map(&:to_sym)
     args.transform_keys(&:to_sym).slice(*schema_keys).tap do |h|
       h[:path] = @inventory_path if tool_name == InventoryTool::NAME && h[:path].nil?
-      h[:path] = @memory_path if [MemoryTool::NAME, MemorySummarizeTool::NAME].include?(tool_name) && h[:path].nil?
-      if tool_name == MemoryTool::NAME && h[:section].nil?
-        h[:section] = MemoryKinds::RECENT_CONVERSATION
+      h[:path] = @memory_path if [ MemoryTool::NAME, MemorySummarizeTool::NAME ].include?(tool_name) && h[:path].nil?
+      if tool_name == MemoryTool::NAME
+        h[:section] = MemoryKinds::RECENT_CONVERSATION if h[:section].to_s.strip.empty?
       end
     end
   end
@@ -70,8 +66,11 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     tool_name = parsed["tool"]
     args = parsed["arguments"]
     filtered = filter_args_for(tool_name, args)
-    if [MemoryTool::NAME, MemorySummarizeTool::NAME].include?(tool_name)
+    if [ MemoryTool::NAME, MemorySummarizeTool::NAME ].include?(tool_name)
       filtered[:path] = @memory_path
+      if tool_name == MemoryTool::NAME && filtered[:section].to_s.strip.empty?
+        filtered[:section] = MemoryKinds::RECENT_CONVERSATION
+      end
     end
     ToolCallService.new(sandbox_path: @sandbox_path).execute(tool_name: tool_name, arguments: filtered)
   end
@@ -91,7 +90,7 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     assert_equal true, result[:success]
 
     data = JSON.parse(File.read(@inventory_path))
-    data = [data] if data.is_a?(Hash)
+    data = [ data ] if data.is_a?(Hash)
     item = data.first || {}
     name_val = item["name"]
     name_str = name_val.is_a?(String) ? name_val : name_val.to_s

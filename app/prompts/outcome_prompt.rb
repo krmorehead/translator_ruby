@@ -22,7 +22,7 @@ class OutcomePrompt < BasePrompt
       properties: {
         consequence: { type: "string" }
       },
-      required: ["consequence"],
+      required: [ "consequence" ],
       additionalProperties: false
     }
   end
@@ -40,4 +40,3 @@ class OutcomePrompt < BasePrompt
     sections.join("\n\n")
   end
 end
-

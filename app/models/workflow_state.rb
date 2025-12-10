@@ -52,4 +52,3 @@ class WorkflowState
     }
   end
 end
-

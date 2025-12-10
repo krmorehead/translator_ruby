@@ -23,7 +23,7 @@ class BashTool < BaseTool
           description: "The bash command to execute"
         }
       },
-      required: ["command"],
+      required: [ "command" ],
       additionalProperties: false
     }
   end
@@ -44,4 +44,3 @@ end
 
 # Register with ToolCallService
 ToolCallService.register_tool(BashTool)
-

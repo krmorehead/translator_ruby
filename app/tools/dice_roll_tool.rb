@@ -36,7 +36,7 @@ class DiceRollTool < BaseTool
           default: "normal"
         }
       },
-      required: ["dice"],
+      required: [ "dice" ],
       additionalProperties: false
     }
   end
@@ -52,10 +52,10 @@ class DiceRollTool < BaseTool
     mode = mode || "normal"
 
     if %w[advantage disadvantage].include?(mode)
-      unless (count == 1 && sides == 20)
+      unless count == 1 && sides == 20
         return error_result("Advantage/disadvantage only supported for a single d20")
       end
-      rolls = [roll_die(sides), roll_die(sides)]
+      rolls = [ roll_die(sides), roll_die(sides) ]
       kept = mode == "advantage" ? rolls.max : rolls.min
       total = kept + modifier.to_i
       return success_result({

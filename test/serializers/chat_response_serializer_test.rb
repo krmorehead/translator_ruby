@@ -24,7 +24,7 @@ class ChatResponseSerializerTest < ActiveSupport::TestCase
   end
 
   test "serializes successful workflow with reply and conversation" do
-    convo = FakeConversation.new([{ text: "hi" }])
+    convo = FakeConversation.new([ { text: "hi" } ])
     result = { narrative: "Story", conversation: convo }
     workflow = StubWorkflow.new(result: result, state: :complete)
 
@@ -33,7 +33,7 @@ class ChatResponseSerializerTest < ActiveSupport::TestCase
 
     assert_equal true, payload[:success]
     assert_equal "Story", payload[:reply]
-    assert_equal({ messages: [{ text: "hi" }] }, payload[:conversation])
+    assert_equal({ messages: [ { text: "hi" } ] }, payload[:conversation])
     assert_nil payload[:error]
   end
 
@@ -59,5 +59,3 @@ class ChatResponseSerializerTest < ActiveSupport::TestCase
     assert_equal "ok", parsed["reply"]
   end
 end
-
-

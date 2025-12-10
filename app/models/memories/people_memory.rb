@@ -3,6 +3,8 @@
 module Memories
   class PeopleMemory < BaseMemory
     SECTION = MemoryKinds::PEOPLE
-    def self.section_name = SECTION
+    def self.section_name
+      SECTION
+    end
   end
 end

@@ -11,7 +11,7 @@ class BaseTool
   end
 
   def self.tools
-    [schema]
+    [ schema ]
   end
 
   def initialize(sandbox_path: nil)
@@ -79,4 +79,3 @@ class BaseTool
     true
   end
 end
-

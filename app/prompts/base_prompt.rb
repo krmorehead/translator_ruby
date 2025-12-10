@@ -97,7 +97,7 @@ class BasePrompt
   end
 
   def build_messages(prompt, context)
-    messages = [{ role: "system", content: system_prompt }]
+    messages = [ { role: "system", content: system_prompt } ]
     formatted_context = format_context(context)
     messages << { role: "user", content: formatted_context } if formatted_context.present?
     messages << { role: "user", content: prompt }
@@ -110,4 +110,3 @@ class BasePrompt
     client
   end
 end
-

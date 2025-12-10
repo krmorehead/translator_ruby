@@ -3,7 +3,7 @@ require "test_helper"
 class TranslationPromptTest < ActiveSupport::TestCase
   test "includes protected strings in system prompt" do
     prompt = TranslationPrompt.new(
-      protected_strings: ["Brightwheel", "CustomApp"],
+      protected_strings: [ "Brightwheel", "CustomApp" ],
       target_language: "Spanish",
       source_language: "English",
       formality: "formal"
@@ -25,7 +25,7 @@ class TranslationPromptTest < ActiveSupport::TestCase
     ).response_schema
 
     assert_equal "object", schema[:type]
-    assert_equal ["translation"], schema[:required]
+    assert_equal [ "translation" ], schema[:required]
     assert_equal "string", schema[:properties][:translation][:type]
   end
 
@@ -43,7 +43,7 @@ class TranslationPromptTest < ActiveSupport::TestCase
 
   test "format_context includes provided metadata" do
     prompt = TranslationPrompt.new(
-      protected_strings: ["Brightwheel"],
+      protected_strings: [ "Brightwheel" ],
       target_language: "Spanish",
       source_language: "English",
       formality: "formal",
@@ -57,5 +57,3 @@ class TranslationPromptTest < ActiveSupport::TestCase
     assert_includes formatted, "Spanish"
   end
 end
-
-

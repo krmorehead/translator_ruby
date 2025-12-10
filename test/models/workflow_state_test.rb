@@ -53,4 +53,3 @@ class WorkflowStateTest < ActiveSupport::TestCase
     assert_equal "boom", hash[:error]
   end
 end
-

@@ -59,4 +59,3 @@ class ActionRecordTest < ActiveSupport::TestCase
     assert_equal timestamp, hash[:timestamp]
   end
 end
-

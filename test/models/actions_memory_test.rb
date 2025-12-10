@@ -29,4 +29,3 @@ class ActionsMemoryTest < ActiveSupport::TestCase
     FileUtils.rm_rf(sandbox) if sandbox
   end
 end
-

@@ -22,7 +22,7 @@ class ReadFileTool < BaseTool
           description: "The path to the file to read"
         }
       },
-      required: ["path"],
+      required: [ "path" ],
       additionalProperties: false
     }
   end
@@ -45,4 +45,3 @@ end
 
 # Register with ToolCallService
 ToolCallService.register_tool(ReadFileTool)
-

@@ -111,4 +111,3 @@ class BashToolTest < ActiveSupport::TestCase
     assert_includes result[:result], "llm_test_file.txt", "Result should include the test file"
   end
 end
-

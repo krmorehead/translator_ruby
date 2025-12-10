@@ -48,7 +48,7 @@ class MemoryStore
       ensure_array_section!(section_key)
       @sections[section_key] << entry
     else
-      @sections[section_key] = [entry]
+      @sections[section_key] = [ entry ]
     end
 
     persist!

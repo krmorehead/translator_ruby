@@ -45,12 +45,12 @@ class MemoryTool < BaseTool
         section: { type: "string", description: "Section name", nullable: true },
         content: {
           description: "Content to store (string or object)",
-          type: ["string", "object", "array", "number", "boolean", "null"],
+          type: [ "string", "object", "array", "number", "boolean", "null" ],
           nullable: true
         },
         append: { type: "boolean", description: "Append (true) or replace (false) for update", nullable: true }
       },
-      required: ["operation"],
+      required: [ "operation" ],
       additionalProperties: false
     }
   end
@@ -100,12 +100,7 @@ class MemoryTool < BaseTool
 
     store_path = resolve_path(path)
 
-    fallback_section = (content.is_a?(Hash) && (content[:key] || content["key"])) || MemoryKinds::RECENT_CONVERSATION
-    normalized_section = if op == OP_UPDATE
-      normalize_section(section || fallback_section)
-    else
-      normalize_section(section)
-    end
+    normalized_section = normalize_section(section)
 
     content_val = content
     if content.is_a?(Hash) && content.key?(:value)
@@ -120,7 +115,7 @@ class MemoryTool < BaseTool
       content: content_val || content || "",
       append: append
     }.yield_self do |norm|
-      [op, store_path, norm]
+      [ op, store_path, norm ]
     end
   end
 

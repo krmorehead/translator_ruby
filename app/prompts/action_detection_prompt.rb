@@ -64,4 +64,3 @@ class ActionDetectionPrompt < BasePrompt
     raise "Expected array of actions, got #{result.class}"
   end
 end
-

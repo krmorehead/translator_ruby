@@ -27,7 +27,7 @@ class WriteFileTool < BaseTool
           description: "The content to write to the file"
         }
       },
-      required: ["path", "content"],
+      required: [ "path", "content" ],
       additionalProperties: false
     }
   end
@@ -50,4 +50,3 @@ end
 
 # Register with ToolCallService
 ToolCallService.register_tool(WriteFileTool)
-

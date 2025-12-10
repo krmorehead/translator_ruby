@@ -56,4 +56,3 @@ class BaseWorkflowTest < ActiveSupport::TestCase
     assert_nil workflow.result
   end
 end
-

@@ -7,7 +7,7 @@ class ConversationTest < ActiveSupport::TestCase
     hash_message = { source: "user", target: "assistant", message: "Hello" }
     obj_message = Message.new(source: "assistant", target: "user", message: "Hi")
 
-    conv = Conversation.new(messages: [hash_message, obj_message])
+    conv = Conversation.new(messages: [ hash_message, obj_message ])
 
     assert_equal 2, conv.messages.size
     assert conv.messages.all? { |m| m.is_a?(Message) }
@@ -23,11 +23,10 @@ class ConversationTest < ActiveSupport::TestCase
   end
 
   test "to_h returns serializable hash" do
-    conv = Conversation.new(messages: [{ source: "user", target: "assistant", message: "Hello" }])
+    conv = Conversation.new(messages: [ { source: "user", target: "assistant", message: "Hello" } ])
 
     payload = conv.to_h
-    assert_equal ["messages"], payload.keys.map(&:to_s)
+    assert_equal [ "messages" ], payload.keys.map(&:to_s)
     assert_equal "Hello", payload[:messages].first[:message]
   end
 end
-

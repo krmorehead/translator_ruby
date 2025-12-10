@@ -19,7 +19,6 @@ Refactor the DnD Chat Controller to follow a clean separation of concerns. The c
 
 **CRITICAL: No mocking or stubbing of any kind.** All tests must exercise real code paths:
 - Use real LLM calls when credentials are configured
-- Skip tests that require LLM when credentials are unavailable
 - Use real file I/O with test sandbox directories
 - Use real tool execution through ToolCallService
 - Integration tests exercise the full stack

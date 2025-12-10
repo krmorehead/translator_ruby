@@ -49,7 +49,7 @@ class InventoryTool < BaseTool
         property_type: { type: "string", description: "Item type" },
         quantity: { type: "integer", description: "Item quantity" }
       },
-      required: ["operation"],
+      required: [ "operation" ],
       additionalProperties: false
     }
   end
@@ -138,7 +138,7 @@ class InventoryTool < BaseTool
       quantity: quantity
     }
 
-    [op, path, normalized]
+    [ op, path, normalized ]
   end
 end
 

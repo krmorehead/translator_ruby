@@ -40,7 +40,7 @@ class MemorySummarizeTool < BaseTool
           nullable: false
         }
       },
-      required: ["sections"],
+      required: [ "sections" ],
       additionalProperties: false
     }
   end

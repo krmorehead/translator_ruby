@@ -23,4 +23,3 @@ class WorkflowOrchestrator
     raise WorkflowError, "Workflow missing required methods: #{missing.join(', ')}" if missing.any?
   end
 end
-

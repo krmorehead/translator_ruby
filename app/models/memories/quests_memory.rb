@@ -3,6 +3,8 @@
 module Memories
   class QuestsMemory < BaseMemory
     SECTION = MemoryKinds::QUESTS
-    def self.section_name = SECTION
+    def self.section_name
+      SECTION
+    end
   end
 end

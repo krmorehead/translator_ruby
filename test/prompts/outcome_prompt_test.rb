@@ -29,8 +29,6 @@ class OutcomePromptTest < ActiveSupport::TestCase
   end
 
   test "execute returns consequence hash" do
-    skip "LLM credentials not configured" unless llm_configured?
-
     prompt = OutcomePrompt.new
     result = prompt.execute(
       prompt: "Summarize the consequence.",
@@ -59,4 +57,3 @@ class OutcomePromptTest < ActiveSupport::TestCase
     ENV[key] = original
   end
 end
-

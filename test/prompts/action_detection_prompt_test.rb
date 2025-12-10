@@ -15,7 +15,7 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
             properties: {
               target: { type: "string", description: "object to inspect" }
             },
-            required: ["target"],
+            required: [ "target" ],
             additionalProperties: false
           }
         }
@@ -30,7 +30,7 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
             properties: {
               item: { type: "string" }
             },
-            required: ["item"],
+            required: [ "item" ],
             additionalProperties: false
           }
         }
@@ -53,7 +53,7 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
   test "response schema limits tool names" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
     enum = prompt.response_schema.dig(:items, :properties, :tool_name, :enum)
-    assert_equal ["inspect_room", "pickup_item"], enum
+    assert_equal [ "inspect_room", "pickup_item" ], enum
   end
 
   test "format_context includes scene and tools" do
@@ -64,8 +64,6 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
   end
 
   test "execute returns array of actions" do
-    skip "LLM credentials not configured" unless llm_configured?
-
     prompt = ActionDetectionPrompt.new(tools: @tools)
     result = prompt.execute(
       prompt: "I look around the room and pick up the sword.",
@@ -76,7 +74,7 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
     unless result.empty?
       first = result.first
       assert first.key?("tool_name")
-      assert_includes ["inspect_room", "pickup_item"], first["tool_name"]
+      assert_includes [ "inspect_room", "pickup_item" ], first["tool_name"]
       assert first.key?("arguments")
       assert first.key?("prompt_reference")
     end
@@ -88,4 +86,3 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
     ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
   end
 end
-

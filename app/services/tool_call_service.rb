@@ -45,4 +45,3 @@ class ToolCallService
     tool.execute(**arguments)
   end
 end
-

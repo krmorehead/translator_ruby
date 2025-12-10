@@ -142,23 +142,23 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
       params: { doc_to_translate: doc.to_json, export_format: "JSON", target_language: "es" }
 
     assert_response :success
-    
+
     result = JSON.parse(response.body)
-    
+
     # Verify simple strings were translated
     assert_not_equal "Hello world", result["greeting"]
     assert_not_empty result["greeting"]
-    
+
     # Verify custom translation_hash entry was processed
     assert_not_equal "Welcome to our application", result["custom_message"]
     assert_not_empty result["custom_message"]
     # Should be in Spanish
     assert_match(/bienvenido|bienvenida/i, result["custom_message"])
-    
+
     # Verify nested simple translation
     assert_not_equal "Thank you", result["nested"]["simple"]
     assert_match(/gracias/i, result["nested"]["simple"])
-    
+
     # Verify nested custom translation with less formality
     assert_not_equal "See you soon", result["nested"]["custom"]
     assert_match(/hasta|nos vemos|pronto/i, result["nested"]["custom"])
@@ -182,17 +182,17 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
       params: { doc_to_translate: doc.to_json, export_format: "JSON", target_language: "es" }
 
     assert_response :success
-    
+
     result = JSON.parse(response.body)
-    
+
     # Verify pluralization preserved {{count}}
     assert_includes result["messages"]["item_count_one"], "{{count}}"
     assert_includes result["messages"]["item_count_other"], "{{count}}"
-    
+
     # Verify translation happened
     assert_not_equal "{{count}} item in cart", result["messages"]["item_count_one"]
     assert_not_equal "{{count}} items in cart", result["messages"]["item_count_other"]
-    
+
     # Verify custom translation_hash with context
     assert_includes result["notifications"], "{{count}}"
     assert_not_equal "You have {{count}} new messages", result["notifications"]
@@ -221,15 +221,15 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
       params: { doc_to_translate: doc.to_json, export_format: "JSON", target_language: "es" }
 
     assert_response :success
-    
+
     result = JSON.parse(response.body)
-    
+
     # Verify all translations happened
     assert_not_equal "Good morning", result["standard"]
     assert_includes result["with_variable"], "{user_name}"
     assert_not_equal "Thank you for your payment", result["custom_formal"]
     assert_not_equal "Thanks a lot", result["custom_casual"]
-    
+
     # Verify Spanish translations
     assert_match(/buenos|buen/i, result["standard"])
     assert_match(/gracias|agradec/i, result["custom_formal"])
@@ -241,7 +241,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
       params: { text: "Hello world", target_lang: "es" }
 
     assert_response :success
-    
+
     result = JSON.parse(response.body)
     assert result.key?("translation")
     assert_not_equal "Hello world", result["translation"]
@@ -277,7 +277,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
       }
 
     assert_response :success
-    
+
     result = JSON.parse(response.body)
     assert result.key?("translation")
     assert_not_equal "Thank you for your help", result["translation"]
@@ -293,7 +293,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
       }
 
     assert_response :success
-    
+
     result = JSON.parse(response.body)
     assert result.key?("translation")
     assert_not_empty result["translation"]
@@ -307,7 +307,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
       }
 
     assert_response :success
-    
+
     result = JSON.parse(response.body)
     assert_includes result["translation"], "{user_name}"
     assert_not_equal "Hello {user_name}, welcome back", result["translation"]
@@ -340,7 +340,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
       }
 
     assert_response :success
-    
+
     result = JSON.parse(response.body)
     assert_not_equal "Submit", result["translation"]
     assert_not_empty result["translation"]
@@ -364,7 +364,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
       }
 
     assert_response :success
-    
+
     result = JSON.parse(response.body)
     assert_not_equal "Bonjour le monde", result["translation"]
     assert_match(/hello|world/i, result["translation"])

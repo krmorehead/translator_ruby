@@ -172,4 +172,3 @@ class DndChatWorkflow < BaseWorkflow
     "#{DEFAULT_SYSTEM_PROMPT}\n\n#{extra}".strip
   end
 end
-

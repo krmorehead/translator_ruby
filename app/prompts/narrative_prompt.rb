@@ -37,4 +37,3 @@ class NarrativePrompt < BasePrompt
     super.to_s
   end
 end
-

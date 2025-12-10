@@ -3,6 +3,8 @@
 module Memories
   class RecentConversationMemory < BaseMemory
     SECTION = MemoryKinds::RECENT_CONVERSATION
-    def self.section_name = SECTION
+    def self.section_name
+      SECTION
+    end
   end
 end

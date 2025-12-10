@@ -4,7 +4,9 @@ module Memories
   class QuestLogMemory < BaseMemory
     SECTION = MemoryKinds::QUEST_LOG
 
-    def self.section_name = SECTION
+    def self.section_name
+      SECTION
+    end
 
     # Adds a quest entry with optional status
     # status can be: "open", "main", "current", "completed"
@@ -40,10 +42,10 @@ module Memories
       end
 
       target_idx = if index
-                     index
-                   else
-                     entries.index { |e| (e[:text] || e["text"]) == text }
-                   end
+        index
+      else
+        entries.index { |e| (e[:text] || e["text"]) == text }
+      end
       raise ArgumentError, "quest not found" unless target_idx && entries[target_idx]
 
       entries[target_idx][flag] = true

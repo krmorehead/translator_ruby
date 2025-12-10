@@ -33,4 +33,3 @@ class DndChatContractsTest < ActiveSupport::TestCase
     end
   end
 end
-

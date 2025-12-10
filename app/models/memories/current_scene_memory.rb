@@ -3,6 +3,8 @@
 module Memories
   class CurrentSceneMemory < BaseMemory
     SECTION = MemoryKinds::CURRENT_SCENE
-    def self.section_name = SECTION
+    def self.section_name
+      SECTION
+    end
   end
 end

@@ -3,7 +3,7 @@
 require "test_helper"
 class BasePromptTest < ActiveSupport::TestCase
   def setup
-    @tools = [{ type: "function", function: { name: "demo_tool", description: "demo", parameters: { type: "object", properties: {}, required: [] } } }]
+    @tools = [ { type: "function", function: { name: "demo_tool", description: "demo", parameters: { type: "object", properties: {}, required: [] } } } ]
   end
 
   test "response_schema remains abstract" do
@@ -47,8 +47,6 @@ class BasePromptTest < ActiveSupport::TestCase
   end
 
   test "execute returns structured json when schema provided" do
-    skip "LLM credentials not configured" unless llm_configured?
-
     prompt = OutcomePrompt.new
     result = prompt.execute(
       prompt: "Provide a consequence.",
@@ -64,12 +62,10 @@ class BasePromptTest < ActiveSupport::TestCase
   end
 
   test "execute returns freeform text when no schema" do
-    skip "LLM credentials not configured" unless llm_configured?
-
     prompt = NarrativePrompt.new
     result = prompt.execute(
       prompt: "Narrate briefly.",
-      context: { actions: [{ tool_name: "demo_tool", consequence: "You opened the door." }], scene: "hallway" }
+      context: { actions: [ { tool_name: "demo_tool", consequence: "You opened the door." } ], scene: "hallway" }
     )
 
     assert_kind_of String, result
@@ -90,4 +86,3 @@ class BasePromptTest < ActiveSupport::TestCase
     ENV[key] = original
   end
 end
-

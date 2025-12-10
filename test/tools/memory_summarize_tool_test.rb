@@ -26,7 +26,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
 
   test "summarizes selected sections and extracts keys" do
     tool = MemorySummarizeTool.new(sandbox_path: @sandbox_path)
-    result = tool.execute(sections: ["quests", "recent_conversation", "current_goal", "people"], path: @path, max_tokens: 20)
+    result = tool.execute(sections: [ "quests", "recent_conversation", "current_goal", "people" ], path: @path, max_tokens: 20)
 
     assert result[:success]
     payload = result[:result]
@@ -40,7 +40,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
 
   test "handles empty sections gracefully" do
     tool = MemorySummarizeTool.new(sandbox_path: @sandbox_path)
-    result = tool.execute(sections: ["misc"], path: @path)
+    result = tool.execute(sections: [ "misc" ], path: @path)
 
     assert result[:success]
     assert_equal "", result[:result][:summary]
@@ -49,7 +49,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
 
   test "rejects sandbox escape" do
     tool = MemorySummarizeTool.new(sandbox_path: @sandbox_path)
-    result = tool.execute(sections: ["quests"], path: "/tmp/memory.json")
+    result = tool.execute(sections: [ "quests" ], path: "/tmp/memory.json")
 
     refute result[:success]
     assert_includes result[:error], "outside the sandbox"

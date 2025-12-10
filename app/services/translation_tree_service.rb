@@ -17,14 +17,14 @@ class TranslationTreeService
         # This is a parent node - traverse its children
         result = {}
         node.each do |key, value|
-          result[key] = traverse(value, translation_callback, path + [key])
+          result[key] = traverse(value, translation_callback, path + [ key ])
         end
         result
       end
     when Array
       # Traverse array elements
       node.map.with_index do |value, index|
-        traverse(value, translation_callback, path + [index])
+        traverse(value, translation_callback, path + [ index ])
       end
     when String
       # String leaf node - create simple TranslationContext
@@ -46,7 +46,7 @@ class TranslationTreeService
       model_type: nil,
       formality: "formal"
     )
-    
+
     translation_callback.call(context)
   end
 
@@ -64,7 +64,7 @@ class TranslationTreeService
       model_type: node["model_type"],
       formality: node["formality"] || "formal"
     )
-    
+
     translation_callback.call(context)
   end
 
@@ -73,5 +73,3 @@ class TranslationTreeService
     path.join(".")
   end
 end
-
-

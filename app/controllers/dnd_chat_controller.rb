@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class DndChatController < ApplicationController
-
   SANDBOX_ROOT = Rails.root.join("tmp", "dnd_chat_sandbox")
   INVENTORY_PATH = SANDBOX_ROOT.join("inventory.json")
   MEMORY_PATH = SANDBOX_ROOT.join("memory.json")
@@ -124,7 +123,7 @@ class DndChatController < ApplicationController
   end
 
   def agent_version_value
-    candidates = [CONVERSATION_PATH, MEMORY_PATH, INVENTORY_PATH].select { |p| File.exist?(p) }
+    candidates = [ CONVERSATION_PATH, MEMORY_PATH, INVENTORY_PATH ].select { |p| File.exist?(p) }
     return 0 if candidates.empty?
 
     candidates.map { |p| File.mtime(p).to_i }.max

@@ -127,4 +127,3 @@ class ReadFileToolTest < ActiveSupport::TestCase
     assert_equal test_content, result[:result], "Result should contain the file content"
   end
 end
-

@@ -56,4 +56,3 @@ class BaseWorkflow
     @state = STATUSES[:failed]
   end
 end
-

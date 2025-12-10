@@ -40,7 +40,7 @@ class SkillCheckToolTest < ActiveSupport::TestCase
     rng = Random.new(@rng_seed)
     roll1 = rng.random_number(20) + 1
     roll2 = rng.random_number(20) + 1
-    kept = [roll1, roll2].max
+    kept = [ roll1, roll2 ].max
     expected_total = kept + ability + proficiency
 
     tool = SkillCheckTool.new(rng: Random.new(@rng_seed))
@@ -50,7 +50,7 @@ class SkillCheckToolTest < ActiveSupport::TestCase
     payload = result[:result]
     assert_equal expected_total, payload[:total]
     assert_equal kept, payload[:dice][:kept]
-    assert_equal [roll1, roll2].sort, payload[:dice][:rolls].sort
+    assert_equal [ roll1, roll2 ].sort, payload[:dice][:rolls].sort
     assert_equal "advantage", payload[:mode]
   end
 
@@ -58,7 +58,7 @@ class SkillCheckToolTest < ActiveSupport::TestCase
     rng = Random.new(@rng_seed)
     roll1 = rng.random_number(20) + 1
     roll2 = rng.random_number(20) + 1
-    kept = [roll1, roll2].min
+    kept = [ roll1, roll2 ].min
 
     tool = SkillCheckTool.new(rng: Random.new(@rng_seed))
     result = tool.execute(skill: "Athletics", ability_modifier: 0, proficiency_bonus: 0, mode: "disadvantage")

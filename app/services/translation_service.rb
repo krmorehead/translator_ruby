@@ -38,10 +38,10 @@ class TranslationService
       target_language: @target_language,
       protected_strings: @current_protected_strings
     )
-    
+
     # Create a callback that calls translate_text
     translation_callback = ->(context) { translate_text(context) }
-    
+
     translated_doc = tree_service.traverse(yaml_doc, translation_callback)
 
     # Convert to requested export format

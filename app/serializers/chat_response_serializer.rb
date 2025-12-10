@@ -40,5 +40,3 @@ class ChatResponseSerializer
     "Sorry, I couldn't complete that request."
   end
 end
-
-

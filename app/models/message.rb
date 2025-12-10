@@ -37,4 +37,3 @@ class Message
     raise ArgumentError, "context must be a Hash or nil"
   end
 end
-

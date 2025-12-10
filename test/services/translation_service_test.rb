@@ -361,15 +361,15 @@ class TranslationServiceTest < ActiveSupport::TestCase
     )
 
     parsed_result = JSON.parse(result)
-    
+
     # Should preserve {{count}} variable in both forms
     assert_includes parsed_result["food"]["amount_one"], "{{count}}"
     assert_includes parsed_result["food"]["amount_other"], "{{count}}"
-    
+
     # Should translate the words but not the count variable
     assert_not_equal "{{count}} ounce", parsed_result["food"]["amount_one"]
     assert_not_equal "{{count}} ounces", parsed_result["food"]["amount_other"]
-    
+
     # Verify actual Spanish translation (onza/onzas)
     assert_match(/onza/i, parsed_result["food"]["amount_one"])
     assert_match(/onzas/i, parsed_result["food"]["amount_other"])
@@ -391,15 +391,15 @@ class TranslationServiceTest < ActiveSupport::TestCase
     )
 
     parsed_result = JSON.parse(result)
-    
+
     # Should preserve {{count}} variable in both forms
     assert_includes parsed_result["student_count_one"], "{{count}}"
     assert_includes parsed_result["student_count_other"], "{{count}}"
-    
+
     # Should translate the words but not the count variable
     assert_not_equal "{{count}} student", parsed_result["student_count_one"]
     assert_not_equal "{{count}} students", parsed_result["student_count_other"]
-    
+
     # Verify actual Spanish translation (estudiante/estudiantes)
     assert_match(/estudiante/i, parsed_result["student_count_one"])
     assert_match(/estudiantes/i, parsed_result["student_count_other"])
@@ -425,21 +425,21 @@ class TranslationServiceTest < ActiveSupport::TestCase
     )
 
     parsed_result = JSON.parse(result)
-    
+
     # Check nested pluralization - should preserve {{count}}
     assert_includes parsed_result["messages"]["item_count_one"], "{{count}}"
     assert_includes parsed_result["messages"]["item_count_other"], "{{count}}"
-    
+
     # Check root level pluralization - should preserve {{count}}
     assert_includes parsed_result["teacher_count_one"], "{{count}}"
     assert_includes parsed_result["teacher_count_other"], "{{count}}"
-    
+
     # Verify translations changed from English
     assert_not_equal "{{count}} item available", parsed_result["messages"]["item_count_one"]
     assert_not_equal "{{count}} items available", parsed_result["messages"]["item_count_other"]
     assert_not_equal "{{count}} teacher", parsed_result["teacher_count_one"]
     assert_not_equal "{{count}} teachers", parsed_result["teacher_count_other"]
-    
+
     # Verify actual Spanish words appear (artículo/disponible for items, maestro/profesor/docente for teacher)
     assert_match(/artículo|elemento|ítem/i, parsed_result["messages"]["item_count_one"])
     assert_match(/disponible/i, parsed_result["messages"]["item_count_one"])

@@ -17,7 +17,7 @@ class BaseToolTest < ActiveSupport::TestCase
         properties: {
           test_param: { type: "string", description: "A test parameter" }
         },
-        required: ["test_param"]
+        required: [ "test_param" ]
       }
     end
 
@@ -97,4 +97,3 @@ class BaseToolTest < ActiveSupport::TestCase
     assert_nil tool.sandbox_path
   end
 end
-

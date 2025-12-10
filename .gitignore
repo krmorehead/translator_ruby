@@ -34,3 +34,17 @@
 *.sqlite3-*
 
 /vendor/*
+
+# Node/npm artifacts
+node_modules/
+/frontend/node_modules/
+/frontend/dist/
+/frontend/test-results/
+/frontend/playwright-report/
+/frontend/coverage/
+/frontend/.eslintcache
+
+# Build artifacts
+/public/assets
+/frontend/dist/
+

@@ -142,4 +142,3 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert_includes File.read(arguments[:path]), "Hello", "File should contain expected content"
   end
 end
-

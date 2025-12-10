@@ -68,4 +68,3 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
     assert body["version"].is_a?(Numeric)
   end
 end
-

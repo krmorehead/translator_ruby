@@ -36,7 +36,7 @@ class SkillCheckTool < BaseTool
         },
         dc: { type: "integer", description: "Difficulty class to check success" }
       },
-      required: ["skill", "ability_modifier"],
+      required: [ "skill", "ability_modifier" ],
       additionalProperties: false
     }
   end

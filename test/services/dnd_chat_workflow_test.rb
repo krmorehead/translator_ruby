@@ -22,10 +22,8 @@ class DndChatWorkflowTest < ActiveSupport::TestCase
   end
 
   test "executes end-to-end when LLM configured" do
-    skip "LLM credentials not configured" unless llm_configured?
-
     workflow = DndChatWorkflow.new
-    conversation = Conversation.new(messages: [Message.new(source: "user", target: "assistant", message: "Start the adventure")])
+    conversation = Conversation.new(messages: [ Message.new(source: "user", target: "assistant", message: "Start the adventure") ])
 
     workflow.setup(prompt: "Search the room", conversation: conversation, sandbox_path: SANDBOX.to_s)
     state = workflow.execute
@@ -53,4 +51,3 @@ class DndChatWorkflowTest < ActiveSupport::TestCase
     ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
   end
 end
-

@@ -25,21 +25,19 @@ class NarrativePromptTest < ActiveSupport::TestCase
   test "format_context includes actions and history" do
     prompt = NarrativePrompt.new
     formatted = prompt.format_context(
-      actions: [{ tool_name: "inspect_room", consequence: "You find a map." }],
-      recent_conversation: ["Player asked about the map"]
+      actions: [ { tool_name: "inspect_room", consequence: "You find a map." } ],
+      recent_conversation: [ "Player asked about the map" ]
     )
     assert_includes formatted, "inspect_room"
     assert_includes formatted, "map"
   end
 
   test "execute returns narrative string" do
-    skip "LLM credentials not configured" unless llm_configured?
-
     prompt = NarrativePrompt.new
     result = prompt.execute(
       prompt: "Narrate the scene.",
       context: {
-        actions: [{ tool_name: "inspect_room", consequence: "You spot a hidden door." }],
+        actions: [ { tool_name: "inspect_room", consequence: "You spot a hidden door." } ],
         scene: "stone hallway"
       }
     )
@@ -63,4 +61,3 @@ class NarrativePromptTest < ActiveSupport::TestCase
     ENV[key] = original
   end
 end
-

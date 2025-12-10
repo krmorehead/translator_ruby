@@ -10,5 +10,3 @@ class TranslationContext
     @formality = formality
   end
 end
-
-

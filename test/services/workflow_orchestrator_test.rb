@@ -47,4 +47,3 @@ class WorkflowOrchestratorTest < ActiveSupport::TestCase
     assert_equal "/tmp/sandbox", workflow.sandbox_path
   end
 end
-
