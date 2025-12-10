@@ -55,7 +55,7 @@ class MemoryTool < BaseTool
     }
   end
 
-  def execute(operation:, section:, content:, append:, path:)
+  def execute(operation:, section: nil, content: nil, append: true, path: nil)
     op, store_path, normalized = normalize_args(operation, path, section, content, append)
     store = MemoryStore.new(path: store_path, sandbox_path: sandbox_path)
 

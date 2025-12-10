@@ -32,15 +32,21 @@ module GenericLlmClient
   end
 
   def retry_enabled?
-    ENV["LLM_RETRY"].to_s.strip.present?
+    flag = ENV["LLM_RETRY"]
+    return true if flag.nil?
+
+    val = flag.to_s.strip.downcase
+    return false if %w[false 0 off no].include?(val)
+
+    val.present?
   end
 
   def retry_attempts
-    [ENV.fetch("LLM_RETRY_ATTEMPTS", 15).to_i, 1].max
+    [ENV.fetch("LLM_RETRY_ATTEMPTS", 3).to_i, 1].max
   end
 
   def retry_delay
-    ENV.fetch("LLM_RETRY_DELAY", 2).to_f
+    ENV.fetch("LLM_RETRY_DELAY", 1).to_f
   end
 
   class ClientRetryWrapper

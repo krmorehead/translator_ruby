@@ -37,10 +37,6 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "post messages flows through LLM and tools when configured" do
-    unless ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
-      skip "LLM credentials not configured for integration run"
-    end
-
     post "/dnd_chat/messages", params: { message: "Describe the scenario" }
     assert_response :success
     body = JSON.parse(response.body)

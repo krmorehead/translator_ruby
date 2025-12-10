@@ -1,7 +1,6 @@
 require "yaml"
 require "json"
 require "logger"
-require "openai"
 require "net/http"
 require "uri"
 require "iso639"
@@ -58,54 +57,26 @@ class TranslationService
       # Use target_lang from context if present, otherwise fall back to @target_language
       target_lang = translation_context.target_lang || @target_language
 
-      # Build system prompt for structured output
-      system_prompt = build_system_prompt(
-        target_lang,
-        @current_protected_strings || @protected_strings,
-        translation_context.source_lang,
-        translation_context.formality
+      prompt = TranslationPrompt.new(
+        protected_strings: @current_protected_strings || @protected_strings,
+        target_language: target_lang,
+        source_language: translation_context.source_lang,
+        formality: translation_context.formality,
+        context_path: translation_context.context
       )
 
-      response = client.chat(
-        parameters: {
-          model: ENV["LLM_MODEL"] || "qwen30b",
-          messages: [
-            { role: "system", content: system_prompt },
-            { role: "user", content: translation_context.text }
-          ],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: "translation_response",
-              strict: true,
-              schema: {
-                type: "object",
-                properties: {
-                  translation: {
-                    type: "string",
-                    description: "The translated text with preserved variables and protected terms"
-                  }
-                },
-                required: [ "translation" ],
-                additionalProperties: false
-              }
-            }
-          },
-          max_tokens: 20000,
-          temperature: 0.1,
-          stream: false
+      result = prompt.execute(
+        prompt: translation_context.text,
+        context: {
+          target_language: target_lang,
+          source_language: translation_context.source_lang,
+          formality: translation_context.formality,
+          context: translation_context.context,
+          protected_strings: @current_protected_strings || @protected_strings
         }
       )
 
-      # Extract translation from structured JSON response
-      raw_content = response.dig("choices", 0, "message", "content")&.strip
-
-      if raw_content && !raw_content.empty?
-        parsed_response = JSON.parse(raw_content)
-        parsed_response["translation"] || translation_context.text
-      else
-        translation_context.text
-      end
+      result["translation"] || translation_context.text
 
     rescue => e
       error_msg = "LLM translation error: #{e.message}\nBacktrace: #{e.backtrace.first(3).join("\n")}"
@@ -170,49 +141,7 @@ class TranslationService
     end
   end
 
-  def create_llm_client
-    # Use API_KEY from environment for authorization
-    api_key = ENV["API_KEY"] || ENV["AUTHORIZATION"]
-    
-    OpenAI::Client.new(
-      access_token: api_key,
-      uri_base: @llm_url,
-      request_timeout: @timeout
-    )
-  end
-
   def logger
     @logger ||= defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
-  end
-
-  def build_system_prompt(target_language, protected_strings, source_lang = nil, formality = nil)
-    protected_list = protected_strings&.any? ? protected_strings.join(", ") : "Brightwheel"
-
-    prompt = +"Translate text to #{target_language}."
-    
-    if source_lang
-      prompt << " Source language: #{source_lang}."
-    end
-    
-    if formality && formality != "default"
-      prompt << " Use #{formality} formality level."
-    end
-
-    prompt << <<~RULES
-
-
-      Rules:
-      1. Always translate to #{target_language}
-      2. Keep {variables} unchanged: {school_name}, {user_name}, etc.
-      3. Keep these terms unchanged: #{protected_list}
-      4. Return JSON: {"translation": "result"}
-
-      Examples:
-      "Hello" → {"translation": "Hola"}
-      "{school_name} shared a form" → {"translation": "{school_name} compartió un formulario"}
-      "Welcome to Brightwheel" → {"translation": "Bienvenido a Brightwheel"}
-    RULES
-
-    prompt
   end
 end
