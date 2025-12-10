@@ -2,7 +2,7 @@
 
 require_relative "base_prompt"
 
-class ConsequencePrompt < BasePrompt
+class OutcomePrompt < BasePrompt
   def model
     ENV["CONSEQUENCE_MODEL"].presence || super
   end

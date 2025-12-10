@@ -3,7 +3,7 @@
 require "tmpdir"
 require_relative "base_workflow"
 require_relative "../prompts/action_detection_prompt"
-require_relative "../prompts/consequence_prompt"
+require_relative "../prompts/outcome_prompt"
 require_relative "../prompts/narrative_prompt"
 require_relative "../models/action_record"
 require_relative "../models/workflow_state"
@@ -142,7 +142,7 @@ class DndChatWorkflow < BaseWorkflow
   end
 
   def resolve_consequence(action_record, tool_result, memory_store)
-    prompt = ConsequencePrompt.new
+    prompt = OutcomePrompt.new
     context = {
       action: action_record.to_h,
       result: tool_result,

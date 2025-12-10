@@ -25,7 +25,7 @@
 | `app/prompts/base_prompt.rb` | Abstract base class for LLM prompts | Step 1.1 |
 | `app/prompts/action_detection_prompt.rb` | Detects actions from user input | Step 1.2 |
 | `app/prompts/narrative_prompt.rb` | Generates DM-voice narrative | Step 1.3 |
-| `app/prompts/consequence_prompt.rb` | Determines action consequences | Step 1.4 |
+| `app/prompts/outcome_prompt.rb` | Determines action outcomes | Step 1.4 |
 | `app/services/base_workflow.rb` | Abstract base class for workflows | Step 2.1 |
 | `app/models/workflow_state.rb` | Immutable state object for workflows | Step 2.2 |
 | `app/models/action_record.rb` | Value object for detected actions | Step 2.3 |
@@ -35,7 +35,7 @@
 | `test/prompts/base_prompt_test.rb` | Tests for base prompt | Step 1.1 |
 | `test/prompts/action_detection_prompt_test.rb` | Tests for action detection | Step 1.2 |
 | `test/prompts/narrative_prompt_test.rb` | Tests for narrative prompt | Step 1.3 |
-| `test/prompts/consequence_prompt_test.rb` | Tests for consequence prompt | Step 1.4 |
+| `test/prompts/outcome_prompt_test.rb` | Tests for outcome prompt | Step 1.4 |
 | `test/services/base_workflow_test.rb` | Tests for base workflow | Step 2.1 |
 | `test/models/workflow_state_test.rb` | Tests for workflow state | Step 2.2 |
 | `test/models/action_record_test.rb` | Tests for action record | Step 2.3 |
@@ -96,7 +96,7 @@ app/
 ├── prompts/                            # NEW directory
 │   ├── base_prompt.rb
 │   ├── action_detection_prompt.rb
-│   ├── consequence_prompt.rb
+│   ├── outcome_prompt.rb
 │   └── narrative_prompt.rb
 ├── serializers/                        # NEW directory
 │   └── chat_response_serializer.rb
@@ -120,7 +120,7 @@ test/
 ├── prompts/                            # NEW directory
 │   ├── action_detection_prompt_test.rb
 │   ├── base_prompt_test.rb
-│   ├── consequence_prompt_test.rb
+│   ├── outcome_prompt_test.rb
 │   └── narrative_prompt_test.rb
 ├── serializers/                        # NEW directory
 │   └── chat_response_serializer_test.rb

@@ -23,24 +23,24 @@ class BasePromptTest < ActiveSupport::TestCase
 
   test "model defaults to env value" do
     with_env("LLM_MODEL", "demo-model") do
-      prompt = ConsequencePrompt.new
+      prompt = OutcomePrompt.new
       assert_equal "demo-model", prompt.model
     end
   end
 
   test "tools accessor returns passed tools" do
-    prompt = ConsequencePrompt.new(tools: @tools)
+    prompt = OutcomePrompt.new(tools: @tools)
     assert_equal @tools, prompt.tools
   end
 
   test "serialize_tools renders tool names" do
-    prompt = ConsequencePrompt.new(tools: @tools)
+    prompt = OutcomePrompt.new(tools: @tools)
     serialized = prompt.serialize_tools(@tools)
     assert_includes serialized, "demo_tool"
   end
 
   test "format_context renders pretty json" do
-    prompt = ConsequencePrompt.new
+    prompt = OutcomePrompt.new
     formatted = prompt.format_context({ action: { tool_name: "demo_tool" }, scene: "a forest" })
     assert_includes formatted, "Scene:"
     assert_includes formatted, "forest"
@@ -49,7 +49,7 @@ class BasePromptTest < ActiveSupport::TestCase
   test "execute returns structured json when schema provided" do
     skip "LLM credentials not configured" unless llm_configured?
 
-    prompt = ConsequencePrompt.new
+    prompt = OutcomePrompt.new
     result = prompt.execute(
       prompt: "Provide a consequence.",
       context: {

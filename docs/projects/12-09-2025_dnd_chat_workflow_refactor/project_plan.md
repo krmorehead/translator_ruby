@@ -132,19 +132,19 @@ Establish the Prompt class that handles all LLM interaction with per-prompt mode
 
 ---
 
-### 1.4 - Create ConsequencePrompt
+### 1.4 - Create OutcomePrompt
 
-**Intent**: Create a prompt type for determining the story consequences of an executed action. This bridges the gap between mechanical tool results and narrative-relevant outcomes.
+**Intent**: Create a prompt type for determining the story outcomes of an executed action. This bridges the gap between mechanical tool results and narrative-relevant outcomes.
 
 **Details**:
-- Create at `app/prompts/consequence_prompt.rb`
+- Create at `app/prompts/outcome_prompt.rb`
 - Extend BasePrompt
 - Does not require tools
 - Override the model method to use the CONSEQUENCE_MODEL environment variable, falling back to the default LLM_MODEL if not set
 - The system prompt should:
-  - Instruct the LLM to determine the narrative consequence of an action
+  - Instruct the LLM to determine the narrative outcome of an action
   - Consider what action was performed, what the tool result was, and the current story context
-  - Return a brief consequence description (1-2 sentences)
+  - Return a brief outcome description (1-2 sentences)
   - Focus on story impact rather than mechanical outcomes
   - Handle failed tool results by describing what went wrong in story terms
 - The response schema should define an object with a single consequence field containing the consequence text
@@ -155,7 +155,7 @@ Establish the Prompt class that handles all LLM interaction with per-prompt mode
 - The execute method returns a hash containing the consequence text
 
 **Tests**:
-- Test that consequences are story-focused, not mechanical
+- Test that outcomes are story-focused, not mechanical
 - Test that the response schema defines the expected structure
 - Test handling of successful tool results
 - Test handling of failed tool results
@@ -326,7 +326,7 @@ Implement the DnD-specific workflow that uses prompts to detect actions, execute
   6. For each pending action:
      a. Execute the tool via tool_call_service, passing the tool name and arguments
      b. Update the action record with the result and executed/failed status
-     c. Create a ConsequencePrompt and execute it to determine the story consequence
+     c. Create an OutcomePrompt and execute it to determine the story consequence
      d. Update the action record with the consequence
      e. Store the completed action in ActionsMemory
   7. Create a NarrativePrompt and execute it with all completed actions and context
@@ -483,7 +483,7 @@ Final integration testing and documentation updates.
   - `docs/references/app/prompts/base_prompt.md`
   - `docs/references/app/prompts/action_detection_prompt.md`
   - `docs/references/app/prompts/narrative_prompt.md`
-  - `docs/references/app/prompts/consequence_prompt.md`
+  - `docs/references/app/prompts/outcome_prompt.md`
   - `docs/references/app/services/base_workflow.md`
   - `docs/references/app/services/workflow_orchestrator.md`
   - `docs/references/app/models/workflow_state.md`

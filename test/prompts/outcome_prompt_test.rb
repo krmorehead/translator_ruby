@@ -2,23 +2,23 @@
 
 require "test_helper"
 
-class ConsequencePromptTest < ActiveSupport::TestCase
+class OutcomePromptTest < ActiveSupport::TestCase
   test "model uses consequence env override" do
     with_env("CONSEQUENCE_MODEL", "cause-effect-model") do
-      prompt = ConsequencePrompt.new
+      prompt = OutcomePrompt.new
       assert_equal "cause-effect-model", prompt.model
     end
   end
 
   test "response schema expects consequence" do
-    prompt = ConsequencePrompt.new
+    prompt = OutcomePrompt.new
     schema = prompt.response_schema
     assert_equal "string", schema[:properties][:consequence][:type]
     assert_includes schema[:required], "consequence"
   end
 
   test "format_context includes action and result" do
-    prompt = ConsequencePrompt.new
+    prompt = OutcomePrompt.new
     formatted = prompt.format_context(
       action: { tool_name: "inspect_room", arguments: { target: "table" } },
       result: { success: true, result: "A dusty map" },
@@ -31,7 +31,7 @@ class ConsequencePromptTest < ActiveSupport::TestCase
   test "execute returns consequence hash" do
     skip "LLM credentials not configured" unless llm_configured?
 
-    prompt = ConsequencePrompt.new
+    prompt = OutcomePrompt.new
     result = prompt.execute(
       prompt: "Summarize the consequence.",
       context: {
