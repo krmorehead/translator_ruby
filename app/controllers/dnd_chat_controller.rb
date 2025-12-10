@@ -46,24 +46,18 @@ class DndChatController < ApplicationController
     convo = conversation
     convo << Message.new(source: "user", target: "assistant", message: user_message)
 
-    llm_response = openai_client.chat(parameters: workflow.chat_parameters(user_prompt: user_message))
-    tool_payload = parse_tool_payload(llm_response)
-    tool_args = normalize_tool_arguments(tool_payload, user_message)
-    tool_result = tool_call_service.execute(tool_name: tool_payload[:tool], arguments: tool_args)
-    reply_text = render_narrative(tool_payload: tool_payload, tool_result: tool_result)
+    workflow = DndChatWorkflow.new
+    orchestrator = WorkflowOrchestrator.new(workflow)
+    orchestrator.process(prompt: user_message, conversation: convo, sandbox_path: SANDBOX_ROOT)
 
-    convo << Message.new(
-      source: "assistant",
-      target: "user",
-      message: reply_text
-    )
-    persist_conversation!(convo)
-
-    render json: {
-      success: true,
-      reply: reply_text,
-      conversation: convo.to_h
-    }
+    if workflow.complete?
+      persist_conversation!(workflow.result[:conversation]) if workflow.result[:conversation]
+      serializer = ChatResponseSerializer.new(workflow)
+      render json: serializer.serialize
+    else
+      serializer = ChatResponseSerializer.new(workflow)
+      render json: serializer.serialize, status: :internal_server_error
+    end
   rescue => e
     render json: { success: false, error: e.message }, status: :internal_server_error
   end
@@ -127,111 +121,6 @@ class DndChatController < ApplicationController
 
   def inventory_store
     @inventory_store ||= InventoryStore.new(path: INVENTORY_PATH, sandbox_path: SANDBOX_ROOT)
-  end
-
-  def workflow
-    @workflow ||= DndChatWorkflow.new
-  end
-
-  def tool_call_service
-    @tool_call_service ||= ToolCallService.new(sandbox_path: SANDBOX_ROOT)
-  end
-
-  def openai_client
-    @openai_client ||= OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
-  end
-
-  def parse_tool_payload(response)
-    message = response.dig("choices", 0, "message") || {}
-    content = message["content"]
-
-    if content.nil? && message["tool_calls"]
-      call = message["tool_calls"].first
-      name = call.dig("function", "name")
-      raw_args = call.dig("function", "arguments")
-      args = raw_args.is_a?(String) ? JSON.parse(raw_args) : (raw_args || {})
-      return { tool: name, arguments: args }
-    end
-
-    raise "LLM response missing content" unless content
-
-    parsed = JSON.parse(content)
-    { tool: parsed["tool"], arguments: parsed["arguments"] || {} }
-  end
-
-  def normalize_tool_arguments(payload, user_message)
-    tool = payload[:tool]
-    args = (payload[:arguments] || {}).transform_keys(&:to_sym)
-
-    case tool
-    when MemoryTool::NAME
-      args[:path] ||= MEMORY_PATH.to_s
-      args[:append] = true if args[:append].nil?
-      args[:operation] ||= MemoryTool::OP_UPDATE
-      args[:section] ||= MemoryKinds::RECENT_CONVERSATION
-      args[:content] ||= user_message
-    when InventoryTool::NAME
-      args[:path] ||= INVENTORY_PATH.to_s
-    end
-
-    args
-  end
-
-  def render_reply_text(tool_result)
-    return tool_result[:result] if tool_result[:result].is_a?(String)
-
-    JSON.pretty_generate(tool_result[:result])
-  rescue
-    tool_result[:result].to_s
-  end
-
-  def render_narrative(tool_payload:, tool_result:)
-    return "The action failed: #{tool_result[:error]}" unless tool_result[:success]
-
-    summary_prompt = <<~PROMPT
-      You are the Dungeon Master. Given the outcome of an action, write a brief (1-2 sentences) in-world narration for the player.
-      Do not mention tools, dice rolls, DCs, files, or mechanics. Make it immersive and story-focused.
-    PROMPT
-
-    user_content = {
-      tool: tool_payload[:tool],
-      arguments: tool_payload[:arguments],
-      result: tool_result[:result]
-    }.to_json
-
-    response = openai_client.chat(
-      parameters: {
-        model: ENV["LLM_MODEL"] || "qwen30b",
-        messages: [
-          { role: "system", content: summary_prompt },
-          { role: "user", content: user_content }
-        ]
-      }
-    )
-
-    response.dig("choices", 0, "message", "content").presence || fallback_narrative(tool_result)
-  rescue => e
-    fallback_narrative(tool_result, error: e)
-  end
-
-  def fallback_narrative(tool_result, error: nil)
-    return "The action failed: #{tool_result[:error]}" unless tool_result[:success]
-
-    result = tool_result[:result]
-    text = if result.is_a?(Hash)
-      result[:description] || result[:content] || result[:summary]
-    elsif result.is_a?(Array) && result.last.is_a?(Hash)
-      result.last[:text] || result.last["text"]
-    else
-      result
-    end
-
-    base = text.is_a?(String) ? text : "The story moves forward."
-    error ? "#{base} (narration fallback)" : base
   end
 
   def agent_version_value
