@@ -35,7 +35,7 @@ class NarrativePromptTest < ActiveSupport::TestCase
   test "execute returns narrative string" do
     skip "LLM credentials not configured" unless llm_configured?
 
-    prompt = NarrativePrompt.new(client: llm_client)
+    prompt = NarrativePrompt.new
     result = prompt.execute(
       prompt: "Narrate the scene.",
       context: {
@@ -53,14 +53,6 @@ class NarrativePromptTest < ActiveSupport::TestCase
 
   def llm_configured?
     ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
-  end
-
-  def llm_client
-    GenericLLMClient || OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
   end
 
   def with_env(key, value)

@@ -66,7 +66,7 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
   test "execute returns array of actions" do
     skip "LLM credentials not configured" unless llm_configured?
 
-    prompt = ActionDetectionPrompt.new(tools: @tools, client: llm_client)
+    prompt = ActionDetectionPrompt.new(tools: @tools)
     result = prompt.execute(
       prompt: "I look around the room and pick up the sword.",
       context: { scene: "a candle-lit armory" }
@@ -86,14 +86,6 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
 
   def llm_configured?
     ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
-  end
-
-  def llm_client
-    GenericLLMClient || OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
   end
 end
 

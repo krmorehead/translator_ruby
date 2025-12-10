@@ -49,7 +49,7 @@ class BasePromptTest < ActiveSupport::TestCase
   test "execute returns structured json when schema provided" do
     skip "LLM credentials not configured" unless llm_configured?
 
-    prompt = ConsequencePrompt.new(client: llm_client)
+    prompt = ConsequencePrompt.new
     result = prompt.execute(
       prompt: "Provide a consequence.",
       context: {
@@ -66,7 +66,7 @@ class BasePromptTest < ActiveSupport::TestCase
   test "execute returns freeform text when no schema" do
     skip "LLM credentials not configured" unless llm_configured?
 
-    prompt = NarrativePrompt.new(client: llm_client)
+    prompt = NarrativePrompt.new
     result = prompt.execute(
       prompt: "Narrate briefly.",
       context: { actions: [{ tool_name: "demo_tool", consequence: "You opened the door." }], scene: "hallway" }
@@ -80,14 +80,6 @@ class BasePromptTest < ActiveSupport::TestCase
 
   def llm_configured?
     ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
-  end
-
-  def llm_client
-    GenericLLMClient || OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
   end
 
   def with_env(key, value)

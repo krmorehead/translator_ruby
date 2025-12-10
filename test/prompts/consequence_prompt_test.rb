@@ -31,7 +31,7 @@ class ConsequencePromptTest < ActiveSupport::TestCase
   test "execute returns consequence hash" do
     skip "LLM credentials not configured" unless llm_configured?
 
-    prompt = ConsequencePrompt.new(client: llm_client)
+    prompt = ConsequencePrompt.new
     result = prompt.execute(
       prompt: "Summarize the consequence.",
       context: {
@@ -49,14 +49,6 @@ class ConsequencePromptTest < ActiveSupport::TestCase
 
   def llm_configured?
     ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
-  end
-
-  def llm_client
-    GenericLLMClient || OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
   end
 
   def with_env(key, value)

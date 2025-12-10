@@ -12,19 +12,6 @@ class ReadFileToolTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
   end
 
-  def chat_with_retry(client, parameters, attempts: 15, delay: 2)
-    last_error = nil
-    attempts.times do |i|
-      begin
-        return client.chat(parameters: parameters)
-      rescue Faraday::ServerError, Faraday::TimeoutError, Faraday::ConnectionFailed => e
-        last_error = e
-        sleep(delay) if i < attempts - 1
-      end
-    end
-    raise last_error
-  end
-
   test "schema returns valid OpenAI function format with path parameter" do
     schema = ReadFileTool.schema
 
@@ -112,60 +99,29 @@ class ReadFileToolTest < ActiveSupport::TestCase
     assert_includes result[:result], "source"
   end
 
-  # LLM Integration Test
+  # LLM Integration Test via prompt
   test "LLM can request read_file tool to read a file" do
-    # Create a test file for the LLM to read
     test_file = File.join(@sandbox_path, "llm_read_test.txt")
     test_content = "This is secret content that only the LLM should read."
     File.write(test_file, test_content)
 
-    # Set up the LLM client
-    client = OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
-
-    # Get available tools
     tools = ToolCallService.available_tools
+    detector = ActionDetectionPrompt.new(tools: tools)
 
-    # Ask LLM to read the file
-    response = chat_with_retry(
-      client,
-      {
-        model: ENV["LLM_MODEL"] || "qwen30b",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant with access to tools. Use the read_file tool to read files."
-          },
-          {
-            role: "user",
-            content: "Read the contents of the file at #{test_file} using the read_file tool."
-          }
-        ],
-        tools: ToolCallService.available_tools,
-        tool_choice: BaseTool.tool_choice
-      }
+    actions = detector.execute(
+      prompt: "Read the contents of the file at #{test_file} using the read_file tool.",
+      context: { scene: "tool smoke test" }
     )
 
-    # Extract tool calls from response
-    message = response.dig("choices", 0, "message")
-    tool_calls = message["tool_calls"]
+    assert_kind_of Array, actions
+    read_action = actions.find { |a| a["tool_name"] == "read_file" }
+    assert read_action, "LLM should propose read_file action"
 
-    assert_not_nil tool_calls, "LLM should request a tool call"
-    assert tool_calls.length > 0, "LLM should request at least one tool call"
+    args = (read_action["arguments"] || {}).transform_keys(&:to_sym)
+    args[:path] ||= test_file
 
-    # Find the read_file tool call
-    read_file_call = tool_calls.find { |tc| tc["function"]["name"] == "read_file" }
-    assert_not_nil read_file_call, "LLM should call the read_file tool"
-
-    # Execute the tool call
-    arguments = JSON.parse(read_file_call["function"]["arguments"])
     service = ToolCallService.new(sandbox_path: @sandbox_path)
-    args_sym = arguments.transform_keys(&:to_sym)
-    args_sym[:path] ||= test_file
-    result = service.execute(tool_name: "read_file", arguments: args_sym)
+    result = service.execute(tool_name: "read_file", arguments: args)
 
     assert_equal true, result[:success], "Read file should succeed"
     assert_equal test_content, result[:result], "Result should contain the file content"

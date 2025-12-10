@@ -3,10 +3,10 @@
 require_relative "base_prompt"
 
 class ActionDetectionPrompt < BasePrompt
-  def initialize(tools:, client: nil)
+  def initialize(tools:)
     raise ArgumentError, "tools are required for action detection" if tools.nil? || tools.empty?
 
-    super(tools: tools, client: client)
+    super(tools: tools)
   end
 
   def model

@@ -54,7 +54,6 @@ class TranslationService
     return translation_context.text if translation_context.text.strip.empty?
 
     begin
-      client = create_llm_client
 
       # Use target_lang from context if present, otherwise fall back to @target_language
       target_lang = translation_context.target_lang || @target_language

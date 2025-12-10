@@ -10,9 +10,9 @@ require "active_support/core_ext/string/inflections"
 class BasePrompt
   attr_reader :tools
 
-  def initialize(tools: [], client: nil)
+  def initialize(tools: [])
     @tools = tools || []
-    @client = client || default_client
+    @client = default_client
   end
 
   # Default model comes from the shared LLM_MODEL env var.
@@ -105,15 +105,9 @@ class BasePrompt
   end
 
   def default_client
-    return GenericLLMClient if defined?(GenericLLMClient) && GenericLLMClient
-
-    return nil unless ENV["API_KEY"].present? && ENV["LLM_URL"].present?
-
-    OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
+    client = GenericLlmClient.instance
+    raise "LLM client not configured" unless client
+    client
   end
 end
 

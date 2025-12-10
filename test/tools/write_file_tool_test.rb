@@ -12,19 +12,6 @@ class WriteFileToolTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
   end
 
-  def chat_with_retry(client, parameters, attempts: 15, delay: 2)
-    last_error = nil
-    attempts.times do |i|
-      begin
-        return client.chat(parameters: parameters)
-      rescue Faraday::ServerError, Faraday::TimeoutError, Faraday::ConnectionFailed => e
-        last_error = e
-        sleep(delay) if i < attempts - 1
-      end
-    end
-    raise last_error
-  end
-
   test "schema returns valid OpenAI function format with path and content parameters" do
     schema = WriteFileTool.schema
 
@@ -126,67 +113,33 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert File.exist?(test_file)
   end
 
-  # LLM Integration Test
+  # LLM Integration Test via prompt
   test "LLM can request write_file tool to write a file" do
     test_file = File.join(@sandbox_path, "llm_write_test.txt")
     expected_content = "Hello from the LLM!"
 
-    # Set up the LLM client
-    client = OpenAI::Client.new(
-      access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
-      request_timeout: 60
-    )
-
-    # Get available tools
     tools = ToolCallService.available_tools
+    detector = ActionDetectionPrompt.new(tools: tools)
 
-    # Ask LLM to write to the file
-    response = chat_with_retry(
-      client,
-      {
-        model: ENV["LLM_MODEL"] || "qwen30b",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant with access to tools. Use the write_file tool to write files."
-          },
-          {
-            role: "user",
-            content: "Write the text '#{expected_content}' to the file at #{test_file} using the write_file tool."
-          }
-        ],
-        tools: ToolCallService.available_tools,
-        tool_choice: BaseTool.tool_choice
-      }
+    actions = detector.execute(
+      prompt: "Write the text '#{expected_content}' to the file at #{test_file} using the write_file tool.",
+      context: { scene: "tool smoke test" }
     )
 
-    # Extract tool calls from response
-    message = response.dig("choices", 0, "message")
-    tool_calls = message["tool_calls"]
+    assert_kind_of Array, actions
+    write_action = actions.find { |a| a["tool_name"] == "write_file" }
+    assert write_action, "LLM should propose write_file action"
 
-    assert_not_nil tool_calls, "LLM should request a tool call"
-    assert tool_calls.length > 0, "LLM should request at least one tool call"
+    arguments = (write_action["arguments"] || {}).transform_keys(&:to_sym)
+    arguments[:path] = test_file
+    arguments[:content] = expected_content
 
-    # Find the write_file tool call
-    write_file_call = tool_calls.find { |tc| tc["function"]["name"] == "write_file" }
-    assert_not_nil write_file_call, "LLM should call the write_file tool"
-
-    # Verify arguments contain path and content
-    arguments = JSON.parse(write_file_call["function"]["arguments"])
-    assert arguments.key?("path"), "Arguments should include path"
-    assert arguments.key?("content"), "Arguments should include content"
-
-    # Execute the tool call
-    args_sym = arguments.transform_keys(&:to_sym)
-    args_sym[:path] = test_file
-    args_sym[:content] = expected_content
     service = ToolCallService.new(sandbox_path: @sandbox_path)
-    result = service.execute(tool_name: "write_file", arguments: args_sym)
+    result = service.execute(tool_name: "write_file", arguments: arguments)
 
     assert_equal true, result[:success], "Write file should succeed"
-    assert File.exist?(args_sym[:path]), "File should be created"
-    assert_includes File.read(args_sym[:path]), "Hello", "File should contain expected content"
+    assert File.exist?(arguments[:path]), "File should be created"
+    assert_includes File.read(arguments[:path]), "Hello", "File should contain expected content"
   end
 end
 

@@ -12,19 +12,6 @@ class BashToolTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
   end
 
-  def chat_with_retry(client, parameters, attempts: 15, delay: 2)
-    last_error = nil
-    attempts.times do |i|
-      begin
-        return client.chat(parameters: parameters)
-      rescue Faraday::ServerError, Faraday::TimeoutError, Faraday::ConnectionFailed => e
-        last_error = e
-        sleep(delay) if i < attempts - 1
-      end
-    end
-    raise last_error
-  end
-
   test "schema returns valid OpenAI function format with command parameter" do
     schema = BashTool.schema
 
@@ -98,48 +85,27 @@ class BashToolTest < ActiveSupport::TestCase
     assert_not_empty result[:result].strip
   end
 
-  # LLM Integration Test
+  # LLM Integration Test via prompt
   test "LLM can request bash tool to list files" do
-    # Create test files for the LLM to discover
     File.write(File.join(@sandbox_path, "llm_test_file.txt"), "LLM test content")
 
-    # Ask LLM to list files in the sandbox directory
-    response = chat_with_retry(
-      GenericLLMClient,
-      {
-        model: ENV["LLM_MODEL"] || "qwen30b",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant with access to tools. Use the bash tool to complete tasks."
-          },
-          {
-            role: "user",
-            content: "List all files in the directory #{@sandbox_path} using the bash tool."
-          }
-        ],
-        tools: ToolCallService.available_tools,
-        tool_choice: BaseTool.tool_choice
-      }
+    tools = ToolCallService.available_tools
+    detector = ActionDetectionPrompt.new(tools: tools)
+
+    actions = detector.execute(
+      prompt: "List all files in the directory #{@sandbox_path} using the bash tool.",
+      context: { scene: "tool smoke test" }
     )
 
-    # Extract tool calls from response
-    message = response.dig("choices", 0, "message")
-    tool_calls = message["tool_calls"]
+    assert_kind_of Array, actions
+    bash_action = actions.find { |a| a["tool_name"] == "bash" }
+    assert bash_action, "LLM should propose bash action"
 
-    assert_not_nil tool_calls, "LLM should request a tool call"
-    assert tool_calls.length > 0, "LLM should request at least one tool call"
+    arguments = (bash_action["arguments"] || {}).transform_keys(&:to_sym)
+    arguments[:command] ||= "ls #{@sandbox_path}"
 
-    # Find the bash tool call
-    bash_call = tool_calls.find { |tc| tc["function"]["name"] == "bash" }
-    assert_not_nil bash_call, "LLM should call the bash tool"
-
-    # Execute the tool call
-    arguments = JSON.parse(bash_call["function"]["arguments"])
     service = ToolCallService.new(sandbox_path: @sandbox_path)
-    args_sym = arguments.transform_keys(&:to_sym)
-    args_sym[:command] ||= "ls #{@sandbox_path}"
-    result = service.execute(tool_name: "bash", arguments: args_sym)
+    result = service.execute(tool_name: "bash", arguments: arguments)
 
     assert_equal true, result[:success], "Bash command should succeed"
     assert_includes result[:result], "llm_test_file.txt", "Result should include the test file"

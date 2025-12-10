@@ -17,10 +17,6 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@sandbox_path) if File.exist?(@sandbox_path)
   end
 
-  def client
-    GenericLLMClient
-  end
-
   def workflow
     @workflow ||= DndChatWorkflow.new
   end
@@ -31,7 +27,7 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
 
   def perform_chat(user_content)
     params = workflow.chat_parameters(user_prompt: user_content)
-    client.chat(parameters: params)
+    BasePrompt.new.send(:default_client).chat(parameters: params)
   end
   
   # Require that the LLM returns structured content.
@@ -64,6 +60,9 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     args.transform_keys(&:to_sym).slice(*schema_keys).tap do |h|
       h[:path] = @inventory_path if tool_name == InventoryTool::NAME && h[:path].nil?
       h[:path] = @memory_path if [MemoryTool::NAME, MemorySummarizeTool::NAME].include?(tool_name) && h[:path].nil?
+      if tool_name == MemoryTool::NAME && h[:section].nil?
+        h[:section] = MemoryKinds::RECENT_CONVERSATION
+      end
     end
   end
 
