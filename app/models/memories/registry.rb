@@ -9,6 +9,7 @@ require_relative "current_scene_memory"
 require_relative "people_memory"
 require_relative "misc_memory"
 require_relative "quest_log_memory"
+require_relative "actions_memory"
 
 module Memories
   module Registry
@@ -20,7 +21,8 @@ module Memories
       CurrentSceneMemory,
       PeopleMemory,
       MiscMemory,
-      QuestLogMemory
+      QuestLogMemory,
+      ActionsMemory
     ].freeze
 
     BY_SECTION = ALL.each_with_object({}) do |klass, h|

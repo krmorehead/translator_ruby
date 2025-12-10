@@ -3,6 +3,7 @@
 # Defines canonical memory section names for the DnD tools.
 module MemoryKinds
   RECENT_CONVERSATION = "recent_conversation".freeze
+  ACTIONS = "actions".freeze
   QUESTS = "quests".freeze
   MAIN_QUEST = "main_quest".freeze
   CURRENT_GOAL = "current_goal".freeze
@@ -13,6 +14,7 @@ module MemoryKinds
 
   ALL = [
     RECENT_CONVERSATION,
+    ACTIONS,
     QUESTS,
     MAIN_QUEST,
     CURRENT_GOAL,
