@@ -473,7 +473,7 @@ Final integration testing and documentation updates.
 
 **Details**:
 - `CurrentContextTool`: returns current scene, people, current quest, and recent conversation for narration context.
-- `ContextCompressionTool`: iterates all memory sections, uses each memory’s summarize/weight, and produces a weighted overall summary.
+- `ContextCompressionTool`: iterates all memory sections, uses each memory’s summarize/weight, and produces a weighted overall summary (used when narration context exceeds CONTEXT_TOKEN_MAX).
 - `MemorySummarizeTool`: now targets specific items (person/location/quest_log) instead of broad dumps.
 
 **Tests**:

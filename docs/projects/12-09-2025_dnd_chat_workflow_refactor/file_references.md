@@ -112,6 +112,8 @@ app/
 │   ├── tool_call_service.rb
 │   └── workflow_orchestrator.rb        # NEW
 └── tools/
+    ├── current_context_tool.rb         # NEW: current scene/people/quest + recent conversation
+    ├── context_compression_tool.rb     # NEW: weighted compression of all memories
     └── ...existing tools...
 
 test/
@@ -130,11 +132,17 @@ test/
 │   └── narrative_prompt_test.rb
 ├── serializers/                        # NEW directory
 │   └── chat_response_serializer_test.rb
-└── services/
-    ├── base_workflow_test.rb           # NEW
-    ├── dnd_chat_workflow_test.rb       # MODIFIED
-    ├── tool_call_service_test.rb
-    └── workflow_orchestrator_test.rb   # NEW
+├── services/
+│   ├── base_workflow_test.rb           # NEW
+│   ├── dnd_chat_workflow_test.rb       # MODIFIED
+│   ├── tool_call_service_test.rb
+│   └── workflow_orchestrator_test.rb   # NEW
+├── tools/
+│   ├── context_compression_tool_test.rb
+│   ├── current_context_tool_test.rb
+│   └── ...existing tools...
+└── integration/
+    └── dnd_workflow_integration_test.rb
 ```
 
 ## Environment Variables
