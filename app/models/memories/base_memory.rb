@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require "time"
-require_relative "../memory_kinds"
-
 module Memories
   class BaseMemory
     def self.section_name

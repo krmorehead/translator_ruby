@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require "json"
-require "fileutils"
-require "time"
-require_relative "memory_kinds"
-require_relative "memories/registry"
-
 # File-backed store for narrative memory broken into named sections.
 class MemoryStore
   DEFAULT_SECTIONS = Memories::Registry::ALL.each_with_object({}) do |klass, h|

@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require "json"
-require "openai"
-require "active_support/core_ext/object/blank"
-require "active_support/core_ext/string/inflections"
-
 # Abstract base class for all LLM-backed prompts.
 # Subclasses must implement system_prompt and response_schema.
 class BasePrompt

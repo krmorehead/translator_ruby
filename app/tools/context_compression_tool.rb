@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_tool"
-require_relative "../models/memory_store"
-require_relative "../models/memory_kinds"
-require_relative "../models/memories/registry"
-require_relative "../services/tool_call_service"
 
 # Tool that compresses all memory sections using each memory's summarize/weight.
 class ContextCompressionTool < BaseTool

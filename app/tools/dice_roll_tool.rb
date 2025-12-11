@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_tool"
-require_relative "../services/tool_call_service"
-require "securerandom"
-
 # Tool for rolling dice with support for advantage/disadvantage and modifiers.
 class DiceRollTool < BaseTool
   MAX_DICE = 20

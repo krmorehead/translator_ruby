@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_tool"
-require_relative "dice_roll_tool"
-require_relative "../services/tool_call_service"
 
 # Tool for performing d20-based skill checks using DiceRollTool.
 class SkillCheckTool < BaseTool

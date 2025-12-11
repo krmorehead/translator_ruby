@@ -1,21 +1,5 @@
 # frozen_string_literal: true
 
-require "tmpdir"
-require_relative "base_workflow"
-require_relative "../prompts/action_detection_prompt"
-require_relative "../prompts/outcome_prompt"
-require_relative "../prompts/narrative_prompt"
-require_relative "../models/action_record"
-require_relative "../models/workflow_state"
-require_relative "../models/memory_store"
-require_relative "../models/memory_kinds"
-require_relative "../models/memories/actions_memory"
-require_relative "../tools/current_context_tool"
-require_relative "../tools/context_compression_tool"
-require_relative "../services/tool_call_service"
-require_relative "../models/conversation"
-require_relative "../models/message"
-
 # Workflow orchestrating DnD chat: detect actions, run tools, resolve consequences, narrate.
 class DndChatWorkflow < BaseWorkflow
   DEFAULT_SYSTEM_PROMPT = <<~PROMPT.freeze

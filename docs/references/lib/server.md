@@ -25,7 +25,6 @@ PORT=52020 HOST=0.0.0.0 ruby lib/server.rb
 #!/usr/bin/env ruby
 
 require_relative "../config/environment"
-require "dotenv/load" if File.exist?(".env")
 
 port = ENV["PORT"] || 3000
 host = ENV["HOST"] || "localhost"

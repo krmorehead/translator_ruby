@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_tool"
 
 # Tool for reading file contents.
 # Validates paths against sandbox if configured.

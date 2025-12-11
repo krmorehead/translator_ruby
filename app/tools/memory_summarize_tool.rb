@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_tool"
-require_relative "../models/memory_store"
-require_relative "../models/memory_kinds"
-require_relative "../services/tool_call_service"
 
 # Tool to summarize memory sections and extract key items (quests/goals/people).
 class MemorySummarizeTool < BaseTool

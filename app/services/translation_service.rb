@@ -1,10 +1,3 @@
-require "yaml"
-require "json"
-require "logger"
-require "net/http"
-require "uri"
-require "iso639"
-
 class TranslationService
   def initialize(llm_url: nil, timeout: 30, protected_strings: [], target_language: "es")
     @llm_url = llm_url || ENV["LLM_URL"]

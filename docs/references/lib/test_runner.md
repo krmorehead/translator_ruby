@@ -23,7 +23,6 @@ ruby lib/test_runner.rb test/services/translation_service_test.rb -n test_transl
 
 ```ruby
 #!/usr/bin/env ruby
-require "dotenv/load" if File.exist?(".env")
 
 # Set test environment
 ENV["RAILS_ENV"] = "test"

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_tool"
 
 # Tool for writing content to files.
 # Creates parent directories if they don't exist.

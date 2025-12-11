@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require "json"
-require "fileutils"
-require_relative "inventory_item"
-
 # File-backed inventory store handling serialization and basic operations.
 class InventoryStore
   attr_reader :path, :sandbox_path

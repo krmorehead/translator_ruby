@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_tool"
-require "open3"
-
 # Tool for executing bash commands.
 # Captures stdout, stderr, and exit status.
 class BashTool < BaseTool

@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_tool"
-require_relative "../models/inventory_store"
-require_relative "../services/tool_call_service"
 
 # LLM-callable tool for managing inventory via InventoryStore.
 class InventoryTool < BaseTool

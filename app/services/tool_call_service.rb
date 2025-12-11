@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../tools/base_tool"
-require_relative "../models/memory_kinds"
 
 # Service that orchestrates tool registration and execution.
 # Provides a central interface for the LLM to discover and execute tools.

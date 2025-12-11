@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require "securerandom"
-require "time"
-
 # Value object representing a detected action in the workflow.
 class ActionRecord
   STATUSES = {

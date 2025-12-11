@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "yaml"
 
 class DndChatContractsTest < ActiveSupport::TestCase
   def test_message_contract_includes_expected_paths_and_schemas

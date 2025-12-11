@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "active_support/core_ext/string/inflections"
-
 # Minimal contract for workflows used by the orchestrator.
 class BaseWorkflow
   STATUSES = {

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_prompt"
 
 class NarrativePrompt < BasePrompt
   CONTEXT_TOKEN_MAX = 8000

@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base_tool"
-require_relative "../models/memory_store"
-require_relative "../models/memory_kinds"
-require_relative "../services/tool_call_service"
 
 # LLM-callable tool to read/update memory sections.
 class MemoryTool < BaseTool
