@@ -10,6 +10,7 @@ require_relative "../models/workflow_state"
 require_relative "../models/memory_store"
 require_relative "../models/memory_kinds"
 require_relative "../models/memories/actions_memory"
+require_relative "../tools/current_context_tool"
 require_relative "../services/tool_call_service"
 require_relative "../models/conversation"
 require_relative "../models/message"
@@ -154,10 +155,11 @@ class DndChatWorkflow < BaseWorkflow
 
   def generate_narrative(completed_actions, memory_store)
     prompt = NarrativePrompt.new
+    context_tool = CurrentContextTool.new(sandbox_path: sandbox_path)
+    current_context = context_tool.execute(path: memory_store.path)[:result] rescue {}
     context = {
       actions: completed_actions.map(&:to_h),
-      scene: memory_store.get_section(MemoryKinds::CURRENT_SCENE),
-      recent_conversation: memory_store.get_section(MemoryKinds::RECENT_CONVERSATION)
+      current_context: current_context
     }
     prompt.execute(prompt: self.prompt, context: context)
   end

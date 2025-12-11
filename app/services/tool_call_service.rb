@@ -10,7 +10,7 @@ class ToolCallService
 
   # Registry of all available tool classes
   TOOL_CLASSES = []
-  DND_TOOL_NAMES = %w[dice_roll skill_check inventory memory memory_summarize].freeze
+  DND_TOOL_NAMES = %w[dice_roll skill_check inventory memory memory_summarize current_context context_compress].freeze
 
   def self.register_tool(tool_class)
     TOOL_CLASSES << tool_class unless TOOL_CLASSES.include?(tool_class)

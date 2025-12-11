@@ -449,26 +449,37 @@ Final integration testing and documentation updates.
 **Intent**: Create comprehensive integration tests that verify the full workflow from HTTP request through all services to response. These tests use real LLM calls when credentials are available.
 
 **Details**:
-- Create at `test/integration/dnd_workflow_integration_test.rb`
-- Tests should skip when LLM credentials are unavailable (check for API_KEY and LLM_URL)
-- Test scenarios to cover:
-  - A simple single-action prompt (like "I search the room")
-  - A multi-action prompt (like "I pick up the sword and attack the goblin")
+- Implemented at `test/integration/dnd_workflow_integration_test.rb`
+- Skips when LLM credentials are unavailable (API_KEY and LLM_URL)
+- Scenarios covered:
+  - Simple single-action prompt
+  - Multi-action prompt
   - Conversation continuity across multiple messages
-  - Action memory population (verify actions appear in memory store)
-  - Inspector endpoint showing action history
-- Verification criteria:
-  - Narrative output is story-focused with no mechanical references
-  - All detected actions are processed
-  - Response format matches the existing API contract
-  - Conversation includes both user and assistant messages
+  - Action memory population (via MemoryStore)
+- Verification points:
+  - Narrative present and response follows API contract
+  - Actions captured in memory
+  - Conversation persists user and assistant turns
 
 **Tests**:
-- Test that a simple prompt completes the full workflow
-- Test that a multi-action prompt processes all detected actions
-- Test that actions appear in the memory store after execution
-- Test that the narrative combines information from multiple action consequences
-- Test that the response format matches the existing contract
+- Simple prompt completes the workflow
+- Multi-action prompt processes actions
+- Actions appear in memory after execution
+- Conversation persists across turns
+
+### 5.3 - Context Tools
+
+**Intent**: Provide structured context for narration and targeted memory summaries.
+
+**Details**:
+- `CurrentContextTool`: returns current scene, people, current quest, and recent conversation for narration context.
+- `ContextCompressionTool`: iterates all memory sections, uses each memory’s summarize/weight, and produces a weighted overall summary.
+- `MemorySummarizeTool`: now targets specific items (person/location/quest_log) instead of broad dumps.
+
+**Tests**:
+- `test/tools/current_context_tool_test.rb`
+- `test/tools/context_compression_tool_test.rb`
+- Updated `test/tools/memory_summarize_tool_test.rb`
 
 ---
 

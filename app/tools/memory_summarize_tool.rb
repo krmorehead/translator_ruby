@@ -16,46 +16,53 @@ class MemorySummarizeTool < BaseTool
   end
 
   def self.description
-    "Summarize selected memory sections and extract key quests/goals/people."
+    "Summarize a specific memory target: person, location, or quest_log."
   end
 
   def self.parameters_schema
     {
       type: "object",
       properties: {
-        sections: {
-          type: "array",
-          description: "Section names to summarize",
-          items: { type: "string" },
-          minItems: 1
+        target: {
+          type: "string",
+          description: "Target to summarize",
+          enum: %w[person location quest_log]
+        },
+        name: {
+          type: "string",
+          description: "Name of the person or location (required for person/location)"
         },
         path: {
           type: "string",
           description: "Optional memory file path (defaults to sandbox/memory.json)",
-          nullable: false
-        },
-        max_tokens: {
-          type: "integer",
-          description: "Optional maximum tokens/length for summary",
-          nullable: false
+          nullable: true
         }
       },
-      required: [ "sections" ],
+      required: [ "target" ],
       additionalProperties: false
     }
   end
 
-  def execute(sections:, path:, max_tokens: nil)
-    store = MemoryStore.new(path: path, sandbox_path: sandbox_path)
+  def execute(target:, name: nil, path: nil)
+    store = MemoryStore.new(path: resolve_path(path), sandbox_path: sandbox_path)
 
-    section_syms = Array(sections).map(&:to_sym)
-    contents = section_syms.map { |s| store.get_section(s) || [] }
-    texts = contents.flatten.map { |entry| entry[:text] || entry["text"] }.compact
-
-    summary = build_summary(texts, max_tokens)
-    key_points = extract_key_points(store, section_syms)
-
-    success_result({ summary: summary, key_points: key_points })
+    case target
+    when "person"
+      raise ArgumentError, "name required for person summary" if name.to_s.strip.empty?
+      entries = store.get_section(MemoryKinds::PEOPLE) || []
+      matches = entries.select { |e| (e[:text] || e["text"]).to_s.downcase.include?(name.downcase) }
+      success_result({ target: target, name: name, summary: summarize_texts(matches), entries: matches })
+    when "location"
+      raise ArgumentError, "name required for location summary" if name.to_s.strip.empty?
+      scene = store.get_section(MemoryKinds::CURRENT_SCENE)
+      match = scene if scene.to_s.downcase.include?(name.downcase)
+      success_result({ target: target, name: name, summary: match.to_s, entries: Array(match).compact })
+    when "quest_log"
+      quests = store.get_section(MemoryKinds::QUEST_LOG) || []
+      success_result({ target: target, summary: summarize_texts(quests), entries: quests })
+    else
+      error_result("Unsupported target: #{target}")
+    end
   rescue SecurityError => e
     error_result(e.message)
   rescue ArgumentError => e
@@ -67,7 +74,8 @@ class MemorySummarizeTool < BaseTool
   private
 
   def resolve_path(path)
-    raise ArgumentError, "path required" if path.nil? || path.strip.empty?
+    return PATH if path.nil? || path.to_s.strip.empty?
+
     path
   end
 
@@ -80,16 +88,9 @@ class MemorySummarizeTool < BaseTool
     summary.split(//).take(max_tokens).join
   end
 
-  def extract_key_points(store, section_syms)
-    quests = section_syms.include?(:quests) ? (store.get_section(:quests) || []).map { |e| e[:text] || e["text"] }.compact : []
-    goals = section_syms.include?(:current_goal) ? (store.get_section(:current_goal) || []).map { |e| e[:text] || e["text"] }.compact : []
-    people = section_syms.include?(:people) ? (store.get_section(:people) || []).map { |e| e[:text] || e["text"] }.compact : []
-
-    {
-      quests: quests,
-      goals: goals,
-      people: people
-    }
+  def summarize_texts(entries)
+    texts = Array(entries).map { |e| e.is_a?(Hash) ? (e[:text] || e["text"]) : e }.compact
+    texts.join(" ")
   end
 end
 

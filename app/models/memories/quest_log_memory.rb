@@ -32,6 +32,10 @@ module Memories
       []
     end
 
+    def self.weight
+      1.0
+    end
+
     def self.update_flag(store, flag, text:, index:)
       raise ArgumentError, "provide text or index" if text.nil? && index.nil?
 

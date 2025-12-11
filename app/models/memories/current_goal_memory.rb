@@ -6,5 +6,9 @@ module Memories
     def self.section_name
       SECTION
     end
+
+    def self.weight
+      1.0
+    end
   end
 end

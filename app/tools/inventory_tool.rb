@@ -54,7 +54,7 @@ class InventoryTool < BaseTool
     }
   end
 
-  def execute(operation:, path:, name: nil, weight: nil, description: nil, property_type: nil, quantity: nil)
+  def execute(operation:, path: nil, name: nil, weight: nil, description: nil, property_type: nil, quantity: nil)
     op, store_path, normalized = normalize_args(operation, path, name, weight, description, property_type, quantity)
     store = InventoryStore.new(path: store_path, sandbox_path: sandbox_path)
 

@@ -85,6 +85,8 @@ class MemoryTool < BaseTool
   private
 
   def resolve_path(path)
+    return PATH if path.nil? || path.to_s.strip.empty?
+
     path
   end
 

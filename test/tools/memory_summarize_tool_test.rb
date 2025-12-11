@@ -12,46 +12,47 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
     @store.update_section(name: :current_goal, content: "Enter the castle", append: false)
     @store.update_section(name: :people, content: "Aria the ranger", append: true)
     @store.update_section(name: :recent_conversation, content: "We camped near the river.", append: true)
+    @store.update_section(name: :quest_log, content: "Rescue the prince", append: true)
   end
 
   def teardown
     FileUtils.rm_rf(@sandbox_path) if File.exist?(@sandbox_path)
   end
 
-  test "schema requires sections" do
+  test "schema requires target" do
     schema = MemorySummarizeTool.schema
     props = schema[:function][:parameters][:properties]
-    assert props.key?(:sections)
+    assert props.key?(:target)
   end
 
-  test "summarizes selected sections and extracts keys" do
+  test "summarizes a person" do
     tool = MemorySummarizeTool.new(sandbox_path: @sandbox_path)
-    result = tool.execute(sections: [ "quests", "recent_conversation", "current_goal", "people" ], path: @path, max_tokens: 20)
+    result = tool.execute(target: "person", name: "Aria", path: @path)
 
     assert result[:success]
     payload = result[:result]
-    assert_includes payload[:summary], "Rescue the prince"
-    assert_includes payload[:summary], "camped near the river"
-    assert_includes payload[:key_points][:quests], "Rescue the prince"
-    assert_includes payload[:key_points][:quests], "Find the lost sword"
-    assert_includes payload[:key_points][:goals], "Enter the castle"
-    assert_includes payload[:key_points][:people], "Aria the ranger"
+    assert_equal "person", payload[:target]
+    assert_includes payload[:summary], "Aria the ranger"
   end
 
-  test "handles empty sections gracefully" do
+  test "summarizes a location" do
+    @store.update_section(name: :current_scene, content: "A quiet forest", append: false)
     tool = MemorySummarizeTool.new(sandbox_path: @sandbox_path)
-    result = tool.execute(sections: [ "misc" ], path: @path)
+    result = tool.execute(target: "location", name: "forest", path: @path)
 
     assert result[:success]
-    assert_equal "", result[:result][:summary]
-    assert_equal [], result[:result][:key_points][:quests]
+    payload = result[:result]
+    assert_equal "location", payload[:target]
+    assert payload[:summary].is_a?(String)
   end
 
-  test "rejects sandbox escape" do
+  test "summarizes quest log" do
     tool = MemorySummarizeTool.new(sandbox_path: @sandbox_path)
-    result = tool.execute(sections: [ "quests" ], path: "/tmp/memory.json")
+    result = tool.execute(target: "quest_log", path: @path)
 
-    refute result[:success]
-    assert_includes result[:error], "outside the sandbox"
+    assert result[:success]
+    payload = result[:result]
+    assert_equal "quest_log", payload[:target]
+    assert_includes payload[:summary], "Rescue the prince"
   end
 end

@@ -14,6 +14,8 @@
 | `app/models/memories/registry.rb` | Memory type registry | Will register ActionsMemory |
 | `app/models/memories/base_memory.rb` | Base class for memory types | Parent for ActionsMemory |
 | `app/tools/base_tool.rb` | Base class for tools | Pattern reference |
+| `app/tools/current_context_tool.rb` | Returns scene/people/quest/recent conversation | Used for narration context |
+| `app/tools/context_compression_tool.rb` | Weighted summary of all memories | Used for compressed context |
 | `config/initializers/openai.rb` | OpenAI client initialization | Pattern for prompt clients |
 | `test/controllers/dnd_chat_controller_test.rb` | Controller tests | Will need updates |
 | `test/services/dnd_chat_workflow_test.rb` | Workflow tests | Will need updates |
@@ -31,6 +33,8 @@
 | `app/models/action_record.rb` | Value object for detected actions | Step 2.3 |
 | `app/services/workflow_orchestrator.rb` | Generic workflow orchestrator | Step 2.4 |
 | `app/models/memories/actions_memory.rb` | Memory type for tracking actions | Step 3.1 |
+| `app/tools/current_context_tool.rb` | Current scene/people/quest context tool | Step 5.1 |
+| `app/tools/context_compression_tool.rb` | Weighted compression of all memories | Step 5.1 |
 | `app/serializers/chat_response_serializer.rb` | Serializes workflow result to API response | Step 4.1 |
 | `test/prompts/base_prompt_test.rb` | Tests for base prompt | Step 1.1 |
 | `test/prompts/action_detection_prompt_test.rb` | Tests for action detection | Step 1.2 |
@@ -43,6 +47,8 @@
 | `test/models/actions_memory_test.rb` | Tests for actions memory | Step 3.1 |
 | `test/serializers/chat_response_serializer_test.rb` | Tests for serializer | Step 4.1 |
 | `test/integration/dnd_workflow_integration_test.rb` | End-to-end integration tests | Step 5.1 |
+| `test/tools/current_context_tool_test.rb` | Tests current context tool | Step 5.1 |
+| `test/tools/context_compression_tool_test.rb` | Tests context compression tool | Step 5.1 |
 
 ## Document Tree
 

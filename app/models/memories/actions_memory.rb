@@ -12,5 +12,9 @@ module Memories
     def self.default
       []
     end
+
+    def self.weight
+      1.0
+    end
   end
 end
