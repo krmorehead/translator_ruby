@@ -97,3 +97,4 @@ class BaseToolTest < ActiveSupport::TestCase
     assert_nil tool.sandbox_path
   end
 end
+

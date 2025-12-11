@@ -12,3 +12,4 @@
 - Registered in `ToolCallService`.
 - Depends on `InventoryStore` and `InventoryItem`.
 
+

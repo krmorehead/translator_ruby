@@ -1,0 +1,1971 @@
+{
+  "parsed_data": {
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "days": [
+          {
+            "dayOfWeek": "Monday",
+            "meals": [
+              {
+                "name": "raisin bran, orange, milk",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Raisin Bran",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "grilled cheese on whole wheat bread, mixed vegetables, cantaloupe, milk",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Whole Wheat Bread",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Mixed Vegetables",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "oatmeal cookie, milk",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Oatmeal Cookie",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Tuesday",
+            "meals": [
+              {
+                "name": "pumpkin corn muffin, banana, milk",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Pumpkin Corn Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "meatballs in brown gravy, white rice, broccoli, honeydew, milk",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Meatballs",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "White Rice",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Broccoli",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Honeydew",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "jungle crackers, milk",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Jungle Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Wednesday",
+            "meals": [
+              {
+                "name": "frosted flakes, cantaloupe, milk",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Frosted Flakes",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "turkey sandwich on whole wheat bread, sliced cucumbers, watermelon, milk",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Turkey",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Whole Wheat Bread",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Sliced Cucumbers",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "ritz crackers, milk",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Ritz Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Thursday",
+            "meals": [
+              {
+                "name": "apple cinnamon muffin, orange, milk",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Apple Cinnamon Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "french toast sticks, diced steamed carrots, banana, milk",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "French Toast Sticks",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Diced Steamed Carrots",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "goldfish, milk",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Goldfish",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Friday",
+            "meals": [
+              {
+                "name": "cornflakes, watermelon, milk",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Cornflakes",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "multigrain chicken nuggets, green beans, cantaloupe, milk",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Multigrain Chicken Nuggets",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Green Beans",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "honey graham crackers, milk",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Honey Graham Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Milk",
+                    "category": "milk",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Milk",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          }
+        ],
+        "notes": null
+      },
+      {
+        "weekNumber": 2,
+        "days": [
+          {
+            "dayOfWeek": "Monday",
+            "meals": [
+              {
+                "name": "rice krispies, orange",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Rice Krispies",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "pasta with meatballs, diced steamed carrots",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Pasta",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Meatballs",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Diced Steamed Carrots",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "cantaloupe",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Tuesday",
+            "meals": [
+              {
+                "name": "carrot zucchini muffin, banana",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Carrot Zucchini Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "fish pattie, white rice, peas",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Fish Pattie",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "White Rice",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Peas",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "honeydew",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Honeydew",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Wednesday",
+            "meals": [
+              {
+                "name": "cornflakes, cantaloupe",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Cornflakes",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "cheese pizza slice, sliced cucumbers",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Pizza Crust",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Sliced Cucumbers",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "watermelon",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Thursday",
+            "meals": [
+              {
+                "name": "blueberry muffin, orange",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Blueberry Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "turkey & cheese pinwheel, roasted potatoes",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Turkey",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Flour Tortilla",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Roasted Potatoes",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "banana",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Friday",
+            "meals": [
+              {
+                "name": "toasty o's, watermelon",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Toasty O's",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "macaroni & lf cheese, broccoli",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Macaroni",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "LF Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Broccoli",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "cantaloupe",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          }
+        ],
+        "notes": null
+      },
+      {
+        "weekNumber": 3,
+        "days": [
+          {
+            "dayOfWeek": "Monday",
+            "meals": [
+              {
+                "name": "raisin bran, orange",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Raisin Bran",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "ham & cheese sandwich on a whole wheat bun, sliced cucumbers, cantaloupe",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Whole Wheat Bun",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Ham",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Sliced Cucumbers",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "jungle crackers",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Jungle Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Tuesday",
+            "meals": [
+              {
+                "name": "banana oat muffin, banana",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Banana Oat Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "pasta in oil, mixed vegetables (on the side), honeydew",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Pasta",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Mixed Vegetables",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Honeydew",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "oatmeal cookie",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Oatmeal Cookie",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Wednesday",
+            "meals": [
+              {
+                "name": "toasty o's, cantaloupe",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Toasty O's",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "multigrain chicken nuggets, green beans, watermelon",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Multigrain Chicken Nuggets",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Green Beans",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "ritz crackers",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Ritz Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Thursday",
+            "meals": [
+              {
+                "name": "pumpkin corn muffin, orange",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Pumpkin Corn Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "baked ziti with cheese, peas, banana",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Baked Ziti",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Peas",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "goldfish",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Goldfish",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Friday",
+            "meals": [
+              {
+                "name": "frosted flakes, watermelon",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Frosted Flakes",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "(2) pancakes & sausage, syrup, cantaloupe",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Pancakes",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Sausage",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "honey graham crackers",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Honey Graham Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          }
+        ],
+        "notes": null
+      },
+      {
+        "weekNumber": 4,
+        "days": [
+          {
+            "dayOfWeek": "Monday",
+            "meals": [
+              {
+                "name": "toasty o's, orange",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Toasty O's",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "turkey & cheese pinwheel, broccoli",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Turkey",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Flour Tortilla",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Broccoli",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "cantaloupe",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "honey graham crackers",
+                "mealType": "PM Snack",
+                "foodItems": [
+                  {
+                    "name": "Honey Graham Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Tuesday",
+            "meals": [
+              {
+                "name": "blueberry muffin, banana",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Blueberry Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "french toast sticks, roasted potatoes",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "French Toast Sticks",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Roasted Potatoes",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "honeydew",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Honeydew",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "ritz crackers",
+                "mealType": "PM Snack",
+                "foodItems": [
+                  {
+                    "name": "Ritz Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Wednesday",
+            "meals": [
+              {
+                "name": "raisin bran, cantaloupe",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Raisin Bran",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "cheese pizza slice, sliced cucumbers",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Pizza Crust",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Sliced Cucumbers",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "watermelon",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "oatmeal cookie",
+                "mealType": "PM Snack",
+                "foodItems": [
+                  {
+                    "name": "Oatmeal Cookie",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Thursday",
+            "meals": [
+              {
+                "name": "banana oat muffin, orange",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Banana Oat Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "macaroni & lf cheese, diced steamed carrots",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Macaroni",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "LF Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Diced Steamed Carrots",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "banana",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "goldfish",
+                "mealType": "PM Snack",
+                "foodItems": [
+                  {
+                    "name": "Goldfish",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Friday",
+            "meals": [
+              {
+                "name": "rice krispies, watermelon",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Rice Krispies",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "cheeseburger on a whole wheat bun, baked crinkle cut fries",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Whole Wheat Bun",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Burger Patty",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Baked Crinkle Cut Fries",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "cantaloupe",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "jungle crackers",
+                "mealType": "PM Snack",
+                "foodItems": [
+                  {
+                    "name": "Jungle Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          }
+        ],
+        "notes": null
+      },
+      {
+        "weekNumber": 5,
+        "days": [
+          {
+            "dayOfWeek": "Monday",
+            "meals": [
+              {
+                "name": "raisin bran, orange, grilled cheese on whole wheat bread, mixed vegetables, cantaloupe, oatmeal cookie",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Raisin Bran",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "grilled cheese on whole wheat bread, mixed vegetables, cantaloupe",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Whole Wheat Bread",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Mixed Vegetables",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "oatmeal cookie",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Oatmeal Cookie",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Tuesday",
+            "meals": [
+              {
+                "name": "carrot zucchini muffin, banana",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Carrot Zucchini Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "fish pattie, white rice, peas, honeydew",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Fish Pattie",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "White Rice",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Peas",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Honeydew",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "jungle crackers",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Jungle Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Wednesday",
+            "meals": [
+              {
+                "name": "cornflakes, cantaloupe",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Cornflakes",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "cheese pizza slice, sliced cucumbers, watermelon",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Pizza Crust",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Sliced Cucumbers",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "ritz crackers",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Ritz Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Thursday",
+            "meals": [
+              {
+                "name": "blueberry muffin, orange",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Blueberry Muffin",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Orange",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "turkey & cheese pinwheel, roasted potatoes, banana",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Flour Tortilla",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Turkey",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Roasted Potatoes",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Banana",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "goldfish",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Goldfish",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          },
+          {
+            "dayOfWeek": "Friday",
+            "meals": [
+              {
+                "name": "toasty o's, watermelon",
+                "mealType": "Breakfast",
+                "foodItems": [
+                  {
+                    "name": "Toasty O's",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Watermelon",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "macaroni & lf cheese, broccoli, cantaloupe",
+                "mealType": "Lunch",
+                "foodItems": [
+                  {
+                    "name": "Macaroni",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "LF Cheese",
+                    "category": "meat_alt",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Meat/Meat Alternate",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Broccoli",
+                    "category": "vegetable",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Vegetable",
+                    "isCustom": true
+                  },
+                  {
+                    "name": "Cantaloupe",
+                    "category": "fruit",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Fruit",
+                    "isCustom": true
+                  }
+                ]
+              },
+              {
+                "name": "honey graham crackers",
+                "mealType": "Snack",
+                "foodItems": [
+                  {
+                    "name": "Honey Graham Crackers",
+                    "category": "grain",
+                    "matchedFoodItemId": null,
+                    "cacfpComponent": "Grain",
+                    "isCustom": true
+                  }
+                ]
+              }
+            ],
+            "notes": null
+          }
+        ],
+        "notes": null
+      }
+    ],
+    "title": "PAPER PLANES-MARCH 2025",
+    "dateRange": null,
+    "notes": null
+  },
+  "file_info": {
+    "s3_url": "/Users/jingrandai/Dev/repo/docling-poc/output/01b8d074-35ff-4f1b-8a42-f58f5234b69a_4fd620b1-109b-4290-bad9-48979415e496.html",
+    "room_id": null,
+    "room_name": null
+  },
+  "model_info": {
+    "model_id": "claude-4",
+    "model_name": "Claude 4 Sonnet",
+    "model_arn": "arn:aws:bedrock:us-east-1:370120271417:application-inference-profile/wsgk4gpffoza",
+    "max_output_tokens": 16000,
+    "week_count": 5,
+    "chunked": true
+  },
+  "timestamp": "2025-12-10T16:31:05Z"
+}

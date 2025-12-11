@@ -13,3 +13,4 @@
 - `frontend/src/components/Message.jsx` — individual bubble.
 - `frontend/src/components/chat.css` — styles.
 
+

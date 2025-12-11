@@ -50,3 +50,4 @@ class QuestLogMemoryTest < ActiveSupport::TestCase
     end
   end
 end
+

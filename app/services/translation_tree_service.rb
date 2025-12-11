@@ -73,3 +73,4 @@ class TranslationTreeService
     path.join(".")
   end
 end
+

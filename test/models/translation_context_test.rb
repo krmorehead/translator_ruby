@@ -67,3 +67,4 @@ class TranslationContextTest < ActiveSupport::TestCase
     assert_equal "custom_model", context.model_type
   end
 end
+

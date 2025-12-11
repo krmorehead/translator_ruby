@@ -43,3 +43,4 @@ OpenAI::Client.new(
 - [TranslationService](../../app/services/translation_service.md) - Uses OpenAI client
 - `Gemfile` - Defines `ruby-openai` dependency
 
+

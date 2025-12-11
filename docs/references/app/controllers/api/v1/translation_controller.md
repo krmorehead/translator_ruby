@@ -74,3 +74,4 @@ Translates a single text string with optional context and formatting options.
 - [TranslationContext](../../models/translation_context.md) - Translation parameters model
 - `test/controllers/api/v1/translation_controller_test.rb` - Controller tests
 
+

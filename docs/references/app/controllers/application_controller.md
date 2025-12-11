@@ -30,3 +30,4 @@ end
 - Can be extended with shared concerns (authentication, error handling, etc.)
 - Currently minimal - serves as inheritance anchor for API controllers
 
+

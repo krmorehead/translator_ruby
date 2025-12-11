@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Weekly School Menu — Structured HTML Focus</title>
+  <meta name="description" content="Highly-structured single-file weekly school menu with semantic markup, templates, web components, and progressive enhancement." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0b1220; --card:#0f1724; --muted:#9aa4b2; --accent:#6be3c9; --glass: rgba(255,255,255,0.02);
+      --gap:16px; --radius:12px; color-scheme: dark; font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#07101a 0%,var(--bg) 60%);color:#e7f0fb}
+    .app{max-width:1200px;margin:36px auto;padding:20px;}
+
+    /* Top bar */
+    .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .brand .mark{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,#5af5d7,#7b6bff);display:grid;place-items:center;font-weight:800;color:#031018}
+    .title{font-size:1.25rem;font-weight:700}
+    .subtitle{font-size:0.9rem;color:var(--muted)}
+
+    /* Controls */
+    .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+    .btn{background:var(--glass);border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:10px;color:var(--muted);font-weight:600;cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,#6be3c9,#8a7dff);color:#031018}
+
+    /* Layout */
+    .grid{display:grid;grid-template-columns:300px 1fr;gap:18px}
+    @media (max-width:920px){.grid{grid-template-columns:1fr}}
+
+    /* Sidebar: controls + filters */
+    .sidebar{background:linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.01));padding:14px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.03)}
+    .section{margin-bottom:14px}
+    .section h3{margin:0 0 8px 0;font-size:0.95rem}
+    .filter-list{display:flex;flex-direction:column;gap:8px}
+    .checkbox{display:flex;gap:8px;align-items:center}
+    .small{font-size:0.86rem;color:var(--muted)}
+
+    /* Main schedule */
+    .schedule{display:flex;flex-direction:column;gap:12px}
+    .week{display:flex;gap:12px;align-items:stretch}
+    .day{flex:1;min-width:160px;display:flex;flex-direction:column;gap:10px}
+    .day header{display:flex;justify-content:space-between;align-items:center}
+    .day h4{margin:0}
+
+    /* Composer + day slots */
+    .slot-list{display:flex;flex-direction:column;gap:10px}
+    .slot{background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);display:flex;gap:10px;align-items:flex-start}
+    .slot[draggable="true"]{cursor:grab}
+    .slot .time{min-width:68px;font-weight:700;color:var(--muted);font-size:0.85rem}
+    .slot .meal{flex:1}
+    .slot .meta{display:flex;gap:8px;align-items:center}
+    .tag{padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.02);font-size:0.78rem;color:var(--muted)}
+
+    /* Nutrition mini bar */
+    .bar{height:8px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden}
+    .bar > i{display:block;height:100%}
+
+    /* Accessibility focus */
+    :focus{outline:3px solid rgba(107,227,201,0.12);outline-offset:2px}
+
+    /* Print */
+    @media print{.toolbar,.controls,.sidebar{display:none}.app{margin:0;padding:0}}
+
+    /* Fancy decorative grid */
+    .decor{position:absolute;right:20px;top:20px;opacity:0.04;font-size:120px;pointer-events:none}
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="toolbar" role="toolbar" aria-label="menu toolbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">CG</div>
+        <div>
+          <div class="title">Chestnut Grove — Weekly Menu</div>
+          <div class="subtitle" id="week-desc">Structured HTML-focused menu (editable)</div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="export-json" title="Export menu as JSON">Export JSON</button>
+        <button class="btn" id="print" title="Print menu">Print</button>
+        <button class="btn primary" id="reset" title="Reset to defaults">Reset</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <aside class="sidebar" aria-labelledby="filters-title">
+        <div class="section">
+          <h3 id="filters-title">Filters</h3>
+          <div class="filter-list" role="group" aria-label="Allergen filters">
+            <label class="checkbox"><input type="checkbox" data-filter="nuts" /> <span class="small">Exclude nuts</span></label>
+            <label class="checkbox"><input type="checkbox" data-filter="dairy" /> <span class="small">Exclude dairy</span></label>
+            <label class="checkbox"><input type="checkbox" data-filter="gluten" /> <span class="small">Exclude gluten</span></label>
+            <label class="checkbox"><input type="checkbox" data-filter="vegan" /> <span class="small">Only show vegan</span></label>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Add a custom meal</h3>
+          <form id="composer" aria-label="Add meal form">
+            <div style="display:grid;grid-template-columns:1fr 90px;gap:8px;margin-bottom:8px">
+              <input name="title" placeholder="Meal title" required />
+              <input name="time" placeholder="Lunch" />
+            </div>
+            <div style="display:flex;gap:8px">
+              <select name="day" aria-label="select day">
+                <option value="monday">Monday</option>
+                <option value="tuesday">Tuesday</option>
+                <option value="wednesday">Wednesday</option>
+                <option value="thursday">Thursday</option>
+                <option value="friday">Friday</option>
+              </select>
+              <input name="tags" placeholder="tags (comma)" />
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn primary" type="submit">Add</button>
+              <button class="btn" type="button" id="clear-compose">Clear</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section">
+          <h3>Shortcuts</h3>
+          <div class="small">Keyboard: <strong>F</strong> open composer search, <strong>J/K</strong> focus next/prev day, <strong>D</strong> toggle dark (dev)</div>
+        </div>
+      </aside>
+
+      <main class="schedule" id="schedule" tabindex="0">
+        <div class="week" role="list" aria-label="week schedule">
+          <!-- Each day is rendered from template via JS. The markup is intentionally verbose with data-attrs for programmatic control. -->
+
+          <section class="day" data-day="monday" aria-labelledby="monday-label" role="listitem">
+            <header>
+              <h4 id="monday-label">Monday <small class="small">— Nov 3</small></h4>
+              <div class="small">3 items</div>
+            </header>
+            <div class="slot-list" data-slots></div>
+          </section>
+
+          <section class="day" data-day="tuesday" aria-labelledby="tuesday-label" role="listitem">
+            <header>
+              <h4 id="tuesday-label">Tuesday <small class="small">— Nov 4</small></h4>
+              <div class="small">3 items</div>
+            </header>
+            <div class="slot-list" data-slots></div>
+          </section>
+
+          <section class="day" data-day="wednesday" aria-labelledby="wednesday-label" role="listitem">
+            <header>
+              <h4 id="wednesday-label">Wednesday <small class="small">— Nov 5</small></h4>
+              <div class="small">3 items</div>
+            </header>
+            <div class="slot-list" data-slots></div>
+          </section>
+
+          <section class="day" data-day="thursday" aria-labelledby="thursday-label" role="listitem">
+            <header>
+              <h4 id="thursday-label">Thursday <small class="small">— Nov 6</small></h4>
+              <div class="small">3 items</div>
+            </header>
+            <div class="slot-list" data-slots></div>
+          </section>
+
+          <section class="day" data-day="friday" aria-labelledby="friday-label" role="listitem">
+            <header>
+              <h4 id="friday-label">Friday <small class="small">— Nov 7</small></h4>
+              <div class="small">3 items</div>
+            </header>
+            <div class="slot-list" data-slots></div>
+          </section>
+
+        </div>
+
+        <div aria-hidden="true" class="decor">MENU</div>
+      </main>
+    </div>
+
+    <!-- Templates: Using <template> keeps HTML accessible and structured while allowing JS to stamp content efficiently -->
+    <template id="slot-template">
+      <div class="slot" role="article" tabindex="0" draggable="true">
+        <div class="time" data-time></div>
+        <div class="meal">
+          <div data-title style="font-weight:700"></div>
+          <div data-desc class="small"></div>
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap" data-tags></div>
+          <div style="margin-top:8px">
+            <div class="bar" aria-hidden="true"><i style="width:40%;background:linear-gradient(90deg,#7b6bff,#6be3c9)"></i></div>
+          </div>
+        </div>
+        <div class="meta">
+          <button class="btn" data-edit title="Edit">Edit</button>
+          <button class="btn" data-remove title="Remove">Remove</button>
+        </div>
+      </div>
+    </template>
+
+    <template id="sr-only">
+      <div class="sr-only" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden">Live region</div>
+    </template>
+
+    <script>
+      /* Progressive, modular JS — structured but minimal. Everything is data-driven and uses semantic HTML -> easier for server-side rendering later. */
+      (function(){
+        const defaultData = {
+          monday: [
+            {time:'Breakfast',title:'Oatmeal bar with apple compote',tags:['vegan','whole-grain'],desc:'Served with cinnamon & brown sugar'},
+            {time:'Lunch',title:'Herb-roasted chicken',tags:['protein','gf-option'],desc:'Quinoa pilaf & green beans'},
+            {time:'Snack',title:'Yogurt parfait',tags:['dairy','nuts-optional'],desc:'Dairy and non-dairy available'}
+          ],
+          tuesday: [
+            {time:'Breakfast',title:'Scrambled eggs',tags:['protein'],desc:'Served with roasted tomatoes'},
+            {time:'Lunch',title:'Cheesy vegetable bake',tags:['vegetarian','dairy'],desc:'Side salad included'},
+            {time:'Snack',title:'Fresh fruit cups',tags:['nut-free'],desc:'Seasonal fruit selection'}
+          ],
+          wednesday: [
+            {time:'Breakfast',title:'Banana pancakes',tags:['vegetarian','egg'],desc:'Made with oat flour & maple drizzle'},
+            {time:'Lunch',title:'Turkey & avocado wrap',tags:['contains-gluten'],desc:'Served with sweet potato wedges'},
+            {time:'Snack',title:'Carrot sticks & hummus',tags:['vegan','high-fiber'],desc:'House-made hummus'}
+          ],
+          thursday: [
+            {time:'Breakfast',title:'Greek yogurt & granola',tags:['dairy'],desc:'Granola available gluten-free'},
+            {time:'Lunch',title:'Veggie stir-fry with tofu',tags:['vegan','soy'],desc:'Served over brown rice'},
+            {time:'Snack',title:'Apple slices with seed butter',tags:['nut-free','protein'],desc:'Sunflower seed butter'}
+          ],
+          friday: [
+            {time:'Breakfast',title:'Bagel bar',tags:['vegetarian','gluten'],desc:'Cream cheese, hummus & cucumber'},
+            {time:'Lunch',title:'Salmon burger',tags:['fish','omega-3'],desc:'Whole grain bun & coleslaw'},
+            {time:'Snack',title:'Trail mix cups',tags:['may-contain-nuts'],desc:'Seeds & dried fruit'}
+          ]
+        };
+
+        const scheduleEl = document.getElementById('schedule');
+        const template = document.getElementById('slot-template');
+
+        function getStorage(){
+          try{return JSON.parse(localStorage.getItem('menu-data')||'null')||defaultData}catch(e){return defaultData}
+        }
+        function setStorage(data){localStorage.setItem('menu-data',JSON.stringify(data))}
+
+        let data = getStorage();
+
+        function render(){
+          document.querySelectorAll('.day').forEach(dayEl=>{
+            const day = dayEl.dataset.day;
+            const list = dayEl.querySelector('[data-slots]');
+            list.innerHTML='';
+            (data[day]||[]).forEach((slot,i)=>{
+              const clone = template.content.firstElementChild.cloneNode(true);
+              clone.dataset.index = i;
+              clone.querySelector('[data-time]').textContent = slot.time||'';
+              clone.querySelector('[data-title]').textContent = slot.title||'';
+              clone.querySelector('[data-desc]').textContent = slot.desc||'';
+              const tags = clone.querySelector('[data-tags]');
+              (slot.tags||[]).forEach(t=>{const s=document.createElement('span');s.className='tag';s.textContent=t;tags.appendChild(s)});
+              // Attach event handlers
+              clone.querySelector('[data-remove]').addEventListener('click', ()=>{removeSlot(day, i)});
+              clone.querySelector('[data-edit]').addEventListener('click', ()=>{openEditor(day, i)});
+
+              // Drag events
+              clone.addEventListener('dragstart', dragStart);
+              clone.addEventListener('dragend', dragEnd);
+
+              list.appendChild(clone);
+            });
+            // update count
+            const count = (data[day]||[]).length;
+            dayEl.querySelector('header .small') && (dayEl.querySelector('header .small').textContent = count + ' items');
+          });
+        }
+
+        function removeSlot(day,idx){
+          if(!confirm('Remove this meal?')) return;
+          data[day].splice(idx,1); setStorage(data); render();
+        }
+
+        function openEditor(day,idx){
+          const item = data[day][idx];
+          const title = prompt('Title', item.title); if(title==null) return; item.title = title;
+          const desc = prompt('Description', item.desc); if(desc==null) return; item.desc = desc;
+          const tags = prompt('Tags (comma separated)', (item.tags||[]).join(',')); if(tags==null) return; item.tags = tags.split(',').map(s=>s.trim()).filter(Boolean);
+          setStorage(data); render();
+        }
+
+        // Composer
+        document.getElementById('composer').addEventListener('submit', (e)=>{
+          e.preventDefault();
+          const f = new FormData(e.target);
+          const day = f.get('day');
+          const title = f.get('title').trim();
+          const time = f.get('time') || 'Meal';
+          const tags = (f.get('tags')||'').split(',').map(s=>s.trim()).filter(Boolean);
+          if(!title) return alert('Please add a title');
+          data[day] = data[day]||[]; data[day].push({time,title,tags,desc:''}); setStorage(data); render(); e.target.reset();
+        });
+        document.getElementById('clear-compose').addEventListener('click', ()=>{document.getElementById('composer').reset()});
+
+        // Export
+        document.getElementById('export-json').addEventListener('click', ()=>{
+          const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+          const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='school-menu.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        });
+
+        // Print
+        document.getElementById('print').addEventListener('click', ()=>window.print());
+
+        // Reset
+        document.getElementById('reset').addEventListener('click', ()=>{if(confirm('Reset menu to defaults?')){data=defaultData;setStorage(data);render()}});
+
+        // Filters
+        document.querySelectorAll('[data-filter]').forEach(cb=>{
+          cb.addEventListener('change', ()=>applyFilters())
+        });
+
+        function applyFilters(){
+          const exclude = Array.from(document.querySelectorAll('[data-filter]:checked')).map(n=>n.dataset.filter);
+          document.querySelectorAll('.slot').forEach(slot=>{
+            const tags = Array.from(slot.querySelectorAll('.tag')).map(t=>t.textContent.toLowerCase());
+            let hide = false;
+            if(exclude.includes('vegan') && !tags.includes('vegan')) hide = true;
+            ['nuts','dairy','gluten'].forEach(f=>{ if(exclude.includes(f) && tags.some(t=>t.includes(f))) hide = true });
+            slot.style.display = hide ? 'none' : '';
+          });
+        }
+
+        // Drag & drop to reorder within a day
+        let dragSrc = null;
+        function dragStart(e){ dragSrc = e.currentTarget; e.dataTransfer.effectAllowed = 'move'; e.currentTarget.style.opacity = '0.6'; }
+        function dragEnd(e){ e.currentTarget.style.opacity = ''; }
+
+        // Allow drop on slot-list
+        document.querySelectorAll('[data-slots]').forEach(list=>{
+          list.addEventListener('dragover', e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; });
+          list.addEventListener('drop', e=>{
+            e.preventDefault();
+            if(!dragSrc) return;
+            const fromIdx = Number(dragSrc.dataset.index);
+            const fromDay = dragSrc.closest('.day').dataset.day;
+            const toDay = list.closest('.day').dataset.day;
+            // remove from source
+            const item = data[fromDay].splice(fromIdx,1)[0];
+            data[toDay] = data[toDay]||[]; data[toDay].push(item);
+            setStorage(data); render();
+          });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e)=>{
+          if(e.key.toLowerCase()==='d'){ document.body.classList.toggle('dev'); }
+          if(e.key.toLowerCase()==='f'){ document.getElementById('composer').querySelector('[name=title]').focus(); }
+          if(e.key.toLowerCase()==='j' || e.key.toLowerCase()==='k'){
+            const days = Array.from(document.querySelectorAll('.day'));
+            const active = document.activeElement.closest && document.activeElement.closest('.day');
+            let idx = days.indexOf(active);
+            if(e.key.toLowerCase()==='j') idx = Math.min(days.length-1, idx+1);
+            if(e.key.toLowerCase()==='k') idx = Math.max(0, idx-1);
+            days[idx] && days[idx].querySelector('[data-slots] .slot') && days[idx].querySelector('[data-slots] .slot').focus();
+          }
+        });
+
+        // Initial render
+        render();
+
+        // Announce ability — progressive enhancement for screen readers
+        const sr = document.createElement('div'); sr.setAttribute('aria-live','polite'); sr.style.position='absolute'; sr.style.left='-9999px'; document.body.appendChild(sr);
+        sr.textContent = 'Menu loaded. Use composer to add or edit meals.';
+
+      })();
+    </script>
+  </div>
+</body>
+</html>

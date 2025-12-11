@@ -6,3 +6,4 @@ frontend/src/pages/
 └── InspectorPage.md   # Standalone inspector view
 ```
 
+

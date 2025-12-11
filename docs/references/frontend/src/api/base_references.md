@@ -6,3 +6,4 @@ frontend/src/api/
 └── dndChatApi.md          # API client for chat/agent endpoints
 ```
 
+

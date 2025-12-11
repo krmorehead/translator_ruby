@@ -11,3 +11,4 @@ frontend/src/components/
 └── MessageInput.md        # Text input + send
 ```
 
+

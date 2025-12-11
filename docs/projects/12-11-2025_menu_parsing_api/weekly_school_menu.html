@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weekly School Menu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#9aa4b2;
+      --accent-1:linear-gradient(135deg,#7b61ff 0%, #4ad6c6 100%);
+      --glass: rgba(255,255,255,0.03);
+      --glass-2: rgba(255,255,255,0.02);
+      --yellow: #ffde59;
+      --green: #4ad6a9;
+      --red: #ff6b6b;
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;background:radial-gradient(1200px 600px at 10% 10%, rgba(74,214,198,0.06), transparent), radial-gradient(900px 500px at 90% 90%, rgba(123,97,255,0.05), transparent),var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial; margin:0; color:#e6eef6}
+
+    /* Page frame */
+    .wrap{max-width:1100px;margin:48px auto;padding:28px;border-radius:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 40px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03);}
+
+    header{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+    .brand{display:flex;align-items:center;gap:14px}
+    .logo{width:64px;height:64px;border-radius:14px;background:var(--accent-1);display:grid;place-items:center;box-shadow:0 6px 30px rgba(75,50,200,0.18);}
+    .logo svg{filter:drop-shadow(0 6px 18px rgba(74,214,198,0.08))}
+    h1{font-family:'Playfair Display', serif;font-weight:600;margin:0;font-size:1.5rem}
+    p.lead{margin:0;color:var(--muted);font-size:0.95rem}
+
+    .meta{margin-left:auto;text-align:right}
+    .meta small{display:block;color:var(--muted)}
+
+    /* Grid of days */
+    .week-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px}
+    @media (max-width:980px){.week-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:560px){.week-grid{grid-template-columns:1fr}}
+
+    .day-card{background:linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.008));border-radius:12px;padding:16px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.03)}
+    .day-card::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:conic-gradient(from 180deg at 50% 50%, rgba(74,214,198,0.06), rgba(123,97,255,0.06));transform:rotate(16deg);pointer-events:none}
+
+    .day-title{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .day-title h2{margin:0;font-size:1.05rem}
+    .date{font-size:0.85rem;color:var(--muted)}
+
+    .meal-list{display:flex;flex-direction:column;gap:10px}
+    .meal{display:flex;gap:12px;align-items:flex-start;padding:10px;border-radius:10px;background:linear-gradient(180deg,var(--glass),transparent);border:1px solid rgba(255,255,255,0.02)}
+    .meal .type{min-width:86px;font-weight:600;text-transform:uppercase;font-size:0.78rem;color:var(--muted)}
+    .meal .details{flex:1}
+    .meal .details p{margin:0;font-size:0.95rem}
+    .meal .tags{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+    .pill{font-size:0.78rem;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);color:var(--muted)}
+
+    /* Highlight for today's card */
+    .today{box-shadow:0 10px 40px rgba(75,50,200,0.18), inset 0 1px 0 rgba(255,255,255,0.02);border:1px solid rgba(74,214,198,0.16)}
+    .today .logo-mini{display:inline-grid}
+
+    /* Allergens legend */
+    .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+    .legend .item{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:0.85rem}
+    .badge{width:14px;height:14px;border-radius:4px;display:inline-block}
+    .badge.nut{background:linear-gradient(135deg,#ffb86b,#ff6b6b)}
+    .badge.dairy{background:linear-gradient(135deg,#87f5ff,#4ad6c6)}
+    .badge.gluten{background:linear-gradient(135deg,#ffd27a,#ffde59)}
+
+    footer{display:flex;justify-content:space-between;align-items:center;margin-top:18px;color:var(--muted);font-size:0.88rem}
+
+    /* Fancy diagonal ribbon */
+    .ribbon{position:absolute;left:-60px;top:12px;padding:4px 82px;transform:rotate(-25deg);background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));font-weight:700;color:var(--muted);font-size:0.8rem;border-radius:4px}
+
+    /* Print styles */
+    @media print{
+      body{background:white;color:black}
+      .wrap{box-shadow:none;border:none}
+      .day-card::after,.ribbon{display:none}
+    }
+
+    /* Micro interactions */
+    .day-card:hover{transform:translateY(-6px);transition:transform .28s cubic-bezier(.2,.9,.3,1)}
+    .meal .type, .meal .details{transition:color .18s}
+    .meal:hover .type{color:var(--yellow)}
+
+  </style>
+</head>
+<body>
+  <div class="wrap" role="region" aria-label="Weekly school menu">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <!-- playful apple + fork -->
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 3c.6 1.2 1.9 2 3 2 0 0-1.5 2-3 2s-2.7-1.6-3-3c.9-.6 2.1-1 3-1z" fill="white" opacity="0.92"/>
+            <path d="M6 8c-1.1 1.2-1.6 3-1.2 4.8.7 3 3.4 5.2 6.2 5.2 2.8 0 5.5-2.2 6.2-5.2.4-1.8-.1-3.6-1.2-4.8-1.9-2.2-6.1-2.2-9 0z" fill="#071228" opacity="0.12"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Chestnut Grove School Menu</h1>
+          <p class="lead">Seasonal, balanced meals — allergy-friendly options available</p>
+        </div>
+      </div>
+      <div class="meta">
+        <small>Week of</small>
+        <div><strong id="week-range">Nov 3 — Nov 7, 2025</strong></div>
+        <small id="updated">Updated: Nov 1, 2025</small>
+      </div>
+    </header>
+
+    <main>
+      <div class="week-grid" role="list">
+
+        <!-- Monday -->
+        <article class="day-card" role="listitem" aria-labelledby="monday">
+          <div class="ribbon">K-5</div>
+          <div class="day-title"><h2 id="monday">Monday</h2><span class="date">Nov 3</span></div>
+          <div class="meal-list">
+            <div class="meal">
+              <div class="type">Breakfast</div>
+              <div class="details">
+                <p>Oatmeal bar with apple compote &amp; cinnamon</p>
+                <div class="tags"><span class="pill">Vegan</span><span class="pill">Whole Grain</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Lunch</div>
+              <div class="details">
+                <p>Herb-roasted chicken, quinoa pilaf, steamed green beans</p>
+                <div class="tags"><span class="pill">Protein</span><span class="pill">Gluten-Free Option</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Snack</div>
+              <div class="details">
+                <p>Yogurt parfait station (dairy/non-dairy available)</p>
+                <div class="tags"><span class="pill">Contains Dairy</span><span class="pill">Nuts Optional</span></div>
+              </div>
+            </div>
+
+          </div>
+        </article>
+
+        <!-- Tuesday -->
+        <article class="day-card" role="listitem" aria-labelledby="tuesday">
+          <div class="day-title"><h2 id="tuesday">Tuesday</h2><span class="date">Nov 4</span></div>
+          <div class="meal-list">
+            <div class="meal">
+              <div class="type">Breakfast</div>
+              <div class="details">
+                <p>Scrambled eggs with roasted tomatoes &amp; whole-wheat toast</p>
+                <div class="tags"><span class="pill">Protein</span><span class="pill">Contains Gluten</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Lunch</div>
+              <div class="details">
+                <p>Cheesy vegetable bake with side salad (vegan cheese available)</p>
+                <div class="tags"><span class="pill">Vegetarian</span><span class="pill">Contains Dairy</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Snack</div>
+              <div class="details">
+                <p>Fresh fruit cups &amp; whole-grain crackers</p>
+                <div class="tags"><span class="pill">Nut-Free</span></div>
+              </div>
+            </div>
+
+          </div>
+        </article>
+
+        <!-- Wednesday -->
+        <article class="day-card today" role="listitem" aria-labelledby="wednesday">
+          <div class="day-title"><h2 id="wednesday">Wednesday <span style="font-weight:400;color:var(--muted);font-size:0.88rem;margin-left:6px">(Today)</span></h2><span class="date">Nov 5</span></div>
+          <div class="meal-list">
+            <div class="meal">
+              <div class="type">Breakfast</div>
+              <div class="details">
+                <p>Banana pancakes (made with oat flour) &amp; maple drizzle</p>
+                <div class="tags"><span class="pill">Vegetarian</span><span class="pill">Eggs</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Lunch</div>
+              <div class="details">
+                <p>Turkey &amp; avocado wrap, roasted sweet potato wedges</p>
+                <div class="tags"><span class="pill">Contains Gluten</span><span class="pill">Contains Avocado</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Snack</div>
+              <div class="details">
+                <p>Carrot sticks &amp; hummus</p>
+                <div class="tags"><span class="pill">Vegan</span><span class="pill">High Fiber</span></div>
+              </div>
+            </div>
+
+          </div>
+        </article>
+
+        <!-- Thursday -->
+        <article class="day-card" role="listitem" aria-labelledby="thursday">
+          <div class="day-title"><h2 id="thursday">Thursday</h2><span class="date">Nov 6</span></div>
+          <div class="meal-list">
+            <div class="meal">
+              <div class="type">Breakfast</div>
+              <div class="details">
+                <p>Greek yogurt with granola &amp; berry compote</p>
+                <div class="tags"><span class="pill">Contains Dairy</span><span class="pill">Gluten-Free Option</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Lunch</div>
+              <div class="details">
+                <p>Veggie stir-fry with tofu over brown rice</p>
+                <div class="tags"><span class="pill">Vegan</span><span class="pill">Soy</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Snack</div>
+              <div class="details">
+                <p>Apple slices with sunflower seed butter</p>
+                <div class="tags"><span class="pill">Nut-Free</span><span class="pill">Protein</span></div>
+              </div>
+            </div>
+
+          </div>
+        </article>
+
+        <!-- Friday -->
+        <article class="day-card" role="listitem" aria-labelledby="friday">
+          <div class="day-title"><h2 id="friday">Friday</h2><span class="date">Nov 7</span></div>
+          <div class="meal-list">
+            <div class="meal">
+              <div class="type">Breakfast</div>
+              <div class="details">
+                <p>Bagel bar with cream cheese, hummus &amp; cucumber</p>
+                <div class="tags"><span class="pill">Vegetarian</span><span class="pill">Contains Gluten</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Lunch</div>
+              <div class="details">
+                <p>Salmon burger on whole grain bun, coleslaw</p>
+                <div class="tags"><span class="pill">Omega-3</span><span class="pill">Contains Fish</span></div>
+              </div>
+            </div>
+
+            <div class="meal">
+              <div class="type">Snack</div>
+              <div class="details">
+                <p>Trail mix cups (seeds, dried fruit)</p>
+                <div class="tags"><span class="pill">May Contain Nuts</span></div>
+              </div>
+            </div>
+
+          </div>
+        </article>
+
+      </div>
+
+      <div class="legend" aria-hidden="false">
+        <div class="item"><span class="badge nut"></span> Contains nuts</div>
+        <div class="item"><span class="badge dairy"></span> Contains dairy</div>
+        <div class="item"><span class="badge gluten"></span> Contains gluten</div>
+      </div>
+
+    </main>
+
+    <footer>
+      <div>Questions? Email <a href="mailto:nutrition@chestnutgrove.edu">nutrition@chestnutgrove.edu</a></div>
+      <div>Calories &amp; allergen guide available upon request</div>
+    </footer>
+  </div>
+
+  <script>
+    // Small enhancement: auto-fill current week range (keeps file portable)
+    (function(){
+      try{
+        const today = new Date();
+        // find monday of this week
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        const mon = new Date(today.setDate(diff));
+        const fri = new Date(mon); fri.setDate(mon.getDate()+4);
+        const opts = { month: 'short', day: 'numeric' };
+        const range = mon.toLocaleDateString(undefined,opts) + ' — ' + fri.toLocaleDateString(undefined,opts) + ', ' + fri.getFullYear();
+        document.getElementById('week-range').textContent = range;
+        document.getElementById('updated').textContent = 'Updated: ' + new Date().toLocaleDateString();
+      }catch(e){/* silent */}
+    })();
+  </script>
+</body>
+</html>

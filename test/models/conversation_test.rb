@@ -30,3 +30,4 @@ class ConversationTest < ActiveSupport::TestCase
     assert_equal "Hello", payload[:messages].first[:message]
   end
 end
+

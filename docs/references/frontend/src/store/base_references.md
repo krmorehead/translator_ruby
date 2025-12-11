@@ -6,3 +6,4 @@ frontend/src/store/
 └── chatStore.md   # Zustand store for chat state/actions
 ```
 
+

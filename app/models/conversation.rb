@@ -29,3 +29,4 @@ class Conversation
     Message.new(**message.transform_keys(&:to_sym))
   end
 end
+

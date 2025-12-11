@@ -218,3 +218,4 @@ Before finalizing a project plan, verify:
 - [ ] No implementation code appears in the plan
 - [ ] Test requirements cover happy path and edge cases
 
+

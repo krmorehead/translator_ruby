@@ -70,3 +70,4 @@ The `/api/v1/` namespace allows for future API versions:
 - [HelloController](../app/controllers/api/v1/hello_controller.md)
 - [TranslationController](../app/controllers/api/v1/translation_controller.md)
 
+

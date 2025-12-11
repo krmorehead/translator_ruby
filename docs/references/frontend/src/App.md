@@ -15,3 +15,4 @@
 - `frontend/src/components/ChatPage.jsx` — chat UI shell.
 - `frontend/src/pages/InspectorPage.jsx` — inspector view.
 
+
