@@ -3,6 +3,8 @@
 require_relative "base_prompt"
 
 class NarrativePrompt < BasePrompt
+  CONTEXT_TOKEN_MAX = 8000
+
   def model
     ENV["NARRATIVE_MODEL"].presence || super
   end
@@ -23,13 +25,26 @@ class NarrativePrompt < BasePrompt
   def format_context(context)
     context ||= {}
     actions = context[:actions] || context["actions"] || []
-    scene = context[:scene] || context["scene"]
-    history = context[:recent_conversation] || context["recent_conversation"]
+    compressed = context[:compressed_context] || context["compressed_context"]
+    sections = context[:sections] || context["sections"]
+
+    current = context[:current_context] || context["current_context"] || {}
+    scene = current[:scene] || current["scene"] || context[:scene] || context["scene"]
+    history = current[:recent_conversation] || current["recent_conversation"] || context[:recent_conversation] || context["recent_conversation"]
+    people = current[:people] || current["people"]
+    quest = current[:current_quest] || current["current_quest"]
 
     parts = []
     parts << "Completed actions:\n#{JSON.pretty_generate(actions)}" if actions.any?
-    parts << "Scene:\n#{scene}" if scene
-    parts << "Recent conversation:\n#{JSON.pretty_generate(history)}" if history
+    if compressed
+      parts << "Compressed context:\n#{compressed}"
+      parts << "Section summaries:\n#{JSON.pretty_generate(sections)}" if sections
+    else
+      parts << "Scene:\n#{scene}" if scene
+      parts << "Current quest:\n#{quest}" if quest
+      parts << "People:\n#{JSON.pretty_generate(people)}" if people
+      parts << "Recent conversation:\n#{JSON.pretty_generate(history)}" if history
+    end
     parts.join("\n\n")
   end
 

@@ -11,6 +11,7 @@ require_relative "../models/memory_store"
 require_relative "../models/memory_kinds"
 require_relative "../models/memories/actions_memory"
 require_relative "../tools/current_context_tool"
+require_relative "../tools/context_compression_tool"
 require_relative "../services/tool_call_service"
 require_relative "../models/conversation"
 require_relative "../models/message"
@@ -157,15 +158,33 @@ class DndChatWorkflow < BaseWorkflow
     prompt = NarrativePrompt.new
     context_tool = CurrentContextTool.new(sandbox_path: sandbox_path)
     current_context = context_tool.execute(path: memory_store.path)[:result] rescue {}
-    context = {
+    base_context = {
       actions: completed_actions.map(&:to_h),
       current_context: current_context
     }
+
+    context = if exceeds_context_limit?(base_context)
+      compression = ContextCompressionTool.new(sandbox_path: sandbox_path).execute(path: memory_store.path) rescue {}
+      compressed = compression[:result] || {}
+      {
+        actions: base_context[:actions],
+        compressed_context: compressed[:overall_summary],
+        sections: compressed[:sections]
+      }
+    else
+      base_context
+    end
+
     prompt.execute(prompt: self.prompt, context: context)
   end
 
   def symbolize_keys(hash)
     hash.each_with_object({}) { |(k, v), h| h[k.to_sym] = v }
+  end
+
+  def exceeds_context_limit?(context)
+    approx_tokens = JSON.generate(context).size / 4.0
+    approx_tokens > NarrativePrompt::CONTEXT_TOKEN_MAX
   end
 
   def system_prompt(extra)
