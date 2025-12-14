@@ -1,223 +1,27 @@
-# Project Plan: vllm Client Implementation
+# Project Plan: vllm Think Tag Filtering
 
 ## Overview
 
-After migrating from llama.cpp to vllm, our test suite shows 400 Bad Request errors because vllm uses `guided_json` for structured outputs instead of OpenAI's `json_schema` response format. Additionally, vllm models output `<think>` reasoning tags that should be captured as training data. This project refactors our current GenericLlmClient into VllmLlmClient that handles these vllm-specific requirements, while preserving the current OpenAI-compatible implementation as OpenAiLlmClient for future use.
+After migrating to vllm, our LLM responses contain `<think>...</think>` reasoning tags that need to be filtered from final outputs. This project adds automatic think tag extraction and filtering to GenericLlmClient, returning thoughts as a separate field on the response payload. Thoughts are threaded through the entire chain (Client -> Prompt -> Workflow) for use in narratives and memory recording.
 
 ## Goals
 
-- Refactor GenericLlmClient to VllmLlmClient with vllm-specific parameter translation
-- Create OpenAiLlmClient preserving current OpenAI API compatibility (unused)
-- Implement automatic `response_format` to `guided_json` translation in VllmLlmClient
-- Extract and record `<think>` tags as model thoughts in a new memories section
-- Ensure all 267 tests pass with vllm backend
-- Keep prompts, workflows, and other code completely unchanged
+- Extract and filter `<think>` tags from LLM responses
+- Return thoughts as separate field on response payload
+- Thread thoughts through BasePrompt to workflows
+- Record thoughts in ModelInteractionMemory for training data
+- Ensure all tests pass with clean, think-tag-free responses
+- Keep existing client architecture (no split needed)
 
 ---
 
-## Milestone 1 - Create Dual Client Architecture
+## Milestone 1 - Think Tag Extraction and Filtering
 
-Refactor the current GenericLlmClient into two separate clients: VllmLlmClient (active) and OpenAiLlmClient (preserved for future use).
+Extract think tags from responses and return them as a separate field.
 
-### 1.1 - Create VllmLlmClient from GenericLlmClient
+### 1.1 - Create ThoughtExtractor Service
 
-**Intent**: Refactor the current GenericLlmClient into VllmLlmClient that will handle vllm-specific parameter translation and response processing.
-
-**Details**:
-- Copy `app/services/generic_llm_client.rb` to `app/services/vllm_llm_client.rb`
-- Rename module `GenericLlmClient` to `VllmLlmClient`
-- Keep all existing functionality (singleton, retry wrapper, env building)
-- Update class comments to reflect vllm-specific purpose
-- This will be the actively used client
-- Keep using same env vars: `API_KEY`, `LLM_URL`, `LLM_RETRY_ATTEMPTS`, `LLM_RETRY_DELAY`
-- Will add parameter translation in subsequent steps
-
-**Tests**:
-- Test VllmLlmClient.instance returns a client
-- Test VllmLlmClient.build_from_env creates client with correct config
-- Test retry wrapper is applied when retry attempts > 0
-- Test basic chat call works (without special parameters yet)
-- Verify singleton pattern works correctly
-
----
-
-### 1.2 - Create OpenAiLlmClient (Preserved for Future Use)
-
-**Intent**: Preserve the current OpenAI-compatible client implementation for future use when we need OpenAI API compatibility.
-
-**Details**:
-- Copy `app/services/generic_llm_client.rb` to `app/services/openai_llm_client.rb`
-- Rename module `GenericLlmClient` to `OpenAiLlmClient`
-- Keep all existing functionality unchanged - this is the "preserved" version
-- Update class comments to indicate this is for OpenAI API compatibility
-- This client is NOT currently used but available for future needs
-- Add comment explaining it uses OpenAI's native `response_format` with `json_schema`
-
-**Tests**:
-- Test OpenAiLlmClient.instance returns a client
-- Test OpenAiLlmClient.build_from_env creates client
-- Test it maintains OpenAI-compatible behavior in how it forms prompts
-- Do not test against a live LLM
-- Mark tests as demonstrating preservation of original logic
-
----
-
-### 1.3 - Update GenericLlmClient to Delegate to VllmLlmClient
-
-**Intent**: Make GenericLlmClient a thin wrapper that delegates to VllmLlmClient to maintain backward compatibility with existing code.
-
-**Details**:
-- Update `app/services/generic_llm_client.rb` to delegate all calls to VllmLlmClient
-- Delegate all module methods (instance, build_from_env, etc.) to VllmLlmClient
-- This allows all existing code (BasePrompt, workflows, etc.) to work unchanged
-- Add comment explaining this delegates to VllmLlmClient
-- Keep the file minimal - just delegation
-
-**Tests**:
-- Test GenericLlmClient.instance returns VllmLlmClient instance
-- Test all existing code using GenericLlmClient still works
-- Verify BasePrompt can use GenericLlmClient unchanged
-- Verify DndChatWorkflow works unchanged
-
----
-
-## Milestone 2 - Implement Parameter Translation in VllmLlmClient
-
-Add automatic translation of OpenAI `response_format` parameters to vllm `guided_json` parameters.
-
-### 2.1 - Create GuidedJsonBuilder Service
-
-**Intent**: Build a service to convert OpenAI's JSON Schema format to vllm's guided_json JSON string format.
-
-**Details**:
-- Create new service class `app/services/guided_json_builder.rb`
-- Implement class method `self.build_from_schema(schema_hash)` that:
-  - Takes an OpenAI response_format schema hash
-  - Extracts the actual JSON Schema from the nested structure (the `schema` key within `json_schema`)
-  - Converts the Ruby hash to a JSON string using `JSON.generate` or `to_json`
-  - Returns a JSON string suitable for vllm's `guided_json` parameter
-- Input format (what OpenAI uses):
-  ```ruby
-  {
-    type: "json_schema",
-    json_schema: {
-      name: "schema_name",
-      strict: true,
-      schema: { type: "object", properties: {...}, required: [...] }
-    }
-  }
-  ```
-- Output format (what vllm needs):
-  - JSON string of the schema: `'{"type":"object","properties":{...},"required":[...]}'`
-- Support all schema features used in our prompts:
-  - Object type with properties
-  - String, boolean, number types  
-  - Array types with items
-  - Enum constraints
-  - Required fields
-  - additionalProperties: false
-- Handle edge cases like nil input (return nil) or malformed schema
-- Keep the conversion lossless - preserve all constraints
-- Use Ruby's native JSON library - no external templating gems needed
-
-**Tests**:
-- Test converting simple object schema (OutcomePrompt style with one string property)
-- Test converting nested object schema with multiple levels
-- Test converting array schema with enum (ActionDetectionPrompt style)
-- Test extracting schema from OpenAI response_format nested structure
-- Test handling of required fields array
-- Test handling of additionalProperties: false
-- Test with actual response_schema from OutcomePrompt
-- Test with actual response_schema from ActionDetectionPrompt  
-- Test with actual response_schema from TranslationPrompt
-- Test error handling for nil input (returns nil)
-- Test error handling for malformed/incomplete schema
-- Test output is valid JSON string that can be parsed back
-- Test that parsing the output JSON gives equivalent hash structure
-- Test that all data types are preserved correctly (string, integer, boolean, array, object)
-- Test that enum arrays are preserved exactly
-- Test that nested required fields are maintained
-
----
-
-### 2.2 - Add Parameter Translation to VllmLlmClient
-
-**Intent**: Implement automatic translation in VllmLlmClient.chat method to convert OpenAI-style parameters to vllm-compatible parameters.
-
-**Details**:
-- Modify the `chat(parameters:)` method in ClientRetryWrapper class
-- Before calling `@client.chat`, transform parameters:
-  1. Check if `parameters[:response_format]` exists
-  2. If it's a hash with `type: "json_schema"`, convert it:
-     - Use GuidedJsonBuilder to convert schema
-     - Remove `response_format` from parameters
-     - Add `guided_json` parameter with the JSON string
-  3. If response_format is anything else or nil, leave parameters unchanged
-- Transformation should be transparent to callers
-- Keep all other parameters unchanged (model, messages, tools, etc.)
-- Add error handling if transformation fails (log and pass through original)
-- Document the translation behavior in comments
-
-**Tests**:
-- Test chat with response_format containing json_schema gets translated
-- Test chat without response_format passes through unchanged
-- Test chat with other response_format types passes through
-- Test guided_json parameter is correctly formatted JSON string
-- Test messages, model, and tools parameters are unchanged
-- Test actual vllm call succeeds with translated parameters
-- Test error handling if GuidedJsonBuilder fails
-- Verify BasePrompt calls work without modification
-
----
-
-## Milestone 3 - Implement Response Processing in VllmLlmClient
-
-Add automatic extraction of think tags and response filtering in VllmLlmClient.
-
-### 3.1 - Create ModelInteractionMemory in Training Data Subdirectory
-
-**Intent**: Create a new memory type in a training_data subdirectory to record model requests, responses, and extracted thinking for future training data use.
-
-**Details**:
-- Create `app/models/memories/training_data/` subdirectory
-- Create `app/models/memories/training_data/model_interaction_memory.rb`
-- Inherit from `BaseMemory`
-- Structure records with: timestamp, request (model, messages, parameters), response (content, finish_reason), thoughts (extracted think content or nil)
-- Override `append(interaction)` to append new interactions
-- Override `to_h` to return array of interactions
-- Keep memory focused on training data collection
-- TODO: Add method to export interactions as training dataset
-- TODO: Add filtering by date range for data collection
-- TODO: Add format conversion for different training frameworks (JSONL, Parquet, etc.)
-
-**Tests**:
-- Test creating ModelInteractionMemory
-- Test appending interactions
-- Test serialization to_h returns proper structure
-- Test timestamp is recorded correctly
-- Test thoughts field handles nil gracefully
-
----
-
-### 3.2 - Add MODEL_INTERACTIONS to MemoryKinds
-
-**Intent**: Register the new memory type in the MemoryKinds registry.
-
-**Details**:
-- Add constant MODEL_INTERACTIONS with value "model_interactions" to `app/models/memory_kinds.rb`
-- Register in the Registry to map MODEL_INTERACTIONS to the TrainingData::ModelInteractionMemory class
-- This allows MemoryStore to automatically use the new memory type when model_interactions section is accessed
-
-**Tests**:
-- Test MemoryKinds::MODEL_INTERACTIONS is defined
-- Test Registry.for(MODEL_INTERACTIONS) returns ModelInteractionMemory
-- Test MemoryStore can create model_interactions section
-
----
-
-### 3.3 - Create ThoughtExtractor Service
-
-**Intent**: Build a service to extract and remove `<think>` tags from LLM responses, used by VllmLlmClient.
+**Intent**: Build a service to extract and remove `<think>` tags from LLM responses.
 
 **Details**:
 - Create `app/services/thought_extractor.rb`
@@ -234,276 +38,423 @@ Add automatic extraction of think tags and response filtering in VllmLlmClient.
 - If extraction fails, return original content with nil thoughts
 - Make the service stateless
 
-**Details**:
+**Tests**:
 - Test extracting single think block
 - Test extracting multiple think blocks
 - Test filtering removes think tags completely
 - Test handling of multi-line think content
-- Test with real examples from test failures
+- Test with real examples from vllm responses
 - Test handling of nested/malformed tags
 - Test nil/empty input handling
 - Test thoughts is nil when no think tags present
 - Test filtered content preserves non-think content exactly
+- Test JSON content remains parseable after filtering
 
 ---
 
-### 3.4 - Integrate Response Processing into VllmLlmClient
+### 1.2 - Update GenericLlmClient to Process Responses
 
-**Intent**: Automatically extract thoughts and filter responses in VllmLlmClient, recording interactions to memory when available.
+**Intent**: Modify GenericLlmClient to extract think tags and include thoughts in response payload.
 
 **Details**:
-- Modify the `chat(parameters:)` method in ClientRetryWrapper
-- After receiving response from underlying client:
-  1. Extract content from response
-  2. Use ThoughtExtractor.extract_and_filter(content)
-  3. Replace content in response with filtered version
-  4. Attempt to record to memory (if available):
-     - Try to get MemoryStore from current workflow context (may not exist)
-     - If MemoryStore available, record interaction with thoughts to MODEL_INTERACTIONS section
-     - If not available, skip recording (graceful degradation)
-  5. Return modified response with filtered content
-- Recording should:
-  - Check if DndChatController.current_memory_store is available
-  - Update MODEL_INTERACTIONS section with request, response, and thoughts
-  - Use append mode to build up interaction history
-  - Fail gracefully if memory context unavailable
-- Keep response processing transparent to callers
+- Update `app/services/generic_llm_client.rb`
+- Ensure ClientRetryWrapper always wraps the client (default retry attempts to 1)
+- Modify `chat(parameters:)` in ClientRetryWrapper to:
+  1. Call underlying client
+  2. Extract content from response
+  3. Use ThoughtExtractor.extract_and_filter(content)
+  4. Deep copy response (use JSON round-trip)
+  5. Replace content with filtered version
+  6. Add `thoughts` field to response payload at top level
+  7. Return modified response
+- Response structure becomes:
+  ```ruby
+  {
+    "choices" => [...],  # with filtered content
+    "thoughts" => "extracted thoughts or nil"
+  }
+  ```
+- Keep response processing transparent to most callers
 - Document behavior in comments
-- TODO: Improve memory context passing mechanism (consider thread-local storage or dependency injection)
 
 **Tests**:
 - Test response content is filtered
-- Test thoughts are extracted correctly
+- Test thoughts field is added to response
+- Test thoughts is nil when no think tags present
 - Test response structure is preserved
-- Test works without memory context available
-- Test memory recording when context available (integration test)
 - Test JSON responses are still parseable after filtering
 - Test freeform text responses are clean
-- Test BasePrompt receives filtered responses
-- Verify think tags don't appear in any prompt tests
+- Test multiple calls maintain separation of thoughts
 
 ---
 
-## Milestone 4 - Fix Specific Test Failures
+## Milestone 2 - Thread Thoughts Through Prompt Layer
 
-Address the failing tests now that client handles everything.
+Make thoughts available to prompts and return them from execute.
 
-### 4.1 - Verify Integration Tests Pass
+### 2.1 - Update BasePrompt to Return Thoughts
 
-**Intent**: Confirm that the 400 errors in LlmDndToolsIntegrationTest are resolved by the client's parameter translation.
+**Intent**: Modify BasePrompt.execute to return both content and thoughts.
 
 **Details**:
-- Run `LlmDndToolsIntegrationTest` tests
-- Tests that were failing:
-  - test_LLM_updates_memory_and_summarizes_quests
-  - test_LLM_can_add_and_list_inventory
-  - test_LLM_selects_dice_roll_for_advantage_request
-- These should now pass because VllmLlmClient translates response_format to guided_json
-- Verify tool selection works correctly
-- Verify tool execution and parsing works
-- No changes to test code should be needed
+- Update `app/prompts/base_prompt.rb`
+- Modify `execute(prompt:, context:)` to:
+  1. Call client as usual
+  2. Extract thoughts from response payload
+  3. Parse content as before
+  4. Return hash instead of just content: `{ content: parsed_content, thoughts: thoughts }`
+- For prompts with response_schema (structured JSON):
+  - Return `{ content: parsed_json_hash, thoughts: thoughts }`
+- For prompts without response_schema (freeform text):
+  - Return `{ content: text_string, thoughts: thoughts }`
+- Thoughts default to nil if not present in response
+- Update parse_response to handle new return format
+- Maintain backward compatibility by having execute return hash with :content key
 
 **Tests**:
-- Run all LlmDndToolsIntegrationTest tests
-- Verify all three previously failing tests pass
-- Verify tool responses are correctly parsed
-- Check that structured output is properly formatted
+- Test execute returns hash with :content and :thoughts keys
+- Test structured JSON prompts return parsed JSON in :content
+- Test freeform prompts return string in :content
+- Test thoughts field contains extracted thoughts
+- Test thoughts is nil when no think tags present
+- Test all existing prompt tests still pass (they access [:content])
 
 ---
 
-### 4.2 - Verify Prompt Tests Pass
+### 2.2 - Update Subclass Prompts to Handle New Format
 
-**Intent**: Confirm that think tag issues are resolved by the client's response filtering.
+**Intent**: Update prompt subclasses to work with new hash return format.
 
 **Details**:
-- Run prompt tests
-- Tests that were failing:
-  - BasePromptTest#test_execute_returns_freeform_text_when_no_schema
-  - NarrativePromptTest#test_execute_returns_narrative_string
-- These should now pass because VllmLlmClient filters think tags before returning
-- Responses should be clean without any think content
-- No changes to prompt code or tests needed
+- Update prompts that override execute to handle hash return:
+  - `ActionDetectionPrompt` - extract :content for array handling
+  - `NarrativePrompt` - extract :content for to_s conversion
+- Most prompts don't override execute, so they automatically get new behavior
+- Ensure each override properly accesses result[:content]
+- Pass through thoughts unchanged
 
 **Tests**:
-- Run BasePromptTest suite
-- Run NarrativePromptTest suite
-- Verify think tags are completely absent from responses
-- Verify narrative content is clean
-- Verify all other prompt tests still pass
+- Test ActionDetectionPrompt returns hash with :content array
+- Test NarrativePrompt returns hash with :content string
+- Test thoughts field passes through in all prompt types
+- Test all prompt tests still pass
 
 ---
 
-### 4.3 - Fix Sandbox Path Issue
+## Milestone 3 - Thread Thoughts Through Workflow Layer
 
-**Intent**: Resolve the SecurityError in DndWorkflowIntegrationTest related to path validation.
+Pass thoughts from prompts through to workflows.
+
+### 3.1 - Update DndChatWorkflow to Receive Thoughts
+
+**Intent**: Modify DndChatWorkflow to receive and use thoughts from prompts.
 
 **Details**:
-- Error: `Path 'sandbox/memory.json' is outside the sandbox`
-- Issue is in MemoryStore validation expecting absolute path
-- Root cause: relative path being passed somewhere in the chain
-- Fix options:
-  1. Update MemoryStore to resolve relative paths to absolute
-  2. Fix CurrentContextTool to always pass absolute paths
-  3. Update memory initialization to use absolute paths
-- Choose the fix that's most robust and clear
-- Ensure sandbox security is maintained
-- Test with various path formats
+- Update `app/services/dnd_chat_workflow.rb`
+- Modify methods that call prompts to handle hash return:
+  - `detect_actions` - extract :content for actions array, capture :thoughts
+  - `generate_narrative` - extract :content for narrative string, capture :thoughts
+  - Other prompt calls as needed
+- For simplest implementation: use most recent thoughts (from narrative generation)
+- Add thoughts to workflow result hash:
+  ```ruby
+  {
+    narrative: narrative_text,
+    actions: [...],
+    conversation: conv,
+    thoughts: latest_thoughts  # from narrative prompt
+  }
+  ```
+- Thoughts can be nil if not present
+- Document which thoughts are included (narrative thoughts for now)
 
 **Tests**:
-- Run DndWorkflowIntegrationTest#test_conversation_continuity_across_multiple_messages
-- Verify SecurityError is resolved
-- Test memory operations work correctly
-- Verify sandbox validation still prevents access outside sandbox
-- Test with absolute and relative paths
+- Test workflow result includes thoughts field
+- Test thoughts contain content from narrative generation
+- Test thoughts is nil when not present
+- Test workflow still functions correctly with new format
+- Test all workflow tests still pass
 
 ---
 
-## Milestone 5 - Comprehensive Testing and Validation
+## Milestone 4 - Create Model Interaction Memory System
 
-Run full test suite and ensure all tests pass.
+Add memory system to record model interactions including thoughts.
 
-### 5.1 - Run Full Test Suite
+### 4.1 - Create ModelInteractionMemory
 
-**Intent**: Execute complete test suite to verify all 267 tests pass with the new client architecture.
+**Intent**: Create memory type to record model interactions including extracted thoughts.
+
+**Details**:
+- Create `app/models/memories/training_data/` subdirectory
+- Create `app/models/memories/training_data/model_interaction_memory.rb`
+- Inherit from `BaseMemory`
+- Structure records with:
+  - timestamp
+  - request (model, messages, parameters)
+  - response (content, finish_reason)
+  - thoughts (extracted think content or nil)
+- Override `append(store:, interaction:)` to append new interactions
+- Override `to_h(store:)` to return array of interactions
+- Override `summarize` to return count of interactions
+- Set `weight` to 0.0 (training data is metadata, not narrative content)
+- TODO: Add method to export interactions as training dataset
+- TODO: Add filtering by date range
+- TODO: Add format conversion (JSONL, Parquet, etc.)
+
+**Tests**:
+- Test creating ModelInteractionMemory
+- Test appending interactions
+- Test serialization to_h returns proper structure
+- Test timestamp is recorded correctly
+- Test thoughts field handles nil gracefully
+- Test weight is 0.0
+- Test summarize returns interaction count
+
+---
+
+### 4.2 - Add MODEL_INTERACTIONS to MemoryKinds
+
+**Intent**: Register the new memory type.
+
+**Details**:
+- Add constant MODEL_INTERACTIONS = "model_interactions" to `app/models/memory_kinds.rb`
+- Add to ALL array
+- Register in `app/models/memories/registry.rb` to map to TrainingData::ModelInteractionMemory
+- This allows MemoryStore to use the new memory type
+
+**Tests**:
+- Test MemoryKinds::MODEL_INTERACTIONS is defined
+- Test Registry.for(MODEL_INTERACTIONS) returns ModelInteractionMemory
+- Test MemoryStore can create model_interactions section
+- Test ModelInteractionMemory appears in Registry::ALL
+
+---
+
+### 4.3 - Record Interactions in GenericLlmClient
+
+**Intent**: Record all LLM interactions to memory when memory store is available.
+
+**Details**:
+- Update ClientRetryWrapper in `app/services/generic_llm_client.rb`
+- After processing response with thoughts:
+  1. Check if memory store is available (thread-local or passed context)
+  2. If available, record interaction:
+     - Request: model, messages, key parameters
+     - Response: filtered content, finish_reason
+     - Thoughts: extracted thoughts
+  3. Use ModelInteractionMemory.append(store: memory_store, interaction: {...})
+  4. Fail gracefully if memory not available (optional recording)
+- For simplest implementation: skip memory recording for now (TODO for future)
+- Add TODO comment for memory context passing mechanism
+- Document that recording is optional and doesn't affect responses
+
+**Tests**:
+- Test client works without memory context (graceful degradation)
+- Test thoughts are in response regardless of memory availability
+- Integration test with memory store when implemented
+
+---
+
+## Milestone 5 - Testing and Validation
+
+Verify all tests pass with new architecture.
+
+### 5.1 - Verify Prompt Tests Pass
+
+**Intent**: Confirm think tag filtering resolves prompt test failures.
+
+**Details**:
+- Run prompt tests (BasePromptTest, NarrativePromptTest, etc.)
+- Update tests to access result[:content] instead of raw result
+- Tests should now pass with clean responses
+- No think tags should appear in content
+
+**Tests**:
+- Run BasePromptTest suite - all tests pass
+- Run NarrativePromptTest suite - all tests pass
+- Run ActionDetectionPrompt tests - all pass
+- Verify think tags are absent from all content
+- Verify thoughts field is present when expected
+
+---
+
+### 5.2 - Verify Workflow Tests Pass
+
+**Intent**: Confirm workflows work with new hash return format.
+
+**Details**:
+- Run workflow tests (DndChatWorkflow tests)
+- Update tests to expect thoughts field in results
+- Workflows should function correctly with new format
+- No code changes needed in workflows
+
+**Tests**:
+- Run DndChatWorkflow tests - all pass
+- Verify workflow results include thoughts field
+- Verify narratives are clean (no think tags)
+- Verify actions are detected correctly
+
+---
+
+### 5.3 - Run Full Test Suite
+
+**Intent**: Verify no regressions across entire codebase.
 
 **Details**:
 - Run `ruby lib/test_runner.rb`
-- All tests should pass without any prompt or workflow changes
-- Document any remaining failures
-- Fix any issues found:
-  - Client translation bugs
-  - Response filtering edge cases
-  - Memory recording issues
-- Ensure no regressions introduced
+- All tests should pass or match pre-project baseline
+- Document any failures and investigate
 - Verify test execution is stable
 
 **Tests**:
-- All 267 tests pass
+- All tests pass or match baseline
 - No intermittent failures
-- Test execution completes in reasonable time
-- All prompt types work correctly
-- All integration tests pass
-- All controller tests pass
-- No errors in logs
-
----
-
-### 5.2 - Performance Validation
-
-**Intent**: Ensure the client translation and response processing don't significantly impact performance.
-
-**Details**:
-- Measure overhead of:
-  - Parameter translation (GuidedJsonBuilder)
-  - Response filtering (ThoughtExtractor)
-  - Memory recording attempts
-- Compare response times before and after changes
-- Ensure overhead is minimal (< 10ms per request)
-- Profile if any bottlenecks found
-- Optimize if needed
-
-**Tests**:
-- Response times remain acceptable
-- No significant latency added by client processing
-- Memory recording doesn't slow down requests
-- Integration tests complete in reasonable time
+- No regressions in existing functionality
 
 ---
 
 ## Milestone 6 - Documentation
 
-Document the new client architecture and memory system.
+Document the think tag filtering and thoughts flow.
 
 ### 6.1 - Create Service Documentation
 
-**Intent**: Document the new services for future maintainers.
+**Intent**: Document ThoughtExtractor and updated GenericLlmClient.
 
 **Details**:
-- Create `docs/references/app/services/vllm_llm_client.md`
-- Create `docs/references/app/services/openai_llm_client.md`
-- Create `docs/references/app/services/guided_json_builder.md`
 - Create `docs/references/app/services/thought_extractor.md`
-- Update `docs/references/app/services/generic_llm_client.md` (now delegates)
+- Update `docs/references/app/services/generic_llm_client.md`
+  - Document think tag filtering
+  - Document thoughts field in responses
+  - Document always-on wrapper for response processing
 - Create `docs/references/app/models/memories/training_data/model_interaction_memory.md`
-- Update `docs/references/app/base_references.md` with new files
+- Update `docs/references/app/base_references.md`
 - Follow leaf-node documentation pattern
-- Include:
-  - Purpose and responsibilities
-  - Public API methods
-  - Integration points
-  - Configuration options
-  - Usage examples
+- Include usage examples
 
 **Tests**:
-- Review all documentation for accuracy
+- Review documentation for accuracy
 - Verify examples are correct
 - Ensure cross-references are valid
-- Check file tree is up to date
 
 ---
 
 ### 6.2 - Update Architecture Documentation
 
-**Intent**: Document the dual client architecture and vllm compatibility approach.
+**Intent**: Document think tag filtering architecture.
 
 **Details**:
 - Update `docs/references/architecture_diagram.md`:
-  - Add section on dual client architecture
-  - Document VllmLlmClient as active client
-  - Document OpenAiLlmClient as preserved for future use
-  - Explain automatic parameter translation
-  - Explain automatic response filtering
-  - Document model interaction memory system
-  - Note that prompts and workflows remain unchanged
+  - Add section on think tag filtering
+  - Document thoughts flow through layers
+  - Document response payload structure
+  - Document ModelInteractionMemory system
+  - Note prompts and workflows updated to handle hash returns
 - Add troubleshooting guidance
-- Include migration notes
-- Document TODOs for training data export
+- Document TODOs for future enhancements
+- Include examples of thoughts in workflow results
 
 **Tests**:
 - Verify documentation matches implementation
-- Check diagrams are updated
-- Ensure configuration is clear
+- Ensure diagrams are updated
+- Configuration is clear
 
 ---
 
-### 6.3 - Code Cleanup
+### 6.3 - Update BasePrompt Documentation
 
-**Intent**: Ensure code quality and remove any temporary code.
+**Intent**: Document new return format from prompts.
+
+**Details**:
+- Update `docs/references/app/prompts/base_prompt.md`
+- Document that execute now returns `{ content: ..., thoughts: ... }`
+- Provide examples of accessing both content and thoughts
+- Note backward compatibility considerations
+- Show how subclasses should handle the format
+
+**Tests**:
+- Examples are correct
+- Format is clear
+- Migration path documented
+
+---
+
+### 7.1 - Final Code Review
+
+**Intent**: Ensure code quality and consistency.
 
 **Details**:
 - Run rubocop and fix style violations
 - Remove any debug logging
-- Add inline comments for complex client logic
+- Add inline comments for complex logic
 - Ensure error messages are clear
-- Review error handling in clients
-- Check for unused code
+- Review error handling
 - Verify consistent naming
 - Add TODO comments for future enhancements:
+  - Memory recording in client (thread-local context)
   - Training data export functionality
-  - Better memory context passing
-  - Performance optimizations
+  - Expose thoughts in API responses
 
 **Tests**:
 - Rubocop passes
 - No debug output
-- Code review finds no issues
 - Error paths are tested
+
+---
+
+## Architecture Summary
+
+### Response Payload Structure
+
+```ruby
+# LLM client response
+{
+  "choices" => [
+    {
+      "message" => {
+        "content" => "filtered content (no think tags)"
+      }
+    }
+  ],
+  "thoughts" => "extracted think tag content or nil"
+}
+```
+
+### Thoughts Flow
+
+```
+LLM Response (with <think> tags)
+  ↓
+GenericLlmClient (filters tags, adds thoughts field)
+  ↓
+BasePrompt (returns { content: parsed, thoughts: thoughts })
+  ↓
+Workflow (receives hash, uses content and thoughts)
+  ↓
+Workflow Result (includes thoughts field)
+```
+
+### Key Design Decisions
+
+1. **No client split**: Keep single GenericLlmClient, add filtering inline
+2. **Thoughts as payload field**: Not hidden, explicitly part of response
+3. **Hash return from prompts**: Consistent interface with :content and :thoughts
+4. **Simplest thoughts selection**: Use most recent (narrative) thoughts in workflow
+5. **Optional memory recording**: Thoughts available in payload regardless
 
 ---
 
 ## Review Checklist
 
-- [x] Every step has an Intent section
-- [x] Every step has a Details section with specific requirements  
-- [x] Every step has a Tests section
-- [x] Steps are focused and completable in one session
-- [x] Milestones represent logical, demonstrable progress
-- [x] No implementation code appears in the plan
+- [x] Every step has Intent, Details, and Tests sections
+- [x] Steps are focused and completable
+- [x] Milestones represent logical progress
+- [x] No implementation code in plan
 - [x] Test requirements cover happy path and edge cases
-- [x] Plan focuses on execution, not research
-- [x] Plan addresses actual observed test failures
-- [x] Documentation requirements are included
-- [x] Client-driven architecture (no prompt/workflow changes)
-- [x] Two separate clients (VllmLlmClient and OpenAiLlmClient)
-- [x] No VLLM_MODE environment variable
-- [x] Memory system for model interactions
+- [x] Documentation requirements included
+- [x] No client split (single GenericLlmClient)
+- [x] Thoughts threaded through entire chain
+- [x] Simplest implementation approach
+- [x] Memory system for training data
+- [x] Clean architecture with clear responsibility boundaries
