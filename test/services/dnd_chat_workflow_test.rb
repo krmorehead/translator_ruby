@@ -35,6 +35,7 @@ class DndChatWorkflowTest < ActiveSupport::TestCase
     assert result[:narrative].is_a?(String)
     assert result[:actions].is_a?(Array)
     assert_kind_of Conversation, result[:conversation]
+    assert result.key?(:thoughts), "Result should include thoughts field"
   end
 
   private

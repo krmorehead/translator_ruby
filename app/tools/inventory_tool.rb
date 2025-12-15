@@ -26,7 +26,7 @@ class InventoryTool < BaseTool
       properties: {
         operation: {
           type: "string",
-          description: "Operation to perform",
+          description: "Operation to perform (defaults to add_item if not specified)",
           enum: [
             OP_ADD_ITEM,
             OP_REMOVE_ITEM,
@@ -46,12 +46,12 @@ class InventoryTool < BaseTool
         property_type: { type: "string", description: "Item type" },
         quantity: { type: "integer", description: "Item quantity" }
       },
-      required: [ "operation" ],
+      required: [],  # No required fields - operation defaults to add_item
       additionalProperties: false
     }
   end
 
-  def execute(operation:, path: nil, name: nil, weight: nil, description: nil, property_type: nil, quantity: nil)
+  def execute(operation: OP_ADD_ITEM, path: nil, name: nil, weight: nil, description: nil, property_type: nil, quantity: nil)
     op, store_path, normalized = normalize_args(operation, path, name, weight, description, property_type, quantity)
     store = InventoryStore.new(path: store_path, sandbox_path: sandbox_path)
 

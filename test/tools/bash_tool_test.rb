@@ -97,8 +97,11 @@ class BashToolTest < ActiveSupport::TestCase
       context: { scene: "tool smoke test" }
     )
 
-    assert_kind_of Array, actions
-    bash_action = actions.find { |a| a["tool_name"] == "bash" }
+    assert_kind_of Hash, actions
+    assert actions.key?(:content)
+    action_list = actions[:content]
+    assert_kind_of Array, action_list
+    bash_action = action_list.find { |a| a["tool_name"] == "bash" }
     assert bash_action, "LLM should propose bash action"
 
     arguments = (bash_action["arguments"] || {}).transform_keys(&:to_sym)

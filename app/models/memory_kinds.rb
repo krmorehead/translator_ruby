@@ -11,6 +11,7 @@ module MemoryKinds
   PEOPLE = "people".freeze
   MISC = "misc".freeze
   QUEST_LOG = "quest_log".freeze
+  MODEL_INTERACTIONS = "model_interactions".freeze
 
   ALL = [
     RECENT_CONVERSATION,
@@ -21,6 +22,7 @@ module MemoryKinds
     CURRENT_SCENE,
     PEOPLE,
     MISC,
-    QUEST_LOG
+    QUEST_LOG,
+    MODEL_INTERACTIONS
   ].freeze
 end

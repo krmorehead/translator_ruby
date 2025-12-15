@@ -58,7 +58,10 @@ class BasePromptTest < ActiveSupport::TestCase
     )
 
     assert_kind_of Hash, result
-    assert result["consequence"].is_a?(String)
+    assert result.key?(:content)
+    assert result.key?(:thoughts)
+    assert_kind_of Hash, result[:content]
+    assert result[:content]["consequence"].is_a?(String)
   end
 
   test "execute returns freeform text when no schema" do
@@ -68,8 +71,23 @@ class BasePromptTest < ActiveSupport::TestCase
       context: { actions: [ { tool_name: "demo_tool", consequence: "You opened the door." } ], scene: "hallway" }
     )
 
-    assert_kind_of String, result
-    refute_includes result.downcase, "tool"
+    assert_kind_of Hash, result
+    assert result.key?(:content)
+    assert result.key?(:thoughts)
+    assert_kind_of String, result[:content]
+    refute_includes result[:content].downcase, "tool"
+  end
+
+  test "execute includes thoughts field" do
+    prompt = OutcomePrompt.new
+    result = prompt.execute(
+      prompt: "Provide a consequence.",
+      context: { action: { tool_name: "test" }, result: { success: true }, scene: "test" }
+    )
+
+    assert result.key?(:thoughts)
+    # Thoughts may be nil or string depending on LLM response
+    assert [NilClass, String].include?(result[:thoughts].class)
   end
 
   private

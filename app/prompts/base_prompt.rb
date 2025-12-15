@@ -44,7 +44,9 @@ class BasePrompt
   end
 
   # Execute the prompt against the LLM and parse the response.
-  # Returns structured JSON when a schema is present, otherwise raw text.
+  # Returns hash with :content (structured JSON or raw text) and :thoughts (extracted reasoning).
+  # - For prompts with response_schema: { content: parsed_json_hash, thoughts: thoughts }
+  # - For prompts without schema: { content: text_string, thoughts: thoughts }
   def execute(prompt:, context: {})
     raise "LLM client not configured" unless @client
 
@@ -81,14 +83,19 @@ class BasePrompt
   def parse_response(response)
     message = response.dig("choices", 0, "message") || {}
     content = message["content"]
+    thoughts = response["thoughts"]
 
-    if response_schema
+    parsed_content = if response_schema
       raise "LLM response missing content" unless content
-
       JSON.parse(content)
     else
       content.to_s
     end
+
+    {
+      content: parsed_content,
+      thoughts: thoughts
+    }
   end
 
   def build_messages(prompt, context)

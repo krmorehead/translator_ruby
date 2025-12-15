@@ -70,9 +70,13 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
       context: { scene: "a candle-lit armory" }
     )
 
-    assert_kind_of Array, result
-    unless result.empty?
-      first = result.first
+    assert_kind_of Hash, result
+    assert result.key?(:content)
+    assert result.key?(:thoughts)
+    assert_kind_of Array, result[:content]
+    
+    unless result[:content].empty?
+      first = result[:content].first
       assert first.key?("tool_name")
       assert_includes [ "inspect_room", "pickup_item" ], first["tool_name"]
       assert first.key?("arguments")

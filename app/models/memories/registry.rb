@@ -11,7 +11,8 @@ module Memories
       PeopleMemory,
       MiscMemory,
       QuestLogMemory,
-      ActionsMemory
+      ActionsMemory,
+      TrainingData::ModelInteractionMemory
     ].freeze
 
     BY_SECTION = ALL.each_with_object({}) do |klass, h|

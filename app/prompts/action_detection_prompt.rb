@@ -57,9 +57,11 @@ class ActionDetectionPrompt < BasePrompt
 
   def execute(prompt:, context: {})
     result = super
-    return [] if result.nil?
-    return result if result.is_a?(Array)
+    content = result[:content]
+    
+    return { content: [], thoughts: result[:thoughts] } if content.nil?
+    return result if content.is_a?(Array)
 
-    raise "Expected array of actions, got #{result.class}"
+    raise "Expected array of actions, got #{content.class}"
   end
 end

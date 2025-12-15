@@ -58,9 +58,13 @@ class ContextCompressionTool < BaseTool
   private
 
   def resolve_path(path)
-    return PATH if path.nil? || path.to_s.strip.empty?
-
-    path
+    return path if path && !path.to_s.strip.empty? && File.absolute_path?(path)
+    
+    if sandbox_path
+      File.join(sandbox_path, DEFAULT_FILENAME)
+    else
+      PATH
+    end
   end
 end
 # Register with ToolCallService

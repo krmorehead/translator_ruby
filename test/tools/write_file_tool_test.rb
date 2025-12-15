@@ -126,8 +126,11 @@ class WriteFileToolTest < ActiveSupport::TestCase
       context: { scene: "tool smoke test" }
     )
 
-    assert_kind_of Array, actions
-    write_action = actions.find { |a| a["tool_name"] == "write_file" }
+    assert_kind_of Hash, actions
+    assert actions.key?(:content)
+    action_list = actions[:content]
+    assert_kind_of Array, action_list
+    write_action = action_list.find { |a| a["tool_name"] == "write_file" }
     assert write_action, "LLM should propose write_file action"
 
     arguments = (write_action["arguments"] || {}).transform_keys(&:to_sym)

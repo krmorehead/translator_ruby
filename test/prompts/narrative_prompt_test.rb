@@ -42,9 +42,12 @@ class NarrativePromptTest < ActiveSupport::TestCase
       }
     )
 
-    assert_kind_of String, result
-    refute_includes result.downcase, "tool"
-    refute_includes result.downcase, "dice"
+    assert_kind_of Hash, result
+    assert result.key?(:content)
+    assert result.key?(:thoughts)
+    assert_kind_of String, result[:content]
+    refute_includes result[:content].downcase, "tool"
+    refute_includes result[:content].downcase, "dice"
   end
 
   private

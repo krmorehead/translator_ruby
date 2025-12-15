@@ -21,14 +21,19 @@ class DndChatWorkflow < BaseWorkflow
   # Builds OpenAI chat parameters for tool selection.
   def chat_parameters(user_prompt:, model: ENV["LLM_MODEL"] || "qwen30b", extra_system_prompt: nil, tools: ToolCallService.available_dnd_tools)
     tool_names = tools.map { |t| t[:function][:name] }
-    {
+    
+    params = {
       model: model,
       messages: [
         { role: "system", content: system_prompt(extra_system_prompt) },
         { role: "user", content: user_prompt }
-      ],
-      tools: tools,
-      response_format: {
+      ]
+    }
+    
+    # Only add response_format if we have tools
+    # vLLM rejects schemas with empty enums
+    if tool_names.any?
+      params[:response_format] = {
         type: "json_schema",
         json_schema: {
           name: "tool_call",
@@ -44,7 +49,9 @@ class DndChatWorkflow < BaseWorkflow
           }
         }
       }
-    }
+    end
+    
+    params
   end
 
   # Orchestrates the full workflow; marks complete or failed accordingly.
@@ -72,7 +79,8 @@ class DndChatWorkflow < BaseWorkflow
     result_hash = {
       narrative: narrative,
       actions: completed_actions.map(&:to_h),
-      conversation: conversation
+      conversation: conversation,
+      thoughts: @latest_thoughts
     }
 
     mark_complete(result_hash)
@@ -102,7 +110,8 @@ class DndChatWorkflow < BaseWorkflow
       memory: memory_store.to_h,
       recent_conversation: memory_store.get_section(MemoryKinds::RECENT_CONVERSATION)
     }
-    prompt.execute(prompt: self.prompt, context: context)
+    result = prompt.execute(prompt: self.prompt, context: context)
+    result[:content]
   end
 
   def process_actions(action_records, memory_store)
@@ -135,7 +144,8 @@ class DndChatWorkflow < BaseWorkflow
       scene: memory_store.get_section(MemoryKinds::CURRENT_SCENE)
     }
     response = prompt.execute(prompt: self.prompt, context: context)
-    response.is_a?(Hash) ? response["consequence"] || response[:consequence] : nil
+    content = response[:content]
+    content.is_a?(Hash) ? content["consequence"] || content[:consequence] : nil
   end
 
   def generate_narrative(completed_actions, memory_store)
@@ -159,7 +169,9 @@ class DndChatWorkflow < BaseWorkflow
       base_context
     end
 
-    prompt.execute(prompt: self.prompt, context: context)
+    result = prompt.execute(prompt: self.prompt, context: context)
+    @latest_thoughts = result[:thoughts]
+    result[:content]
   end
 
   def symbolize_keys(hash)

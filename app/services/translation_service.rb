@@ -69,7 +69,9 @@ class TranslationService
         }
       )
 
-      result["translation"] || translation_context.text
+      # Extract translation from the new hash format
+      content = result[:content]
+      content["translation"] || translation_context.text
 
     rescue => e
       error_msg = "LLM translation error: #{e.message}\nBacktrace: #{e.backtrace.first(3).join("\n")}"

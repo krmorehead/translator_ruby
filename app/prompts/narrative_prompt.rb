@@ -48,6 +48,7 @@ class NarrativePrompt < BasePrompt
   end
 
   def execute(prompt:, context: {})
-    super.to_s
+    result = super
+    { content: result[:content].to_s, thoughts: result[:thoughts] }
   end
 end

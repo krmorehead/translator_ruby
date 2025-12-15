@@ -21,7 +21,7 @@ class MemorySummarizeTool < BaseTool
       properties: {
         target: {
           type: "string",
-          description: "Target to summarize",
+          description: "Target to summarize (defaults to quest_log if not specified)",
           enum: %w[person location quest_log]
         },
         name: {
@@ -34,12 +34,12 @@ class MemorySummarizeTool < BaseTool
           nullable: true
         }
       },
-      required: [ "target" ],
+      required: [],  # No required fields - target defaults to quest_log
       additionalProperties: false
     }
   end
 
-  def execute(target:, name: nil, path: nil)
+  def execute(target: "quest_log", name: nil, path: nil)
     store = MemoryStore.new(path: resolve_path(path), sandbox_path: sandbox_path)
 
     case target
@@ -70,9 +70,13 @@ class MemorySummarizeTool < BaseTool
   private
 
   def resolve_path(path)
-    return PATH if path.nil? || path.to_s.strip.empty?
-
-    path
+    return path if path && !path.to_s.strip.empty? && File.absolute_path?(path)
+    
+    if sandbox_path
+      File.join(sandbox_path, DEFAULT_FILENAME)
+    else
+      PATH
+    end
   end
 
   def build_summary(texts, max_tokens)
