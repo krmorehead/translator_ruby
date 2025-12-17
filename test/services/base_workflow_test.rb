@@ -5,12 +5,14 @@ require "test_helper"
 class BaseWorkflowTest < ActiveSupport::TestCase
   class SampleWorkflow < BaseWorkflow
     def execute
+      trigger(:start) # Move to running state
       mark_complete(ok: true, prompt: prompt, sandbox_path: sandbox_path)
     end
   end
 
   class FailingWorkflow < BaseWorkflow
     def execute
+      trigger(:start) # Move to running state first
       mark_failed("boom")
     end
   end

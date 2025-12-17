@@ -4,6 +4,7 @@ Rails.application.routes.draw do
       get "hello/index"
       post "translate", to: "translation#translate"
       post "translate_text", to: "translation#translate_text"
+      post "research", to: "research#create"
     end
   end
   get "/dnd_chat/messages", to: "dnd_chat#messages"
