@@ -50,10 +50,16 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
 
   def filter_args_for(tool_name, args)
     args = args.is_a?(Hash) ? args : {}
-    args = args.transform_keys(&:to_sym)
+    args = deep_symbolize_keys(args)
     
-    # Map common LLM synonyms to actual parameter names
+    # Handle LLM returning nested structure like {add: {name: ...}} or {operation: {name: ...}}
     if tool_name == InventoryTool::NAME
+      # If args has a single key that looks like an operation with nested item data
+      if args.keys.size == 1 && args.values.first.is_a?(Hash)
+        op_key = args.keys.first
+        item_data = args.values.first
+        args = item_data.merge(operation: op_key.to_s)
+      end
       args[:name] ||= args[:item] if args[:item] # LLM might say "item" instead of "name"
       args[:operation] ||= args[:action] if args[:action] # LLM might say "action" instead of "operation"
     end
@@ -77,6 +83,17 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     filtered[:path] = @memory_path if [ MemoryTool::NAME, MemorySummarizeTool::NAME ].include?(tool_name) && filtered[:path].nil?
     
     filtered
+  end
+
+  def deep_symbolize_keys(obj)
+    case obj
+    when Hash
+      obj.to_h { |k, v| [k.to_sym, deep_symbolize_keys(v)] }
+    when Array
+      obj.map { |v| deep_symbolize_keys(v) }
+    else
+      obj
+    end
   end
 
   def execute_tool_response(parsed)

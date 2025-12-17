@@ -65,9 +65,9 @@ class DndChatWorkflow < BaseWorkflow
     detected_actions = detect_actions(tools: tools, memory_store: memory_store)
     action_records = detected_actions.map do |action|
       ActionRecord.new(
-        prompt_reference: action["prompt_reference"],
-        tool_name: action["tool_name"],
-        arguments: symbolize_keys(action["arguments"] || {})
+        prompt_reference: action[:prompt_reference],
+        tool_name: action[:tool_name],
+        arguments: action[:arguments] || {}
       )
     end
 
@@ -146,7 +146,7 @@ class DndChatWorkflow < BaseWorkflow
     }
     response = prompt.execute(prompt: self.prompt, context: context)
     content = response[:content]
-    content.is_a?(Hash) ? content["consequence"] || content[:consequence] : nil
+    content.is_a?(Hash) ? content[:consequence] : nil
   end
 
   def generate_narrative(completed_actions, memory_store)
@@ -173,10 +173,6 @@ class DndChatWorkflow < BaseWorkflow
     result = prompt.execute(prompt: self.prompt, context: context)
     @latest_thoughts = result[:thoughts]
     result[:content]
-  end
-
-  def symbolize_keys(hash)
-    hash.each_with_object({}) { |(k, v), h| h[k.to_sym] = v }
   end
 
   def exceeds_context_limit?(context)

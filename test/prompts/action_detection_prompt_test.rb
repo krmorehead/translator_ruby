@@ -77,10 +77,10 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
     
     unless result[:content].empty?
       first = result[:content].first
-      assert first.key?("tool_name")
-      assert_includes [ "inspect_room", "pickup_item" ], first["tool_name"]
-      assert first.key?("arguments")
-      assert first.key?("prompt_reference")
+      assert first.key?(:tool_name)
+      assert_includes [ "inspect_room", "pickup_item" ], first[:tool_name]
+      assert first.key?(:arguments)
+      assert first.key?(:prompt_reference)
     end
   end
 

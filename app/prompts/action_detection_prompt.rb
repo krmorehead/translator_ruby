@@ -39,9 +39,9 @@ class ActionDetectionPrompt < BasePrompt
 
   def format_context(context)
     context ||= {}
-    scene = context[:scene] || context["scene"]
-    memory = context[:memory] || context["memory"]
-    history = context[:recent_conversation] || context["recent_conversation"]
+    scene = context[:scene]
+    memory = context[:memory]
+    history = context[:recent_conversation]
 
     sections = []
     sections << "Current scene:\n#{scene}" if scene

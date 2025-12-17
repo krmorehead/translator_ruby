@@ -270,20 +270,20 @@ class ResearchWorkflow < BaseWorkflow
 
     result = prompt.score_files(files: files_with_previews, question: question)
 
-    evaluations = result[:content]["evaluations"] || []
+    evaluations = result[:content][:evaluations] || []
     evaluations
-      .select { |e| e["relevance_score"] >= 0.3 }
-      .sort_by { |e| -e["relevance_score"] }
+      .select { |e| e[:relevance_score] >= 0.3 }
+      .sort_by { |e| -e[:relevance_score] }
       .each do |eval|
         Memories::Research::DiscoveredFilesMemory.add_file(
           store: @research_memory,
-          path: eval["file_path"],
-          relevance_score: eval["relevance_score"],
-          reasoning: eval["reasoning"]
+          path: eval[:file_path],
+          relevance_score: eval[:relevance_score],
+          reasoning: eval[:reasoning]
         )
       end
 
-    evaluations.select { |e| e["relevance_score"] >= 0.5 }
+    evaluations.select { |e| e[:relevance_score] >= 0.5 }
   end
 
   def analyze_with_passes(question, discovered_files)
@@ -297,7 +297,7 @@ class ResearchWorkflow < BaseWorkflow
       pass_findings = []
 
       discovered_files.first(5).each do |file_eval|
-        file_path = file_eval["file_path"]
+        file_path = file_eval[:file_path]
         next unless File.exist?(file_path)
 
         content = File.read(file_path) rescue next
@@ -310,12 +310,12 @@ class ResearchWorkflow < BaseWorkflow
         )
 
         if result[:content]
-          result[:content]["insights"]&.each do |insight|
+          result[:content][:insights]&.each do |insight|
             finding = {
               id: SecureRandom.uuid,
-              text: insight["finding"],
-              relevance: insight["relevance"],
-              confidence: insight["confidence"],
+              text: insight[:finding],
+              relevance: insight[:relevance],
+              confidence: insight[:confidence],
               file_path: file_path,
               pass_number: pass_num + 1
             }
@@ -323,10 +323,10 @@ class ResearchWorkflow < BaseWorkflow
 
             Memories::Research::FindingsMemory.add_finding(
               store: @research_memory,
-              text: insight["finding"],
+              text: insight[:finding],
               sub_question_id: question,
               file_path: file_path,
-              confidence: insight["confidence"],
+              confidence: insight[:confidence],
               pass_number: pass_num + 1
             )
           end

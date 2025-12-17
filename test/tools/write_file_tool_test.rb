@@ -130,10 +130,10 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert actions.key?(:content)
     action_list = actions[:content]
     assert_kind_of Array, action_list
-    write_action = action_list.find { |a| a["tool_name"] == "write_file" }
+    write_action = action_list.find { |a| a[:tool_name] == "write_file" }
     assert write_action, "LLM should propose write_file action"
 
-    arguments = (write_action["arguments"] || {}).transform_keys(&:to_sym)
+    arguments = write_action[:arguments] || {}
     arguments[:path] = test_file
     arguments[:content] = expected_content
 

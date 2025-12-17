@@ -61,7 +61,7 @@ class BasePromptTest < ActiveSupport::TestCase
     assert result.key?(:content)
     assert result.key?(:thoughts)
     assert_kind_of Hash, result[:content]
-    assert result[:content]["consequence"].is_a?(String)
+    assert result[:content][:consequence].is_a?(String)
   end
 
   test "execute returns freeform text when no schema" do

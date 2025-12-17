@@ -12,8 +12,8 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
     )
 
     assert result[:content]
-    assert result[:content]["questions"]
-    assert_kind_of Array, result[:content]["questions"]
+    assert result[:content][:questions]
+    assert_kind_of Array, result[:content][:questions]
   end
 
   test "questions include is_leaf flag" do
@@ -22,8 +22,8 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
       context: {}
     )
 
-    questions = result[:content]["questions"]
-    assert questions.all? { |q| q.key?("is_leaf") }
+    questions = result[:content][:questions]
+    assert questions.all? { |q| q.key?(:is_leaf) }
   end
 
   test "broad questions generate multiple sub-questions" do
@@ -32,7 +32,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
       context: { codebase_summary: "A full Rails API with models, controllers, and services" }
     )
 
-    questions = result[:content]["questions"]
+    questions = result[:content][:questions]
     assert questions.size >= 2, "Broad topic should generate multiple questions"
   end
 
@@ -42,7 +42,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
       context: { codebase_summary: "Simple calculator class" }
     )
 
-    questions = result[:content]["questions"]
+    questions = result[:content][:questions]
     # At least some questions should be leaves for very specific topics
     assert questions.any?, "Should have at least one question"
   end
@@ -53,10 +53,10 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
       context: {}
     )
 
-    questions = result[:content]["questions"]
+    questions = result[:content][:questions]
     questions.each do |q|
-      assert q.key?("rationale"), "Each question should have a rationale"
-      assert q["rationale"].present?, "Rationale should not be empty"
+      assert q.key?(:rationale), "Each question should have a rationale"
+      assert q[:rationale].present?, "Rationale should not be empty"
     end
   end
 
@@ -66,8 +66,8 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
       context: {}
     )
 
-    assert result[:content]["topic_summary"]
-    assert result[:content]["topic_summary"].present?
+    assert result[:content][:topic_summary]
+    assert result[:content][:topic_summary].present?
   end
 
   test "handles already-specific topic" do
@@ -76,7 +76,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
       context: {}
     )
 
-    assert result[:content]["questions"]
+    assert result[:content][:questions]
     # Should still produce at least one question
   end
 end

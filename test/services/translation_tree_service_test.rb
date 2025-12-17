@@ -29,28 +29,28 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   # Test hash traversal
   test "should traverse hash with string leaves" do
     input = {
-      "greeting" => "hello",
-      "farewell" => "goodbye"
+      greeting: "hello",
+      farewell: "goodbye"
     }
 
     result = @service.traverse(input, @translate_callback)
 
-    assert_equal "HELLO", result["greeting"]
-    assert_equal "GOODBYE", result["farewell"]
+    assert_equal "HELLO", result[:greeting]
+    assert_equal "GOODBYE", result[:farewell]
   end
 
   test "should traverse nested hash structure" do
     input = {
-      "messages" => {
-        "welcome" => "Hello",
-        "goodbye" => "Bye"
+      messages: {
+        welcome: "Hello",
+        goodbye: "Bye"
       }
     }
 
     result = @service.traverse(input, @translate_callback)
 
-    assert_equal "HELLO", result["messages"]["welcome"]
-    assert_equal "BYE", result["messages"]["goodbye"]
+    assert_equal "HELLO", result[:messages][:welcome]
+    assert_equal "BYE", result[:messages][:goodbye]
   end
 
   # Test array traversal
@@ -64,21 +64,21 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
 
   test "should traverse array of hashes" do
     input = [
-      { "text" => "hello" },
-      { "text" => "world" }
+      { text: "hello" },
+      { text: "world" }
     ]
 
     result = @service.traverse(input, @translate_callback)
 
-    assert_equal "HELLO", result[0]["text"]
-    assert_equal "WORLD", result[1]["text"]
+    assert_equal "HELLO", result[0][:text]
+    assert_equal "WORLD", result[1][:text]
   end
 
   # Test hash with translation_hash marker
   test "should handle hash with translation_hash marker" do
     input = {
-      "translation_hash" => true,
-      "text" => "hello world"
+      translation_hash: true,
+      text: "hello world"
     }
 
     # Use a callback that checks the context properties
@@ -96,11 +96,11 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
 
   test "should handle translation_hash with custom properties" do
     input = {
-      "translation_hash" => true,
-      "text" => "bonjour",
-      "target_lang" => "English",
-      "source_lang" => "fr",
-      "formality" => "less"
+      translation_hash: true,
+      text: "bonjour",
+      target_lang: "English",
+      source_lang: "fr",
+      formality: "less"
     }
 
     callback = ->(context) do
@@ -117,8 +117,8 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
 
   test "should raise error if translation_hash node missing text" do
     input = {
-      "translation_hash" => true,
-      "target_lang" => "Spanish"
+      translation_hash: true,
+      target_lang: "Spanish"
     }
 
     assert_raises(ArgumentError) do
@@ -129,9 +129,9 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   # Test context path building
   test "should build context path for nested structures" do
     input = {
-      "notifications" => {
-        "messages" => {
-          "welcome" => "Hello"
+      notifications: {
+        messages: {
+          welcome: "Hello"
         }
       }
     }
@@ -148,7 +148,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
 
   test "should build context path with array indices" do
     input = {
-      "items" => [ "first", "second" ]
+      items: [ "first", "second" ]
     }
 
     contexts_seen = []
@@ -166,28 +166,28 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   # Test pluralization patterns
   test "should handle i18n pluralization with nested hash" do
     input = {
-      "food" => {
-        "amount_one" => "{{count}} ounce",
-        "amount_other" => "{{count}} ounces"
+      food: {
+        amount_one: "{{count}} ounce",
+        amount_other: "{{count}} ounces"
       }
     }
 
     result = @service.traverse(input, @translate_callback)
 
-    assert_equal "{{COUNT}} OUNCE", result["food"]["amount_one"]
-    assert_equal "{{COUNT}} OUNCES", result["food"]["amount_other"]
+    assert_equal "{{COUNT}} OUNCE", result[:food][:amount_one]
+    assert_equal "{{COUNT}} OUNCES", result[:food][:amount_other]
   end
 
   test "should handle i18n pluralization at root level" do
     input = {
-      "student_count_one" => "{{count}} student",
-      "student_count_other" => "{{count}} students"
+      student_count_one: "{{count}} student",
+      student_count_other: "{{count}} students"
     }
 
     result = @service.traverse(input, @translate_callback)
 
-    assert_equal "{{COUNT}} STUDENT", result["student_count_one"]
-    assert_equal "{{COUNT}} STUDENTS", result["student_count_other"]
+    assert_equal "{{COUNT}} STUDENT", result[:student_count_one]
+    assert_equal "{{COUNT}} STUDENTS", result[:student_count_other]
   end
 
   # Test error handling
@@ -210,23 +210,37 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   # Test mixed structures
   test "should handle complex mixed structure" do
     input = {
-      "simple" => "text",
-      "nested" => {
-        "deep" => "value"
+      simple: "text",
+      nested: {
+        deep: "value"
       },
-      "array" => [ "one", "two" ],
-      "custom" => {
-        "translation_hash" => true,
-        "text" => "custom translation",
-        "formality" => "less"
+      array: [ "one", "two" ],
+      custom: {
+        translation_hash: true,
+        text: "custom translation",
+        formality: "less"
       }
     }
 
     result = @service.traverse(input, @translate_callback)
 
-    assert_equal "TEXT", result["simple"]
-    assert_equal "VALUE", result["nested"]["deep"]
-    assert_equal [ "ONE", "TWO" ], result["array"]
-    assert_equal "CUSTOM TRANSLATION", result["custom"]
+    assert_equal "TEXT", result[:simple]
+    assert_equal "VALUE", result[:nested][:deep]
+    assert_equal [ "ONE", "TWO" ], result[:array]
+    assert_equal "CUSTOM TRANSLATION", result[:custom]
+  end
+
+  # Test that string keys are automatically symbolized
+  test "should symbolize string keys from input" do
+    input = {
+      "greeting" => "hello",
+      "farewell" => "goodbye"
+    }
+
+    result = @service.traverse(input, @translate_callback)
+
+    # Keys should be symbols in output
+    assert_equal "HELLO", result[:greeting]
+    assert_equal "GOODBYE", result[:farewell]
   end
 end

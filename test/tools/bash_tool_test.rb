@@ -101,10 +101,10 @@ class BashToolTest < ActiveSupport::TestCase
     assert actions.key?(:content)
     action_list = actions[:content]
     assert_kind_of Array, action_list
-    bash_action = action_list.find { |a| a["tool_name"] == "bash" }
+    bash_action = action_list.find { |a| a[:tool_name] == "bash" }
     assert bash_action, "LLM should propose bash action"
 
-    arguments = (bash_action["arguments"] || {}).transform_keys(&:to_sym)
+    arguments = bash_action[:arguments] || {}
     arguments[:command] ||= "ls #{@sandbox_path}"
 
     service = ToolCallService.new(sandbox_path: @sandbox_path)

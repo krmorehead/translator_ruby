@@ -19,15 +19,15 @@ class NarrativePrompt < BasePrompt
 
   def format_context(context)
     context ||= {}
-    actions = context[:actions] || context["actions"] || []
-    compressed = context[:compressed_context] || context["compressed_context"]
-    sections = context[:sections] || context["sections"]
+    actions = context[:actions] || []
+    compressed = context[:compressed_context]
+    sections = context[:sections]
 
-    current = context[:current_context] || context["current_context"] || {}
-    scene = current[:scene] || current["scene"] || context[:scene] || context["scene"]
-    history = current[:recent_conversation] || current["recent_conversation"] || context[:recent_conversation] || context["recent_conversation"]
-    people = current[:people] || current["people"]
-    quest = current[:current_quest] || current["current_quest"]
+    current = context[:current_context] || {}
+    scene = current[:scene] || context[:scene]
+    history = current[:recent_conversation] || context[:recent_conversation]
+    people = current[:people]
+    quest = current[:current_quest]
 
     parts = []
     parts << "Completed actions:\n#{JSON.pretty_generate(actions)}" if actions.any?

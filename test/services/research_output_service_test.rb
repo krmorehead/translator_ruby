@@ -9,28 +9,28 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     ENV["RESEARCH_OUTPUT_PATH"] = @output_path
 
     @synthesis = {
-      "summary" => "This is a test summary of the research findings.",
-      "detailed_sections" => [
+      summary: "This is a test summary of the research findings.",
+      detailed_sections: [
         {
-          "sub_question" => "How does Calculator work?",
-          "answer" => "Calculator provides basic arithmetic operations.",
-          "key_findings" => ["Uses integer math", "Has error handling"],
-          "confidence" => 0.9
+          sub_question: "How does Calculator work?",
+          answer: "Calculator provides basic arithmetic operations.",
+          key_findings: ["Uses integer math", "Has error handling"],
+          confidence: 0.9
         },
         {
-          "sub_question" => "What are the dependencies?",
-          "answer" => "Formatter depends on Calculator.",
-          "key_findings" => ["Dependency injection used"],
-          "confidence" => 0.85
+          sub_question: "What are the dependencies?",
+          answer: "Formatter depends on Calculator.",
+          key_findings: ["Dependency injection used"],
+          confidence: 0.85
         }
       ],
-      "validated_insights" => [
-        { "insight" => "Calculator is the core class", "confidence" => 0.95 }
+      validated_insights: [
+        { insight: "Calculator is the core class", confidence: 0.95 }
       ],
-      "open_questions" => [
-        { "question" => "How is error handling tested?", "reason" => "No test files found" }
+      open_questions: [
+        { question: "How is error handling tested?", reason: "No test files found" }
       ],
-      "conflicts" => []
+      conflicts: []
     }
   end
 

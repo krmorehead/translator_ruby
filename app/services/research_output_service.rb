@@ -56,9 +56,9 @@ class ResearchOutputService
     created_files << index_path
 
     # Create section files
-    sections = synthesis["detailed_sections"] || synthesis[:detailed_sections] || []
+    sections = synthesis[:detailed_sections] || []
     sections.each_with_index do |section, idx|
-      section_filename = "#{base_name}_#{idx + 1}_#{slugify(section['sub_question'] || section[:sub_question])}.md"
+      section_filename = "#{base_name}_#{idx + 1}_#{slugify(section[:sub_question])}.md"
       section_path = File.join(output_path, section_filename)
 
       section_content = format_section(section)
@@ -102,7 +102,7 @@ class ResearchOutputService
     output << ""
 
     # Summary
-    summary = synthesis["summary"] || synthesis[:summary]
+    summary = synthesis[:summary]
     if summary
       output << "## Summary"
       output << ""
@@ -111,12 +111,12 @@ class ResearchOutputService
     end
 
     # Table of Contents
-    sections = synthesis["detailed_sections"] || synthesis[:detailed_sections] || []
+    sections = synthesis[:detailed_sections] || []
     if sections.any?
       output << "## Table of Contents"
       output << ""
       sections.each_with_index do |section, idx|
-        sub_q = section["sub_question"] || section[:sub_question]
+        sub_q = section[:sub_question]
         anchor = slugify(sub_q).gsub("_", "-")
         output << "- [#{sub_q}](##{anchor})"
       end
@@ -125,9 +125,9 @@ class ResearchOutputService
 
     # Detailed Sections
     sections.each do |section|
-      sub_q = section["sub_question"] || section[:sub_question]
-      answer = section["answer"] || section[:answer]
-      findings = section["key_findings"] || section[:key_findings] || []
+      sub_q = section[:sub_question]
+      answer = section[:answer]
+      findings = section[:key_findings] || []
 
       output << "## #{sub_q}"
       output << ""
@@ -143,26 +143,26 @@ class ResearchOutputService
     end
 
     # Validated Insights
-    insights = synthesis["validated_insights"] || synthesis[:validated_insights] || []
+    insights = synthesis[:validated_insights] || []
     if insights.any?
       output << "## Validated Insights"
       output << ""
       insights.each do |insight|
-        text = insight["insight"] || insight[:insight]
-        conf = insight["confidence"] || insight[:confidence]
+        text = insight[:insight]
+        conf = insight[:confidence]
         output << "- **#{text}** (confidence: #{(conf * 100).round}%)"
       end
       output << ""
     end
 
     # Open Questions
-    open_qs = synthesis["open_questions"] || synthesis[:open_questions] || []
+    open_qs = synthesis[:open_questions] || []
     if open_qs.any?
       output << "## Open Questions"
       output << ""
       open_qs.each do |q|
-        question = q["question"] || q[:question]
-        reason = q["reason"] || q[:reason]
+        question = q[:question]
+        reason = q[:reason]
         output << "- **#{question}**"
         output << "  - #{reason}" if reason
       end
@@ -170,14 +170,14 @@ class ResearchOutputService
     end
 
     # Conflicts (if any)
-    conflicts = synthesis["conflicts"] || synthesis[:conflicts] || []
+    conflicts = synthesis[:conflicts] || []
     if conflicts.any?
       output << "## Conflicts Requiring Review"
       output << ""
       conflicts.each do |c|
-        output << "### #{c['topic'] || c[:topic]}"
-        output << "- Pass 1: #{c['pass_1_finding'] || c[:pass_1_finding]}"
-        output << "- Pass 2: #{c['pass_2_finding'] || c[:pass_2_finding]}"
+        output << "### #{c[:topic]}"
+        output << "- Pass 1: #{c[:pass_1_finding]}"
+        output << "- Pass 2: #{c[:pass_2_finding]}"
         output << ""
       end
     end
@@ -193,14 +193,14 @@ class ResearchOutputService
     output << ""
     output << "## Summary"
     output << ""
-    output << (synthesis["summary"] || synthesis[:summary] || "No summary available")
+    output << (synthesis[:summary] || "No summary available")
     output << ""
     output << "## Sections"
     output << ""
 
-    sections = synthesis["detailed_sections"] || synthesis[:detailed_sections] || []
+    sections = synthesis[:detailed_sections] || []
     sections.each_with_index do |section, idx|
-      sub_q = section["sub_question"] || section[:sub_question]
+      sub_q = section[:sub_question]
       filename = "#{base_name}_#{idx + 1}_#{slugify(sub_q)}.md"
       output << "- [#{sub_q}](#{filename})"
     end
@@ -210,9 +210,9 @@ class ResearchOutputService
 
   def format_section(section)
     output = []
-    sub_q = section["sub_question"] || section[:sub_question]
-    answer = section["answer"] || section[:answer]
-    findings = section["key_findings"] || section[:key_findings] || []
+    sub_q = section[:sub_question]
+    answer = section[:answer]
+    findings = section[:key_findings] || []
 
     output << "# #{sub_q}"
     output << ""

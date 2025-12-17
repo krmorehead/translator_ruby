@@ -88,7 +88,7 @@ class BasePrompt
 
     parsed_content = if response_schema
       raise "LLM response missing content" unless content
-      JSON.parse(content)
+      JSON.parse(content, symbolize_names: true)
     else
       content.to_s
     end

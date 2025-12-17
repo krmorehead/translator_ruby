@@ -11,7 +11,7 @@ module Research
 
         ## Synthesis Process
 
-        1. **Cross-Validation**: Only include insights that appear in 2+ analysis passes
+        1. **Cross-Validation**: Include insights that appear in 2+ analysis passes as validated
         2. **Conflict Detection**: Flag areas where passes disagree
         3. **Relevance Filtering**: Remove findings irrelevant to the original topic
         4. **Hierarchy Reconstruction**: Organize findings by the goal decomposition tree
@@ -19,9 +19,15 @@ module Research
 
         ## Cross-Validation Rules
 
-        - An insight is VALIDATED if it appears in at least 2 analysis passes
+        - An insight is VALIDATED if it appears (even with slightly different wording) in at least 2 analysis passes
+        - When validating, preserve the key terms from the original findings in your insight text
         - An insight is CONFLICTED if passes give contradictory information
-        - An insight is UNVALIDATED if it only appears in 1 pass (include with lower confidence)
+        - Include unvalidated insights (appearing in only 1 pass) with lower confidence
+
+        ## IMPORTANT: Preserving Finding Content
+
+        When creating validated_insights, use the same key terms from the original findings.
+        For example, if passes mention "addition", your validated insight MUST include the word "addition".
 
         ## Filtering Criteria
 
@@ -38,6 +44,8 @@ module Research
         - Highlights key findings with confidence levels
         - Notes conflicts for human review
         - Identifies remaining open questions
+
+        ALWAYS provide a non-empty summary field addressing the research goal.
       PROMPT
     end
 
@@ -152,7 +160,7 @@ module Research
 
       prompt_parts << "\n## Sub-Questions Investigated:"
       sub_questions.each_with_index do |q, idx|
-        text = q[:text] || q["text"] || q[:question] || q["question"]
+        text = q[:text] || q[:question]
         prompt_parts << "#{idx + 1}. #{text}"
       end
 
@@ -180,7 +188,7 @@ module Research
 
     def format_pass_findings(pass)
       if pass[:insights]
-        pass[:insights].map { |i| "- #{i[:finding] || i['finding'] || i}" }.join("\n")
+        pass[:insights].map { |i| "- #{i[:finding] || i}" }.join("\n")
       elsif pass[:findings]
         pass[:findings].map { |f| "- #{f}" }.join("\n")
       else

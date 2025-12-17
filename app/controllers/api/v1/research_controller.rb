@@ -68,7 +68,7 @@ module Api
             owner_id: result[:owner_id],
             findings: result[:findings],
             output_files: output_files,
-            summary: result[:synthesis]&.dig("summary"),
+            summary: result[:synthesis]&.dig(:summary),
             errors: []
           }, status: :ok
         else
@@ -94,13 +94,7 @@ module Api
       def normalize_context(context)
         return {} if context.blank?
 
-        {
-          known_files: context[:known_files] || context["known_files"],
-          prior_findings: context[:prior_findings] || context["prior_findings"],
-          focus_areas: context[:focus_areas] || context["focus_areas"],
-          codebase_summary: context[:codebase_summary] || context["codebase_summary"],
-          constraints: context[:constraints] || context["constraints"]
-        }.compact
+        context.to_h.deep_symbolize_keys
       end
     end
   end

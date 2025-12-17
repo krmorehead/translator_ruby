@@ -112,28 +112,28 @@ module Research
       output = []
 
       # Title
-      output << "# #{content['title'] || content[:title]}"
+      output << "# #{content[:title]}"
       output << ""
 
       # Table of contents
-      toc = content['table_of_contents'] || content[:table_of_contents]
+      toc = content[:table_of_contents]
       if toc&.any?
         output << "## Table of Contents"
         output << ""
         toc.each do |item|
-          title = item['title'] || item[:title]
-          anchor = item['anchor'] || item[:anchor]
+          title = item[:title]
+          anchor = item[:anchor]
           output << "- [#{title}](##{anchor})"
         end
         output << ""
       end
 
       # Sections
-      sections = content['sections'] || content[:sections] || []
+      sections = content[:sections] || []
       sections.each do |section|
-        heading = section['heading'] || section[:heading]
-        level = section['level'] || section[:level] || 2
-        section_content = section['content'] || section[:content]
+        heading = section[:heading]
+        level = section[:level] || 2
+        section_content = section[:content]
 
         output << "#{'#' * level} #{heading}"
         output << ""
@@ -150,29 +150,29 @@ module Research
       prompt_parts = ["Format the following research findings into documentation:"]
 
       prompt_parts << "\n## Summary:"
-      prompt_parts << (synthesis[:summary] || synthesis["summary"] || "No summary provided")
+      prompt_parts << (synthesis[:summary] || "No summary provided")
 
       prompt_parts << "\n## Detailed Sections:"
-      sections = synthesis[:detailed_sections] || synthesis["detailed_sections"] || []
+      sections = synthesis[:detailed_sections] || []
       sections.each do |section|
-        sub_q = section[:sub_question] || section["sub_question"]
-        answer = section[:answer] || section["answer"]
+        sub_q = section[:sub_question]
+        answer = section[:answer]
         prompt_parts << "### #{sub_q}"
         prompt_parts << answer
       end
 
       prompt_parts << "\n## Validated Insights:"
-      insights = synthesis[:validated_insights] || synthesis["validated_insights"] || []
+      insights = synthesis[:validated_insights] || []
       insights.each do |insight|
-        text = insight[:insight] || insight["insight"]
-        conf = insight[:confidence] || insight["confidence"]
+        text = insight[:insight]
+        conf = insight[:confidence]
         prompt_parts << "- #{text} (confidence: #{conf})"
       end
 
-      if (open_qs = synthesis[:open_questions] || synthesis["open_questions"])&.any?
+      if (open_qs = synthesis[:open_questions])&.any?
         prompt_parts << "\n## Open Questions:"
         open_qs.each do |q|
-          question = q[:question] || q["question"]
+          question = q[:question]
           prompt_parts << "- #{question}"
         end
       end

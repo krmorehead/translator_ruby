@@ -71,7 +71,7 @@ class TranslationService
 
       # Extract translation from the new hash format
       content = result[:content]
-      content["translation"] || translation_context.text
+      content[:translation] || translation_context.text
 
     rescue => e
       error_msg = "LLM translation error: #{e.message}\nBacktrace: #{e.backtrace.first(3).join("\n")}"
@@ -112,13 +112,26 @@ class TranslationService
   end
 
   def convert_to_export_format(data, format)
+    # Convert symbol keys to strings for external output
+    stringified = deep_stringify_keys(data)
     case format
     when "JSON"
-      JSON.pretty_generate(data)
+      JSON.pretty_generate(stringified)
     when "YAML"
-      data.to_yaml
+      stringified.to_yaml
     else
       raise ArgumentError, "Unsupported export format: #{format}"
+    end
+  end
+
+  def deep_stringify_keys(obj)
+    case obj
+    when Hash
+      obj.to_h { |k, v| [k.to_s, deep_stringify_keys(v)] }
+    when Array
+      obj.map { |v| deep_stringify_keys(v) }
+    else
+      obj
     end
   end
 

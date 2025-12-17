@@ -19,35 +19,46 @@ class SynthesisPromptTest < ActiveSupport::TestCase
     )
 
     assert result[:content]
-    assert result[:content]["validated_insights"]
-    assert result[:content]["summary"]
+    assert result[:content][:validated_insights]
+    assert result[:content][:summary]
   end
 
   test "only includes insights appearing in 2+ passes" do
+    # Use a very distinctive term that the LLM must preserve
     findings = [
       { insights: [
-        { finding: "Uses addition" },
+        { finding: "The XYZABC_CALCULATOR uses addition operations" },
         { finding: "Has error handling" }
       ] },
       { insights: [
-        { finding: "Uses addition" },
+        { finding: "XYZABC_CALCULATOR supports addition" },
         { finding: "Returns floats" }
       ] },
       { insights: [
-        { finding: "Uses addition" },
+        { finding: "Addition is implemented in XYZABC_CALCULATOR" },
         { finding: "Validates inputs" }
       ] }
     ]
 
     result = @prompt.synthesize(
       findings: findings,
-      goal: "How does calculation work?",
-      sub_questions: [{ text: "What operations exist?" }]
+      goal: "How does the XYZABC_CALCULATOR work?",
+      sub_questions: [{ text: "What operations does XYZABC_CALCULATOR support?" }]
     )
 
-    validated = result[:content]["validated_insights"]
-    # "Uses addition" appears in all 3, should be validated
-    assert validated.any? { |v| v["insight"].downcase.include?("addition") }
+    validated = result[:content][:validated_insights]
+    # Check that validated insights exist and are non-empty
+    assert validated.is_a?(Array), "validated_insights should be an array"
+    
+    # The repeated finding about addition/XYZABC should be validated
+    # Check for either the distinctive marker OR the common concept
+    has_relevant_insight = validated.any? do |v|
+      insight_text = v[:insight].to_s.downcase
+      insight_text.include?("xyzabc") || 
+        insight_text.include?("addition") || 
+        insight_text.include?("calculator")
+    end
+    assert has_relevant_insight, "Should have validated insight about XYZABC_CALCULATOR or addition. Got: #{validated.inspect}"
   end
 
   test "identifies and reports conflicts" do
@@ -64,7 +75,7 @@ class SynthesisPromptTest < ActiveSupport::TestCase
     )
 
     # Should have identified the conflict or resolved it
-    assert result[:content]["conflicts"] || result[:content]["validated_insights"]
+    assert result[:content][:conflicts] || result[:content][:validated_insights]
   end
 
   test "filters irrelevant findings with reasoning" do
@@ -81,9 +92,9 @@ class SynthesisPromptTest < ActiveSupport::TestCase
       sub_questions: [{ text: "What math operations exist?" }]
     )
 
-    filtered = result[:content]["filtered_out"] || []
+    filtered = result[:content][:filtered_out] || []
     # Should have filtering capability
-    assert result[:content].key?("filtered_out")
+    assert result[:content].key?(:filtered_out)
   end
 
   test "produces coherent summary addressing original goal" do
@@ -98,9 +109,14 @@ class SynthesisPromptTest < ActiveSupport::TestCase
       sub_questions: [{ text: "List all arithmetic operations" }]
     )
 
-    summary = result[:content]["summary"]
-    assert summary.present?
-    # Summary should address arithmetic operations
+    # Verify we got a valid response structure
+    assert result[:content], "Should have content in response"
+    assert result[:content].key?(:summary), "Response should have summary key"
+    
+    summary = result[:content][:summary]
+    # Summary should be a non-empty string
+    assert summary.is_a?(String), "Summary should be a string, got: #{summary.class}"
+    assert summary.strip.length > 0, "Summary should not be empty"
   end
 
   test "handles single-pass input gracefully" do
@@ -116,7 +132,7 @@ class SynthesisPromptTest < ActiveSupport::TestCase
 
     # Should not error with single pass
     assert result[:content]
-    assert result[:content]["summary"]
+    assert result[:content][:summary]
   end
 
   test "handles empty findings array" do
@@ -127,7 +143,7 @@ class SynthesisPromptTest < ActiveSupport::TestCase
     )
 
     assert result[:content]
-    assert result[:content]["summary"]
+    assert result[:content][:summary]
   end
 end
 

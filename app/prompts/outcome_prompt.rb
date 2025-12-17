@@ -24,9 +24,9 @@ class OutcomePrompt < BasePrompt
 
   def format_context(context)
     context ||= {}
-    action = context[:action] || context["action"]
-    result = context[:result] || context["result"]
-    scene = context[:scene] || context["scene"]
+    action = context[:action]
+    result = context[:result]
+    scene = context[:scene]
 
     sections = []
     sections << "Action:\n#{JSON.pretty_generate(action)}" if action
