@@ -3,11 +3,10 @@
 require "test_helper"
 
 class NarrativePromptTest < ActiveSupport::TestCase
-  test "model uses narrative env override" do
-    with_env("NARRATIVE_MODEL", "story-model") do
-      prompt = NarrativePrompt.new
-      assert_equal "story-model", prompt.model
-    end
+  test "model comes from BasePrompt" do
+    prompt = NarrativePrompt.new
+    # Model should come from LLM_MODEL via BasePrompt, not a per-prompt override
+    assert_equal ENV["LLM_MODEL"], prompt.model
   end
 
   test "system prompt sets DM voice" do

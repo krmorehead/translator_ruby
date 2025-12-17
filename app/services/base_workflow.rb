@@ -129,13 +129,12 @@ class BaseWorkflow
   def mark_complete(result)
     @result = result
 
-    # Record output to memory
+    # Do all potentially-failing work BEFORE transitioning state
     workflow_memory&.record_output(result) if result.is_a?(Hash)
-
-    trigger(:finish)
-
-    # Merge outputs back to parent
     workflow_memory&.merge_to_parent(:outputs)
+
+    # Only transition after all work is done
+    trigger(:finish)
   end
 
   def mark_failed(message)

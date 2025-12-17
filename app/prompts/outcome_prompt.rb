@@ -2,10 +2,6 @@
 
 
 class OutcomePrompt < BasePrompt
-  def model
-    ENV["CONSEQUENCE_MODEL"].presence || super
-  end
-
   def system_prompt
     <<~PROMPT
       You determine the narrative consequence of an action.

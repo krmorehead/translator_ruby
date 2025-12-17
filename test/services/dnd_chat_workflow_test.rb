@@ -28,7 +28,7 @@ class DndChatWorkflowTest < ActiveSupport::TestCase
     workflow.setup(prompt: "Search the room", conversation: conversation, sandbox_path: SANDBOX.to_s)
     state = workflow.execute
 
-    assert workflow.complete?, "Workflow should complete"
+    assert workflow.complete?, "Workflow should complete: #{workflow.error || state&.error}"
     assert_kind_of WorkflowState, state
     result = workflow.result
     assert_kind_of Hash, result

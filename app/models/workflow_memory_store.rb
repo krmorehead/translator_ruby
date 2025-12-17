@@ -218,13 +218,20 @@ class WorkflowMemoryStore
 
     sections = [:outputs] if sections.empty?
 
+    # Map workflow section names to parent section names
+    section_mapping = {
+      outputs: :workflow_outputs
+    }
+
     sections.each do |section|
       data = @sections[section]
       next unless data&.any?
 
+      parent_section = section_mapping[section] || section
+
       data.each do |entry|
         parent_memory.update_section(
-          name: section,
+          name: parent_section,
           content: entry.merge(source_workflow: workflow_name, source_workflow_id: workflow_id),
           append: true
         )

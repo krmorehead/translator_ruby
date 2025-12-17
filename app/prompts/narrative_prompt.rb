@@ -4,10 +4,6 @@
 class NarrativePrompt < BasePrompt
   CONTEXT_TOKEN_MAX = 8000
 
-  def model
-    ENV["NARRATIVE_MODEL"].presence || super
-  end
-
   def system_prompt
     <<~PROMPT
       You are the Dungeon Master narrating the story.

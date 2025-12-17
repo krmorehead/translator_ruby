@@ -23,11 +23,6 @@ class TranslationPrompt < BasePrompt
     PROMPT
   end
 
-  # Allow per-prompt model override with sensible fallback.
-  def model
-    ENV["TRANSLATION_MODEL"].presence || super || "gpt-4o-mini"
-  end
-
   def response_schema
     {
       type: "object",

@@ -19,11 +19,11 @@ class DndChatWorkflow < BaseWorkflow
 
   # Temporary compatibility for controller/tests until controller is refactored to orchestrator path.
   # Builds OpenAI chat parameters for tool selection.
-  def chat_parameters(user_prompt:, model: ENV["LLM_MODEL"] || "qwen30b", extra_system_prompt: nil, tools: ToolCallService.available_dnd_tools)
+  def chat_parameters(user_prompt:, model: nil, extra_system_prompt: nil, tools: ToolCallService.available_dnd_tools)
     tool_names = tools.map { |t| t[:function][:name] }
     
     params = {
-      model: model,
+      model: model || BasePrompt.new.model,
       messages: [
         { role: "system", content: system_prompt(extra_system_prompt) },
         { role: "user", content: user_prompt }
@@ -56,7 +56,8 @@ class DndChatWorkflow < BaseWorkflow
 
   # Orchestrates the full workflow; marks complete or failed accordingly.
   def execute
-    state = WorkflowState.new(status: STATUSES[:running], prompt: prompt)
+    trigger(:start) # Move to running state
+    state = WorkflowState.new(status: WorkflowState::STATUSES[:running], prompt: prompt)
 
     memory_store = build_memory_store
     tools = available_dnd_tools
@@ -84,11 +85,11 @@ class DndChatWorkflow < BaseWorkflow
     }
 
     mark_complete(result_hash)
-    state = state.with(status: STATUSES[:complete], data: result_hash)
+    state = state.with(status: WorkflowState::STATUSES[:complete], data: result_hash)
     state
   rescue => e
     mark_failed(e.message)
-    state = state&.with(status: STATUSES[:failed], error: e.message) || WorkflowState.new(status: STATUSES[:failed], error: e.message)
+    state = state&.with(status: WorkflowState::STATUSES[:failed], error: e.message) || WorkflowState.new(status: WorkflowState::STATUSES[:failed], error: e.message)
     state
   end
 

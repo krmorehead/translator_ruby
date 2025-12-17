@@ -3,11 +3,10 @@
 require "test_helper"
 
 class OutcomePromptTest < ActiveSupport::TestCase
-  test "model uses consequence env override" do
-    with_env("CONSEQUENCE_MODEL", "cause-effect-model") do
-      prompt = OutcomePrompt.new
-      assert_equal "cause-effect-model", prompt.model
-    end
+  test "model comes from BasePrompt" do
+    prompt = OutcomePrompt.new
+    # Model should come from LLM_MODEL via BasePrompt, not a per-prompt override
+    assert_equal ENV["LLM_MODEL"], prompt.model
   end
 
   test "response schema expects consequence" do

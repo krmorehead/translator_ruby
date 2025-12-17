@@ -8,10 +8,6 @@ class ActionDetectionPrompt < BasePrompt
     super(tools: tools)
   end
 
-  def model
-    ENV["ACTION_DETECTION_MODEL"].presence || super
-  end
-
   def system_prompt
     <<~PROMPT
       You analyze the player's latest message and identify discrete actions the player wants to perform.

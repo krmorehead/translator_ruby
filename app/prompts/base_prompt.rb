@@ -11,8 +11,9 @@ class BasePrompt
   end
 
   # Default model comes from the shared LLM_MODEL env var.
+  # Raises an error if not configured to fail fast with helpful message.
   def model
-    ENV["LLM_MODEL"].presence
+    ENV["LLM_MODEL"].presence || raise_missing_model_error
   end
 
   # Must return a system prompt string.
@@ -110,5 +111,13 @@ class BasePrompt
     client = GenericLlmClient.instance
     raise "LLM client not configured" unless client
     client
+  end
+
+  def raise_missing_model_error
+    raise <<~ERROR.squish
+      LLM_MODEL environment variable is not set.
+      Ensure your .env file is loaded properly (check .env for development, .env.test for tests).
+      Example: LLM_MODEL=your-model-name
+    ERROR
   end
 end

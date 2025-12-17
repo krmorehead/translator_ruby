@@ -16,8 +16,18 @@ class ChatResponseSerializerTest < ActiveSupport::TestCase
       super()
       @result = result
       @error = error
-      @state = state
       @conversation = result[:conversation] if result
+      # Use the state machine to set the desired state
+      case state
+      when :complete
+        trigger(:start)
+        trigger(:finish)
+      when :failed
+        trigger(:start)
+        trigger(:fail)
+      when :running
+        trigger(:start)
+      end
     end
 
     def execute; end

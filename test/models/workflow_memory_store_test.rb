@@ -231,7 +231,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     end
   end
 
-  test "merge_to_parent copies outputs to parent" do
+  test "merge_to_parent copies outputs to parent workflow_outputs section" do
     parent = MockUpdatableParent.new
 
     store_with_parent = WorkflowMemoryStore.new(
@@ -245,7 +245,8 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     store_with_parent.record_output({ result: "success" })
     store_with_parent.merge_to_parent(:outputs)
 
-    merged = parent.sections[:outputs]
+    # :outputs maps to :workflow_outputs in parent
+    merged = parent.sections[:workflow_outputs]
     assert_equal 1, merged.size
     assert_equal "success", merged.first[:result]
     assert_equal workflow_name, merged.first[:source_workflow]
