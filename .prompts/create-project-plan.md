@@ -51,6 +51,35 @@ Requirements:
 - Include test files in planned files
 - Reference the step number where each planned file is created
 - Keep descriptions concise (one line)
+- Add Document Tree sections with **Before** and **Added** layouts:
+  - **Before**: Shows the full relevant existing file structure (all files that exist and relate to this project)
+  - **Added**: Shows ONLY the new files/directories being created (do not duplicate existing files)
+- Example:
+```
+### Before
+
+project/
+├── lib/
+│   └── existing_module.rb
+├── app/
+│   └── services/
+│       └── existing_service.rb
+└── test/
+    └── lib/
+        └── existing_module_test.rb
+
+### Added
+
+project/
+├── lib/
+│   └── new_module.rb
+├── app/
+│   └── services/
+│       └── new_service.rb
+└── test/
+    └── lib/
+        └── new_module_test.rb
+```
 
 ## Step 4: Create project_plan.md
 
