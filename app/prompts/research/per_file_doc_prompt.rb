@@ -3,7 +3,7 @@
 module Research
   # Prompt for generating per-file documentation.
   # Extracts method signatures, dependencies, and purposes from code files.
-  class PerFileDocPrompt < BasePrompt
+  class PerFileDocPrompt < BaseResearchPrompt
     def system_prompt
       <<~PROMPT
         You are a code documentation expert. Your task is to analyze a source code file

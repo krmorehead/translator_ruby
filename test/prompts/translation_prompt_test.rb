@@ -50,10 +50,17 @@ class TranslationPromptTest < ActiveSupport::TestCase
       context_path: "greeting.hello"
     )
 
-    formatted = prompt.format_context({ extra: "data" })
+    context = Contexts::TranslationContext.new(
+      target_language: "Spanish",
+      source_language: "English",
+      formality: "formal",
+      protected_strings: [ "Brightwheel" ]
+    )
 
-    assert_includes formatted, "greeting.hello"
-    assert_includes formatted, "extra"
+    formatted = prompt.format_context(context)
+
     assert_includes formatted, "Spanish"
+    assert_includes formatted, "English"
+    assert_includes formatted, "formal"
   end
 end

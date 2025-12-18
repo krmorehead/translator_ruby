@@ -1,9 +1,19 @@
 class TranslationService
+  attr_reader :translation_context
+
   def initialize(llm_url: nil, timeout: 30, protected_strings: [], target_language: "es")
     @llm_url = llm_url || ENV["LLM_URL"]
     @timeout = timeout
     @protected_strings = protected_strings + [ "Brightwheel" ] # Always protect Brightwheel
     @target_language = convert_language_code_to_name(target_language)
+
+    # Build a Contexts::TranslationContext for smart context management
+    @translation_context = Contexts::TranslationContext.new(
+      target_language: @target_language,
+      source_language: "en",
+      formality: "formal",
+      protected_strings: @protected_strings
+    )
   end
 
   def translate_document(doc_content:, input_format:, export_format: "JSON", protected_strings: [], target_language: nil)
@@ -42,37 +52,45 @@ class TranslationService
   end
 
   # Public methods for testing and external use
-  def translate_text(translation_context)
-    return translation_context.text if translation_context.text.strip.empty?
+  # @param legacy_context [TranslationContext] Legacy context object with text, target_lang, etc.
+  def translate_text(legacy_context)
+    return legacy_context.text if legacy_context.text.strip.empty?
 
     begin
-
       # Use target_lang from context if present, otherwise fall back to @target_language
-      target_lang = translation_context.target_lang || @target_language
+      target_lang = legacy_context.target_lang || @target_language
+
+      # Update our smart TranslationContext with current settings
+      @translation_context.target_language = target_lang
+      @translation_context.source_language = legacy_context.source_lang
+      @translation_context.formality = legacy_context.formality
+      @translation_context.protected_strings = @current_protected_strings || @protected_strings
 
       prompt = TranslationPrompt.new(
         protected_strings: @current_protected_strings || @protected_strings,
         target_language: target_lang,
-        source_language: translation_context.source_lang,
-        formality: translation_context.formality,
-        context_path: translation_context.context
+        source_language: legacy_context.source_lang,
+        formality: legacy_context.formality,
+        context_path: legacy_context.context
       )
 
+      # Pass the smart TranslationContext to the prompt
       result = prompt.execute(
-        prompt: translation_context.text,
-        context: {
-          target_language: target_lang,
-          source_language: translation_context.source_lang,
-          formality: translation_context.formality,
-          context: translation_context.context,
-          protected_strings: @current_protected_strings || @protected_strings
-        }
+        prompt: legacy_context.text,
+        context: @translation_context
       )
 
-      # Extract translation from the new hash format
+      # Record the translation for future context/consistency
       content = result[:content]
-      content[:translation] || translation_context.text
+      translation = content[:translation] || legacy_context.text
 
+      @translation_context.add_translation(
+        source_text: legacy_context.text.truncate(100),
+        translated_text: translation.truncate(100),
+        context_path: legacy_context.context
+      )
+
+      translation
     rescue => e
       error_msg = "LLM translation error: #{e.message}\nBacktrace: #{e.backtrace.first(3).join("\n")}"
       if logger

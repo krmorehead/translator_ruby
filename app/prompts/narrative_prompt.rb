@@ -17,30 +17,10 @@ class NarrativePrompt < BasePrompt
     nil
   end
 
-  def format_context(context)
-    context ||= {}
-    actions = context[:actions] || []
-    compressed = context[:compressed_context]
-    sections = context[:sections]
+  def format_context(context, question: nil)
+    raise ArgumentError, "context is required" if context.nil?
 
-    current = context[:current_context] || {}
-    scene = current[:scene] || context[:scene]
-    history = current[:recent_conversation] || context[:recent_conversation]
-    people = current[:people]
-    quest = current[:current_quest]
-
-    parts = []
-    parts << "Completed actions:\n#{JSON.pretty_generate(actions)}" if actions.any?
-    if compressed
-      parts << "Compressed context:\n#{compressed}"
-      parts << "Section summaries:\n#{JSON.pretty_generate(sections)}" if sections
-    else
-      parts << "Scene:\n#{scene}" if scene
-      parts << "Current quest:\n#{quest}" if quest
-      parts << "People:\n#{JSON.pretty_generate(people)}" if people
-      parts << "Recent conversation:\n#{JSON.pretty_generate(history)}" if history
-    end
-    parts.join("\n\n")
+    context.format_for_prompt(question || "")
   end
 
   def execute(prompt:, context: {})

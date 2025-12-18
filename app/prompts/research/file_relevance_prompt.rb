@@ -3,7 +3,7 @@
 module Research
   # Prompt that scores file relevance to a research question.
   # Helps filter candidate files to focus on the most relevant ones.
-  class FileRelevancePrompt < BasePrompt
+  class FileRelevancePrompt < BaseResearchPrompt
     def system_prompt
       <<~PROMPT
         You are a code relevance expert. Your task is to evaluate how relevant a file is

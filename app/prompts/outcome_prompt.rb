@@ -22,16 +22,9 @@ class OutcomePrompt < BasePrompt
     }
   end
 
-  def format_context(context)
-    context ||= {}
-    action = context[:action]
-    result = context[:result]
-    scene = context[:scene]
+  def format_context(context, question: nil)
+    raise ArgumentError, "context is required" if context.nil?
 
-    sections = []
-    sections << "Action:\n#{JSON.pretty_generate(action)}" if action
-    sections << "Tool result:\n#{JSON.pretty_generate(result)}" if result
-    sections << "Scene:\n#{scene}" if scene
-    sections.join("\n\n")
+    context.format_for_prompt(question || "")
   end
 end

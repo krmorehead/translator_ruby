@@ -38,16 +38,11 @@ class TranslationPrompt < BasePrompt
   end
 
   # Include translation context in a structured way for the LLM.
-  def format_context(context)
-    data = {
-      target_language: @target_language,
-      source_language: @source_language,
-      formality: @formality,
-      context_path: @context_path
-    }.merge(context || {}).compact
+  # @param context [Hash, Contexts::TranslationContext, nil] The context
+  # @param question [String, nil] The text being translated (for relevance)
+  def format_context(context, question: nil)
+    raise ArgumentError, "context is required" if context.nil?
 
-    return "" if data.empty?
-
-    "Context:\n#{JSON.pretty_generate(data)}"
+    context.format_for_prompt(question || "")
   end
 end

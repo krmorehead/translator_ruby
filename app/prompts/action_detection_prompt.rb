@@ -37,18 +37,13 @@ class ActionDetectionPrompt < BasePrompt
     }
   end
 
-  def format_context(context)
-    context ||= {}
-    scene = context[:scene]
-    memory = context[:memory]
-    history = context[:recent_conversation]
+  def format_context(context, question: nil)
+    raise ArgumentError, "context is required" if context.nil?
 
     sections = []
-    sections << "Current scene:\n#{scene}" if scene
-    sections << "Memory:\n#{JSON.pretty_generate(memory)}" if memory
-    sections << "Recent conversation:\n#{JSON.pretty_generate(history)}" if history
+    sections << context.format_for_prompt(question || "")
     sections << "Available tools:\n#{serialize_tools(tools)}"
-    sections.join("\n\n")
+    sections.reject(&:blank?).join("\n\n")
   end
 
   def execute(prompt:, context: {})

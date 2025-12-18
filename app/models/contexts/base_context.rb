@@ -7,6 +7,9 @@ module Contexts
   # Context entries are not compressed or deleted - full history is retained.
   # Only RELEVANT entries are passed to prompts based on the current question.
   #
+  # Supports nesting via sub_contexts - each sub-context is a named child Context.
+  # Serialization recursively handles sub_contexts for graceful persistence.
+  #
   # Subclasses should implement domain-specific behavior while using
   # the common relevance filtering and topic indexing infrastructure.
   class BaseContext
@@ -18,6 +21,9 @@ module Contexts
 
     # Minimum keyword overlap to consider relevant without LLM
     KEYWORD_RELEVANCE_THRESHOLD = 2
+
+    # Default max entries when condensing
+    DEFAULT_CONDENSE_LIMIT = 10
 
     Entry = Struct.new(:id, :content, :topics, :source, :timestamp, :metadata, keyword_init: true) do
       def to_h
@@ -32,11 +38,12 @@ module Contexts
       end
     end
 
-    attr_reader :entries
+    attr_reader :entries, :sub_contexts
 
     def initialize
       @entries = []
       @topic_index = Hash.new { |h, k| h[k] = Set.new }  # topic -> entry_ids
+      @sub_contexts = {}  # name -> Context instance
     end
 
     # Add a context entry with explicit topics
@@ -141,16 +148,33 @@ module Contexts
     end
 
     # Serialize to hash for persistence
+    # Recursively serializes sub_contexts
+    # @return [Hash] Serialized context data
     def to_h
       {
+        context_class: self.class.name,
         entries: @entries.map(&:to_h),
-        topic_index: @topic_index.transform_values(&:to_a)
+        topic_index: @topic_index.transform_values(&:to_a),
+        sub_contexts: @sub_contexts.transform_values(&:to_h)
       }
     end
 
     # Load from hash
-    def self.from_h(data)
+    # Recursively deserializes sub_contexts
+    # @param data [Hash] Serialized context data
+    # @param context_registry [Hash] Optional mapping of class names to classes for sub-contexts
+    # @return [BaseContext] Deserialized context
+    def self.from_h(data, context_registry: nil)
       context = new
+      load_entries_from_h(context, data)
+      load_sub_contexts_from_h(context, data, context_registry)
+      context
+    end
+
+    # Helper to load entries from serialized data
+    # @param context [BaseContext] The context to load into
+    # @param data [Hash] Serialized data
+    def self.load_entries_from_h(context, data)
       (data[:entries] || data["entries"] || []).each do |entry_data|
         entry = Entry.new(
           id: entry_data[:id] || entry_data["id"],
@@ -165,12 +189,197 @@ module Contexts
           context.instance_variable_get(:@topic_index)[topic].add(entry.id)
         end
       end
-      context
+    end
+
+    # Helper to load sub-contexts from serialized data
+    # @param context [BaseContext] The context to load into
+    # @param data [Hash] Serialized data
+    # @param context_registry [Hash, nil] Optional class name to class mapping
+    def self.load_sub_contexts_from_h(context, data, context_registry)
+      sub_contexts_data = data[:sub_contexts] || data["sub_contexts"] || {}
+      sub_contexts_data.each do |name, sub_data|
+        # Determine the class to use for this sub-context
+        class_name = sub_data[:context_class] || sub_data["context_class"]
+        sub_class = resolve_context_class(class_name, context_registry)
+
+        sub_context = sub_class.from_h(sub_data, context_registry: context_registry)
+        context.add_sub_context(name, sub_context)
+      end
+    end
+
+    # Resolve a context class from its name
+    # @param class_name [String, nil] The class name to resolve
+    # @param context_registry [Hash, nil] Optional class name to class mapping
+    # @return [Class] The resolved class (defaults to BaseContext)
+    def self.resolve_context_class(class_name, context_registry)
+      return BaseContext if class_name.nil?
+
+      # Check registry first
+      if context_registry&.key?(class_name)
+        return context_registry[class_name]
+      end
+
+      # Try to constantize safely
+      class_name.constantize
+    rescue NameError
+      BaseContext
     end
 
     # Get size of context store
     def size
       @entries.size
+    end
+
+    # Add a named sub-context for nesting
+    # @param name [String, Symbol] The name/key for this sub-context
+    # @param context [BaseContext] The context to nest
+    # @return [BaseContext] The added context
+    def add_sub_context(name, context)
+      raise ArgumentError, "context must be a BaseContext" unless context.is_a?(BaseContext)
+
+      @sub_contexts[name.to_sym] = context
+      context
+    end
+
+    # Get a named sub-context
+    # @param name [String, Symbol] The name/key for the sub-context
+    # @return [BaseContext, nil] The sub-context or nil
+    def get_sub_context(name)
+      @sub_contexts[name.to_sym]
+    end
+
+    # Check if a sub-context exists
+    # @param name [String, Symbol] The name/key for the sub-context
+    # @return [Boolean]
+    def has_sub_context?(name)
+      @sub_contexts.key?(name.to_sym)
+    end
+
+    # Condense context by keeping only the most relevant entries per topic
+    # Creates a new condensed context - does not mutate self
+    # @param max_entries [Integer] Maximum entries to keep
+    # @param condense_sub_contexts [Boolean] Whether to also condense sub-contexts
+    # @return [BaseContext] A new condensed context
+    def condense(max_entries: DEFAULT_CONDENSE_LIMIT, condense_sub_contexts: true)
+      condensed = self.class.new
+
+      # Group entries by primary topic and keep most recent per topic
+      by_topic = @entries.group_by { |e| e.topics.first || "general" }
+
+      # Calculate how many entries per topic we can keep
+      entries_per_topic = [1, max_entries / [by_topic.size, 1].max].max
+
+      selected_entries = by_topic.flat_map do |_topic, topic_entries|
+        topic_entries.last(entries_per_topic)
+      end
+
+      # If we still have too many, take the most recent
+      selected_entries = selected_entries.last(max_entries)
+
+      # Add entries to condensed context
+      selected_entries.each do |entry|
+        condensed.add(
+          content: entry.content,
+          topics: entry.topics,
+          source: entry.source,
+          metadata: entry.metadata.merge(condensed_from: entry.id)
+        )
+      end
+
+      # Optionally condense sub-contexts
+      if condense_sub_contexts
+        @sub_contexts.each do |name, sub_ctx|
+          condensed.add_sub_context(name, sub_ctx.condense(max_entries: max_entries))
+        end
+      else
+        @sub_contexts.each do |name, sub_ctx|
+          condensed.add_sub_context(name, sub_ctx)
+        end
+      end
+
+      condensed
+    end
+
+    # Merge another context into this one
+    # Combines entries and sub-contexts intelligently
+    # @param other [BaseContext] The context to merge in
+    # @param deduplicate [Boolean] Whether to skip entries with matching content
+    # @return [self] Returns self for chaining
+    def merge(other, deduplicate: true)
+      raise ArgumentError, "other must be a BaseContext" unless other.is_a?(BaseContext)
+
+      existing_content = deduplicate ? @entries.map(&:content).to_set : Set.new
+
+      other.entries.each do |entry|
+        next if deduplicate && existing_content.include?(entry.content)
+
+        add(
+          content: entry.content,
+          topics: entry.topics,
+          source: entry.source,
+          metadata: entry.metadata.merge(merged_from: other.class.name)
+        )
+      end
+
+      # Merge sub-contexts recursively
+      other.sub_contexts.each do |name, sub_ctx|
+        if @sub_contexts.key?(name)
+          @sub_contexts[name].merge(sub_ctx, deduplicate: deduplicate)
+        else
+          @sub_contexts[name] = sub_ctx
+        end
+      end
+
+      self
+    end
+
+    # Get all entries including from sub-contexts
+    # @param depth [Integer] Maximum depth to traverse (-1 for unlimited)
+    # @return [Array<Entry>] All entries flattened
+    def all_entries(depth: -1)
+      result = @entries.dup
+
+      return result if depth == 0
+
+      @sub_contexts.each_value do |sub_ctx|
+        result.concat(sub_ctx.all_entries(depth: depth - 1))
+      end
+
+      result
+    end
+
+    # Get relevant entries including from sub-contexts
+    # @param question [String] The question to find relevant context for
+    # @param limit [Integer] Maximum entries to return
+    # @param include_sub_contexts [Boolean] Whether to search sub-contexts
+    # @return [Array<Entry>] Relevant entries
+    def relevant_to_deep(question, limit: MAX_PROMPT_ENTRIES, include_sub_contexts: true)
+      all_scored = []
+
+      question_keywords = extract_keywords(question)
+
+      # Score entries from this context
+      candidates_for_relevance.each do |entry|
+        score = calculate_relevance_score(entry, question_keywords)
+        all_scored << { entry: entry, score: score, source: :self }
+      end
+
+      # Score entries from sub-contexts
+      if include_sub_contexts
+        @sub_contexts.each do |name, sub_ctx|
+          sub_ctx.candidates_for_relevance.each do |entry|
+            score = sub_ctx.send(:calculate_relevance_score, entry, question_keywords)
+            all_scored << { entry: entry, score: score, source: name }
+          end
+        end
+      end
+
+      # Take highest scoring entries
+      all_scored
+        .select { |s| s[:score] >= KEYWORD_RELEVANCE_THRESHOLD }
+        .sort_by { |s| -s[:score] }
+        .first(limit)
+        .map { |s| s[:entry] }
     end
 
     protected

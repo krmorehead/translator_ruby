@@ -4,7 +4,7 @@ module Research
   # Prompt that breaks research topics into focused sub-questions with base case detection.
   # Guides the LLM to produce actionable, specific questions and identify when questions
   # are "leaf" level (no further decomposition needed).
-  class TopicDecompositionPrompt < BasePrompt
+  class TopicDecompositionPrompt < BaseResearchPrompt
     def system_prompt
       <<~PROMPT
         You are a research planning expert specialized in codebase analysis.

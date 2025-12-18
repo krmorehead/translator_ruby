@@ -10,5 +10,10 @@ module Memories
     def self.weight
       1.0
     end
+
+    # Use CurrentSceneContext for scene-specific relevance filtering
+    def self.context_class
+      Contexts::CurrentSceneContext
+    end
   end
 end

@@ -3,7 +3,7 @@
 module Research
   # Prompt that synthesizes findings into unified understanding.
   # Designed to combine multiple parallel analyses and distill results through cross-validation.
-  class SynthesisPrompt < BasePrompt
+  class SynthesisPrompt < BaseResearchPrompt
     def system_prompt
       <<~PROMPT
         You are a research synthesis expert. Your task is to combine findings from multiple

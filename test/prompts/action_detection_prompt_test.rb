@@ -58,16 +58,24 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
 
   test "format_context includes scene and tools" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
-    formatted = prompt.format_context({ scene: "a dim tavern", memory: { quest: "find key" } })
+    context = Contexts::DndChatContext.new
+    context.scene.set_location(name: "Tavern", description: "a dim tavern")
+    context.add_quest(title: "Find Key", description: "find key", status: "active")
+
+    formatted = prompt.format_context(context)
+
     assert_includes formatted, "dim tavern"
     assert_includes formatted, "inspect_room"
   end
 
   test "execute returns array of actions" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
+    context = Contexts::DndChatContext.new
+    context.scene.set_location(name: "Armory", description: "a candle-lit armory")
+
     result = prompt.execute(
       prompt: "I look around the room and pick up the sword.",
-      context: { scene: "a candle-lit armory" }
+      context: context
     )
 
     assert_kind_of Hash, result

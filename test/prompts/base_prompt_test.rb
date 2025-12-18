@@ -39,23 +39,29 @@ class BasePromptTest < ActiveSupport::TestCase
     assert_includes serialized, "demo_tool"
   end
 
-  test "format_context renders pretty json" do
+  test "format_context renders context output" do
     prompt = OutcomePrompt.new
-    formatted = prompt.format_context({ action: { tool_name: "demo_tool" }, scene: "a forest" })
+    context = Contexts::DndChatContext.new
+    context.scene.set_location(name: "Forest", description: "a forest")
+    context.add_action(action_name: "demo_tool", result: "Opened door")
+
+    formatted = prompt.format_context(context)
+
     assert_includes formatted, "Scene:"
     assert_includes formatted, "forest"
   end
 
   test "execute returns structured json when schema provided" do
     prompt = OutcomePrompt.new
-    result = prompt.execute(
-      prompt: "Provide a consequence.",
-      context: {
-        action: { tool_name: "demo_tool", arguments: { target: "door" }, prompt_reference: "open door" },
-        result: { success: true, result: "The door opens." },
-        scene: "stone hallway"
-      }
+    context = Contexts::DndChatContext.new
+    context.scene.set_location(name: "Hallway", description: "stone hallway")
+    context.add_action(
+      action_name: "open door",
+      result: "The door opens.",
+      metadata: { tool_result: { success: true, result: "The door opens." } }
     )
+
+    result = prompt.execute(prompt: "Provide a consequence.", context: context)
 
     assert_kind_of Hash, result
     assert result.key?(:content)
@@ -66,10 +72,11 @@ class BasePromptTest < ActiveSupport::TestCase
 
   test "execute returns freeform text when no schema" do
     prompt = NarrativePrompt.new
-    result = prompt.execute(
-      prompt: "Narrate briefly.",
-      context: { actions: [ { tool_name: "demo_tool", consequence: "You opened the door." } ], scene: "hallway" }
-    )
+    context = Contexts::DndChatContext.new
+    context.scene.set_location(name: "Hallway", description: "hallway")
+    context.add_action(action_name: "demo_tool", result: "You opened the door.")
+
+    result = prompt.execute(prompt: "Narrate briefly.", context: context)
 
     assert_kind_of Hash, result
     assert result.key?(:content)
@@ -80,10 +87,11 @@ class BasePromptTest < ActiveSupport::TestCase
 
   test "execute includes thoughts field" do
     prompt = OutcomePrompt.new
-    result = prompt.execute(
-      prompt: "Provide a consequence.",
-      context: { action: { tool_name: "test" }, result: { success: true }, scene: "test" }
-    )
+    context = Contexts::DndChatContext.new
+    context.scene.set_location(name: "Test", description: "test")
+    context.add_action(action_name: "test", result: "success")
+
+    result = prompt.execute(prompt: "Provide a consequence.", context: context)
 
     assert result.key?(:thoughts)
     # Thoughts may be nil or string depending on LLM response

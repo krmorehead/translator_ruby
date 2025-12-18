@@ -18,24 +18,33 @@ class OutcomePromptTest < ActiveSupport::TestCase
 
   test "format_context includes action and result" do
     prompt = OutcomePrompt.new
-    formatted = prompt.format_context(
-      action: { tool_name: "inspect_room", arguments: { target: "table" } },
-      result: { success: true, result: "A dusty map" },
-      scene: "an ancient library"
+    context = Contexts::DndChatContext.new
+    context.scene.set_location(name: "Library", description: "an ancient library")
+    context.add_action(
+      action_name: "inspect_room",
+      result: "A dusty map",
+      metadata: { tool_result: { success: true, result: "A dusty map" } }
     )
+
+    formatted = prompt.format_context(context)
+
     assert_includes formatted, "inspect_room"
     assert_includes formatted, "ancient library"
   end
 
   test "execute returns consequence hash" do
     prompt = OutcomePrompt.new
+    context = Contexts::DndChatContext.new
+    context.scene.set_location(name: "Corridor", description: "a dark corridor")
+    context.add_action(
+      action_name: "inspect door",
+      result: "The door opens with a creak.",
+      metadata: { tool_result: { success: true, result: "The door opens with a creak." } }
+    )
+
     result = prompt.execute(
       prompt: "Summarize the consequence.",
-      context: {
-        action: { tool_name: "inspect_room", arguments: { target: "door" }, prompt_reference: "inspect door" },
-        result: { success: true, result: "The door opens with a creak." },
-        scene: "a dark corridor"
-      }
+      context: context
     )
 
     assert_kind_of Hash, result

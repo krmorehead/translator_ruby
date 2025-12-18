@@ -100,18 +100,72 @@ class DndChatWorkflow < BaseWorkflow
     @memory_store_class.new(path: path, sandbox_path: sandbox_path)
   end
 
+  # Build a DndChatContext from the memory store
+  # @param memory_store [MemoryStore] The memory store
+  # @return [Contexts::DndChatContext] Populated DnD context
+  def build_dnd_context(memory_store)
+    dnd_context = Contexts::DndChatContext.new
+
+    # Populate scene context
+    scene_data = memory_store.get_section(MemoryKinds::CURRENT_SCENE)
+    if scene_data.present?
+      scene_text = scene_data.is_a?(String) ? scene_data : scene_data.to_s
+      dnd_context.scene.set_location(name: "Current Scene", description: scene_text)
+    end
+
+    # Populate people context
+    people_data = memory_store.get_section(MemoryKinds::PEOPLE) || []
+    Array(people_data).each do |person|
+      text = person.is_a?(Hash) ? (person[:text] || person["text"]) : person.to_s
+      next if text.blank?
+
+      dnd_context.add_person(name: "NPC", description: text)
+    end
+
+    # Populate quests context
+    quest_data = memory_store.get_section(MemoryKinds::QUEST_LOG) || []
+    Array(quest_data).each do |quest|
+      text = quest.is_a?(Hash) ? (quest[:text] || quest["text"]) : quest.to_s
+      status = quest.is_a?(Hash) ? (quest[:status] || quest["status"] || "active") : "active"
+      next if text.blank?
+
+      dnd_context.add_quest(title: text.truncate(50), description: text, status: status)
+    end
+
+    # Populate conversation context
+    conv_data = memory_store.get_section(MemoryKinds::RECENT_CONVERSATION) || []
+    Array(conv_data).each do |msg|
+      text = msg.is_a?(Hash) ? (msg[:text] || msg["text"]) : msg.to_s
+      speaker = msg.is_a?(Hash) ? (msg[:speaker] || msg["speaker"] || "unknown") : "unknown"
+      next if text.blank?
+
+      dnd_context.add_message(speaker: speaker, message: text)
+    end
+
+    # Populate actions context
+    actions_data = memory_store.get_section(MemoryKinds::ACTIONS) || []
+    Array(actions_data).each do |action|
+      next unless action.is_a?(Hash)
+
+      action_name = action[:tool_name] || action["tool_name"] || "action"
+      result = action[:result] || action["result"] || ""
+      dnd_context.add_action(action_name: action_name, result: result.to_s, metadata: action)
+    end
+
+    dnd_context
+  end
+
   def available_dnd_tools
     ToolCallService.available_dnd_tools
   end
 
   def detect_actions(tools:, memory_store:)
     prompt = ActionDetectionPrompt.new(tools: tools)
-    context = {
-      scene: memory_store.get_section(MemoryKinds::CURRENT_SCENE),
-      memory: memory_store.to_h,
-      recent_conversation: memory_store.get_section(MemoryKinds::RECENT_CONVERSATION)
-    }
-    result = prompt.execute(prompt: self.prompt, context: context)
+
+    # Build DndChatContext for action detection
+    dnd_context = build_dnd_context(memory_store)
+
+    result = prompt.execute(prompt: self.prompt, context: dnd_context)
     result[:content]
   end
 
@@ -139,35 +193,40 @@ class DndChatWorkflow < BaseWorkflow
 
   def resolve_consequence(action_record, tool_result, memory_store)
     prompt = OutcomePrompt.new
-    context = {
-      action: action_record.to_h,
-      result: tool_result,
-      scene: memory_store.get_section(MemoryKinds::CURRENT_SCENE)
-    }
-    response = prompt.execute(prompt: self.prompt, context: context)
+
+    # Build a focused context for consequence resolution
+    dnd_context = build_dnd_context(memory_store)
+    dnd_context.add_action(
+      action_name: action_record.tool_name,
+      result: tool_result[:result].to_s,
+      metadata: { action: action_record.to_h, tool_result: tool_result }
+    )
+
+    response = prompt.execute(prompt: self.prompt, context: dnd_context)
     content = response[:content]
     content.is_a?(Hash) ? content[:consequence] : nil
   end
 
   def generate_narrative(completed_actions, memory_store)
     prompt = NarrativePrompt.new
-    context_tool = CurrentContextTool.new(sandbox_path: sandbox_path)
-    current_context = context_tool.execute(path: memory_store.path)[:result] rescue {}
-    base_context = {
-      actions: completed_actions.map(&:to_h),
-      current_context: current_context
-    }
 
-    context = if exceeds_context_limit?(base_context)
-      compression = ContextCompressionTool.new(sandbox_path: sandbox_path).execute(path: memory_store.path) rescue {}
-      compressed = compression[:result] || {}
-      {
-        actions: base_context[:actions],
-        compressed_context: compressed[:overall_summary],
-        sections: compressed[:sections]
-      }
+    # Build DndChatContext for narrative generation
+    dnd_context = build_dnd_context(memory_store)
+
+    # Add completed actions to the context
+    completed_actions.each do |action|
+      dnd_context.add_action(
+        action_name: action.tool_name,
+        result: action.result.to_s,
+        metadata: action.to_h
+      )
+    end
+
+    # Use condense if context is too large
+    context = if exceeds_context_limit_for_context?(dnd_context)
+      dnd_context.condense(max_entries: 10)
     else
-      base_context
+      dnd_context
     end
 
     result = prompt.execute(prompt: self.prompt, context: context)
@@ -175,7 +234,17 @@ class DndChatWorkflow < BaseWorkflow
     result[:content]
   end
 
+  # Check if a DndChatContext exceeds the token limit
+  def exceeds_context_limit_for_context?(context)
+    # Estimate by counting all entries
+    total_entries = context.all_entries.size
+    total_entries > 20  # Simple heuristic
+  end
+
+  # Legacy method for hash-based context - kept for compatibility
   def exceeds_context_limit?(context)
+    return false unless context.is_a?(Hash)
+
     approx_tokens = JSON.generate(context).size / 4.0
     approx_tokens > NarrativePrompt::CONTEXT_TOKEN_MAX
   end

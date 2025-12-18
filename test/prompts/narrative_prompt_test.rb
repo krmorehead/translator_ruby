@@ -23,22 +23,25 @@ class NarrativePromptTest < ActiveSupport::TestCase
 
   test "format_context includes actions and history" do
     prompt = NarrativePrompt.new
-    formatted = prompt.format_context(
-      actions: [ { tool_name: "inspect_room", consequence: "You find a map." } ],
-      recent_conversation: [ "Player asked about the map" ]
-    )
+    context = Contexts::DndChatContext.new
+    context.add_action(action_name: "inspect_room", result: "You find a map.")
+    context.add_message(speaker: "player", message: "Player asked about the map")
+
+    formatted = prompt.format_context(context)
+
     assert_includes formatted, "inspect_room"
     assert_includes formatted, "map"
   end
 
   test "execute returns narrative string" do
     prompt = NarrativePrompt.new
+    context = Contexts::DndChatContext.new
+    context.scene.set_location(name: "Hallway", description: "stone hallway")
+    context.add_action(action_name: "inspect_room", result: "You spot a hidden door.")
+
     result = prompt.execute(
       prompt: "Narrate the scene.",
-      context: {
-        actions: [ { tool_name: "inspect_room", consequence: "You spot a hidden door." } ],
-        scene: "stone hallway"
-      }
+      context: context
     )
 
     assert_kind_of Hash, result

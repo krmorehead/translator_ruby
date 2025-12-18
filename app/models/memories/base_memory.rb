@@ -25,6 +25,13 @@ module Memories
       []
     end
 
+    # The Context class to use for this memory section.
+    # Subclasses can override to use domain-specific contexts.
+    # @return [Class] A subclass of Contexts::BaseContext
+    def self.context_class
+      Contexts::BaseContext
+    end
+
     # Normalize any entry to a hash with a timestamp
     def self.normalize_entry(content)
       entry =

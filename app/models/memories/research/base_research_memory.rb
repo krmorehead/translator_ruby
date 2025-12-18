@@ -14,6 +14,11 @@ module Memories
       def self.memory_namespace
         ResearchMemoryKinds
       end
+
+      # Use ResearchContext for research-specific relevance filtering
+      def self.context_class
+        Contexts::ResearchContext
+      end
     end
   end
 end

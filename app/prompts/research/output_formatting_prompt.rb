@@ -3,7 +3,7 @@
 module Research
   # Prompt that formats synthesis output as documentation.
   # Ensures output conforms to project documentation standards.
-  class OutputFormattingPrompt < BasePrompt
+  class OutputFormattingPrompt < BaseResearchPrompt
     def system_prompt
       <<~PROMPT
         You are a technical documentation expert. Your task is to format research findings

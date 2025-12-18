@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 # File-backed store for narrative memory broken into named sections.
+# Each section can provide a Context instance for smart relevance filtering.
 class MemoryStore
   DEFAULT_SECTIONS = Memories::Registry::ALL.each_with_object({}) do |klass, h|
     h[klass.section_name.to_sym] = klass.default.dup
@@ -13,6 +14,7 @@ class MemoryStore
     @sandbox_path = sandbox_path
     validate_sandbox_path!(path)
     @sections = load_sections
+    @section_contexts = {}  # Cache for section contexts
   end
 
   def list_sections
@@ -27,6 +29,7 @@ class MemoryStore
     section_key = name.to_sym
     raise ArgumentError, "Unknown section: #{name}" unless @sections.key?(section_key)
     @sections[section_key] = value
+    @section_contexts.delete(section_key)  # Invalidate cached context
     persist!
     @sections[section_key]
   end
@@ -45,6 +48,7 @@ class MemoryStore
       @sections[section_key] = [ entry ]
     end
 
+    @section_contexts.delete(section_key)  # Invalidate cached context
     persist!
     @sections[section_key]
   end
@@ -53,7 +57,108 @@ class MemoryStore
     @sections
   end
 
+  # Get a Context instance for a specific section.
+  # The Context is lazily created and cached.
+  # @param section [String, Symbol] The section name
+  # @return [Contexts::BaseContext] A context populated with section data
+  def context_for(section)
+    section_key = section.to_sym
+    return @section_contexts[section_key] if @section_contexts.key?(section_key)
+
+    memory_class = Memories::Registry.for(section)
+    context_class = memory_class&.context_class || Contexts::BaseContext
+
+    @section_contexts[section_key] = build_context(section_key, context_class)
+  end
+
+  # Get a composite context with sub-contexts for each section.
+  # Useful for passing complete memory state to prompts.
+  # @return [Contexts::BaseContext] A context with all sections as sub-contexts
+  def full_context
+    composite = Contexts::BaseContext.new
+
+    @sections.each_key do |section_key|
+      section_context = context_for(section_key)
+      composite.add_sub_context(section_key, section_context)
+    end
+
+    composite
+  end
+
+  # Invalidate cached contexts (call after mutations)
+  def invalidate_contexts!
+    @section_contexts = {}
+  end
+
   private
+
+  # Build a context instance from section data
+  # @param section_key [Symbol] The section key
+  # @param context_class [Class] The context class to instantiate
+  # @return [Contexts::BaseContext] The populated context
+  def build_context(section_key, context_class)
+    context = context_class.new
+    section_data = @sections[section_key]
+
+    populate_context_from_section(context, section_key, section_data)
+    context
+  end
+
+  # Populate a context with data from a section
+  # @param context [Contexts::BaseContext] The context to populate
+  # @param section_key [Symbol] The section key (used for topics/source)
+  # @param section_data [Array, String, Hash] The section data
+  def populate_context_from_section(context, section_key, section_data)
+    case section_data
+    when Array
+      section_data.each do |entry|
+        add_entry_to_context(context, section_key, entry)
+      end
+    when String
+      context.add(
+        content: section_data,
+        topics: [section_key.to_s],
+        source: section_key.to_s
+      )
+    when Hash
+      context.add(
+        content: section_data[:text] || section_data["text"] || section_data.to_s,
+        topics: [section_key.to_s],
+        source: section_key.to_s,
+        metadata: section_data
+      )
+    end
+  end
+
+  # Add a single entry to a context
+  # @param context [Contexts::BaseContext] The context
+  # @param section_key [Symbol] The section key
+  # @param entry [Hash, String] The entry data
+  def add_entry_to_context(context, section_key, entry)
+    case entry
+    when Hash
+      content = entry[:text] || entry["text"] || entry[:content] || entry["content"] || entry.to_s
+      topics = [section_key.to_s]
+
+      # Add any tags from the entry as topics
+      if entry[:tags]
+        topics.concat(Array(entry[:tags]))
+      end
+
+      context.add(
+        content: content,
+        topics: topics,
+        source: section_key.to_s,
+        metadata: entry
+      )
+    when String
+      context.add(
+        content: entry,
+        topics: [section_key.to_s],
+        source: section_key.to_s
+      )
+    end
+  end
 
   def load_sections
     return deep_dup(DEFAULT_SECTIONS) unless File.exist?(path)

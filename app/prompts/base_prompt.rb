@@ -43,11 +43,15 @@ class BasePrompt
     raise NotImplementedError, "#{self.class.name} must define #response_schema"
   end
 
-  # Convert a context hash into a string payload for the LLM.
-  def format_context(context)
-    return "" if context.nil? || context.empty?
+  # Convert a context into a string payload for the LLM.
+  # Context objects format themselves completely via format_for_prompt.
+  # @param context [Contexts::BaseContext] The context (required)
+  # @param question [String, nil] Optional question for relevance filtering
+  # @return [String] Formatted context string
+  def format_context(context, question: nil)
+    raise ArgumentError, "context is required" if context.nil?
 
-    "Context:\n#{JSON.pretty_generate(context)}"
+    context.format_for_prompt(question || "")
   end
 
   # Serialize tool schemas for inclusion in prompts.
@@ -129,7 +133,8 @@ class BasePrompt
 
   def build_messages(prompt, context)
     messages = [ { role: "system", content: system_prompt } ]
-    formatted_context = format_context(context)
+    # Pass the prompt as the question for relevance filtering when context is a Context object
+    formatted_context = format_context(context, question: prompt)
     messages << { role: "user", content: formatted_context } if formatted_context.present?
     messages << { role: "user", content: prompt }
     messages

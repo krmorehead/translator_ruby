@@ -59,4 +59,78 @@ class MemoryStoreTest < ActiveSupport::TestCase
     assert_equal 1, scene.size
     assert_equal "In the tavern", scene.first[:text] || scene.first["text"]
   end
+
+  # Context integration tests
+  test "context_for returns a context for a section" do
+    store = new_store
+    store.update_section(name: :current_scene, content: { text: "Dark forest" }, append: false)
+
+    context = store.context_for(:current_scene)
+
+    assert_kind_of Contexts::BaseContext, context
+    assert_equal 1, context.size
+  end
+
+  test "context_for uses memory class context_class" do
+    store = new_store
+    store.update_section(name: :current_scene, content: { text: "Castle" }, append: false)
+
+    context = store.context_for(:current_scene)
+
+    # CurrentSceneMemory specifies CurrentSceneContext
+    assert_kind_of Contexts::CurrentSceneContext, context
+  end
+
+  test "context_for caches contexts" do
+    store = new_store
+    store.update_section(name: :people, content: "Gandalf", append: true)
+
+    context1 = store.context_for(:people)
+    context2 = store.context_for(:people)
+
+    assert_equal context1.object_id, context2.object_id
+  end
+
+  test "set_section invalidates cached context" do
+    store = new_store
+    store.update_section(name: :people, content: "Gandalf", append: true)
+
+    context1 = store.context_for(:people)
+    store.set_section(:people, [{ text: "Aragorn" }])
+    context2 = store.context_for(:people)
+
+    refute_equal context1.object_id, context2.object_id
+  end
+
+  test "update_section invalidates cached context" do
+    store = new_store
+    context1 = store.context_for(:quests)
+
+    store.update_section(name: :quests, content: "Find dragon", append: true)
+    context2 = store.context_for(:quests)
+
+    refute_equal context1.object_id, context2.object_id
+  end
+
+  test "full_context returns composite context with sub-contexts" do
+    store = new_store
+    store.update_section(name: :current_scene, content: { text: "Tavern" }, append: false)
+    store.update_section(name: :people, content: "Bartender", append: true)
+
+    full = store.full_context
+
+    assert_kind_of Contexts::BaseContext, full
+    assert full.has_sub_context?(:current_scene)
+    assert full.has_sub_context?(:people)
+  end
+
+  test "invalidate_contexts clears all cached contexts" do
+    store = new_store
+    context1 = store.context_for(:people)
+
+    store.invalidate_contexts!
+    context2 = store.context_for(:people)
+
+    refute_equal context1.object_id, context2.object_id
+  end
 end

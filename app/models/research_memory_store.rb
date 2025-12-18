@@ -52,6 +52,7 @@ class ResearchMemoryStore
     @current_iteration = 0
     @sections = load_sections
     @context_stack = []
+    @section_contexts = {}  # Cache for section contexts
   end
 
   def list_sections
@@ -67,6 +68,7 @@ class ResearchMemoryStore
     raise ArgumentError, "Unknown section: #{name}" unless @sections.key?(section_key)
 
     @sections[section_key] = value
+    @section_contexts.delete(section_key)  # Invalidate cached context
     persist!
     @sections[section_key]
   end
@@ -85,6 +87,7 @@ class ResearchMemoryStore
       @sections[section_key] = [entry]
     end
 
+    @section_contexts.delete(section_key)  # Invalidate cached context
     persist!
     @sections[section_key]
   end
@@ -233,7 +236,80 @@ class ResearchMemoryStore
     )
   end
 
+  # Get a Context instance for a specific section.
+  # Research sections use ResearchContext by default.
+  # @param section [String, Symbol] The section name
+  # @return [Contexts::BaseContext] A context populated with section data
+  def context_for(section)
+    section_key = section.to_sym
+    return @section_contexts[section_key] if @section_contexts.key?(section_key)
+
+    # Research sections use ResearchContext
+    research_goal_text = @sections[:research_goal].first&.dig(:text) ||
+                         @sections[:research_goal].first&.dig("text")
+
+    context = Contexts::ResearchContext.new(research_goal: research_goal_text)
+    @section_contexts[section_key] = build_context(section_key, context)
+  end
+
+  # Get a composite ResearchContext with all findings and context.
+  # @return [Contexts::ResearchContext] A complete research context
+  def full_context
+    research_goal_text = @sections[:research_goal].first&.dig(:text) ||
+                         @sections[:research_goal].first&.dig("text")
+
+    composite = Contexts::ResearchContext.new(research_goal: research_goal_text)
+
+    @sections.each_key do |section_key|
+      section_context = context_for(section_key)
+      composite.add_sub_context(section_key, section_context)
+    end
+
+    composite
+  end
+
+  # Invalidate cached contexts (call after mutations)
+  def invalidate_contexts!
+    @section_contexts = {}
+  end
+
   private
+
+  # Build a context instance from section data
+  # @param section_key [Symbol] The section key
+  # @param context [Contexts::BaseContext] The context to populate
+  # @return [Contexts::BaseContext] The populated context
+  def build_context(section_key, context)
+    section_data = @sections[section_key]
+
+    Array(section_data).each do |entry|
+      case entry
+      when Hash
+        content = entry[:text] || entry["text"] || entry[:content] || entry["content"] || entry.to_s
+        topics = [section_key.to_s]
+
+        # Add sub_question as a topic if present
+        if entry[:sub_question] || entry["sub_question"]
+          topics << "q:#{entry[:sub_question] || entry['sub_question']}"
+        end
+
+        context.add(
+          content: content,
+          topics: topics,
+          source: section_key.to_s,
+          metadata: entry
+        )
+      when String
+        context.add(
+          content: entry,
+          topics: [section_key.to_s],
+          source: section_key.to_s
+        )
+      end
+    end
+
+    context
+  end
 
   def extract_keywords(text)
     stop_words = %w[the a an is are was were what how why when where which who this that these those it its do does did has have had been be]

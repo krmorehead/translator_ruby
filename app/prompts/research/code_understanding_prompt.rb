@@ -6,7 +6,7 @@ module Research
   # - Language-specific: for debugging/fixes (exact syntax, line numbers)
   #
   # The mode is determined by analyzing the research goal.
-  class CodeUnderstandingPrompt < BasePrompt
+  class CodeUnderstandingPrompt < BaseResearchPrompt
     def system_prompt
       <<~PROMPT
         You are a code analysis expert. Your task is to understand code files and extract
