@@ -104,6 +104,55 @@ class ResearchMemoryStore
     entry
   end
 
+  # Get recent context entries for use in prompts (limited to prevent context bloat)
+  # Only returns context RELEVANT to the current question
+  # @param limit [Integer] Maximum number of entries to return
+  # @param relevant_to [String, nil] Optional sub-question to filter by relevance
+  # @return [Array<Hash>] Most recent relevant context entries
+  def recent_context(limit: 5, relevant_to: nil)
+    entries = @sections[:context_chain]
+
+    # If relevant_to is provided, prioritize related entries
+    if relevant_to.present?
+      # Score each entry by relevance to the current question
+      scored = entries.map do |entry|
+        question = entry[:sub_question] || entry["sub_question"] || ""
+        insights = entry[:key_insights] || entry["key_insights"] || ""
+
+        # Simple relevance: check for keyword overlap
+        current_keywords = extract_keywords(relevant_to)
+        entry_keywords = extract_keywords("#{question} #{insights}")
+        overlap = (current_keywords & entry_keywords).size
+
+        { entry: entry, score: overlap }
+      end
+
+      # Take highest scoring entries, falling back to most recent
+      relevant = scored.select { |s| s[:score] > 0 }.sort_by { |s| -s[:score] }.first(limit)
+      return relevant.map { |s| s[:entry] } if relevant.any?
+    end
+
+    # Default: return most recent entries
+    entries.last(limit)
+  end
+
+  # Get a compressed summary of the context chain for prompts
+  # @return [String] Compressed summary suitable for prompt context
+  def compressed_context_summary
+    entries = @sections[:context_chain]
+    return "" if entries.empty?
+
+    # Group by sub-question and take only the most recent insight for each
+    by_question = entries.group_by { |e| e[:sub_question] || e["sub_question"] }
+    summaries = by_question.map do |question, question_entries|
+      latest = question_entries.last
+      insights = latest[:key_insights] || latest["key_insights"]
+      "#{question}: #{insights}"
+    end
+
+    summaries.join("\n")
+  end
+
   # Pop the most recent context from the chain
   # @return [Hash, nil] The context entry or nil if empty
   def pop_context
@@ -185,6 +234,11 @@ class ResearchMemoryStore
   end
 
   private
+
+  def extract_keywords(text)
+    stop_words = %w[the a an is are was were what how why when where which who this that these those it its do does did has have had been be]
+    text.to_s.downcase.gsub(/[^a-z0-9\s]/, "").split.reject { |w| stop_words.include?(w) || w.length < 3 }.uniq
+  end
 
   def load_sections
     return deep_dup(DEFAULT_SECTIONS) unless File.exist?(path)

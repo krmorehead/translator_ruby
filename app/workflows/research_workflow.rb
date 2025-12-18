@@ -4,13 +4,23 @@
 # Uses GoalDecompositionWorkflow for recursive goal breakdown,
 # then investigates each leaf goal with parallel analysis passes.
 #
+# Key features:
+# - Per-leaf synthesis: Each sub-question is synthesized immediately after investigation
+# - File tracking: Prevents re-examining the same files across leaves
+# - Early termination: Stops if consecutive leaves find no new files
+# - Configurable output modes: Array of [:report, :documentation]
+# - References can be reused/updated on future research passes
+#
 # This workflow maintains its own WorkflowMemoryStore and can query
 # the parent worker's memory for context.
 class ResearchWorkflow < BaseWorkflow
-  attr_reader :goal, :research_path, :research_memory, :context
+  attr_reader :goal, :research_path, :research_memory, :context, :output_modes
 
   # Number of parallel analysis passes for cross-validation
   PARALLEL_PASSES = 3
+
+  # Stop if this many consecutive leaves find no new files
+  MAX_EMPTY_LEAVES = 3
 
   # Research-specific states (override base workflow)
   initial_state :pending
@@ -20,6 +30,8 @@ class ResearchWorkflow < BaseWorkflow
   state :decomposing,  phase: :planning,  description: "Breaking down goal"
   state :discovering,  phase: :research,  description: "Finding files"
   state :analyzing,    phase: :research,  description: "Analyzing code"
+  state :documenting,  phase: :research,  description: "Generating per-file docs"
+  state :organizing,   phase: :output,    description: "Organizing documentation"
   state :synthesizing, phase: :output,    description: "Synthesizing findings"
   state :complete,     phase: nil,        description: "Completed"
   state :failed,       phase: nil,        description: "Failed"
@@ -27,12 +39,16 @@ class ResearchWorkflow < BaseWorkflow
   transition from: :pending, to: :running, on: :start
   transition from: :running, to: :decomposing, on: :initialized
   transition from: :decomposing, to: :discovering, on: :decomposed
-  transition from: :discovering, to: :analyzing, on: :files_found
+  transition from: :discovering, to: :documenting, on: :files_found
+  transition from: :documenting, to: :analyzing, on: :documented
   transition from: :analyzing, to: :synthesizing, on: :analyzed
   transition from: :synthesizing, to: :complete, on: :finish
-  transition from: [:running, :decomposing, :discovering, :analyzing, :synthesizing],
+  transition from: [:running, :decomposing, :discovering, :documenting, :analyzing, :synthesizing],
              to: :failed, on: :fail
   transition from: :failed, to: :pending, on: :retry
+
+  # Valid output modes
+  VALID_OUTPUT_MODES = [:report, :documentation].freeze
 
   # @param goal [String] The research goal/topic
   # @param owner_id [String] Unique ID for state isolation
@@ -40,15 +56,24 @@ class ResearchWorkflow < BaseWorkflow
   # @param context [Hash] Seed context for research planning
   # @param parent_memory [#get_section, nil] Parent worker's memory for context queries
   # @param max_depth [Integer] Maximum goal decomposition depth
-  def initialize(goal:, owner_id:, research_path:, context: {}, parent_memory: nil, max_depth: 4)
+  # @param output_modes [Array<Symbol>] Output modes to generate (default: [:report, :documentation])
+  def initialize(goal:, owner_id:, research_path:, context: {}, parent_memory: nil, max_depth: 4, output_modes: [:report, :documentation])
     super(owner_id: owner_id, parent_memory: parent_memory)
     @goal = goal
     @research_path = research_path
     @context = context || {}
     @max_depth = max_depth
+    @output_modes = Array(output_modes).map(&:to_sym) & VALID_OUTPUT_MODES
+    @output_modes = [:report] if @output_modes.empty? # Default fallback
     @research_memory = nil
+    @research_context = Contexts::ResearchContext.new(research_goal: goal)
     @goal_tree = nil
     @all_findings = []
+    @leaf_syntheses = []
+    @file_analyses = []
+    @explored_files = Set.new
+    @relevant_files = []  # Files that scored high relevance for the research goal
+    @sub_questions = []
   end
 
   # Setup for compatibility with BaseWorkflow
@@ -59,27 +84,33 @@ class ResearchWorkflow < BaseWorkflow
   end
 
   # Execute the full research workflow
+  # Produces outputs based on output_modes array
   def execute
     trigger(:start)
     initialize_memory
     record_decision(
       decision: "Starting research workflow",
-      rationale: "Goal: #{goal}",
-      context: { max_depth: @max_depth, seed_context: context.keys }
+      rationale: "Goal: #{goal}, Output modes: #{output_modes.join(', ')}",
+      context: { max_depth: @max_depth, output_modes: output_modes, seed_context: context.keys }
     )
 
-    # Phase 1: Decompose
+    # Phase 1: Decompose goal into sub-questions
     trigger(:initialized)
     decompose_goal
 
-    # Phase 2 & 3: Discover and Analyze for each leaf
+    # Phase 2: Discover relevant files
     trigger(:decomposed)
-    investigate_leaves
+    discover_all_relevant_files
 
+    # Phase 3: Document each file (if :documentation mode requested)
     trigger(:files_found)
-    # Analysis happens in investigate_leaves
+    document_files if output_modes.include?(:documentation)
 
-    # Phase 4: Synthesize
+    # Phase 4: Analyze with parallel passes (if :report mode requested)
+    trigger(:documented)
+    analyze_discovered_files if output_modes.include?(:report)
+
+    # Phase 5: Synthesize findings into report
     trigger(:analyzed)
     synthesis_result = synthesize_findings
 
@@ -87,7 +118,12 @@ class ResearchWorkflow < BaseWorkflow
       goal: goal,
       goal_tree: @goal_tree,
       findings: @all_findings,
+      file_analyses: @file_analyses,
       synthesis: synthesis_result,
+      sub_questions: @sub_questions,
+      output_modes: output_modes,
+      relevant_files: @relevant_files,
+      relevant_files_tree: generate_relevant_files_tree,
       memory_summary: @research_memory.summarize_findings,
       workflow_memory_summary: memory_summary
     })
@@ -96,6 +132,195 @@ class ResearchWorkflow < BaseWorkflow
   rescue StandardError => e
     mark_failed(e.message)
     nil
+  end
+
+  # Discover all relevant files across all leaf questions
+  def discover_all_relevant_files
+    leaves = collect_leaves(@goal_tree)
+
+    leaves.each do |leaf|
+      @research_memory.next_iteration!
+      discovered = discover_files(leaf[:text])
+
+      # Track which sub-questions each file answers
+      discovered.each do |file_eval|
+        file_path = file_eval[:file_path]
+        @explored_files.add(file_path)
+      end
+    end
+
+    record_decision(
+      decision: "Discovered #{@explored_files.size} relevant files",
+      rationale: "Files will be documented and analyzed",
+      context: { file_count: @explored_files.size, sub_questions: @sub_questions.size }
+    )
+  end
+
+  # Analyze discovered files with parallel execution
+  # Files are analyzed in parallel, with sequential passes per file for cross-validation
+  def analyze_discovered_files
+    return if @explored_files.empty?
+
+    files_to_analyze = @explored_files.select { |f| File.exist?(f) }
+    return if files_to_analyze.empty?
+
+    # Analyze files in parallel using threads
+    mutex = Mutex.new
+    threads = files_to_analyze.map do |file_path|
+      Thread.new do
+        analyze_single_file(file_path, mutex)
+      end
+    end
+
+    # Wait for all threads to complete
+    threads.each(&:join)
+  end
+
+  # Analyze a single file with multiple passes
+  # @param file_path [String] Path to the file
+  # @param mutex [Mutex] Mutex for thread-safe access to shared state
+  def analyze_single_file(file_path, mutex)
+    content = File.read(file_path) rescue return
+    prompt = Research::CodeUnderstandingPrompt.new
+    file_findings = []
+
+    # Get relevant context for this file from the shared research context
+    # This provides findings from related files/questions without unbounded growth
+    relevant_context = mutex.synchronize do
+      @research_context.format_for_analysis(goal)
+    end
+
+    # Run sequential passes for cross-validation within this file
+    PARALLEL_PASSES.times do |pass_num|
+      # Context includes: 1) relevant prior context, 2) findings from THIS file's earlier passes
+      previous_context = if pass_num > 0
+        {
+          key_findings: file_findings.last(3).map { |f| f[:text] },
+          prior_context: relevant_context
+        }
+      elsif relevant_context.present?
+        { prior_context: relevant_context }
+      end
+
+      result = prompt.analyze(
+        content: content,
+        goal: goal,
+        file_path: file_path,
+        previous_context: previous_context
+      )
+
+      if result[:content]
+        result[:content][:insights]&.each do |insight|
+          finding = {
+            id: SecureRandom.uuid,
+            text: insight[:finding],
+            relevance: insight[:relevance],
+            confidence: insight[:confidence],
+            file_path: file_path,
+            pass_number: pass_num + 1
+          }
+          file_findings << finding
+        end
+      end
+    end
+
+    # Thread-safe update of shared state
+    mutex.synchronize do
+      @all_findings.concat(file_findings)
+
+      file_findings.each do |finding|
+        # Add to legacy memory store
+        Memories::Research::FindingsMemory.add_finding(
+          store: @research_memory,
+          text: finding[:text],
+          sub_question_id: goal,
+          file_path: file_path,
+          confidence: finding[:confidence],
+          pass_number: finding[:pass_number]
+        )
+
+        # Add to research context for relevance-aware retrieval
+        @research_context.add_finding(
+          finding: finding[:text],
+          file_path: file_path,
+          sub_question: goal,
+          confidence: finding[:confidence]
+        )
+      end
+
+      # Create leaf synthesis for this file
+      if file_findings.any?
+        leaf_synthesis = synthesize_leaf(File.basename(file_path), file_findings)
+        @leaf_syntheses << leaf_synthesis
+      end
+    end
+  end
+
+  # Document files in parallel
+  def document_files
+    files_to_document = @explored_files.select { |f| File.exist?(f) }
+    return if files_to_document.empty?
+
+    mutex = Mutex.new
+    threads = files_to_document.map do |file_path|
+      Thread.new do
+        document_single_file(file_path, mutex)
+      end
+    end
+
+    threads.each(&:join)
+
+    record_decision(
+      decision: "Documented #{@file_analyses.size} files",
+      rationale: "Per-file documentation generated in parallel",
+      context: { documented_count: @file_analyses.size }
+    )
+  end
+
+  # Document a single file
+  # @param file_path [String] Path to the file
+  # @param mutex [Mutex] Mutex for thread-safe access to shared state
+  def document_single_file(file_path, mutex)
+    content = File.read(file_path) rescue return
+    prompt = Research::PerFileDocPrompt.new
+
+    # Get relevant context for documenting this file
+    relevant_context = mutex.synchronize do
+      @research_context.for_file(file_path, limit: 3)
+    end
+
+    prior_context_str = relevant_context.any? ? relevant_context.map(&:content).join("\n") : nil
+
+    result = prompt.analyze(
+      content: content,
+      file_path: file_path,
+      goal_context: goal,
+      sub_questions: @sub_questions,
+      prior_context: prior_context_str
+    )
+
+    if result[:content]
+      mutex.synchronize do
+        @file_analyses << result[:content]
+
+        # Also create findings for synthesis
+        summary = result[:content][:summary]
+        @all_findings << {
+          id: SecureRandom.uuid,
+          text: summary,
+          file_path: file_path,
+          type: :file_summary
+        }
+
+        # Add file summary to research context
+        methods = (result[:content][:methods] || []).map { |m| m[:name] || m["name"] }
+        @research_context.add_file_summary(
+          file_path: file_path,
+          summary: summary,
+          methods: methods
+        )
+      end
+    end
   end
 
   private
@@ -155,7 +380,7 @@ class ResearchWorkflow < BaseWorkflow
     if decomposition.complete?
       @goal_tree = decomposition.result[:goal_tree]
 
-      # Store sub-questions in memory
+      # Store sub-questions in memory and research context
       decomposition.leaf_goals.each do |leaf|
         Memories::Research::SubQuestionsMemory.add_question(
           store: @research_memory,
@@ -164,6 +389,14 @@ class ResearchWorkflow < BaseWorkflow
           priority: leaf[:priority] || 1,
           rationale: leaf[:rationale]
         )
+
+        # Add to research context for relevance-aware retrieval
+        @research_context.add_sub_question(
+          question: leaf[:text],
+          parent_question: goal,
+          priority: leaf[:priority] || 1
+        )
+        @sub_questions << leaf[:text]
       end
     else
       raise "Goal decomposition failed: #{decomposition.error}"
@@ -201,23 +434,89 @@ class ResearchWorkflow < BaseWorkflow
 
   def investigate_leaves
     leaves = collect_leaves(@goal_tree)
+    consecutive_empty = 0
 
-    leaves.each_with_index do |leaf, idx|
+    leaves.each do |leaf|
       @research_memory.next_iteration!
 
-      # Discover relevant files
+      # Discover relevant files (filters out already-explored files)
       discovered = discover_files(leaf[:text])
+
+      if discovered.empty?
+        consecutive_empty += 1
+        record_empty_result(leaf)
+
+        # Early termination if too many consecutive empty results
+        if consecutive_empty >= MAX_EMPTY_LEAVES
+          record_decision(
+            decision: "Terminating early",
+            rationale: "#{MAX_EMPTY_LEAVES} consecutive leaves found no new files",
+            context: { last_leaf: leaf[:text] }
+          )
+          break
+        end
+        next
+      end
+
+      consecutive_empty = 0 # Reset on success
 
       # Analyze with parallel passes
       findings = analyze_with_passes(leaf[:text], discovered)
       @all_findings.concat(findings)
 
-      # Chain context for next iteration
+      # Synthesize THIS leaf's findings immediately (small, focused context)
+      leaf_synthesis = synthesize_leaf(leaf[:text], findings)
+      @leaf_syntheses << leaf_synthesis
+
+      # Chain the summary (not raw findings) to next iteration
       @research_memory.push_context(
         sub_question: leaf[:text],
-        key_insights: findings.first(3).map { |f| f[:text] }.join("; ")
+        key_insights: leaf_synthesis[:summary] || findings.first(3).map { |f| f[:text] }.join("; ")
       )
     end
+  end
+
+  def record_empty_result(leaf)
+    record_decision(
+      decision: "No new files found",
+      rationale: "Sub-question '#{leaf[:text]}' found no unexplored files",
+      context: { sub_question: leaf[:text], explored_count: @explored_files.size }
+    )
+
+    # Record an empty synthesis for this leaf
+    @leaf_syntheses << {
+      sub_question: leaf[:text],
+      summary: "No relevant files found for this sub-question.",
+      key_findings: [],
+      conflicts: [],
+      confidence: 0.0,
+      gaps: ["Could not find relevant code to investigate"]
+    }
+  end
+
+  def synthesize_leaf(sub_question, findings)
+    return empty_leaf_synthesis(sub_question) if findings.empty?
+
+    prompt = Research::LeafSynthesisPrompt.new
+    result = prompt.synthesize_leaf(
+      sub_question: sub_question,
+      findings: findings
+    )
+
+    synthesis = result[:content] || {}
+    synthesis[:sub_question] = sub_question
+    synthesis
+  end
+
+  def empty_leaf_synthesis(sub_question)
+    {
+      sub_question: sub_question,
+      summary: "No findings generated for this sub-question.",
+      key_findings: [],
+      conflicts: [],
+      confidence: 0.0,
+      gaps: ["No analysis results available"]
+    }
   end
 
   def discover_files(question)
@@ -253,8 +552,19 @@ class ResearchWorkflow < BaseWorkflow
       end
     end
 
-    # Deduplicate and score relevance
-    score_and_prioritize(discovered.uniq { |d| d[:path] }, question)
+    # Deduplicate by path
+    unique_discovered = discovered.uniq { |d| d[:path] }
+
+    # Filter out already-explored files
+    new_files = unique_discovered.reject { |f| @explored_files.include?(f[:path]) }
+
+    # Score and prioritize the new files
+    scored_files = score_and_prioritize(new_files, question)
+
+    # Track newly discovered files that pass relevance threshold
+    scored_files.each { |f| @explored_files.add(f[:file_path]) }
+
+    scored_files
   end
 
   def score_and_prioritize(files, question)
@@ -283,7 +593,18 @@ class ResearchWorkflow < BaseWorkflow
         )
       end
 
-    evaluations.select { |e| e[:relevance_score] >= 0.5 }
+    # Track files with high relevance (>= 0.5) as relevant to the research goal
+    relevant = evaluations.select { |e| e[:relevance_score] >= 0.5 }
+    relevant.each do |eval|
+      @relevant_files << {
+        file_path: eval[:file_path],
+        relevance_score: eval[:relevance_score],
+        reasoning: eval[:reasoning],
+        sub_question: question
+      }
+    end
+
+    relevant
   end
 
   def analyze_with_passes(question, discovered_files)
@@ -340,16 +661,23 @@ class ResearchWorkflow < BaseWorkflow
   end
 
   def synthesize_findings
-    # Group findings by pass for cross-validation
-    findings_by_pass = @all_findings.group_by { |f| f[:pass_number] }
+    # If we have no leaf syntheses, return early with empty result
+    if @leaf_syntheses.empty?
+      return {
+        "summary" => "No findings were generated during research.",
+        "validated_insights" => [],
+        "conflicts" => [],
+        "filtered_out" => [],
+        "detailed_sections" => [],
+        "open_questions" => [{ "question" => goal, "reason" => "No relevant files found" }]
+      }
+    end
 
+    # Combine the pre-synthesized leaf summaries (much smaller context than raw findings)
     prompt = Research::SynthesisPrompt.new
-    sub_questions = collect_leaves(@goal_tree).map { |l| { text: l[:text] } }
-
-    result = prompt.synthesize(
-      findings: findings_by_pass.values.map { |pass| { insights: pass } },
+    result = prompt.combine_leaf_syntheses(
       goal: goal,
-      sub_questions: sub_questions
+      leaf_syntheses: @leaf_syntheses
     )
 
     result[:content]
@@ -378,6 +706,62 @@ class ResearchWorkflow < BaseWorkflow
       .reject { |w| stop_words.include?(w) || w.length < 3 }
       .uniq
       .first(5)
+  end
+
+  # Generate a tree representation of relevant files
+  # @return [String] ASCII tree of relevant file paths
+  def generate_relevant_files_tree
+    return "" if @relevant_files.empty?
+
+    # Get unique file paths and make them relative to research_path
+    file_paths = @relevant_files
+      .map { |f| f[:file_path] }
+      .uniq
+      .map { |p| Pathname.new(p).relative_path_from(Pathname.new(research_path)).to_s rescue p }
+      .sort
+
+    build_tree_string(file_paths)
+  end
+
+  # Build an ASCII tree string from a list of file paths
+  def build_tree_string(paths)
+    tree = {}
+
+    # Build nested hash structure
+    paths.each do |path|
+      parts = path.split("/")
+      current = tree
+      parts.each_with_index do |part, idx|
+        is_file = idx == parts.length - 1
+        current[part] ||= is_file ? :file : {}
+        current = current[part] unless is_file
+      end
+    end
+
+    # Render tree to string
+    lines = []
+    render_tree_node(tree, "", lines, true)
+    lines.join("\n")
+  end
+
+  def render_tree_node(node, prefix, lines, is_root)
+    return unless node.is_a?(Hash)
+
+    entries = node.keys.sort_by { |k| [node[k] == :file ? 1 : 0, k] }
+
+    entries.each_with_index do |key, idx|
+      is_last = idx == entries.size - 1
+      connector = is_root ? "" : (is_last ? "└── " : "├── ")
+      child_prefix = is_root ? "" : (is_last ? "    " : "│   ")
+
+      value = node[key]
+      if value == :file
+        lines << "#{prefix}#{connector}#{key}"
+      else
+        lines << "#{prefix}#{connector}#{key}/"
+        render_tree_node(value, prefix + child_prefix, lines, false)
+      end
+    end
   end
 end
 

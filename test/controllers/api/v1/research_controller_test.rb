@@ -1,7 +1,14 @@
+# frozen_string_literal: true
+
 require "test_helper"
 
 class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
   FIXTURE_PATH = Rails.root.join("test", "fixtures", "example_codebase").to_s
+
+  # Store responses for tests that share the same request
+  class << self
+    attr_accessor :default_response, :report_response, :both_modes_response, :computed
+  end
 
   def setup
     @output_path = Rails.root.join("tmp", "research_controller_test_#{Process.pid}_#{Thread.current.object_id}").to_s
@@ -28,6 +35,42 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
       ENV.delete("AGENT_STATE_PATH")
     end
   end
+
+  # Shared request for default mode tests
+  def default_mode_response
+    unless self.class.default_response
+      post "/api/v1/research", params: {
+        goal: "What is the Calculator class?",
+        path: FIXTURE_PATH,
+        options: { max_depth: 1 }
+      }, as: :json
+      self.class.default_response = {
+        status: response.status,
+        body: JSON.parse(response.body)
+      }
+    end
+    self.class.default_response
+  end
+
+  # Shared request for both modes test
+  def both_modes_response
+    unless self.class.both_modes_response
+      post "/api/v1/research", params: {
+        goal: "How does Calculator work?",
+        path: FIXTURE_PATH,
+        options: { max_depth: 1, output_modes: ["report", "documentation"] }
+      }, as: :json
+      self.class.both_modes_response = {
+        status: response.status,
+        body: JSON.parse(response.body)
+      }
+    end
+    self.class.both_modes_response
+  end
+
+  # ============================================================================
+  # Validation Tests - No LLM calls
+  # ============================================================================
 
   test "validation error when goal is missing" do
     post "/api/v1/research", params: { path: FIXTURE_PATH }, as: :json
@@ -56,38 +99,83 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
     assert_includes json["error"], "not readable"
   end
 
-  test "response structure on success" do
-    # This test makes real LLM calls and may take time
+  test "invalid output_modes rejection" do
     post "/api/v1/research", params: {
-      goal: "What is the Calculator class?",
+      goal: "Test research",
       path: FIXTURE_PATH,
-      options: { max_depth: 1 }
+      options: { output_modes: ["invalid_mode"] }
     }, as: :json
 
-    assert_response :ok
+    assert_response :unprocessable_entity
     json = JSON.parse(response.body)
+    assert_includes json["error"], "output_modes"
+  end
+
+  # ============================================================================
+  # Default Mode Tests - Share one LLM call
+  # ============================================================================
+
+  test "default: returns success status" do
+    resp = default_mode_response
+    assert_equal 200, resp[:status]
+  end
+
+  test "default: has expected keys in response" do
+    resp = default_mode_response
+    json = resp[:body]
 
     assert json.key?("status")
     assert json.key?("findings")
     assert json.key?("output_files")
     assert json.key?("errors")
-    assert_kind_of Array, json["findings"]
-    assert_kind_of Array, json["output_files"]
-    assert_kind_of Array, json["errors"]
   end
 
-  test "returns owner_id in response" do
-    post "/api/v1/research", params: {
-      goal: "Simple test",
-      path: FIXTURE_PATH,
-      options: { max_depth: 1 }
-    }, as: :json
+  test "default: findings is array" do
+    resp = default_mode_response
+    assert_kind_of Array, resp[:body]["findings"]
+  end
 
-    assert_response :ok
-    json = JSON.parse(response.body)
+  test "default: output_files is array" do
+    resp = default_mode_response
+    assert_kind_of Array, resp[:body]["output_files"]
+  end
 
-    assert json.key?("owner_id")
-    assert_match(/\A[0-9a-f-]+\z/, json["owner_id"])
+  test "default: returns owner_id" do
+    resp = default_mode_response
+    assert resp[:body].key?("owner_id")
+    assert_match(/\A[0-9a-f-]+\z/, resp[:body]["owner_id"])
+  end
+
+  test "default: includes both output_modes" do
+    resp = default_mode_response
+    assert_includes resp[:body]["output_modes"], "report"
+    assert_includes resp[:body]["output_modes"], "documentation"
+  end
+
+  # ============================================================================
+  # Both Modes Tests - Share one LLM call
+  # ============================================================================
+
+  test "both_modes: generates synthesis_summary.md" do
+    resp = both_modes_response
+    output_files = resp[:body]["output_files"] || []
+
+    assert output_files.any? { |f| f.include?("synthesis_summary.md") },
+           "Should generate synthesis_summary.md"
+  end
+
+  test "both_modes: generates base_references.md" do
+    resp = both_modes_response
+    output_files = resp[:body]["output_files"] || []
+
+    assert output_files.any? { |f| f.include?("base_references.md") },
+           "Should generate base_references.md"
+  end
+
+  test "both_modes: includes both modes in response" do
+    resp = both_modes_response
+
+    assert_includes resp[:body]["output_modes"], "report"
+    assert_includes resp[:body]["output_modes"], "documentation"
   end
 end
-

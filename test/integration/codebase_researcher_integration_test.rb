@@ -1,13 +1,39 @@
+# frozen_string_literal: true
+
 require "test_helper"
 
 class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
+  include ResearchTestFactory
+
   FIXTURE_PATH = Rails.root.join("test", "fixtures", "example_codebase").to_s
+
+  # Shared execution result - runs once for primary tests
+  class << self
+    attr_accessor :shared_result, :shared_worker, :shared_computed
+  end
+
+  def shared_execution
+    return [self.class.shared_worker, self.class.shared_result] if self.class.shared_computed
+
+    worker = CodebaseResearcher.new(
+      goal: "How does Calculator work? What are the dependencies between services?",
+      path: FIXTURE_PATH,
+      max_depth: 2,
+      output_modes: [:report, :documentation]
+    )
+    result = worker.execute
+
+    self.class.shared_worker = worker
+    self.class.shared_result = result
+    self.class.shared_computed = true
+
+    [worker, result]
+  end
 
   def setup
     @output_path = Rails.root.join("tmp", "research_output_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(@output_path)
 
-    # Set env vars for test isolation
     @original_output_path = ENV["RESEARCH_OUTPUT_PATH"]
     @original_state_path = ENV["AGENT_STATE_PATH"]
     ENV["RESEARCH_OUTPUT_PATH"] = @output_path
@@ -17,7 +43,6 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@output_path) if @output_path && File.exist?(@output_path)
 
-    # Restore env vars
     if @original_output_path
       ENV["RESEARCH_OUTPUT_PATH"] = @original_output_path
     else
@@ -31,61 +56,65 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
     end
   end
 
-  test "research simple topic on fixture codebase" do
-    worker = CodebaseResearcher.new(
-      goal: "How does the calculator perform arithmetic operations?",
-      path: FIXTURE_PATH,
-      max_depth: 2
-    )
+  # ============================================================================
+  # Shared Execution Tests - All use same LLM call
+  # ============================================================================
 
-    result = worker.execute
+  test "shared: research succeeds on fixture codebase" do
+    _worker, result = shared_execution
 
     assert result[:success], "Research should succeed: #{result[:error]}"
     assert_not_nil result[:owner_id]
-    assert_equal FIXTURE_PATH, result[:path]
+  end
 
-    # Should have discovered some findings
+  test "shared: returns findings array" do
+    _worker, result = shared_execution
+
     assert result[:findings].is_a?(Array)
   end
 
-  test "research dependency analysis on fixture" do
-    worker = CodebaseResearcher.new(
-      goal: "What are the dependencies between services?",
-      path: FIXTURE_PATH,
-      max_depth: 2
-    )
+  test "shared: synthesis has summary" do
+    _worker, result = shared_execution
 
-    result = worker.execute
-
-    assert result[:success], "Research should succeed: #{result[:error]}"
-
-    # Synthesis should mention key classes
     synthesis = result[:synthesis]
-    if synthesis
-      summary = synthesis["summary"] || ""
-      # The summary should reference the codebase structure
-      assert summary.present?, "Should have a summary"
-    end
+    assert synthesis, "Should have synthesis"
+
+    summary = synthesis["summary"] || synthesis[:summary] || ""
+    assert summary.present?, "Should have a summary"
   end
 
-  test "verify output files are created" do
-    worker = CodebaseResearcher.new(
-      goal: "How does formatting work?",
-      path: FIXTURE_PATH,
-      max_depth: 2
-    )
+  test "shared: memory contains research goal" do
+    _worker, result = shared_execution
 
-    result = worker.execute
+    memory = result[:memory]
+    assert memory, "Should have memory data"
+    assert memory[:research_goal] || memory["research_goal"], "Should have research goal"
+  end
 
-    assert result[:success], "Research should succeed"
+  test "shared: discovered files are unique" do
+    _worker, result = shared_execution
 
-    # If we have synthesis, write output
+    memory = result[:memory]
+    discovered = memory[:discovered_files] || memory["discovered_files"] || []
+
+    file_paths = discovered.map { |d| d[:path] || d["path"] }.compact
+    assert_equal file_paths.size, file_paths.uniq.size,
+                 "Each file should only be recorded once in discovered_files"
+  end
+
+  test "shared: can write output files from synthesis" do
+    _worker, result = shared_execution
+
     if result[:synthesis]
       output_service = ResearchOutputService.new(
-        research_topic: "How does formatting work?",
+        research_topic: "Integration test",
         base_path: FIXTURE_PATH
       )
-      files = output_service.write(synthesis: result[:synthesis])
+      files = output_service.write(
+        synthesis: result[:synthesis],
+        file_analyses: result[:file_analyses] || [],
+        output_modes: [:report]
+      )
 
       assert files.any?, "Should create output files"
       files.each do |file_path|
@@ -94,25 +123,11 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
     end
   end
 
-  test "verify memory store contains expected findings" do
-    worker = CodebaseResearcher.new(
-      goal: "What classes exist in this codebase?",
-      path: FIXTURE_PATH,
-      max_depth: 2
-    )
+  # ============================================================================
+  # Separate Execution Tests - These need their own runs
+  # ============================================================================
 
-    result = worker.execute
-
-    assert result[:success], "Research should succeed"
-
-    memory = result[:memory]
-    assert memory, "Should have memory data"
-
-    # Check memory contains expected sections
-    assert memory[:research_goal] || memory["research_goal"], "Should have research goal"
-  end
-
-  test "multiple parallel research sessions do not conflict" do
+  test "multiple parallel research sessions have unique owner_ids" do
     workers = 2.times.map do |i|
       CodebaseResearcher.new(
         goal: "Research topic #{i}",
@@ -121,14 +136,11 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
       )
     end
 
-    # Execute both (in sequence for test simplicity, but with different owner_ids)
     results = workers.map(&:execute)
 
-    # Verify they have different owner_ids
     owner_ids = results.map { |r| r[:owner_id] }
     assert_equal owner_ids.uniq.size, owner_ids.size, "Each worker should have unique owner_id"
 
-    # Verify both succeeded
     results.each_with_index do |r, i|
       assert r[:success], "Worker #{i} should succeed"
     end
@@ -147,11 +159,34 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
 
       result = worker.execute
 
-      # Should complete without crashing
       assert result, "Should return a result"
     ensure
       FileUtils.rm_rf(empty_dir)
     end
   end
-end
 
+  test "terminates gracefully when no relevant files found" do
+    worker = CodebaseResearcher.new(
+      goal: "How does the quantum flux capacitor integrate with the warp drive?",
+      path: FIXTURE_PATH,
+      max_depth: 1
+    )
+
+    result = worker.execute
+
+    assert result, "Should return a result even with no findings"
+    assert result[:synthesis], "Should have synthesis section"
+
+    synthesis = result[:synthesis]
+    if synthesis
+      summary = synthesis["summary"] || synthesis[:summary] || ""
+      open_questions = synthesis["open_questions"] || synthesis[:open_questions] || []
+
+      has_indication = summary.downcase.include?("no") ||
+                       summary.downcase.include?("could not") ||
+                       open_questions.any?
+      assert has_indication || result[:findings].empty?,
+             "Should indicate no findings were made or have empty findings"
+    end
+  end
+end

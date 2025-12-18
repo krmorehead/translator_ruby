@@ -73,11 +73,17 @@ class CodebaseResearcher < BaseWorker
   #   - constraints [Hash] Any constraints on the research
   # @param options [Hash] Additional options
   #   - max_depth [Integer] Maximum decomposition depth (default: 4)
+  #   - output_modes [Array<Symbol>] Output modes to generate (default: [:report, :documentation])
   def initialize(goal:, path:, context: {}, **options)
     super
     @max_depth = options.fetch(:max_depth, 4)
+    @output_modes = Array(options.fetch(:output_modes, [:report, :documentation])).map(&:to_sym)
     @memory_store = nil
     @findings = []
+    @file_analyses = []
+    @sub_questions = []
+    @relevant_files = []
+    @relevant_files_tree = ""
     @synthesis = nil
     @started_at = nil
   end
@@ -154,7 +160,8 @@ class CodebaseResearcher < BaseWorker
       research_path: path,
       context: context,
       parent_memory: @memory_store, # Pass our memory so workflow can query it
-      max_depth: @max_depth
+      max_depth: @max_depth,
+      output_modes: @output_modes
     )
     workflow.setup(sandbox_path: path)
     workflow.execute
@@ -162,6 +169,10 @@ class CodebaseResearcher < BaseWorker
     if workflow.complete?
       store_workflow_result("research_workflow", workflow.result)
       @findings = workflow.result[:findings] || []
+      @file_analyses = workflow.result[:file_analyses] || []
+      @sub_questions = workflow.result[:sub_questions] || []
+      @relevant_files = workflow.result[:relevant_files] || []
+      @relevant_files_tree = workflow.result[:relevant_files_tree] || ""
       @synthesis = workflow.result[:synthesis]
       @memory_store = workflow.research_memory
 
@@ -189,12 +200,18 @@ class CodebaseResearcher < BaseWorker
       path: path,
       owner_id: owner_id,
       findings: @findings,
+      file_analyses: @file_analyses,
+      sub_questions: @sub_questions,
+      relevant_files: @relevant_files,
+      relevant_files_tree: @relevant_files_tree,
       synthesis: @synthesis,
+      output_modes: @output_modes,
       memory: @memory_store.to_h,
       output_files: [],
       state_history: state_history,
       metadata: {
         max_depth: @max_depth,
+        output_modes: @output_modes,
         context: context,
         started_at: @started_at&.iso8601,
         completed_at: Time.now.utc.iso8601,

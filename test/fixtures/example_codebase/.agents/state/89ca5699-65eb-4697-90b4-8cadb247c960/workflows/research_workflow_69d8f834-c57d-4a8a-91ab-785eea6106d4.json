@@ -1,0 +1,298 @@
+{
+  "owner_id": "89ca5699-65eb-4697-90b4-8cadb247c960",
+  "workflow_id": "69d8f834-c57d-4a8a-91ab-785eea6106d4",
+  "workflow_name": "research_workflow",
+  "started_at": "2025-12-18T00:33:01Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:01 UTC",
+        "duration_in_state": 0.000772187
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:01Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:01 UTC",
+        "duration_in_state": 0.000211746
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:01Z",
+        "duration_in_state": 0.000204991
+      },
+      {
+        "from": "decomposing",
+        "to": "discovering",
+        "event": "decomposed",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:03 UTC",
+        "duration_in_state": 2.233078527
+      },
+      {
+        "from": "decomposing",
+        "to": "discovering",
+        "event": "decomposed",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:03Z",
+        "duration_in_state": 2.233082941
+      },
+      {
+        "from": "discovering",
+        "to": "documenting",
+        "event": "files_found",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:05 UTC",
+        "duration_in_state": 2.106113993
+      },
+      {
+        "from": "discovering",
+        "to": "documenting",
+        "event": "files_found",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:05Z",
+        "duration_in_state": 2.106123595
+      },
+      {
+        "from": "documenting",
+        "to": "analyzing",
+        "event": "documented",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:05 UTC",
+        "duration_in_state": 0.000128143
+      },
+      {
+        "from": "documenting",
+        "to": "analyzing",
+        "event": "documented",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:05Z",
+        "duration_in_state": 0.000108891
+      },
+      {
+        "from": "analyzing",
+        "to": "synthesizing",
+        "event": "analyzed",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:15 UTC",
+        "duration_in_state": 9.651795941
+      },
+      {
+        "from": "analyzing",
+        "to": "synthesizing",
+        "event": "analyzed",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:15Z",
+        "duration_in_state": 9.651830114
+      },
+      {
+        "from": "synthesizing",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:15 UTC",
+        "duration_in_state": 0.212325577
+      },
+      {
+        "from": "synthesizing",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:15Z",
+        "duration_in_state": 0.21230286
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [
+      {
+        "decision": "Starting research workflow",
+        "rationale": "Goal: How does Calculator work?, Output modes: report",
+        "context": {
+          "max_depth": 1,
+          "output_modes": [
+            "report"
+          ],
+          "seed_context": []
+        },
+        "state": "running",
+        "timestamp": "2025-12-18T00:33:01Z"
+      },
+      {
+        "decision": "Discovered 1 relevant files",
+        "rationale": "Files will be documented and analyzed",
+        "context": {
+          "file_count": 1,
+          "sub_questions": 1
+        },
+        "state": "discovering",
+        "timestamp": "2025-12-18T00:33:05Z"
+      }
+    ],
+    "errors": [],
+    "outputs": [
+      {
+        "goal": "How does Calculator work?",
+        "goal_tree": {
+          "id": "5a7499bf-15f9-45e9-9e78-b6a4ade95f49",
+          "text": "How does Calculator work?",
+          "parent_id": null,
+          "depth": 0,
+          "is_leaf": true,
+          "rationale": "No decomposition possible",
+          "children": []
+        },
+        "findings": [
+          {
+            "id": "88ff47c3-9c75-4d26-b971-0859e65fc375",
+            "text": "The Calculator is designed as a core component for arithmetic operations, not as the main focus of the README",
+            "relevance": "The README describes the Calculator's role but doesn't provide implementation details, which would be in lib/calculator.rb",
+            "confidence": 0.75,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 1
+          },
+          {
+            "id": "ff406eca-13a3-4fb9-9cc7-3266048fe182",
+            "text": "The Calculator is a dependency of both Formatter and MathService, showing its central role in the arithmetic layer",
+            "relevance": "This shows the Calculator's importance in the architecture, but doesn't explain how it works internally",
+            "confidence": 0.85,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 1
+          },
+          {
+            "id": "628fcfef-0ebe-4cc6-9072-0b9e8ee4c667",
+            "text": "The README indicates the Calculator handles edge cases through error handling, suggesting it's designed for robustness",
+            "relevance": "This is an architectural decision about the Calculator's role, not implementation details",
+            "confidence": 0.65,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 1
+          },
+          {
+            "id": "f0bc5c90-781c-4cb8-8039-110b6cad03e2",
+            "text": "The Calculator is designed as a central arithmetic layer",
+            "relevance": "Confirms the core purpose of Calculator in the codebase architecture, not as a main feature but as a foundational component.",
+            "confidence": 0.9,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 2
+          },
+          {
+            "id": "37d4c60f-906b-44ff-992f-7dbd3d352373",
+            "text": "Calculator handles edge cases through error handling",
+            "relevance": "Indicates robust design, not just simple arithmetic, which is important for production use.",
+            "confidence": 0.85,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 2
+          },
+          {
+            "id": "5988af20-9432-4988-a868-36186da7f171",
+            "text": "Calculator is a dependency of both Formatter and MathService",
+            "relevance": "Shows its central role in the arithmetic layer, supporting multiple parts of the application.",
+            "confidence": 0.9,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 2
+          },
+          {
+            "id": "7d715d0f-04c2-4232-aead-4a2c01367692",
+            "text": "Calculator serves as a central arithmetic layer",
+            "relevance": "Confirms previous finding about Calculator being the central arithmetic layer",
+            "confidence": 0.95,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 3
+          },
+          {
+            "id": "451d606a-b272-46f2-8774-4f4aea7fbae6",
+            "text": "Calculator handles edge cases through error handling",
+            "relevance": "Confirms previous finding about edge case handling",
+            "confidence": 0.9,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 3
+          },
+          {
+            "id": "c4a21caa-5729-4145-a41d-3f629eb355d4",
+            "text": "Calculator is a dependency of both Formatter and MathService",
+            "relevance": "Confirms previous finding about Calculator being a dependency",
+            "confidence": 0.95,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 3
+          },
+          {
+            "id": "8d371d35-8b65-4d6a-ad3f-6514eb110389",
+            "text": "Calculator is used by Formatter for percentage calculations",
+            "relevance": "Explains the dependency relationship between Formatter and Calculator",
+            "confidence": 0.85,
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "pass_number": 3
+          }
+        ],
+        "file_analyses": [],
+        "synthesis": {
+          "validated_insights": [],
+          "conflicts": [],
+          "filtered_out": [],
+          "summary": "",
+          "detailed_sections": [],
+          "open_questions": []
+        },
+        "sub_questions": [
+          "How does Calculator work?"
+        ],
+        "output_modes": [
+          "report"
+        ],
+        "relevant_files": [
+          {
+            "file_path": "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase/README.md",
+            "relevance_score": 0.7,
+            "reasoning": "The README.md file provides a high-level overview of the example codebase, including a description of the Calculator class in lib/calculator.rb. It mentions that the Calculator handles \"Basic arithmetic operations\" including addition, subtraction, multiplication, and division. This gives context about what the Calculator does, though it doesn't directly show how it works. The file is part of the project structure and describes the role of the Calculator in the architecture, so it's relevant to understanding how the Calculator works at a conceptual level. It's not as direct as a file containing the Calculator implementation itself, but it's a good reference point for understanding the Calculator's purpose and scope.",
+            "sub_question": "How does Calculator work?"
+          }
+        ],
+        "relevant_files_tree": "README.md",
+        "memory_summary": {
+          "goal": "How does Calculator work?",
+          "sub_question_count": 1,
+          "discovered_file_count": 2,
+          "finding_count": 10,
+          "findings_summary": "The Calculator is designed as a core component for arithmetic operations, not as the main focus of the README\n\nThe Calculator is a dependency of both Formatter and MathService, showing its central role in the arithmetic layer\n\nThe README indicates the Calculator handles edge cases through error handling, suggesting it's designed for robustness\n\nThe Calculator is designed as a central arithmetic layer\n\nCalculator handles edge cases through error handling\n\nCalculator is a dependency of both Formatter and MathService\n\nCalculator serves as a central arithmetic layer\n\nCalculator handles edge cases through error handling\n\nCalculator is a dependency of both Formatter and MathService\n\nCalculator is used by Formatter for percentage calculations",
+          "iterations": 1
+        },
+        "workflow_memory_summary": {
+          "workflow_name": "research_workflow",
+          "workflow_id": "69d8f834-c57d-4a8a-91ab-785eea6106d4",
+          "owner_id": "89ca5699-65eb-4697-90b4-8cadb247c960",
+          "started_at": "2025-12-18T00:33:01Z",
+          "current_state": "synthesizing",
+          "transition_count": 12,
+          "decision_count": 2,
+          "error_count": 0,
+          "states_visited": [
+            "running",
+            "decomposing",
+            "discovering",
+            "documenting",
+            "analyzing",
+            "synthesizing"
+          ],
+          "total_duration": 14.203363782
+        },
+        "timestamp": "2025-12-18T00:33:15Z",
+        "state": "synthesizing"
+      }
+    ]
+  }
+}

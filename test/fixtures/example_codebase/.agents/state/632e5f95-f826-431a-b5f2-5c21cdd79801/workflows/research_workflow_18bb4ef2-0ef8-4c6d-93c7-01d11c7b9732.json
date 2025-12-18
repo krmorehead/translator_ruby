@@ -1,0 +1,77 @@
+{
+  "owner_id": "632e5f95-f826-431a-b5f2-5c21cdd79801",
+  "workflow_id": "18bb4ef2-0ef8-4c6d-93c7-01d11c7b9732",
+  "workflow_name": "research_workflow",
+  "started_at": "2025-12-18T00:33:24Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:24 UTC",
+        "duration_in_state": 0.000195829
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:24Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:24 UTC",
+        "duration_in_state": 0.000586326
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:24Z",
+        "duration_in_state": 0.000584164
+      },
+      {
+        "from": "decomposing",
+        "to": "discovering",
+        "event": "decomposed",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:33:27 UTC",
+        "duration_in_state": 2.904372996
+      },
+      {
+        "from": "decomposing",
+        "to": "discovering",
+        "event": "decomposed",
+        "payload": {},
+        "timestamp": "2025-12-18T00:33:27Z",
+        "duration_in_state": 2.904377673
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [
+      {
+        "decision": "Starting research workflow",
+        "rationale": "Goal: How does Calculator work?, Output modes: report, documentation",
+        "context": {
+          "max_depth": 1,
+          "output_modes": [
+            "report",
+            "documentation"
+          ],
+          "seed_context": []
+        },
+        "state": "running",
+        "timestamp": "2025-12-18T00:33:24Z"
+      }
+    ],
+    "errors": [],
+    "outputs": []
+  }
+}

@@ -17,7 +17,9 @@ module ActiveSupport
     extend Minitest::Spec::DSL
 
     # Run tests in parallel with specified workers
-    parallelize(workers: :number_of_processors) # Re-enabled with load distribution
+    # Threshold of 50 means small test runs execute in single process
+    # This allows class-level caching for LLM-heavy tests to work
+    parallelize(workers: :number_of_processors, threshold: 50)
 
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all

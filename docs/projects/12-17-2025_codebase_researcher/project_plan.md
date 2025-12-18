@@ -442,23 +442,89 @@ Create LLM prompts for each research operation.
 
 ---
 
-### 5.5 - Create OutputFormattingPrompt
+### 5.5 - Create Template-Based Output System
 
-**Intent**: Create a prompt that formats synthesis output as documentation. Ensures output conforms to project documentation standards.
+**Intent**: Create a template-based output system that supports multiple output modes: research reports and per-file documentation. Templates are centralized in prompt files for easy modification.
 
 **Details**:
-- Create `app/prompts/research/output_formatting_prompt.rb`
+- Create `app/prompts/research/output_templates/` directory for template classes
+- Create `base_output_template.rb` - abstract template base class
+  - Provides `render(data)` method signature
+  - Provides `template_name` identifier
+  - Supports variable interpolation
+- Create `report_template.rb` - existing research report format
+  - Renders synthesis as single document or multi-file report by sub-question
+  - Includes: title, summary, table of contents, detailed sections, insights, open questions
+- Create `file_doc_template.rb` - per-file documentation template matching `docs/references/` structure:
+  ```markdown
+  # {file_path}
+
+  ## Summary
+  {brief_summary}
+
+  ## Source
+  - [View Code]({relative_link_to_file})
+
+  ## External References
+  ```mermaid
+  graph LR
+      {file} --> {dependency_1}
+      {file} --> {dependency_2}
+  ```
+
+  ## Method Architecture
+  ```mermaid
+  flowchart TD
+      {method_call_diagram}
+  ```
+
+  ## Methods
+  ### {method_name}
+  {method_summary}
+  ```
+- Create `base_references_template.rb` - directory tree template
+  - Matches existing `base_references.md` format in `docs/references/`
+  - Tree diagram with short file descriptions
+  - Quick navigation links
+- Create `synthesis_summary_template.rb` - brief research answer summary
+  - Concise answer to original research question
+  - Links to relevant per-file docs
+  - Generated timestamp and metadata
+
+**Tests**:
+- Test each template renders valid markdown
+- Test file_doc_template produces mermaid diagrams
+- Test base_references_template produces correct tree structure
+- Test templates are easily modifiable (centralized location)
+
+---
+
+### 5.6 - Create PerFileDocPrompt
+
+**Intent**: Create a prompt specifically for generating per-file documentation. Extracts method signatures, dependencies, and purposes from code files to populate the file_doc_template.
+
+**Details**:
+- Create `app/prompts/research/per_file_doc_prompt.rb`
 - Inherits from BasePrompt
-- Input: synthesis result, output format specification
-- Output: formatted markdown sections
-- System prompt includes documentation rules from update-documentation.mdc
-- Supports multiple output formats (single file, multiple files)
+- Input: file content, file path, dependencies (from DependencyGraphTool), goal context, sub-questions this file answers
+- Output structure:
+  - `summary`: brief description of file purpose
+  - `external_references`: list of files this file depends on
+  - `methods`: array of method details:
+    - `name`: method name
+    - `purpose`: what the method does
+    - `parameters`: list of parameters
+    - `returns`: return value description
+    - `calls`: other methods this method calls (for method architecture diagram)
+  - `relevant_sub_questions`: which decomposed sub-questions this file helps answer
+- System prompt explains: documentation goals, AI-friendly formatting, diagram generation guidance
 
 **Tests** (all tests use real LLM calls, no mocking):
-- Test produces valid markdown
-- Test follows documentation structure
-- Test handles code blocks correctly
-- Test produces table of contents when needed
+- Test produces valid structured output
+- Test extracts method list from Ruby file
+- Test identifies external dependencies
+- Test tags file with relevant sub-questions
+- Test handles files with no methods (e.g., configuration files)
 
 ---
 
@@ -499,44 +565,86 @@ Create the workflows that orchestrate research phases. Goal decomposition is sep
 
 ### 6.2 - Create ResearchWorkflow Class
 
-**Intent**: Create the main workflow that orchestrates the full research process. Uses GoalDecompositionWorkflow for recursive goal breakdown, then investigates each leaf goal. The workflow ties together multiple prompts and tools in a cohesive unit.
+**Intent**: Create the main workflow that orchestrates the full research process. Uses GoalDecompositionWorkflow for recursive goal breakdown, then investigates each leaf goal. Supports two output modes: research report and per-file documentation.
 
 **Details**:
 - Create `app/workflows/research_workflow.rb`
 - Inherits from BaseWorkflow
 - **Required parameters**: `goal`, `owner_id`, `research_path`
+- **Optional parameters**: `output_mode` (`:report` or `:documentation`, default: `:report`)
 - Adds `research_memory` accessor for ResearchMemoryStore (scoped by owner_id)
-- Implements four internal phases:
+- Implements phases based on output mode:
+
+**Common phases (both modes)**:
   1. **Decompose**: Use GoalDecompositionWorkflow to recursively break goal into leaf sub-goals
      - Only leaf goals (base case reached) proceed to discovery
      - Tree structure preserved for synthesis context
   2. **Discover**: For each **leaf** sub-goal:
      - Use FileTreeTool + GrepTool + FileRelevancePrompt to find relevant files
+     - Tag each file with which sub-questions it helps answer
+
+**Report mode phases**:
   3. **Analyze**: For each discovered file set:
      - Run **3 parallel passes** using ReadFileTool + DependencyGraphTool + CodeUnderstandingPrompt
      - Each pass analyzes independently to catch different perspectives/errors
      - Collect all 3 results for synthesis cross-validation
-  4. **Synthesize**: Use SynthesisPrompt (with 3-pass results) + OutputFormattingPrompt
+  4. **Synthesize**: Use SynthesisPrompt (with 3-pass results) + report_template
      - Cross-validates findings across passes
      - Reconstructs hierarchy from decomposition tree
-     - Filters irrelevant content
-     - Produces final documentation matching goal tree structure
-- Iterates discover→analyze for each leaf goal before synthesizing
+     - Produces research report document(s)
+
+**Documentation mode phases**:
+  3. **Document**: For each relevant file (decomposition determines relevance):
+     - Run PerFileDocPrompt to extract summary, methods, dependencies
+     - Use FileDocumentationWriter to write per-file .md immediately once validated
+     - Tag output with which sub-questions the file answers
+  4. **Organize**: After all files processed:
+     - Generate base_references.md for each directory containing documented files
+     - Generate synthesis_summary.md answering the original research question
+     - Only directories with relevant files get base_references.md
+
+**Documentation mode flow**:
+```
+1. Research Goal: "How does the Calculator work?"
+   ↓
+2. Decompose into sub-questions:
+   - Q1: "What methods does Calculator expose?"
+   - Q2: "How does Formatter depend on Calculator?"
+   - Q3: "How does MathService compose Calculator and Formatter?"
+   ↓
+3. Discover files relevant to each sub-question:
+   - calculator.rb (relevant to Q1, Q2, Q3)
+   - formatter.rb (relevant to Q2, Q3)
+   - math_service.rb (relevant to Q3)
+   ↓
+4. Generate per-file docs ONLY for discovered relevant files
+   (each file tagged with which sub-questions it answers)
+   ↓
+5. Generate base_references.md for directories containing documented files
+   ↓
+6. Generate synthesis_summary.md answering the original question
+```
+
+**Key**: We document files that help answer the research question, not the entire codebase. The sub-question decomposition determines relevance.
+
+- Iterates discover→document for each leaf goal before organizing (documentation mode)
 - Chains context between iterations (findings from leaf 1 inform leaf 2 analysis)
 - Stores intermediate results in ResearchMemoryStore (scoped by owner_id)
-- Returns structured result with findings, conflicts, goal tree, and output paths
+- Returns structured result with findings, output paths, and goal tree
 
 **Tests** (all tests use real LLM calls, no mocking):
 - Test initialization with research path, goal, and owner_id
 - Test decompose phase produces recursive goal tree
 - Test only leaf goals proceed to discovery
-- Test discover phase finds relevant files
-- Test analyze phase runs 3 parallel passes
-- Test synthesize phase reconstructs hierarchy
+- Test discover phase finds relevant files and tags sub-questions
+- Test report mode: analyze phase runs 3 parallel passes
+- Test report mode: synthesize phase produces report
+- Test documentation mode: document phase writes per-file docs
+- Test documentation mode: organize phase generates base_references.md
+- Test documentation mode: generates synthesis_summary.md
 - Test context chains between iterations
 - Test handles empty codebase gracefully
 - Test respects max_depth parameter
-- Test parallel passes are truly independent (no shared state contamination)
 
 ---
 
@@ -544,26 +652,84 @@ Create the workflows that orchestrate research phases. Goal decomposition is sep
 
 Create the service that writes research findings to the output directory.
 
-### 7.1 - Create ResearchOutputService
+### 7.1 - Create ResearchOutputService with Multiple Output Modes
 
-**Intent**: Create a service that writes formatted research findings to the configured output directory. Manages file creation, naming, and organization.
+**Intent**: Create a service that writes formatted research findings to the configured output directory. Supports two output modes: research report and per-file documentation.
 
 **Details**:
 - Create `app/services/research_output_service.rb`
 - Reads output path from ENV["RESEARCH_OUTPUT_PATH"] or defaults to `.agents/references/`
 - Creates output directory if it doesn't exist
+- **Output mode parameter**: `:report` (default) or `:documentation`
+- **Report mode** (existing behavior):
 - Generates filenames from research topic (slugified)
-- Supports single-file and multi-file output modes
+  - Supports single-file and multi-file report by sub-question
 - Creates index file when multiple files are generated
 - Writes metadata (timestamp, source path, topic) to output
+- **Documentation mode** (new):
+  - Creates directory structure mirroring researched codebase under `.agents/references/`
+  - Only creates directories for files relevant to the research question
+  - Generates `base_references.md` for each directory with tree + descriptions
+  - Generates per-file `.md` for each analyzed code file (using file_doc_template)
+  - Generates `synthesis_summary.md` with research answer at root
+  - Each file written individually once analysis confirms value (decomposition strategy)
 - Returns list of created file paths
+
+```ruby
+# Interface
+service = ResearchOutputService.new(research_topic: "How does Calculator work?", base_path: "/path/to/codebase")
+
+# Report mode (default)
+service.write(synthesis: synthesis, format: :report)
+
+# Documentation mode
+service.write(
+  synthesis: synthesis,
+  format: :documentation,
+  file_analyses: file_analyses  # Array of per-file analysis results from PerFileDocPrompt
+)
+```
 
 **Tests**:
 - Test creates output directory
-- Test generates appropriate filename
+- Test generates appropriate filename for report mode
 - Test writes content to file
-- Test creates index for multi-file output
+- Test creates index for multi-file report output
 - Test includes metadata in output
+- Test documentation mode creates mirrored directory structure
+- Test documentation mode generates base_references.md per directory
+- Test documentation mode generates per-file .md files
+- Test documentation mode generates synthesis_summary.md
+
+---
+
+### 7.2 - Create FileDocumentationWriter
+
+**Intent**: Create a specialized service for writing per-file documentation. Handles the generation of mermaid diagrams and incremental updates to base_references.md files.
+
+**Details**:
+- Create `app/services/file_documentation_writer.rb`
+- Uses templates from `app/prompts/research/output_templates/`
+- **Methods**:
+  - `write_file_doc(file_analysis:, output_dir:)` - writes single file doc using file_doc_template
+  - `write_base_references(directory:, files:, output_dir:)` - writes base_references.md for a directory
+  - `write_synthesis_summary(synthesis:, output_dir:)` - writes synthesis_summary.md at root
+- **Mermaid diagram generation**:
+  - `generate_dependency_diagram(file:, dependencies:)` - creates external references graph
+  - `generate_method_architecture_diagram(methods:)` - creates method call flowchart
+- **Incremental updates**:
+  - Tracks which files have been documented
+  - Updates base_references.md as files are added
+  - Supports partial research runs (can add to existing documentation)
+- Returns list of created/updated file paths
+
+**Tests**:
+- Test writes individual file doc
+- Test generates valid mermaid dependency diagram
+- Test generates valid mermaid method architecture diagram
+- Test writes base_references.md with tree structure
+- Test updates existing base_references.md (incremental)
+- Test writes synthesis_summary.md
 
 ---
 
@@ -573,23 +739,45 @@ Create the API endpoint and complete integration testing.
 
 ### 8.1 - Create Research Controller
 
-**Intent**: Create an API endpoint for triggering codebase research. Provides RESTful interface for submitting research tasks.
+**Intent**: Create an API endpoint for triggering codebase research. Provides RESTful interface for submitting research tasks with configurable output mode.
 
 **Details**:
 - Create `app/controllers/api/v1/research_controller.rb`
 - POST `/api/v1/research` endpoint
-- Request body: { goal: string, path: string, options: { max_depth: int } }
-- Response: { status: string, findings: array, output_files: array, errors: array }
+- Request body:
+  ```json
+  {
+    "goal": "string",
+    "path": "string",
+    "options": {
+      "max_depth": "int",
+      "output_mode": "report | documentation"
+    }
+  }
+  ```
+- Response:
+  ```json
+  {
+    "status": "string",
+    "findings": "array",
+    "output_files": "array",
+    "output_mode": "report | documentation",
+    "errors": "array"
+  }
+  ```
 - Validates goal and path are present
 - Validates path exists and is readable
+- Validates output_mode is valid (defaults to "report")
 - Returns 202 Accepted for async (future) or 200 for sync
 - Add route to config/routes.rb
 
 **Tests**:
-- Test successful research request
+- Test successful research request with default output_mode (report)
+- Test successful research request with output_mode=documentation
 - Test validation errors
 - Test invalid path rejection
-- Test response structure
+- Test invalid output_mode rejection
+- Test response structure includes output_mode
 - Test uses real LLM calls (no mocking)
 
 ---
@@ -618,24 +806,44 @@ Create the API endpoint and complete integration testing.
 
 ### 8.3 - Cursor Baseline Comparison Test
 
-**Intent**: Create a test that compares our worker's output against Cursor's research output for the same prompt. This establishes a baseline for quality and helps identify areas for improvement.
+**Intent**: Create a test that compares our worker's output against Cursor's research output for the same prompt. This establishes a baseline for quality and helps identify areas for improvement. Test both output modes.
 
 **Details**:
 - Create `test/fixtures/cursor_baseline/research_prompt.md` with a standard research prompt
+  - Prompt should request documentation output mode to test per-file doc generation
 - User (Kyle) runs the prompt through Cursor on the example_codebase fixture
 - Save Cursor's output as `test/fixtures/cursor_baseline/cursor_output.md`
 - Create `test/integration/research_comparison_test.rb`
-- Run our worker with the same prompt on the same codebase
+- Run our worker with the same prompt on the same codebase in **documentation mode**
 - Compare outputs on multiple dimensions:
   - **Coverage**: Does the worker mention the same key files/classes?
   - **Structure**: Is the output similarly organized?
   - **Accuracy**: Are the findings factually correct?
   - **Completeness**: Are there gaps in understanding?
+  - **Per-file docs**: Are per-file docs generated for each relevant file?
+  - **Diagrams**: Are mermaid diagrams valid and useful?
 - Output a comparison report (diff-style or structured)
 - Test should not fail on differences, but report them for human review
 
+**Expected Output Structure (Documentation Mode)**:
+```
+.agents/references/
+├── synthesis_summary.md           # Brief answer to original research question
+├── base_references.md             # Tree of files relevant to this research
+└── lib/
+│   ├── base_references.md         # Tree for lib directory
+│   ├── calculator.md              # Per-file doc (answers Q1, Q2, Q3)
+│   └── formatter.md               # Per-file doc (answers Q2, Q3)
+└── app/services/
+    ├── base_references.md         # Tree for services directory
+    └── math_service.md            # Per-file doc (answers Q3)
+```
+
 **Tests** (all tests use real LLM calls, no mocking):
-- Test worker produces output for baseline prompt
+- Test worker produces output for baseline prompt in documentation mode
+- Test generates per-file docs for relevant files only
+- Test generates base_references.md for each directory
+- Test generates synthesis_summary.md
 - Test comparison report is generated
 - Test report identifies coverage differences
 - Test report is human-readable

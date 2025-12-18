@@ -129,6 +129,22 @@ Request → TranslationController#translate_text
 | `LLM_MODEL` | Model to use | `qwen30b` |
 | `API_KEY` | Authorization token | Required |
 | `PORT` | Server port | `52020` |
+| `MAX_SAFE_CONTEXT` | Maximum context size in tokens | Required |
+
+## Context Size Validation
+
+All LLM prompts inherit from `BasePrompt` which validates context size before each request:
+
+```
+Request → BasePrompt#execute
+       → validate_context_size!(messages)
+       → If estimated_tokens > MAX_SAFE_CONTEXT:
+           → Raise ContextSizeExceededError
+       → Otherwise:
+           → Continue to LLM API call
+```
+
+This prevents unbounded context growth that could cause LLM timeouts or excessive token usage. Context size is estimated as `total_characters / 4`.
 
 ## Database
 

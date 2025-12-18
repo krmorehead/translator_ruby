@@ -1,50 +1,45 @@
-# Cursor Baseline Output
+I've generated comprehensive documentation for the example_codebase. Here's what was created:
 
-> **Note**: This file should be populated with Cursor's actual research output.
-> Run the prompt from `research_prompt.md` against the example_codebase and paste the results here.
+Generated Documentation Structure
+docs/
+├── base_references.md           # Directory tree + synthesis summary
+├── lib/
+│   ├── calculator.md            # Calculator class documentation
+│   └── formatter.md             # Formatter class documentation
+└── app/
+    └── services/
+        └── math_service.md      # MathService documentation
 
-## Placeholder
+Summary of Findings
+Dependency Hierarchy
+graph TD
+    MathService["MathService<br/>(app/services)"]
+    Formatter["Formatter<br/>(lib)"]
+    Calculator["Calculator<br/>(lib)"]
+    
+    MathService --> Calculator
+    MathService --> Formatter
+    Formatter --> Calculator
+    
+    style Calculator fill:#4a9eff
+    style Formatter fill:#9b59b6
+    style MathService fill:#e74c3c
 
-This is a placeholder. To complete the baseline comparison test:
+Key Findings
+Question	Answer
+Calculator operations	6 methods: add, subtract, multiply, divide, percentage, average with error handling
+Formatter ↔ Calculator	Formatter uses Calculator for percentage_change calculation via dependency injection
+MathService orchestration	Combines both as a facade, sharing Calculator instance with Formatter
+Design patterns	Dependency Injection, Facade, Single Responsibility, Composition over Inheritance
 
-1. Open `test/fixtures/example_codebase` in Cursor
-2. Run the research prompt from `research_prompt.md`
-3. Replace this content with Cursor's actual output
-
----
-
-## Example Expected Content
-
-The actual Cursor output should include analysis of:
-
-### Calculator Class
-- Located at `lib/calculator.rb`
-- Provides basic arithmetic operations: add, subtract, multiply, divide
-- Handles division by zero with custom error class
-- Includes percentage and average calculations
-
-### Formatter Class
-- Located at `lib/formatter.rb`
-- Depends on Calculator for some operations (percentage_change)
-- Provides number formatting: currency, percent, separators
-- Uses dependency injection for Calculator instance
-
-### MathService
-- Located at `app/services/math_service.rb`
-- Combines Calculator and Formatter for high-level operations
-- Methods: calculate_total, calculate_statistics, apply_discount, compare_values, compound_interest
-- Follows service object pattern
-
-### Dependencies
-```
-MathService
-├── Calculator (direct)
-└── Formatter
-    └── Calculator (indirect)
-```
-
-### Design Patterns
-- Dependency Injection (Formatter accepts Calculator)
-- Service Object (MathService encapsulates business logic)
-- Composition over Inheritance (MathService composes Calculator + Formatter)
-
+Architecture
+Calculator = Foundation (no dependencies, pure computation)
+Formatter = Presentation (depends on Calculator, string formatting)
+MathService = Service layer (orchestrates both for business operations)
+All documentation includes:
+✅ Brief summary
+✅ Mermaid dependency diagrams
+✅ Mermaid method architecture diagrams
+✅ Method summaries with parameters and return types
+✅ Usage examples
+✅ base_references.md with tree diagram and synthesis

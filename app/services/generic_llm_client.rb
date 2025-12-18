@@ -5,7 +5,9 @@ module GenericLlmClient
   RETRY_ERRORS = [
     Faraday::ServerError,
     Faraday::TimeoutError,
-    Faraday::ConnectionFailed
+    Faraday::ConnectionFailed,
+    Net::ReadTimeout,
+    Net::OpenTimeout
   ].freeze
 
   module_function
@@ -20,9 +22,13 @@ module GenericLlmClient
     client = OpenAI::Client.new(
       access_token: ENV["API_KEY"],
       uri_base: ENV["LLM_URL"],
-      request_timeout: 60
+      request_timeout: request_timeout
     )
     wrap_with_retry(client)
+  end
+
+  def request_timeout
+    ENV.fetch("LLM_REQUEST_TIMEOUT", 60).to_i
   end
 
   def wrap_with_retry(client)
@@ -39,7 +45,7 @@ module GenericLlmClient
   end
 
   def retry_attempts
-    ENV.fetch("LLM_RETRY_ATTEMPTS", 1).to_i
+    ENV.fetch("LLM_RETRY", 1).to_i
   end
 
   def retry_delay

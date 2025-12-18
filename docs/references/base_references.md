@@ -78,9 +78,13 @@ docs/references/
 │           ├── base_references.md
 │           └── chatStore.md
 │
-└── lib/
-    ├── server.md                               # Custom server startup script
-    └── test_runner.md                          # Custom test runner script
+├── lib/
+│   ├── server.md                               # Custom server startup script
+│   └── test_runner.md                          # Custom test runner script
+│
+└── test/
+    ├── base_references.md                      # Test documentation index
+    └── test_helper.md                          # Test configuration
 ```
 
 ## Quick Navigation
@@ -118,4 +122,7 @@ docs/references/
 ### Library
 - [Server](lib/server.md) - Custom server startup script
 - [TestRunner](lib/test_runner.md) - Custom test runner script
+
+### Test Configuration
+- [TestHelper](test/test_helper.md) - Test parallelization and shared result patterns
 

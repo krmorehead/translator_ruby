@@ -1,0 +1,100 @@
+{
+  "owner_id": "f94405c8-1eff-41f5-a780-4b35b4ba05ee",
+  "workflow_id": "0b4c3dae-ef6d-4948-9778-09dd6b858ece",
+  "workflow_name": "research_workflow",
+  "started_at": "2025-12-18T00:28:14Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:28:14 UTC",
+        "duration_in_state": 0.000164185
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-18T00:28:14Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:28:14 UTC",
+        "duration_in_state": 0.000152548
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "timestamp": "2025-12-18T00:28:14Z",
+        "duration_in_state": 0.000149272
+      },
+      {
+        "from": "decomposing",
+        "to": "discovering",
+        "event": "decomposed",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:28:16 UTC",
+        "duration_in_state": 2.2779467
+      },
+      {
+        "from": "decomposing",
+        "to": "discovering",
+        "event": "decomposed",
+        "payload": {},
+        "timestamp": "2025-12-18T00:28:16Z",
+        "duration_in_state": 2.277952758
+      },
+      {
+        "from": "discovering",
+        "to": "failed",
+        "event": "fail",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:28:16 UTC",
+        "duration_in_state": 0.000243574
+      },
+      {
+        "from": "discovering",
+        "to": "failed",
+        "event": "fail",
+        "payload": {},
+        "timestamp": "2025-12-18T00:28:16Z",
+        "duration_in_state": 0.000235646
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [
+      {
+        "decision": "Starting research workflow",
+        "rationale": "Goal: How does Calculator work?, Output modes: report, documentation",
+        "context": {
+          "max_depth": 1,
+          "output_modes": [
+            "report",
+            "documentation"
+          ],
+          "seed_context": []
+        },
+        "state": "running",
+        "timestamp": "2025-12-18T00:28:14Z"
+      }
+    ],
+    "errors": [
+      {
+        "error": "private method 'next_iteration!' called for an instance of ResearchMemoryStore",
+        "error_class": null,
+        "state": "discovering",
+        "timestamp": "2025-12-18T00:28:16Z"
+      }
+    ],
+    "outputs": []
+  }
+}

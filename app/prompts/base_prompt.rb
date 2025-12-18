@@ -1,13 +1,24 @@
 # frozen_string_literal: true
 
+# Error raised when context size exceeds the safe limit
+class ContextSizeExceededError < StandardError; end
+
 # Abstract base class for all LLM-backed prompts.
 # Subclasses must implement system_prompt and response_schema.
 class BasePrompt
   attr_reader :tools
 
+  # Approximate characters per token for context size estimation
+  CHARS_PER_TOKEN = 4
+
   def initialize(tools: [])
     @tools = tools || []
     @client = default_client
+  end
+
+  # Maximum safe context size in tokens (from ENV, required)
+  def max_safe_context
+    ENV.fetch("MAX_SAFE_CONTEXT").to_i
   end
 
   # Default model comes from the shared LLM_MODEL env var.
@@ -51,9 +62,12 @@ class BasePrompt
   def execute(prompt:, context: {})
     raise "LLM client not configured" unless @client
 
+    messages = build_messages(prompt, context)
+    validate_context_size!(messages)
+
     parameters = {
       model: model,
-      messages: build_messages(prompt, context)
+      messages: messages
     }
 
     if response_schema
@@ -79,6 +93,20 @@ class BasePrompt
 
   def base_system_prompt
     BASE_SYSTEM_PROMPT
+  end
+
+  # Validate that the total context size doesn't exceed MAX_SAFE_CONTEXT
+  # Raises an error if context is too large to prevent unbounded LLM calls
+  def validate_context_size!(messages)
+    total_chars = messages.sum { |m| m[:content].to_s.length }
+    estimated_tokens = total_chars / CHARS_PER_TOKEN
+
+    if estimated_tokens > max_safe_context
+      raise ContextSizeExceededError.new(
+        "Context size (#{estimated_tokens} tokens) exceeds MAX_SAFE_CONTEXT (#{max_safe_context} tokens). " \
+        "Total characters: #{total_chars}. Reduce context or increase MAX_SAFE_CONTEXT."
+      )
+    end
   end
 
   def parse_response(response)

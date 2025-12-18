@@ -1,0 +1,118 @@
+{
+  "owner_id": "0d02c439-bcf9-433e-be08-c0827b6aa845",
+  "workflow_id": "d940d2ae-61a0-4627-aa65-acb037d1abd5",
+  "workflow_name": "research_workflow",
+  "started_at": "2025-12-18T00:30:57Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:30:57 UTC",
+        "duration_in_state": 0.000257873
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-18T00:30:57Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:30:57 UTC",
+        "duration_in_state": 0.000171048
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "timestamp": "2025-12-18T00:30:57Z",
+        "duration_in_state": 0.000166438
+      },
+      {
+        "from": "decomposing",
+        "to": "discovering",
+        "event": "decomposed",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:30:59 UTC",
+        "duration_in_state": 2.661071366
+      },
+      {
+        "from": "decomposing",
+        "to": "discovering",
+        "event": "decomposed",
+        "payload": {},
+        "timestamp": "2025-12-18T00:30:59Z",
+        "duration_in_state": 2.661085027
+      },
+      {
+        "from": "discovering",
+        "to": "documenting",
+        "event": "files_found",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:31:01 UTC",
+        "duration_in_state": 1.896629509
+      },
+      {
+        "from": "discovering",
+        "to": "documenting",
+        "event": "files_found",
+        "payload": {},
+        "timestamp": "2025-12-18T00:31:01Z",
+        "duration_in_state": 1.896633164
+      },
+      {
+        "from": "documenting",
+        "to": "analyzing",
+        "event": "documented",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:31:01 UTC",
+        "duration_in_state": 0.000167742
+      },
+      {
+        "from": "documenting",
+        "to": "analyzing",
+        "event": "documented",
+        "payload": {},
+        "timestamp": "2025-12-18T00:31:01Z",
+        "duration_in_state": 0.000145748
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [
+      {
+        "decision": "Starting research workflow",
+        "rationale": "Goal: How does Calculator work?, Output modes: report",
+        "context": {
+          "max_depth": 1,
+          "output_modes": [
+            "report"
+          ],
+          "seed_context": []
+        },
+        "state": "running",
+        "timestamp": "2025-12-18T00:30:57Z"
+      },
+      {
+        "decision": "Discovered 2 relevant files",
+        "rationale": "Files will be documented and analyzed",
+        "context": {
+          "file_count": 2,
+          "sub_questions": 1
+        },
+        "state": "discovering",
+        "timestamp": "2025-12-18T00:31:01Z"
+      }
+    ],
+    "errors": [],
+    "outputs": []
+  }
+}

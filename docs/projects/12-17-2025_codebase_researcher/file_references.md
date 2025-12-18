@@ -46,12 +46,19 @@
 | `app/prompts/research/file_relevance_prompt.rb` | Scores file relevance | 5.2 |
 | `app/prompts/research/code_understanding_prompt.rb` | Analyzes code meaning | 5.3 |
 | `app/prompts/research/synthesis_prompt.rb` | Synthesizes findings | 5.4 |
-| `app/prompts/research/output_formatting_prompt.rb` | Formats output documents | 5.5 |
+| **Output Templates** | | |
+| `app/prompts/research/output_templates/base_output_template.rb` | Abstract template base class | 5.5 |
+| `app/prompts/research/output_templates/report_template.rb` | Research report format template | 5.5 |
+| `app/prompts/research/output_templates/file_doc_template.rb` | Per-file documentation template | 5.5 |
+| `app/prompts/research/output_templates/base_references_template.rb` | Directory tree template | 5.5 |
+| `app/prompts/research/output_templates/synthesis_summary_template.rb` | Research answer summary template | 5.5 |
+| `app/prompts/research/per_file_doc_prompt.rb` | Generates per-file documentation | 5.6 |
 | **Research Workflows** | | |
 | `app/workflows/goal_decomposition_workflow.rb` | Reusable recursive goal decomposition | 6.1 |
 | `app/workflows/research_workflow.rb` | Main research workflow with phases | 6.2 |
 | **Output** | | |
-| `app/services/research_output_service.rb` | Writes research to output dir | 7.1 |
+| `app/services/research_output_service.rb` | Writes research to output dir (report + documentation modes) | 7.1 |
+| `app/services/file_documentation_writer.rb` | Writes per-file docs and base_references | 7.2 |
 | **API** | | |
 | `app/controllers/api/v1/research_controller.rb` | Research API endpoint | 8.1 |
 | **Test Fixtures** | | |
@@ -70,9 +77,12 @@
 | `test/tools/dependency_graph_tool_test.rb` | Dependency graph tests | 4.3 |
 | `test/prompts/research/topic_decomposition_prompt_test.rb` | Decomposition prompt tests | 5.1 |
 | `test/prompts/research/synthesis_prompt_test.rb` | Synthesis prompt tests | 5.4 |
+| `test/prompts/research/output_templates_test.rb` | Output template tests | 5.5 |
+| `test/prompts/research/per_file_doc_prompt_test.rb` | Per-file doc prompt tests | 5.6 |
 | `test/workflows/goal_decomposition_workflow_test.rb` | Goal decomposition workflow tests | 6.1 |
 | `test/workflows/research_workflow_test.rb` | Research workflow tests | 6.2 |
 | `test/services/research_output_service_test.rb` | Output service tests | 7.1 |
+| `test/services/file_documentation_writer_test.rb` | File doc writer tests | 7.2 |
 | `test/controllers/api/v1/research_controller_test.rb` | API endpoint tests | 8.1 |
 | `test/integration/codebase_researcher_integration_test.rb` | End-to-end research tests | 8.2 |
 | **Comparison Test** | | |
@@ -179,10 +189,17 @@ app/
 ├── prompts/research/
 │   ├── code_understanding_prompt.rb
 │   ├── file_relevance_prompt.rb
-│   ├── output_formatting_prompt.rb
+│   ├── per_file_doc_prompt.rb
 │   ├── synthesis_prompt.rb
-│   └── topic_decomposition_prompt.rb
+│   ├── topic_decomposition_prompt.rb
+│   └── output_templates/
+│       ├── base_output_template.rb
+│       ├── base_references_template.rb
+│       ├── file_doc_template.rb
+│       ├── report_template.rb
+│       └── synthesis_summary_template.rb
 ├── services/
+│   ├── file_documentation_writer.rb
 │   └── research_output_service.rb
 ├── tools/
 │   ├── dependency_graph_tool.rb
@@ -217,9 +234,12 @@ test/
 │   │   └── goal_based_memory_test.rb
 │   └── research_memory_store_test.rb
 ├── prompts/research/
+│   ├── output_templates_test.rb
+│   ├── per_file_doc_prompt_test.rb
 │   ├── synthesis_prompt_test.rb
 │   └── topic_decomposition_prompt_test.rb
 ├── services/
+│   ├── file_documentation_writer_test.rb
 │   └── research_output_service_test.rb
 ├── tools/
 │   ├── dependency_graph_tool_test.rb

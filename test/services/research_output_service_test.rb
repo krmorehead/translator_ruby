@@ -92,7 +92,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
       base_path: @output_path
     )
 
-    files = service.write(synthesis: @synthesis, format: :multi_file)
+    files = service.write(synthesis: @synthesis, output_modes: [:report], report_format: :multi_file)
 
     # Should have index + section files
     assert files.size >= 2
@@ -138,6 +138,133 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     assert files.any?
     content = File.read(files.first)
     assert_includes content, "Symbol key summary"
+  end
+
+  # Documentation mode tests
+  test "documentation mode creates mirrored directory structure" do
+    # Create a temp source directory
+    source_dir = File.join(@output_path, "source")
+    FileUtils.mkdir_p(source_dir)
+
+    # Reset env to use source_dir as base
+    ENV.delete("RESEARCH_OUTPUT_PATH")
+
+    service = ResearchOutputService.new(
+      research_topic: "Doc Mode Test",
+      base_path: source_dir
+    )
+
+    file_analyses = [
+      {
+        file_path: "lib/calculator.rb",
+        summary: "Calculator class",
+        external_references: [],
+        methods: [{ name: "add", purpose: "Adds numbers" }]
+      },
+      {
+        file_path: "lib/formatter.rb",
+        summary: "Formatter class",
+        external_references: ["lib/calculator.rb"],
+        methods: []
+      }
+    ]
+
+    files = service.write(synthesis: @synthesis, output_modes: [:documentation], file_analyses: file_analyses)
+
+    assert files.any?
+
+    # Should create per-file docs
+    assert files.any? { |f| f.include?("calculator.md") }
+    assert files.any? { |f| f.include?("formatter.md") }
+
+    # Should create base_references.md
+    assert files.any? { |f| f.include?("base_references.md") }
+
+    # Should create synthesis_summary.md
+    assert files.any? { |f| f.include?("synthesis_summary.md") }
+  end
+
+  test "documentation mode generates per-file markdown" do
+    source_dir = File.join(@output_path, "source2")
+    FileUtils.mkdir_p(source_dir)
+
+    ENV.delete("RESEARCH_OUTPUT_PATH")
+
+    service = ResearchOutputService.new(
+      research_topic: "Per File Test",
+      base_path: source_dir
+    )
+
+    file_analyses = [
+      {
+        file_path: "lib/test.rb",
+        summary: "Test file summary",
+        external_references: ["lib/helper.rb"],
+        methods: [
+          { name: "test_method", purpose: "Does testing", parameters: [], returns: "Boolean", calls: [] }
+        ]
+      }
+    ]
+
+    files = service.write(synthesis: @synthesis, output_modes: [:documentation], file_analyses: file_analyses)
+
+    test_md = files.find { |f| f.include?("test.md") }
+    assert test_md, "Should create test.md"
+
+    content = File.read(test_md)
+    assert_includes content, "Test file summary"
+    assert_includes content, "test_method"
+    assert_includes content, "helper.rb"
+  end
+
+  test "documentation mode generates synthesis_summary" do
+    source_dir = File.join(@output_path, "source3")
+    FileUtils.mkdir_p(source_dir)
+
+    ENV.delete("RESEARCH_OUTPUT_PATH")
+
+    service = ResearchOutputService.new(
+      research_topic: "Synthesis Test",
+      base_path: source_dir
+    )
+
+    files = service.write(synthesis: @synthesis, output_modes: [:documentation], file_analyses: [])
+
+    summary_file = files.find { |f| f.include?("synthesis_summary.md") }
+    assert summary_file, "Should create synthesis_summary.md"
+
+    content = File.read(summary_file)
+    assert_includes content, "Synthesis Test"
+    assert_includes content, "test summary"
+  end
+
+  test "both output_modes generates report and documentation" do
+    source_dir = File.join(@output_path, "source_both")
+    FileUtils.mkdir_p(source_dir)
+
+    ENV.delete("RESEARCH_OUTPUT_PATH")
+
+    service = ResearchOutputService.new(
+      research_topic: "Both Modes Test",
+      base_path: source_dir
+    )
+
+    file_analyses = [
+      {
+        file_path: "lib/example.rb",
+        summary: "Example class",
+        external_references: [],
+        methods: [{ name: "run", purpose: "Runs example" }]
+      }
+    ]
+
+    files = service.write(synthesis: @synthesis, output_modes: [:report, :documentation], file_analyses: file_analyses)
+
+    # Should have both report and documentation files
+    assert files.any? { |f| f.include?("both_modes_test") && !f.include?("synthesis_summary") }, "Should have report file"
+    assert files.any? { |f| f.include?("example.md") }, "Should have per-file doc"
+    assert files.any? { |f| f.include?("synthesis_summary.md") }, "Should have synthesis summary"
+    assert files.any? { |f| f.include?("base_references.md") }, "Should have base_references"
   end
 end
 

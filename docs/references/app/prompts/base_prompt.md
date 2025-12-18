@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Abstract base class for all LLM-backed prompts. Provides common functionality for executing prompts, formatting context, and parsing responses.
+Abstract base class for all LLM-backed prompts. Provides common functionality for executing prompts, formatting context, parsing responses, and context size validation.
 
 ## Location
 
@@ -13,6 +13,10 @@ Abstract base class for all LLM-backed prompts. Provides common functionality fo
 Subclasses must implement:
 - `response_schema`: Return JSON schema hash or nil for freeform text
 - Optionally override `system_prompt`, `model`, `format_context`
+
+## Constants
+
+- `CHARS_PER_TOKEN = 4` - Approximate characters per token for context size estimation
 
 ## Initialization
 
@@ -25,9 +29,17 @@ def initialize(tools: [])
 
 ## Key Methods
 
+### `max_safe_context`
+
+Returns the maximum safe context size in tokens from `ENV.fetch("MAX_SAFE_CONTEXT")`.
+
+**Raises:** `KeyError` if `MAX_SAFE_CONTEXT` environment variable is not defined.
+
 ### `execute(prompt:, context: {})`
 
 Executes the prompt against the LLM and returns parsed response with thoughts.
+
+**Context Size Validation:** Before executing, validates that the total context size (in estimated tokens) does not exceed `MAX_SAFE_CONTEXT`. Raises `ContextSizeExceededError` if exceeded.
 
 **Parameters:**
 - `prompt`: String - The user prompt text
@@ -127,9 +139,28 @@ thoughts = result[:thoughts]  # Access thoughts if needed
 
 ## Error Handling
 
+- Raises `ContextSizeExceededError` if estimated tokens exceed `MAX_SAFE_CONTEXT`
+- Raises `KeyError` if `MAX_SAFE_CONTEXT` environment variable is not defined
 - Raises "LLM client not configured" if client is nil
 - Raises "Failed to parse LLM response as JSON" for schema validation errors
 - Raises "LLM prompt execution failed" for other errors
+
+## Context Size Validation
+
+The `validate_context_size!` method estimates token count by dividing total characters by `CHARS_PER_TOKEN` (4). If the estimated tokens exceed `max_safe_context`, it raises `ContextSizeExceededError` with details:
+
+```ruby
+# Example error message:
+"Context size (50000 tokens) exceeds MAX_SAFE_CONTEXT (32000 tokens). 
+Total characters: 200000. Reduce context or increase MAX_SAFE_CONTEXT."
+```
+
+This prevents unbounded context growth that could cause LLM timeouts or excessive token usage.
+
+## Environment Variables
+
+- `LLM_MODEL` - Required. The model identifier for LLM requests.
+- `MAX_SAFE_CONTEXT` - Required. Maximum context size in tokens.
 
 ## Testing
 

@@ -1,0 +1,103 @@
+{
+  "research_goal": [
+    {
+      "text": "How does Calculator work?",
+      "status": "active",
+      "context": {},
+      "timestamp": "2025-12-18T00:33:24Z"
+    }
+  ],
+  "sub_questions": [
+    {
+      "id": "d9af7bb0-77e5-4bad-a065-c1fc7ca6f96b",
+      "text": "How does Calculator work?",
+      "priority": 1,
+      "is_leaf": true,
+      "parent_id": null,
+      "rationale": "No decomposition possible",
+      "status": "pending",
+      "created_at": "2025-12-18T00:33:27Z",
+      "timestamp": "2025-12-18T00:33:27Z"
+    }
+  ],
+  "discovered_files": [],
+  "findings": [],
+  "context_chain": [],
+  "iteration_log": [
+    {
+      "iteration": 1,
+      "timestamp": "2025-12-18T00:33:27Z"
+    }
+  ],
+  "state_transitions": [
+    {
+      "from": "initializing",
+      "to": "decomposing",
+      "event": "initialized",
+      "source": "codebase_researcher",
+      "payload": {},
+      "timestamp": "2025-12-18T00:33:24Z"
+    },
+    {
+      "from": "decomposing",
+      "to": "discovering",
+      "event": "decomposed",
+      "source": "codebase_researcher",
+      "payload": {},
+      "timestamp": "2025-12-18T00:33:24Z"
+    },
+    {
+      "from": "discovering",
+      "to": "analyzing",
+      "event": "files_found",
+      "source": "codebase_researcher",
+      "payload": {},
+      "timestamp": "2025-12-18T00:33:24Z"
+    },
+    {
+      "from": "analyzing",
+      "to": "synthesizing",
+      "event": "analyzed",
+      "source": "codebase_researcher",
+      "payload": {},
+      "timestamp": "2025-12-18T00:33:24Z"
+    }
+  ],
+  "workflow_outputs": [
+    {
+      "goal_tree": {
+        "id": "4f451eaa-b35f-4ca8-a4b1-f95653b3bcbe",
+        "text": "How does Calculator work?",
+        "parent_id": null,
+        "depth": 0,
+        "is_leaf": true,
+        "rationale": "No decomposition possible",
+        "children": []
+      },
+      "leaf_count": 1,
+      "max_depth_reached": 0,
+      "total_questions": 1,
+      "seed_context_used": true,
+      "workflow_memory_summary": {
+        "workflow_name": "goal_decomposition_workflow",
+        "workflow_id": "a4879305-2769-4463-924c-03a7d59df4ca",
+        "owner_id": "632e5f95-f826-431a-b5f2-5c21cdd79801",
+        "started_at": "2025-12-18T00:33:24Z",
+        "current_state": "decomposing",
+        "transition_count": 4,
+        "decision_count": 1,
+        "error_count": 0,
+        "states_visited": [
+          "running",
+          "decomposing"
+        ],
+        "total_duration": 2.898872
+      },
+      "timestamp": "2025-12-18T00:33:27Z",
+      "state": "decomposing",
+      "source_workflow": "goal_decomposition_workflow",
+      "source_workflow_id": "a4879305-2769-4463-924c-03a7d59df4ca"
+    }
+  ],
+  "current_iteration": 1
+}

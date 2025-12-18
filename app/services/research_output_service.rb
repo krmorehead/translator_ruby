@@ -2,29 +2,80 @@
 
 # Service that writes formatted research findings to the output directory.
 # Manages file creation, naming, and organization.
+# Supports output_modes array with any combination of:
+# - :report - Traditional research report (single or multi-file)
+# - :documentation - Per-file documentation mirroring codebase structure
 class ResearchOutputService
-  attr_reader :output_path, :research_topic
+  attr_reader :output_path, :research_topic, :source_path
 
   DEFAULT_OUTPUT_PATH = ".agents/references"
+  VALID_OUTPUT_MODES = [:report, :documentation].freeze
 
   def initialize(research_topic:, base_path: nil)
     @research_topic = research_topic
-    @output_path = ENV["RESEARCH_OUTPUT_PATH"] || File.join(base_path || ".", DEFAULT_OUTPUT_PATH)
+    @source_path = base_path || "."
+    @output_path = ENV["RESEARCH_OUTPUT_PATH"] || File.join(@source_path, DEFAULT_OUTPUT_PATH)
+    @report_template = Research::OutputTemplates::ReportTemplate.new
   end
 
   # Write research results to output files
   # @param synthesis [Hash] Synthesis results
-  # @param format [Symbol] Output format (:single_file or :multi_file)
+  # @param output_modes [Array<Symbol>] Array of output modes (e.g. [:report, :documentation])
+  # @param file_analyses [Array<Hash>] Per-file analysis results (required for :documentation mode)
+  # @param report_format [Symbol] Format for report mode (:single_file or :multi_file)
   # @return [Array<String>] List of created file paths
-  def write(synthesis:, format: :single_file)
+  def write(synthesis:, output_modes: [:report], file_analyses: [], report_format: :single_file)
     ensure_output_directory!
 
-    created_files = case format
-    when :multi_file
-      write_multi_file(synthesis)
+    modes = Array(output_modes).map(&:to_sym) & VALID_OUTPUT_MODES
+    modes = [:report] if modes.empty? # Default fallback
+
+    created_files = []
+
+    # Generate each requested output type
+    modes.each do |mode|
+      case mode
+      when :documentation
+        created_files.concat(write_documentation(synthesis, file_analyses))
+      when :report
+        if report_format == :multi_file
+          created_files.concat(write_multi_file(synthesis))
     else
-      write_single_file(synthesis)
+          created_files.concat(write_single_file(synthesis))
+        end
+      end
     end
+
+    created_files
+  end
+
+  # Write per-file documentation mirroring codebase structure
+  # @param synthesis [Hash] Synthesis results
+  # @param file_analyses [Array<Hash>] Per-file analysis results from PerFileDocPrompt
+  # @return [Array<String>] List of created file paths
+  def write_documentation(synthesis, file_analyses)
+    created_files = []
+
+    writer = FileDocumentationWriter.new(
+      output_base_path: output_path,
+      source_base_path: source_path
+    )
+
+    # Write per-file documentation
+    file_analyses.each do |analysis|
+      path = writer.write_file_doc(file_analysis: analysis)
+      created_files << path
+    end
+
+    # Generate base_references.md for each directory
+    created_files.concat(writer.generate_all_base_references)
+
+    # Write synthesis summary
+    synthesis_data = synthesis.merge(
+      research_goal: research_topic,
+      sub_questions: synthesis[:detailed_sections]&.map { |s| { question: s[:sub_question], answer: s[:answer] } } || []
+    )
+    created_files << writer.write_synthesis_summary(synthesis: synthesis_data)
 
     created_files
   end

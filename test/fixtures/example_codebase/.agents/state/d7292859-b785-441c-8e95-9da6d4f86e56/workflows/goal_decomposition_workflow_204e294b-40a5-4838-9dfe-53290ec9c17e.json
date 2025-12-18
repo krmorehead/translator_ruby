@@ -1,0 +1,105 @@
+{
+  "owner_id": "d7292859-b785-441c-8e95-9da6d4f86e56",
+  "workflow_id": "204e294b-40a5-4838-9dfe-53290ec9c17e",
+  "workflow_name": "goal_decomposition_workflow",
+  "started_at": "2025-12-18T00:43:19Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:43:19 UTC",
+        "duration_in_state": 0.000035544
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-18T00:43:19Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:43:19 UTC",
+        "duration_in_state": 0.000052346
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "timestamp": "2025-12-18T00:43:19Z",
+        "duration_in_state": 0.000050316
+      },
+      {
+        "from": "decomposing",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:43:21 UTC",
+        "duration_in_state": 2.215169717
+      },
+      {
+        "from": "decomposing",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-18T00:43:21Z",
+        "duration_in_state": 2.215178592
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [
+      {
+        "decision": "Starting goal decomposition",
+        "rationale": "Breaking down: How does Calculator work? What is the relationship between Formatter and Calculator?",
+        "context": {
+          "max_depth": 4
+        },
+        "state": "running",
+        "timestamp": "2025-12-18T00:43:19Z"
+      }
+    ],
+    "errors": [],
+    "outputs": [
+      {
+        "goal_tree": {
+          "id": "9b0da69d-40f3-4418-afe8-e7f0b2d576b0",
+          "text": "How does Calculator work? What is the relationship between Formatter and Calculator?",
+          "parent_id": null,
+          "depth": 0,
+          "is_leaf": true,
+          "rationale": "No decomposition possible",
+          "children": []
+        },
+        "leaf_count": 1,
+        "max_depth_reached": 0,
+        "total_questions": 1,
+        "seed_context_used": true,
+        "workflow_memory_summary": {
+          "workflow_name": "goal_decomposition_workflow",
+          "workflow_id": "204e294b-40a5-4838-9dfe-53290ec9c17e",
+          "owner_id": "d7292859-b785-441c-8e95-9da6d4f86e56",
+          "started_at": "2025-12-18T00:43:19Z",
+          "current_state": "decomposing",
+          "transition_count": 4,
+          "decision_count": 1,
+          "error_count": 0,
+          "states_visited": [
+            "running",
+            "decomposing"
+          ],
+          "total_duration": 2.215011515
+        },
+        "timestamp": "2025-12-18T00:43:21Z",
+        "state": "decomposing"
+      }
+    ]
+  }
+}

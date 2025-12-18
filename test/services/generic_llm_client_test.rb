@@ -7,7 +7,7 @@ class GenericLlmClientTest < ActiveSupport::TestCase
     @original_env = ENV.to_h.dup
     ENV["API_KEY"] = "test_key"
     ENV["LLM_URL"] = "http://localhost:8000"
-    ENV["LLM_RETRY_ATTEMPTS"] = "1"
+    ENV["LLM_RETRY"] = "1"
   end
 
   teardown do
@@ -16,7 +16,7 @@ class GenericLlmClientTest < ActiveSupport::TestCase
   end
 
   test "wrap_with_retry always wraps client" do
-    ENV["LLM_RETRY_ATTEMPTS"] = "0"
+    ENV["LLM_RETRY"] = "0"
     
     mock_client = Object.new
     wrapped = GenericLlmClient.wrap_with_retry(mock_client)
@@ -25,11 +25,11 @@ class GenericLlmClientTest < ActiveSupport::TestCase
   end
 
   test "retry_attempts defaults to 1" do
-    ENV["LLM_RETRY_ATTEMPTS"] = "0"
+    ENV["LLM_RETRY"] = "0"
     assert_equal 0, GenericLlmClient.retry_attempts
 
     # But wrap_with_retry forces at least 1
-    ENV.delete("LLM_RETRY_ATTEMPTS")
+    ENV.delete("LLM_RETRY")
     assert_equal 1, GenericLlmClient.retry_attempts
   end
 

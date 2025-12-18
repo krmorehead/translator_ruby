@@ -153,7 +153,61 @@ module Research
       execute(prompt: prompt, context: context)
     end
 
+    # Combine pre-synthesized leaf summaries into a final synthesis
+    # This is more efficient than synthesizing all raw findings at once
+    # @param goal [String] Original research goal
+    # @param leaf_syntheses [Array<Hash>] Pre-synthesized results from each leaf question
+    # @return [Hash] Combined synthesis
+    def combine_leaf_syntheses(goal:, leaf_syntheses:)
+      prompt = build_combination_prompt(goal, leaf_syntheses)
+      context = {
+        goal: goal,
+        leaf_count: leaf_syntheses.size
+      }
+
+      execute(prompt: prompt, context: context)
+    end
+
     private
+
+    def build_combination_prompt(goal, leaf_syntheses)
+      prompt_parts = ["Research Goal: #{goal}"]
+
+      prompt_parts << "\n## Pre-Synthesized Answers by Sub-Question:"
+
+      leaf_syntheses.each_with_index do |synthesis, idx|
+        sub_question = synthesis[:sub_question] || synthesis["sub_question"]
+        summary = synthesis[:summary] || synthesis["summary"]
+        confidence = synthesis[:confidence] || synthesis["confidence"] || 0.5
+        key_findings = synthesis[:key_findings] || synthesis["key_findings"] || []
+
+        prompt_parts << "\n### #{idx + 1}. #{sub_question}"
+        prompt_parts << "**Summary**: #{summary}"
+        prompt_parts << "**Confidence**: #{confidence}"
+
+        if key_findings.any?
+          prompt_parts << "**Key Findings**:"
+          key_findings.first(5).each do |finding|
+            text = finding[:finding] || finding["finding"] || finding.to_s
+            prompt_parts << "- #{text}"
+          end
+        end
+
+        gaps = synthesis[:gaps] || synthesis["gaps"] || []
+        if gaps.any?
+          prompt_parts << "**Gaps**: #{gaps.join(', ')}"
+        end
+      end
+
+      prompt_parts << "\n## Instructions:"
+      prompt_parts << "1. Combine the pre-synthesized answers into a unified understanding"
+      prompt_parts << "2. Identify cross-cutting insights that span multiple sub-questions"
+      prompt_parts << "3. Resolve any conflicts between sub-question answers"
+      prompt_parts << "4. Create a coherent summary addressing the original research goal"
+      prompt_parts << "5. Note remaining open questions"
+
+      prompt_parts.join("\n")
+    end
 
     def build_prompt(findings, goal, sub_questions)
       prompt_parts = ["Research Goal: #{goal}"]

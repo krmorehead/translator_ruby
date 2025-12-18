@@ -1,0 +1,105 @@
+{
+  "owner_id": "ece2c2d4-5c5a-4f46-9c05-2753926021b6",
+  "workflow_id": "761de742-24ee-4329-b31d-7dff34e319c4",
+  "workflow_name": "goal_decomposition_workflow",
+  "started_at": "2025-12-18T00:12:44Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:12:44 UTC",
+        "duration_in_state": 0.000032702
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-18T00:12:44Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:12:44 UTC",
+        "duration_in_state": 0.000054628
+      },
+      {
+        "from": "running",
+        "to": "decomposing",
+        "event": "initialized",
+        "payload": {},
+        "timestamp": "2025-12-18T00:12:44Z",
+        "duration_in_state": 0.000051292
+      },
+      {
+        "from": "decomposing",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-18 00:12:47 UTC",
+        "duration_in_state": 2.711916435
+      },
+      {
+        "from": "decomposing",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-18T00:12:47Z",
+        "duration_in_state": 2.711926017
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [
+      {
+        "decision": "Starting goal decomposition",
+        "rationale": "Breaking down: How does Calculator work?",
+        "context": {
+          "max_depth": 1
+        },
+        "state": "running",
+        "timestamp": "2025-12-18T00:12:44Z"
+      }
+    ],
+    "errors": [],
+    "outputs": [
+      {
+        "goal_tree": {
+          "id": "7002769e-8e61-4460-986b-c765f52e37c5",
+          "text": "How does Calculator work?",
+          "parent_id": null,
+          "depth": 0,
+          "is_leaf": true,
+          "rationale": "No decomposition possible",
+          "children": []
+        },
+        "leaf_count": 1,
+        "max_depth_reached": 0,
+        "total_questions": 1,
+        "seed_context_used": true,
+        "workflow_memory_summary": {
+          "workflow_name": "goal_decomposition_workflow",
+          "workflow_id": "761de742-24ee-4329-b31d-7dff34e319c4",
+          "owner_id": "ece2c2d4-5c5a-4f46-9c05-2753926021b6",
+          "started_at": "2025-12-18T00:12:44Z",
+          "current_state": "decomposing",
+          "transition_count": 4,
+          "decision_count": 1,
+          "error_count": 0,
+          "states_visited": [
+            "running",
+            "decomposing"
+          ],
+          "total_duration": 2.711749446
+        },
+        "timestamp": "2025-12-18T00:12:47Z",
+        "state": "decomposing"
+      }
+    ]
+  }
+}

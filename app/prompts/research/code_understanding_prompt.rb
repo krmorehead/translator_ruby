@@ -147,8 +147,17 @@ module Research
       prompt_parts << "File: #{file_path}" if file_path
 
       if previous_context
-        prompt_parts << "\nPrevious Context:"
-        prompt_parts << previous_context[:key_findings].to_s if previous_context[:key_findings]
+        # Include prior relevant findings from research context
+        if previous_context[:prior_context].present?
+          prompt_parts << "\nRelevant Prior Findings:"
+          prompt_parts << previous_context[:prior_context]
+        end
+
+        # Include findings from earlier passes on THIS file
+        if previous_context[:key_findings].present?
+          prompt_parts << "\nFindings from Previous Pass on This File:"
+          prompt_parts << previous_context[:key_findings].to_s
+        end
       end
 
       # Truncate content if too long
