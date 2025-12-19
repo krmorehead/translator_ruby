@@ -28,8 +28,11 @@ class OutcomePromptTest < ActiveSupport::TestCase
 
     formatted = prompt.format_context(context)
 
+    # :outcome format focuses on action and result (tight context)
     assert_includes formatted, "inspect_room"
-    assert_includes formatted, "ancient library"
+    assert_includes formatted, "dusty map"
+    # Scene is included as compressed summary
+    assert_includes formatted, "Library"
   end
 
   test "execute returns consequence hash" do

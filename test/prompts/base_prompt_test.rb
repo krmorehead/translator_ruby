@@ -47,8 +47,9 @@ class BasePromptTest < ActiveSupport::TestCase
 
     formatted = prompt.format_context(context)
 
+    # :outcome format gives tight scene summary
     assert_includes formatted, "Scene:"
-    assert_includes formatted, "forest"
+    assert_includes formatted, "Forest"  # Compressed summary uses location name
   end
 
   test "execute returns structured json when schema provided" do

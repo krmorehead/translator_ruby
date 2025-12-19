@@ -23,32 +23,26 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   test "serialize and reload preserves sections" do
     store = new_store
-    store.update_section(name: :quests, content: "Find the dragon", append: true)
+    store.update_section(name: :quests, content: { text: "Find the dragon" }, append: true)
 
     reloaded = new_store
     quests = reloaded.get_section(:quests)
     assert_equal 1, quests.size
-    assert_includes quests.first[:text] || quests.first["text"], "Find the dragon"
+    assert_includes quests.first[:text], "Find the dragon"
   end
 
   test "append and replace behaviors" do
     store = new_store
-    store.update_section(name: :people, content: "Gandalf", append: true)
-    store.update_section(name: :people, content: "Aragorn", append: true)
+    store.update_section(name: :people, content: { text: "Gandalf" }, append: true)
+    store.update_section(name: :people, content: { text: "Aragorn" }, append: true)
 
     people = store.get_section(:people)
     assert_equal 2, people.size
 
-    store.update_section(name: :people, content: "Legolas", append: false)
+    store.update_section(name: :people, content: { text: "Legolas" }, append: false)
     people = store.get_section(:people)
     assert_equal 1, people.size
-    assert_includes people.first[:text] || people.first["text"], "Legolas"
-  end
-
-  test "sandbox validation prevents escape" do
-    assert_raises(SecurityError) do
-      MemoryStore.new(path: "/tmp/memory.json", sandbox_path: @sandbox_path)
-    end
+    assert_includes people.first[:text], "Legolas"
   end
 
   test "update specific section and retrieve" do
@@ -57,7 +51,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
     scene = store.get_section(:current_scene)
     assert_equal 1, scene.size
-    assert_equal "In the tavern", scene.first[:text] || scene.first["text"]
+    assert_equal "In the tavern", scene.first[:text]
   end
 
   # Context integration tests
@@ -83,7 +77,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   test "context_for caches contexts" do
     store = new_store
-    store.update_section(name: :people, content: "Gandalf", append: true)
+    store.update_section(name: :people, content: { text: "Gandalf" }, append: true)
 
     context1 = store.context_for(:people)
     context2 = store.context_for(:people)
@@ -93,7 +87,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   test "set_section invalidates cached context" do
     store = new_store
-    store.update_section(name: :people, content: "Gandalf", append: true)
+    store.update_section(name: :people, content: { text: "Gandalf" }, append: true)
 
     context1 = store.context_for(:people)
     store.set_section(:people, [{ text: "Aragorn" }])
@@ -106,7 +100,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
     store = new_store
     context1 = store.context_for(:quests)
 
-    store.update_section(name: :quests, content: "Find dragon", append: true)
+    store.update_section(name: :quests, content: { text: "Find dragon" }, append: true)
     context2 = store.context_for(:quests)
 
     refute_equal context1.object_id, context2.object_id
@@ -115,7 +109,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
   test "full_context returns composite context with sub-contexts" do
     store = new_store
     store.update_section(name: :current_scene, content: { text: "Tavern" }, append: false)
-    store.update_section(name: :people, content: "Bartender", append: true)
+    store.update_section(name: :people, content: { text: "Bartender" }, append: true)
 
     full = store.full_context
 

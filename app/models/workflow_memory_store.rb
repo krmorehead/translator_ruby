@@ -100,7 +100,7 @@ class WorkflowMemoryStore
     }
     @sections[:state_transitions] << entry
     @last_transition_at = Time.now.utc
-    persist!
+    save!
     entry
   end
 
@@ -117,7 +117,7 @@ class WorkflowMemoryStore
       timestamp: Time.now.utc.iso8601
     }
     @sections[:decisions] << entry
-    persist!
+    save!
     entry
   end
 
@@ -129,7 +129,7 @@ class WorkflowMemoryStore
       state: current_state
     )
     @sections[:workflow_context] << entry
-    persist!
+    save!
     entry
   end
 
@@ -144,7 +144,7 @@ class WorkflowMemoryStore
       timestamp: Time.now.utc.iso8601
     }
     @sections[:errors] << entry
-    persist!
+    save!
     entry
   end
 
@@ -156,7 +156,7 @@ class WorkflowMemoryStore
       state: current_state
     )
     @sections[:outputs] << entry
-    persist!
+    save!
     entry
   end
 
@@ -262,7 +262,7 @@ class WorkflowMemoryStore
     deep_dup(DEFAULT_SECTIONS)
   end
 
-  def persist!
+  def save!
     FileUtils.mkdir_p(File.dirname(path))
     File.write(path, JSON.pretty_generate(to_h))
   end

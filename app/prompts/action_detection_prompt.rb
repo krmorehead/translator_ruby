@@ -40,10 +40,9 @@ class ActionDetectionPrompt < BasePrompt
   def format_context(context, question: nil)
     raise ArgumentError, "context is required" if context.nil?
 
-    sections = []
-    sections << context.format_for_prompt(question || "")
-    sections << "Available tools:\n#{serialize_tools(tools)}"
-    sections.reject(&:blank?).join("\n\n")
+    # Use action_detection format for tight, focused context
+    # Tools are already in the system prompt - don't duplicate
+    context.format_for_prompt(question || "", format: :action_detection)
   end
 
   def execute(prompt:, context: {})

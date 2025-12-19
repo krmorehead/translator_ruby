@@ -28,7 +28,7 @@ class InventoryStore
     else
       @items << item
     end
-    persist!
+    save!
     item
   end
 
@@ -38,13 +38,13 @@ class InventoryStore
     raise ArgumentError, "item not found" unless existing
 
     replace_item(existing.name, existing.with_quantity(quantity.to_i))
-    persist!
+    save!
   end
 
   def remove_item(name)
     before = @items.length
     @items.reject! { |i| i.name.downcase == name.downcase }
-    persist! if @items.length != before
+    save! if @items.length != before
   end
 
   def to_a
@@ -62,7 +62,7 @@ class InventoryStore
     []
   end
 
-  def persist!
+  def save!
     FileUtils.mkdir_p(File.dirname(path))
     File.write(path, JSON.pretty_generate(to_a))
   end

@@ -25,6 +25,7 @@ class OutcomePrompt < BasePrompt
   def format_context(context, question: nil)
     raise ArgumentError, "context is required" if context.nil?
 
-    context.format_for_prompt(question || "")
+    # Use outcome format for focused action/consequence context
+    context.format_for_prompt(question || "", format: :outcome)
   end
 end

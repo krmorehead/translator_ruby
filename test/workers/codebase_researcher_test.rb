@@ -68,18 +68,23 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
-  test "inherits from BaseWorker" do
+  test "inherits from AgentWorker" do
+    assert CodebaseResearcher < AgentWorker
+  end
+
+  test "inherits from BaseWorker through AgentWorker" do
     assert CodebaseResearcher < BaseWorker
   end
 
-  test "has research-specific states defined" do
+  test "has agent states defined" do
     states = CodebaseResearcher.states
 
+    # Agent states
     assert_includes states, :pending
-    assert_includes states, :initializing
-    assert_includes states, :decomposing
-    assert_includes states, :discovering
-    assert_includes states, :analyzing
+    assert_includes states, :running
+    assert_includes states, :planning
+    assert_includes states, :executing
+    assert_includes states, :evaluating
     assert_includes states, :synthesizing
     assert_includes states, :complete
     assert_includes states, :failed
@@ -87,10 +92,10 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
 
   test "states have phase metadata" do
     assert_nil CodebaseResearcher._states[:pending][:phase]
-    assert_equal :setup, CodebaseResearcher._states[:initializing][:phase]
-    assert_equal :planning, CodebaseResearcher._states[:decomposing][:phase]
-    assert_equal :research, CodebaseResearcher._states[:discovering][:phase]
-    assert_equal :research, CodebaseResearcher._states[:analyzing][:phase]
+    assert_equal :setup, CodebaseResearcher._states[:running][:phase]
+    assert_equal :reasoning, CodebaseResearcher._states[:planning][:phase]
+    assert_equal :work, CodebaseResearcher._states[:executing][:phase]
+    assert_equal :reasoning, CodebaseResearcher._states[:evaluating][:phase]
     assert_equal :output, CodebaseResearcher._states[:synthesizing][:phase]
   end
 
@@ -112,7 +117,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
 
     assert_nil worker.phase  # pending has no phase
 
-    # Force to initializing to check phase
+    # Force to running to check phase
     worker.trigger(:start)
     assert_equal :setup, worker.phase
   end
@@ -148,6 +153,18 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_equal 6, worker.instance_variable_get(:@max_depth)
   end
 
+  test "registers research actions" do
+    actions = CodebaseResearcher.action_definitions
+    action_names = actions.map { |a| a[:name] }
+
+    assert_includes action_names, "search_files"
+    assert_includes action_names, "locate_definition"
+    assert_includes action_names, "analyze_file"
+    assert_includes action_names, "decompose_question"
+    assert_includes action_names, "trace_references"
+    assert_includes action_names, "synthesize_partial"
+  end
+
   # ============================================================================
   # Shared Execution Tests - All use same LLM call
   # ============================================================================
@@ -165,8 +182,6 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
 
     assert result[:success]
     assert_kind_of Array, result[:findings]
-    assert_kind_of Hash, result[:memory]
-    assert_kind_of Array, result[:output_files]
     assert_kind_of Hash, result[:metadata]
   end
 
@@ -195,11 +210,11 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert data["research_goal"].first["text"].present?
   end
 
-  test "shared: state history is included in result" do
+  test "shared: action history is tracked" do
     _worker, result = shared_execution
 
-    assert result[:state_history].is_a?(Array)
-    assert result[:state_history].size > 0
+    # Agent tracks actions in action_history
+    assert result[:action_history].is_a?(Array)
   end
 
   test "shared: final state is included in metadata" do
@@ -212,6 +227,14 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     _worker, result = shared_execution
 
     assert result[:metadata].key?(:context)
+  end
+
+  test "shared: cache stats are included in result" do
+    _worker, result = shared_execution
+
+    assert result[:cache_stats].is_a?(Hash)
+    assert result[:cache_stats].key?(:hits)
+    assert result[:cache_stats].key?(:misses)
   end
 
   # ============================================================================

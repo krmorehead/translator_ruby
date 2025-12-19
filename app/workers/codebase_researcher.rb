@@ -1,24 +1,22 @@
 # frozen_string_literal: true
 
-# Worker that orchestrates codebase research.
-# Given a goal (research topic) and path (codebase root), it decomposes
-# the topic into sub-questions, discovers relevant files, analyzes code,
-# and synthesizes findings into structured documentation.
+# Goal-driven agent for codebase research.
+# Given a goal (research topic) and path (codebase root), the agent
+# dynamically plans and executes actions to discover, analyze, and
+# synthesize information from the codebase.
 #
-# State Flow:
-#   pending -> initializing -> decomposing -> discovering -> analyzing -> synthesizing -> complete
-#   Any active state can transition to failed via :error event
-#   Failed state can retry back to pending
+# The agent uses an LLM planner to select from available actions or
+# compose custom workflows based on the current state and goal progress.
 #
 # @example Basic usage
-#   worker = CodebaseResearcher.new(
+#   researcher = CodebaseResearcher.new(
 #     goal: "How does authentication work?",
 #     path: "/path/to/codebase"
 #   )
-#   result = worker.execute
+#   result = researcher.execute
 #
-# @example With seed context from another worker
-#   worker = CodebaseResearcher.new(
+# @example With seed context
+#   researcher = CodebaseResearcher.new(
 #     goal: "How does the payment flow work?",
 #     path: "/path/to/codebase",
 #     context: {
@@ -28,222 +26,245 @@
 #     }
 #   )
 #
-class CodebaseResearcher < BaseWorker
-  attr_reader :memory_store
+class CodebaseResearcher < AgentWorker
+  include ActionRegistry
 
-  # Override base worker states with research-specific state machine
-  initial_state :pending
+  # Register research-specific actions
+  register_action :search_files,
+    class_name: "Actions::SearchFilesAction",
+    description: "Search for files by filename pattern or content",
+    category: :discovery,
+    parameters: {
+      pattern: { type: :string, required: true, description: "Search pattern" },
+      search_type: { type: :string, required: false, description: "'filename' or 'content'" },
+      file_types: { type: :array, required: false, description: "File extensions to include" }
+    }
 
-  # Research phases as states
-  state :pending,      phase: nil,        description: "Worker created, not yet started"
-  state :initializing, phase: :setup,     description: "Setting up memory store and context"
-  state :decomposing,  phase: :planning,  description: "Breaking goal into sub-questions"
-  state :discovering,  phase: :research,  description: "Finding relevant files"
-  state :analyzing,    phase: :research,  description: "Analyzing code with parallel passes"
-  state :synthesizing, phase: :output,    description: "Synthesizing findings into documentation"
-  state :complete,     phase: nil,        description: "Research completed successfully"
-  state :failed,       phase: nil,        description: "Research encountered an error"
+  register_action :locate_definition,
+    class_name: "Actions::LocateDefinitionAction",
+    description: "Find where a class, module, method, or constant is defined",
+    category: :discovery,
+    parameters: {
+      symbol: { type: :string, required: true, description: "Symbol name to locate" },
+      type: { type: :string, required: false, description: "'class', 'module', 'method', 'constant', or 'any'" }
+    }
 
-  # Define valid transitions
-  transition from: :pending,      to: :initializing, on: :start
-  transition from: :initializing, to: :decomposing,  on: :initialized
-  transition from: :decomposing,  to: :discovering,  on: :decomposed
-  transition from: :discovering,  to: :analyzing,    on: :files_found
-  transition from: :analyzing,    to: :synthesizing, on: :analyzed
-  transition from: :synthesizing, to: :complete,     on: :synthesized
+  register_action :analyze_file,
+    class_name: "Actions::AnalyzeFileAction",
+    description: "Analyze a file's contents for information relevant to the goal",
+    category: :analysis,
+    parameters: {
+      file_path: { type: :string, required: true, description: "Path to the file to analyze" },
+      focus: { type: :string, required: false, description: "Specific aspect to focus on" },
+      questions: { type: :array, required: false, description: "Specific questions to answer" }
+    }
 
-  # Error transition from any active state
-  transition from: [:initializing, :decomposing, :discovering, :analyzing, :synthesizing],
-             to: :failed, on: :error
+  register_action :trace_references,
+    class_name: "Actions::TraceReferencesAction",
+    description: "Find where a symbol is used throughout the codebase",
+    category: :discovery,
+    parameters: {
+      symbol: { type: :string, required: true, description: "Symbol to trace" },
+      exclude_definitions: { type: :boolean, required: false, description: "Exclude definition sites" }
+    }
 
-  # Retry from failed state
-  transition from: :failed, to: :pending, on: :retry
+  register_action :decompose_question,
+    class_name: "Actions::DecomposeQuestionAction",
+    description: "Break down a complex question into smaller sub-questions",
+    category: :planning,
+    parameters: {
+      question: { type: :string, required: true, description: "Question to decompose" },
+      max_questions: { type: :integer, required: false, description: "Maximum sub-questions" }
+    }
 
-  # Register the research workflow
-  register_workflow ResearchWorkflow
+  register_action :synthesize_partial,
+    class_name: "Actions::SynthesizePartialAction",
+    description: "Synthesize current findings into a partial summary",
+    category: :synthesis,
+    parameters: {
+      focus: { type: :string, required: false, description: "Focus area for synthesis" },
+      include_unknowns: { type: :boolean, required: false, description: "Include unknown aspects" }
+    }
 
-  # Initialize the codebase researcher
-  # @param goal [String] The research topic/objective
-  # @param path [String] The codebase root path to research
-  # @param context [Hash] Optional seed context for research planning
-  #   - known_files [Array<String>] Files already known to be relevant
-  #   - prior_findings [String] Previous research findings to build on
-  #   - focus_areas [Array<String>] Specific areas to prioritize
-  #   - codebase_summary [String] High-level codebase description
-  #   - constraints [Hash] Any constraints on the research
-  # @param options [Hash] Additional options
-  #   - max_depth [Integer] Maximum decomposition depth (default: 4)
-  #   - output_modes [Array<Symbol>] Output modes to generate (default: [:report, :documentation])
-  def initialize(goal:, path:, context: {}, **options)
-    super
-    @max_depth = options.fetch(:max_depth, 4)
-    @output_modes = Array(options.fetch(:output_modes, [:report, :documentation])).map(&:to_sym)
-    @memory_store = nil
-    @findings = []
-    @file_analyses = []
-    @sub_questions = []
-    @relevant_files = []
-    @relevant_files_tree = ""
-    @synthesis = nil
-    @started_at = nil
-  end
-
-  # Execute the research workflow
-  # @return [Hash] Research results with findings, output files, and metadata
-  def execute
-    @started_at = Time.now.utc
-
-    # Start the state machine
-    trigger(:start)
-    initialize_research
-
-    trigger(:initialized)
-    decompose_goal
-
-    trigger(:decomposed)
-    discover_files
-
-    trigger(:files_found)
-    analyze_code
-
-    trigger(:analyzed)
-    synthesize_findings
-
-    trigger(:synthesized)
-    compile_results
-  rescue StandardError => e
-    handle_error(e)
-  end
+  attr_reader :output_modes
 
   # Get the current research phase
-  # @return [Symbol, nil] The current phase (:setup, :planning, :research, :output, or nil)
+  # @return [Symbol, nil] The current phase (:setup, :reasoning, :work, :output, or nil)
   def phase
     current_phase
   end
 
-  private
-
-  def initialize_research
-    ensure_state_directory!
-    @memory_store = create_memory_store
-    @memory_store.set_section(:research_goal, [
-      { text: goal, status: "active", timestamp: Time.now.utc.iso8601 }
-    ])
+  def initialize(goal:, path:, context: {}, **options)
+    super
+    @output_modes = Array(options.fetch(:output_modes, [:report, :documentation])).map(&:to_sym)
+    @max_depth = options.fetch(:max_depth, 4)
+    @file_analyses = []
+    @sub_questions = []
+    @relevant_files = []
   end
 
-  def decompose_goal
-    # This is handled by the ResearchWorkflow
-    # State tracking happens here, actual work in workflow
-  end
+  protected
 
-  def discover_files
-    # This is handled by the ResearchWorkflow
-  end
-
-  def analyze_code
-    # This is handled by the ResearchWorkflow
-  end
-
-  def synthesize_findings
-    execute_research_workflow
-  end
-
+  # Create the research memory store
+  # @return [ResearchMemoryStore] The memory store
   def create_memory_store
     store_path = File.join(state_path, "research_memory.json")
-    ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
+    store = ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
+
+    # Set the research goal
+    store.set_section(:research_goal, [
+      { text: goal, status: "active", context: context, timestamp: Time.now.utc.iso8601 }
+    ])
+
+    store
   end
 
-  def execute_research_workflow
-    workflow = ResearchWorkflow.new(
-      goal: goal,
-      owner_id: owner_id,
-      research_path: path,
-      context: context,
-      parent_memory: @memory_store, # Pass our memory so workflow can query it
-      max_depth: @max_depth,
-      output_modes: @output_modes
-    )
-    workflow.setup(sandbox_path: path)
-    workflow.execute
+  # Override goal evaluation with research-specific logic
+  # @return [Boolean] True if goal is achieved
+  def goal_achieved?
+    # Need at least some findings
+    findings = memory_store.get_section(:findings)
+    return false if findings.empty?
 
-    if workflow.complete?
-      store_workflow_result("research_workflow", workflow.result)
-      @findings = workflow.result[:findings] || []
-      @file_analyses = workflow.result[:file_analyses] || []
-      @sub_questions = workflow.result[:sub_questions] || []
-      @relevant_files = workflow.result[:relevant_files] || []
-      @relevant_files_tree = workflow.result[:relevant_files_tree] || ""
-      @synthesis = workflow.result[:synthesis]
-      @memory_store = workflow.research_memory
+    # Check via goal progress prompt
+    progress = evaluate_goal_progress
 
-      # Also record state transitions from workflow
-      if workflow.workflow_memory&.state_history&.any?
-        workflow.workflow_memory.state_history.each do |transition|
-          @memory_store.record_state_transition(
-            from: transition[:from],
-            to: transition[:to],
-            event: transition[:event],
-            source: "research_workflow",
-            payload: transition[:payload] || {}
-          )
-        end
-      end
-    elsif workflow.failed?
-      raise "Research workflow failed: #{workflow.error}"
+    # Consider achieved if confidence is high enough
+    progress[:goal_achieved] == true ||
+      (progress[:confidence] && progress[:confidence] >= 0.8 && progress[:recommendation] == "synthesize")
+  end
+
+  # Build context optimized for research planning
+  # @return [Contexts::ResearchContext] Planning context
+  def build_planning_context
+    research_context = Contexts::ResearchContext.new(research_goal: goal)
+
+    # Add recent findings from memory
+    findings = memory_store.get_section(:findings)
+    findings.last(10).each do |finding|
+      research_context.add_finding(
+        finding: finding[:text],
+        file_path: finding[:source],
+        sub_question: finding[:sub_question],
+        confidence: finding[:confidence] || 0.7
+      )
     end
+
+    # Add discovered files
+    discovered = memory_store.get_section(:discovered_files)
+    discovered.last(10).each do |file|
+      research_context.add(
+        content: "File: #{file[:path]} (#{file[:analyzed] ? 'analyzed' : 'discovered'})",
+        topics: ["discovered_file"],
+        source: "discovery",
+        metadata: file
+      )
+    end
+
+    # Add sub-questions
+    sub_questions = memory_store.get_section(:sub_questions)
+    sub_questions.each do |sq|
+      research_context.add(
+        content: "Sub-question (#{sq[:status] || 'pending'}): #{sq[:text]}",
+        topics: ["sub_question", sq[:status] || "pending"],
+        source: "planning"
+      )
+    end
+
+    # Add action history summary from context
+    research_context.add_sub_context(:actions, @action_history_context)
+
+    research_context
   end
 
-  def compile_results
-    @result = {
-      success: true,
-      goal: goal,
-      path: path,
-      owner_id: owner_id,
-      findings: @findings,
+  # Build context for goal evaluation
+  # @return [Contexts::ResearchContext] Evaluation context
+  def build_evaluation_context
+    research_context = Contexts::ResearchContext.new(research_goal: goal)
+
+    research_context.add(content: "Goal: #{goal}", topics: ["goal"], source: "agent")
+    research_context.add(content: "Iterations: #{@iteration_count}", topics: ["progress"], source: "agent")
+    research_context.add(content: "Actions executed: #{@action_count}", topics: ["progress"], source: "agent")
+
+    # Add all findings from memory
+    findings = memory_store.get_section(:findings)
+    findings.each do |finding|
+      research_context.add_finding(
+        finding: finding[:text],
+        file_path: finding[:source],
+        sub_question: finding[:sub_question],
+        confidence: finding[:confidence] || 0.7
+      )
+    end
+
+    # Add file coverage
+    discovered = memory_store.get_section(:discovered_files)
+    analyzed_count = discovered.count { |f| f[:analyzed] }
+    research_context.add(
+      content: "Files: #{discovered.size} discovered, #{analyzed_count} analyzed",
+      topics: ["coverage"],
+      source: "agent"
+    )
+
+    research_context
+  end
+
+  # Build result with research-specific metadata
+  # @param synthesis [Hash] The synthesized findings
+  # @return [Hash] Complete result
+  def build_result(synthesis)
+    # Collect relevant files from memory with full metadata
+    discovered_files = memory_store.get_section(:discovered_files)
+    relevant_files = discovered_files.map do |f|
+      {
+        file_path: f[:path],
+        relevance_score: f[:relevance_score] || 0.5,
+        analyzed: f[:analyzed] || false,
+        reasoning: f[:reasoning]
+      }
+    end
+    file_paths = relevant_files.map { |f| f[:file_path] }.compact
+
+    super.merge(
       file_analyses: @file_analyses,
-      sub_questions: @sub_questions,
-      relevant_files: @relevant_files,
-      relevant_files_tree: @relevant_files_tree,
-      synthesis: @synthesis,
+      sub_questions: memory_store.get_section(:sub_questions),
+      relevant_files: relevant_files,
+      relevant_files_tree: generate_files_tree(file_paths),
       output_modes: @output_modes,
-      memory: @memory_store.to_h,
-      output_files: [],
-      state_history: state_history,
+      memory: memory_store.to_h,
       metadata: {
+        iterations: @iteration_count,
+        actions_executed: @action_count,
         max_depth: @max_depth,
         output_modes: @output_modes,
         context: context,
-        started_at: @started_at&.iso8601,
+        started_at: @started_at.iso8601,
         completed_at: Time.now.utc.iso8601,
         final_state: current_state
       }
-    }
-    @result
+    )
   end
 
-  def handle_error(error)
-    @error = error.message
-    trigger(:error) if can_trigger?(:error)
+  private
 
-    {
-      success: false,
-      error: error.message,
-      findings: @findings,
-      synthesis: @synthesis,
-      goal: goal,
-      path: path,
-      owner_id: owner_id,
-      memory: @memory_store&.to_h || {},
-      output_files: [],
-      state_history: state_history,
-      metadata: {
-        max_depth: @max_depth,
-        context: context,
-        started_at: @started_at&.iso8601,
-        completed_at: Time.now.utc.iso8601,
-        final_state: current_state,
-        error_state: current_state
-      }
-    }
+  # Generate a tree representation of file paths
+  # @param files [Array<String>] List of file paths
+  # @return [String] Tree representation
+  def generate_files_tree(files)
+    return "" if files.empty?
+
+    # Group by directory
+    by_dir = files.group_by { |f| File.dirname(f) }
+
+    lines = []
+    by_dir.sort.each do |dir, dir_files|
+      relative_dir = dir.sub("#{path}/", "")
+      lines << relative_dir
+      dir_files.each do |file|
+        lines << "  └── #{File.basename(file)}"
+      end
+    end
+
+    lines.join("\n")
   end
 end

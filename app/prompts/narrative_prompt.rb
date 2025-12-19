@@ -20,7 +20,8 @@ class NarrativePrompt < BasePrompt
   def format_context(context, question: nil)
     raise ArgumentError, "context is required" if context.nil?
 
-    context.format_for_prompt(question || "")
+    # Use narrative format for story-focused context
+    context.format_for_prompt(question || "", format: :narrative)
   end
 
   def execute(prompt:, context: {})

@@ -45,20 +45,23 @@ class DndChatController < ApplicationController
     convo = conversation
     convo << Message.new(source: "user", target: "assistant", message: user_message)
 
-    workflow = DndChatWorkflow.new
-    orchestrator = WorkflowOrchestrator.new(workflow)
-    orchestrator.process(prompt: user_message, conversation: convo, sandbox_path: SANDBOX_ROOT)
+    # DndAgentWorker handles all orchestration and persistence internally
+    agent = DndAgentWorker.new(
+      goal: user_message,
+      path: SANDBOX_ROOT.to_s,
+      memory_store: memory_store,
+      conversation: convo
+    )
 
-    if workflow.complete?
-      persist_conversation!(workflow.result[:conversation]) if workflow.result[:conversation]
-      serializer = ChatResponseSerializer.new(workflow)
-      render json: serializer.serialize
-    else
-      serializer = ChatResponseSerializer.new(workflow)
-      render json: serializer.serialize, status: :internal_server_error
-    end
-  rescue => e
-    render json: { success: false, error: e.message }, status: :internal_server_error
+    result = agent.execute
+
+    render json: {
+      success: result[:success],
+      reply: result[:narrative],
+      actions: result[:actions].map { |a| { action: a[:action], result: a[:result][:result] } },
+      thoughts: result[:thoughts],
+      conversation: result[:conversation].to_h
+    }
   end
 
   def agent
@@ -98,20 +101,11 @@ class DndChatController < ApplicationController
 
   def conversation
     @conversation ||= begin
-      messages = []
-      if File.exist?(CONVERSATION_PATH)
-        data = JSON.parse(File.read(CONVERSATION_PATH), symbolize_names: true)
-        messages = data[:messages] if data.is_a?(Hash)
-      end
+      # Load conversation from memory store
+      data = memory_store.get_section(MemoryKinds::RECENT_CONVERSATION)
+      messages = data.is_a?(Hash) ? (data[:messages] || []) : []
       Conversation.new(messages: messages)
-    rescue JSON::ParserError
-      Conversation.new
     end
-  end
-
-  def persist_conversation!(conv)
-    FileUtils.mkdir_p(CONVERSATION_PATH.dirname)
-    File.write(CONVERSATION_PATH, JSON.pretty_generate(conv.to_h))
   end
 
   def memory_store

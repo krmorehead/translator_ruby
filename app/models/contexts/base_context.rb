@@ -159,6 +159,19 @@ module Contexts
       }
     end
 
+    # Compute a deterministic hash of the context state
+    # Useful for cache keys and change detection
+    # @return [String] MD5 hash of the context
+    def compute_hash
+      content = {
+        entry_count: @entries.size,
+        last_entry_id: @entries.last&.id,
+        last_entry_content: @entries.last&.content&.first(100),
+        sub_context_keys: @sub_contexts.keys.sort
+      }
+      Digest::MD5.hexdigest(content.to_json)
+    end
+
     # Load from hash
     # Recursively deserializes sub_contexts
     # @param data [Hash] Serialized context data
@@ -171,18 +184,40 @@ module Contexts
       context
     end
 
+    # Load from memory store section data
+    # Data format: Hash with :context_class = serialized context, Array = raw entries
+    def self.from_section_data(data, source:)
+      return new unless data
+
+      # Try to extract context_class - works for Hash, fails for Array
+      context_class_name = begin
+        data[:context_class]
+      rescue TypeError
+        nil
+      end
+
+      if context_class_name
+        klass = resolve_context_class(context_class_name, nil)
+        return klass.from_h(data)
+      end
+
+      # Raw entries array
+      context = new
+      Array(data).each { |entry| context.add_from_entry(entry, source: source) }
+      context
+    end
+
     # Helper to load entries from serialized data
-    # @param context [BaseContext] The context to load into
-    # @param data [Hash] Serialized data
     def self.load_entries_from_h(context, data)
-      (data[:entries] || data["entries"] || []).each do |entry_data|
+      entries_data = data[:entries] || []
+      entries_data.each do |entry_data|
         entry = Entry.new(
-          id: entry_data[:id] || entry_data["id"],
-          content: entry_data[:content] || entry_data["content"],
-          topics: entry_data[:topics] || entry_data["topics"] || [],
-          source: entry_data[:source] || entry_data["source"],
-          timestamp: entry_data[:timestamp] || entry_data["timestamp"],
-          metadata: entry_data[:metadata] || entry_data["metadata"] || {}
+          id: entry_data[:id],
+          content: entry_data[:content],
+          topics: entry_data[:topics] || [],
+          source: entry_data[:source],
+          timestamp: entry_data[:timestamp],
+          metadata: entry_data[:metadata] || {}
         )
         context.instance_variable_get(:@entries) << entry
         entry.topics.each do |topic|
@@ -192,42 +227,38 @@ module Contexts
     end
 
     # Helper to load sub-contexts from serialized data
-    # @param context [BaseContext] The context to load into
-    # @param data [Hash] Serialized data
-    # @param context_registry [Hash, nil] Optional class name to class mapping
     def self.load_sub_contexts_from_h(context, data, context_registry)
-      sub_contexts_data = data[:sub_contexts] || data["sub_contexts"] || {}
+      sub_contexts_data = data[:sub_contexts] || {}
       sub_contexts_data.each do |name, sub_data|
-        # Determine the class to use for this sub-context
-        class_name = sub_data[:context_class] || sub_data["context_class"]
+        class_name = sub_data[:context_class]
         sub_class = resolve_context_class(class_name, context_registry)
-
         sub_context = sub_class.from_h(sub_data, context_registry: context_registry)
         context.add_sub_context(name, sub_context)
       end
     end
 
     # Resolve a context class from its name
-    # @param class_name [String, nil] The class name to resolve
-    # @param context_registry [Hash, nil] Optional class name to class mapping
-    # @return [Class] The resolved class (defaults to BaseContext)
     def self.resolve_context_class(class_name, context_registry)
-      return BaseContext if class_name.nil?
+      return BaseContext unless class_name
 
-      # Check registry first
-      if context_registry&.key?(class_name)
-        return context_registry[class_name]
-      end
-
-      # Try to constantize safely
-      class_name.constantize
-    rescue NameError
-      BaseContext
+      context_registry&.fetch(class_name, nil) || class_name.constantize
     end
 
     # Get size of context store
     def size
       @entries.size
+    end
+
+    # Add an entry from memory store data
+    # @param entry [Hash] Entry with :text and optional :tags
+    # @param source [String] The source/section name
+    def add_from_entry(entry, source:)
+      add(
+        content: entry[:text],
+        topics: Array(entry[:tags]) << source,
+        source: source,
+        metadata: entry
+      )
     end
 
     # Add a named sub-context for nesting

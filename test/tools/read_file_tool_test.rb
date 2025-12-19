@@ -108,9 +108,12 @@ class ReadFileToolTest < ActiveSupport::TestCase
     tools = ToolCallService.available_tools
     detector = ActionDetectionPrompt.new(tools: tools)
 
+    context = Contexts::BaseContext.new
+    context.add(content: "tool smoke test", topics: ["scene"], source: "test")
+
     actions = detector.execute(
       prompt: "Read the contents of the file at #{test_file} using the read_file tool.",
-      context: { scene: "tool smoke test" }
+      context: context
     )
 
     assert_kind_of Hash, actions

@@ -12,7 +12,9 @@ class ResearchMemoryStore
     context_chain: [],
     iteration_log: [],
     state_transitions: [],
-    workflow_outputs: []
+    workflow_outputs: [],
+    documentation_cache: [],
+    action_history: []
   }.freeze
 
   attr_reader :path, :owner_id, :current_iteration
@@ -69,26 +71,23 @@ class ResearchMemoryStore
 
     @sections[section_key] = value
     @section_contexts.delete(section_key)  # Invalidate cached context
-    persist!
+    save!
     @sections[section_key]
   end
 
   # Update a section. If append is true, push an entry; otherwise replace.
   def update_section(name:, content:, append: true)
     section_key = name.to_sym
-    raise ArgumentError, "Unknown section: #{name}" unless @sections.key?(section_key)
-
-    entry = normalize_entry(content)
 
     if append
-      ensure_array_section!(section_key)
-      @sections[section_key] << entry
+      @sections[section_key] ||= []
+      @sections[section_key] << content
     else
-      @sections[section_key] = [entry]
+      @sections[section_key] = [content]
     end
 
-    @section_contexts.delete(section_key)  # Invalidate cached context
-    persist!
+    @section_contexts.delete(section_key)
+    save!
     @sections[section_key]
   end
 
@@ -103,26 +102,19 @@ class ResearchMemoryStore
     }
     @sections[:context_chain] << entry
     @context_stack << entry
-    persist!
+    save!
     entry
   end
 
-  # Get recent context entries for use in prompts (limited to prevent context bloat)
-  # Only returns context RELEVANT to the current question
-  # @param limit [Integer] Maximum number of entries to return
-  # @param relevant_to [String, nil] Optional sub-question to filter by relevance
-  # @return [Array<Hash>] Most recent relevant context entries
+  # Get recent context entries for use in prompts
   def recent_context(limit: 5, relevant_to: nil)
     entries = @sections[:context_chain]
 
-    # If relevant_to is provided, prioritize related entries
     if relevant_to.present?
-      # Score each entry by relevance to the current question
       scored = entries.map do |entry|
-        question = entry[:sub_question] || entry["sub_question"] || ""
-        insights = entry[:key_insights] || entry["key_insights"] || ""
+        question = entry[:sub_question].to_s
+        insights = entry[:key_insights].to_s
 
-        # Simple relevance: check for keyword overlap
         current_keywords = extract_keywords(relevant_to)
         entry_keywords = extract_keywords("#{question} #{insights}")
         overlap = (current_keywords & entry_keywords).size
@@ -130,27 +122,22 @@ class ResearchMemoryStore
         { entry: entry, score: overlap }
       end
 
-      # Take highest scoring entries, falling back to most recent
       relevant = scored.select { |s| s[:score] > 0 }.sort_by { |s| -s[:score] }.first(limit)
       return relevant.map { |s| s[:entry] } if relevant.any?
     end
 
-    # Default: return most recent entries
     entries.last(limit)
   end
 
   # Get a compressed summary of the context chain for prompts
-  # @return [String] Compressed summary suitable for prompt context
   def compressed_context_summary
     entries = @sections[:context_chain]
     return "" if entries.empty?
 
-    # Group by sub-question and take only the most recent insight for each
-    by_question = entries.group_by { |e| e[:sub_question] || e["sub_question"] }
+    by_question = entries.group_by { |e| e[:sub_question] }
     summaries = by_question.map do |question, question_entries|
       latest = question_entries.last
-      insights = latest[:key_insights] || latest["key_insights"]
-      "#{question}: #{insights}"
+      "#{question}: #{latest[:key_insights]}"
     end
 
     summaries.join("\n")
@@ -160,18 +147,13 @@ class ResearchMemoryStore
   # @return [Hash, nil] The context entry or nil if empty
   def pop_context
     entry = @context_stack.pop
-    persist!
+    save!
     entry
   end
 
   # Retrieve context chain for a specific sub-question
-  # @param sub_question [String] The sub-question to filter by
-  # @return [Array<Hash>] Relevant context entries
   def chain_for(sub_question)
-    @sections[:context_chain].select do |entry|
-      entry[:sub_question] == sub_question ||
-        entry["sub_question"] == sub_question
-    end
+    @sections[:context_chain].select { |entry| entry[:sub_question] == sub_question }
   end
 
   # Increment and return the current iteration
@@ -198,29 +180,25 @@ class ResearchMemoryStore
       timestamp: Time.now.utc.iso8601
     }
     @sections[:state_transitions] << entry
-    persist!
+    save!
     entry
   end
 
   # Get state history for a specific source (worker/workflow)
-  # @param source [String, nil] Filter by source name
-  # @return [Array<Hash>] State transitions
   def state_history(source: nil)
-    transitions = @sections[:state_transitions] || []
+    transitions = @sections[:state_transitions]
     return transitions unless source
 
     transitions.select { |t| t[:source] == source }
   end
 
   # Summarize all findings into a compact format
-  # @return [Hash] Summary with key findings
   def summarize_findings
-    findings = @sections[:findings] || []
-    texts = Array(findings).map { |e| e.is_a?(Hash) ? (e[:text] || e["text"]) : e }.compact
+    findings = @sections[:findings]
+    texts = findings.map { |e| e[:text] }.compact
 
     {
-      goal: (@sections[:research_goal].first&.dig(:text) ||
-             @sections[:research_goal].first&.dig("text")),
+      goal: @sections[:research_goal].first&.dig(:text),
       sub_question_count: @sections[:sub_questions].size,
       discovered_file_count: @sections[:discovered_files].size,
       finding_count: findings.size,
@@ -237,27 +215,18 @@ class ResearchMemoryStore
   end
 
   # Get a Context instance for a specific section.
-  # Research sections use ResearchContext by default.
-  # @param section [String, Symbol] The section name
-  # @return [Contexts::BaseContext] A context populated with section data
   def context_for(section)
     section_key = section.to_sym
     return @section_contexts[section_key] if @section_contexts.key?(section_key)
 
-    # Research sections use ResearchContext
-    research_goal_text = @sections[:research_goal].first&.dig(:text) ||
-                         @sections[:research_goal].first&.dig("text")
-
+    research_goal_text = @sections[:research_goal].first&.dig(:text)
     context = Contexts::ResearchContext.new(research_goal: research_goal_text)
     @section_contexts[section_key] = build_context(section_key, context)
   end
 
   # Get a composite ResearchContext with all findings and context.
-  # @return [Contexts::ResearchContext] A complete research context
   def full_context
-    research_goal_text = @sections[:research_goal].first&.dig(:text) ||
-                         @sections[:research_goal].first&.dig("text")
-
+    research_goal_text = @sections[:research_goal].first&.dig(:text)
     composite = Contexts::ResearchContext.new(research_goal: research_goal_text)
 
     @sections.each_key do |section_key|
@@ -273,39 +242,118 @@ class ResearchMemoryStore
     @section_contexts = {}
   end
 
+  # ==========================================================================
+  # Documentation Deduplication
+  # ==========================================================================
+
+  # Check if a file has already been documented for a specific goal
+  def file_documented?(file_path, goal_hash)
+    @sections[:documentation_cache].any? do |d|
+      d[:path] == file_path && d[:goal_hash] == goal_hash
+    end
+  end
+
+  # Mark a file as documented
+  # @param file_path [String] The file path
+  # @param goal_hash [String] Hash of the research goal
+  # @param doc_id [String] ID of the generated documentation
+  # @param content_hash [String] Optional hash of the file content
+  # @return [Hash] The documentation cache entry
+  def mark_documented(file_path, goal_hash, doc_id, content_hash: nil)
+    entry = {
+      id: SecureRandom.uuid,
+      path: file_path,
+      goal_hash: goal_hash,
+      doc_id: doc_id,
+      content_hash: content_hash,
+      timestamp: Time.now.utc.iso8601
+    }
+    @sections[:documentation_cache] ||= []
+    @sections[:documentation_cache] << entry
+    save!
+    entry
+  end
+
+  # Get documentation ID for a file/goal combination
+  def get_documentation_id(file_path, goal_hash)
+    entry = @sections[:documentation_cache].find do |d|
+      d[:path] == file_path && d[:goal_hash] == goal_hash
+    end
+    entry&.dig(:doc_id)
+  end
+
+  # Clear documentation cache (for regeneration)
+  def clear_documentation_cache!(file_path: nil)
+    if file_path
+      @sections[:documentation_cache].delete_if { |d| d[:path] == file_path }
+    else
+      @sections[:documentation_cache] = []
+    end
+    save!
+  end
+
+  # ==========================================================================
+  # Action History Tracking
+  # ==========================================================================
+
+  # Record an action execution
+  # @param action [String] The action name
+  # @param arguments [Hash] Action arguments
+  # @param result [Hash] Action result
+  # @param cached [Boolean] Whether the result was from cache
+  def record_action(action:, arguments:, result:, cached: false)
+    entry = {
+      id: SecureRandom.uuid,
+      action: action,
+      arguments: arguments,
+      result_success: result[:success],
+      result_summary: result[:summary] || result[:error],
+      cached: cached,
+      timestamp: Time.now.utc.iso8601
+    }
+    @sections[:action_history] ||= []
+    @sections[:action_history] << entry
+    save!
+    entry
+  end
+
+  # Get action history
+  def action_history(action: nil, limit: 50)
+    history = @sections[:action_history]
+    history = history.select { |h| h[:action] == action } if action
+    history.last(limit)
+  end
+
+  # Check if an action has been executed before with same arguments
+  def find_previous_action(action, arguments)
+    @sections[:action_history].reverse.find do |h|
+      h[:action] == action && h[:arguments] == arguments
+    end
+  end
+
+  # Compute hash for goal (for deduplication)
+  # @param goal [String] The goal text
+  # @return [String] SHA256 hash of the goal
+  def self.goal_hash(goal)
+    Digest::SHA256.hexdigest(goal.to_s.strip.downcase)
+  end
+
   private
 
   # Build a context instance from section data
-  # @param section_key [Symbol] The section key
-  # @param context [Contexts::BaseContext] The context to populate
-  # @return [Contexts::BaseContext] The populated context
   def build_context(section_key, context)
     section_data = @sections[section_key]
 
     Array(section_data).each do |entry|
-      case entry
-      when Hash
-        content = entry[:text] || entry["text"] || entry[:content] || entry["content"] || entry.to_s
-        topics = [section_key.to_s]
+      topics = [section_key.to_s]
+      topics << "q:#{entry[:sub_question]}" if entry[:sub_question]
 
-        # Add sub_question as a topic if present
-        if entry[:sub_question] || entry["sub_question"]
-          topics << "q:#{entry[:sub_question] || entry['sub_question']}"
-        end
-
-        context.add(
-          content: content,
-          topics: topics,
-          source: section_key.to_s,
-          metadata: entry
-        )
-      when String
-        context.add(
-          content: entry,
-          topics: [section_key.to_s],
-          source: section_key.to_s
-        )
-      end
+      context.add(
+        content: entry[:text],
+        topics: topics,
+        source: section_key.to_s,
+        metadata: entry
+      )
     end
 
     context
@@ -319,35 +367,20 @@ class ResearchMemoryStore
   def load_sections
     return deep_dup(DEFAULT_SECTIONS) unless File.exist?(path)
 
-    data = JSON.parse(File.read(path), symbolize_names: true) || {}
+    data = JSON.parse(File.read(path), symbolize_names: true)
     @current_iteration = data.delete(:current_iteration) || 0
 
-    DEFAULT_SECTIONS.merge(data) do |_key, default_val, loaded|
-      loaded || default_val || []
-    end
+    DEFAULT_SECTIONS.merge(data)
   rescue JSON::ParserError
     deep_dup(DEFAULT_SECTIONS)
   end
 
-  def persist!
+  def save!
     FileUtils.mkdir_p(File.dirname(path))
     data = @sections.merge(current_iteration: @current_iteration)
     File.write(path, JSON.pretty_generate(data))
   end
 
-  def normalize_entry(content)
-    if content.is_a?(Hash)
-      entry = content.dup
-      entry[:timestamp] ||= Time.now.utc.iso8601
-      entry
-    else
-      { text: content, timestamp: Time.now.utc.iso8601 }
-    end
-  end
-
-  def ensure_array_section!(section_key)
-    @sections[section_key] = [] unless @sections[section_key].is_a?(Array)
-  end
 
   def deep_dup(obj)
     Marshal.load(Marshal.dump(obj))
@@ -358,7 +391,7 @@ class ResearchMemoryStore
       iteration: @current_iteration,
       timestamp: Time.now.utc.iso8601
     }
-    persist!
+    save!
   end
 end
 

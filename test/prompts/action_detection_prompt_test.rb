@@ -56,7 +56,7 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
     assert_equal [ "inspect_room", "pickup_item" ], enum
   end
 
-  test "format_context includes scene and tools" do
+  test "format_context includes scene (tools are in system_prompt)" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
     context = Contexts::DndChatContext.new
     context.scene.set_location(name: "Tavern", description: "a dim tavern")
@@ -64,8 +64,11 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
 
     formatted = prompt.format_context(context)
 
+    # Scene info is included in :action_detection format
     assert_includes formatted, "dim tavern"
-    assert_includes formatted, "inspect_room"
+    assert_includes formatted, "Find Key"
+    # Tools are now only in system_prompt, not format_context (tighter context)
+    assert_includes prompt.system_prompt, "inspect_room"
   end
 
   test "execute returns array of actions" do
