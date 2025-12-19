@@ -45,8 +45,7 @@ class GoalDecompositionWorkflow < BaseWorkflow
   end
 
   # Setup for compatibility with BaseWorkflow
-  def setup(prompt: nil, conversation: nil, sandbox_path: nil)
-    @sandbox_path = sandbox_path
+  def setup(prompt: nil, conversation: nil)
     super
     self
   end

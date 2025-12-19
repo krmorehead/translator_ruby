@@ -91,7 +91,7 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
       max_depth: 1,
       output_modes: [:report]
     )
-    wf.setup(sandbox_path: FIXTURE_PATH)
+    wf.setup()
     wf.execute
 
     self.class.shared_workflow_result = {

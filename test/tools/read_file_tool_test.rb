@@ -3,13 +3,13 @@ require "test_helper"
 class ReadFileToolTest < ActiveSupport::TestCase
   def setup
     # Use unique directory per test to avoid parallel test conflicts
-    @sandbox_path = Rails.root.join("test", "tool_test", "read_#{Process.pid}_#{Thread.current.object_id}").to_s
-    FileUtils.mkdir_p(@sandbox_path)
-    @tool = ReadFileTool.new(sandbox_path: @sandbox_path)
+    @test_path = Rails.root.join("test", "tool_test", "read_#{Process.pid}_#{Thread.current.object_id}").to_s
+    FileUtils.mkdir_p(@test_path)
+    @tool = ReadFileTool.new
   end
 
   def teardown
-    FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
+    FileUtils.rm_rf(@test_path) if @test_path && File.exist?(@test_path)
   end
 
   test "schema returns valid OpenAI function format with path parameter" do
@@ -27,7 +27,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
   end
 
   test "execute reads file content successfully" do
-    test_file = File.join(@sandbox_path, "test_read.txt")
+    test_file = File.join(@test_path, "test_read.txt")
     File.write(test_file, "Hello, World!")
 
     result = @tool.execute(path: test_file)
@@ -38,40 +38,15 @@ class ReadFileToolTest < ActiveSupport::TestCase
   end
 
   test "execute returns error for non-existent file" do
-    result = @tool.execute(path: File.join(@sandbox_path, "nonexistent.txt"))
+    result = @tool.execute(path: File.join(@test_path, "nonexistent.txt"))
 
     assert_equal false, result[:success]
     assert_nil result[:result]
     assert_includes result[:error], "File not found"
   end
 
-  test "execute returns error when path escapes sandbox" do
-    result = @tool.execute(path: "/etc/passwd")
-
-    assert_equal false, result[:success]
-    assert_nil result[:result]
-    assert_includes result[:error], "outside the sandbox"
-  end
-
-  test "execute returns error for relative path escape attempt" do
-    result = @tool.execute(path: File.join(@sandbox_path, "..", "..", "etc", "passwd"))
-
-    assert_equal false, result[:success]
-    assert_includes result[:error], "outside the sandbox"
-  end
-
-  test "works with test/tool_test sandbox directory" do
-    test_file = File.join(@sandbox_path, "sandbox_test.txt")
-    File.write(test_file, "Sandbox content")
-
-    result = @tool.execute(path: test_file)
-
-    assert_equal true, result[:success]
-    assert_equal "Sandbox content", result[:result]
-  end
-
   test "reads files with various content types" do
-    test_file = File.join(@sandbox_path, "multiline.txt")
+    test_file = File.join(@test_path, "multiline.txt")
     content = "Line 1\nLine 2\nLine 3"
     File.write(test_file, content)
 
@@ -88,12 +63,11 @@ class ReadFileToolTest < ActiveSupport::TestCase
     assert_not_nil read_file_tool
   end
 
-  test "without sandbox allows reading any accessible file" do
-    tool_no_sandbox = ReadFileTool.new
+  test "can read any accessible file" do
     # Read a file we know exists
     gemfile_path = Rails.root.join("Gemfile").to_s
 
-    result = tool_no_sandbox.execute(path: gemfile_path)
+    result = @tool.execute(path: gemfile_path)
 
     assert_equal true, result[:success]
     assert_includes result[:result], "source"
@@ -101,7 +75,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
 
   # LLM Integration Test via prompt
   test "LLM can request read_file tool to read a file" do
-    test_file = File.join(@sandbox_path, "llm_read_test.txt")
+    test_file = File.join(@test_path, "llm_read_test.txt")
     test_content = "This is secret content that only the LLM should read."
     File.write(test_file, test_content)
 
@@ -126,7 +100,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
     args = read_action[:arguments] || {}
     args[:path] ||= test_file
 
-    service = ToolCallService.new(sandbox_path: @sandbox_path)
+    service = ToolCallService.new
     result = service.execute(tool_name: "read_file", arguments: args)
 
     assert_equal true, result[:success], "Read file should succeed"

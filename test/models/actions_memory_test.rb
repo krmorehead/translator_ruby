@@ -19,7 +19,7 @@ class ActionsMemoryTest < ActiveSupport::TestCase
   test "memory store recognizes actions section" do
     sandbox = Rails.root.join("tmp", "actions_memory_test_#{Process.pid}_#{object_id}")
     FileUtils.mkdir_p(sandbox)
-    store = MemoryStore.new(path: sandbox.join("memory.json"), sandbox_path: sandbox)
+    store = MemoryStore.new(path: sandbox.join("memory.json"))
 
     assert_includes store.list_sections, :actions
     updated = store.update_section(name: MemoryKinds::ACTIONS, content: { action: "test" }, append: true)

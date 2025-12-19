@@ -5,8 +5,8 @@
 class SkillCheckTool < BaseTool
   NAME = "skill_check".freeze
 
-  def initialize(sandbox_path: nil, rng: nil)
-    super(sandbox_path: sandbox_path)
+  def initialize(rng: nil)
+    super()
     @rng = rng
   end
 

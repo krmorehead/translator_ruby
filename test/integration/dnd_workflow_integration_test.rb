@@ -1,18 +1,18 @@
 require "test_helper"
 
 class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
-  SANDBOX_ROOT = DndChatController::SANDBOX_ROOT
-  MEMORY_PATH = DndChatController::MEMORY_PATH
-  CONVO_PATH = DndChatController::CONVERSATION_PATH
+  # Use the same data path as the controller/tools
+  DATA_PATH = BaseTool.data_path
+  MEMORY_PATH = File.join(DATA_PATH, "memory.json")
 
   def setup
     skip_unless_llm_configured!
-    FileUtils.rm_rf(SANDBOX_ROOT)
-    FileUtils.mkdir_p(SANDBOX_ROOT)
+    FileUtils.rm_rf(DATA_PATH)
+    FileUtils.mkdir_p(DATA_PATH)
   end
 
   def teardown
-    FileUtils.rm_rf(SANDBOX_ROOT) if File.exist?(SANDBOX_ROOT)
+    FileUtils.rm_rf(DATA_PATH) if File.exist?(DATA_PATH)
   end
 
   test "simple prompt completes the full workflow" do
@@ -57,13 +57,20 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   def assert_conversation_persisted_with_messages(min_count)
-    assert File.exist?(CONVO_PATH), "conversation file should persist"
-    convo = Conversation.new(messages: JSON.parse(File.read(CONVO_PATH))["messages"])
-    assert convo.messages.count >= min_count, "expected at least #{min_count} messages persisted"
+    assert File.exist?(MEMORY_PATH), "memory file should exist"
+    store = MemoryStore.new(path: MEMORY_PATH)
+    # Conversation is stored under RECENT_CONVERSATION section
+    convo_data = store.get_section(MemoryKinds::RECENT_CONVERSATION)
+    messages = convo_data.is_a?(Hash) ? (convo_data[:messages] || convo_data["messages"] || []) : []
+    # If conversation data is in an array format, extract messages from first element
+    if convo_data.is_a?(Array) && convo_data.first.is_a?(Hash)
+      messages = convo_data.first[:messages] || convo_data.first["messages"] || []
+    end
+    assert messages.count >= min_count, "expected at least #{min_count} messages persisted, got #{messages.count}"
   end
 
   def assert_actions_recorded(require_entries: true)
-    store = MemoryStore.new(path: MEMORY_PATH, sandbox_path: SANDBOX_ROOT)
+    store = MemoryStore.new(path: MEMORY_PATH)
     actions = store.get_section(MemoryKinds::ACTIONS)
     assert actions.is_a?(Array), "actions section should be an array"
     assert actions.any?, "expected at least one action recorded" if require_entries

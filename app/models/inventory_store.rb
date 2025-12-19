@@ -2,12 +2,10 @@
 
 # File-backed inventory store handling serialization and basic operations.
 class InventoryStore
-  attr_reader :path, :sandbox_path
+  attr_reader :path
 
-  def initialize(path:, sandbox_path: nil)
+  def initialize(path:)
     @path = path
-    @sandbox_path = sandbox_path
-    validate_sandbox_path!(path)
     @items = load_items
   end
 
@@ -58,8 +56,6 @@ class InventoryStore
 
     data = JSON.parse(File.read(path), symbolize_names: true)
     (data || []).map { |h| InventoryItem.from_h(h) }
-  rescue JSON::ParserError
-    []
   end
 
   def save!
@@ -70,16 +66,6 @@ class InventoryStore
   def replace_item(name, new_item)
     @items.map! do |i|
       i.name.downcase == name.downcase ? new_item : i
-    end
-  end
-
-  def validate_sandbox_path!(file_path)
-    return true unless sandbox_path
-
-    expanded = File.expand_path(file_path)
-    expanded_sandbox = File.expand_path(sandbox_path)
-    unless expanded.start_with?(expanded_sandbox)
-      raise SecurityError, "Path '#{file_path}' is outside the sandbox '#{sandbox_path}'"
     end
   end
 end

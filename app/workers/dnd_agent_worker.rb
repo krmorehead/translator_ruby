@@ -136,8 +136,7 @@ class DndAgentWorker < AgentWorker
   # Use external memory store if provided, otherwise create one
   def create_memory_store
     @external_memory_store || MemoryStore.new(
-      path: File.join(state_path, "memory.json"),
-      sandbox_path: path
+      path: File.join(state_path, "memory.json")
     )
   end
 

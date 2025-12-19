@@ -1,0 +1,89 @@
+{
+  "owner_id": "164a921c-765f-46c0-b02c-ef915ff82d9e",
+  "workflow_id": "c8750558-fe48-4666-9569-3d113639db07",
+  "workflow_name": "dnd_chat",
+  "started_at": "2025-12-19T22:05:34Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:05:34 UTC",
+        "duration_in_state": 0.000279138
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-19T22:05:34Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:05:49 UTC",
+        "duration_in_state": 15.19796462
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-19T22:05:49Z",
+        "duration_in_state": 15.197946335
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [],
+    "errors": [],
+    "outputs": [
+      {
+        "narrative": "Your fingers brushed the cold stone floor, uncovering only a rusted key half-buried in the dust—its teeth long since crumbled to powder. As you lifted it, the metal dissolved into a fine, iron-tanged dust that scattered across the floor. The chamber remained silent, its emptiness echoing your wasted effort.",
+        "actions": [
+          {
+            "action": "roll_dice",
+            "result": {
+              "success": true,
+              "action": "roll_dice_action",
+              "timestamp": "2025-12-19T22:05:35Z",
+              "result": "2d6: [4, 1] = 5",
+              "summary": "Rolled 5 for Player is searching the room for hidden items or clues",
+              "findings": [
+                {
+                  "text": "Player is searching the room for hidden items or clues: rolled 5",
+                  "source": "dice"
+                }
+              ],
+              "metadata": {
+                "dice": "2d6",
+                "rolls": [
+                  4,
+                  1
+                ],
+                "modifier": 0,
+                "total": 5,
+                "reason": "Player is searching the room for hidden items or clues"
+              }
+            }
+          }
+        ],
+        "conversation": "#<Conversation:0x00007a7d17114f40>",
+        "thoughts": null,
+        "agent_metadata": {
+          "iterations": 1,
+          "actions_executed": 1,
+          "started_at": "2025-12-19T22:05:34Z",
+          "completed_at": "2025-12-19T22:05:49Z",
+          "final_state": "complete"
+        },
+        "timestamp": "2025-12-19T22:05:49Z",
+        "state": "running"
+      }
+    ]
+  }
+}

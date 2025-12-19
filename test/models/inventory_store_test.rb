@@ -12,7 +12,7 @@ class InventoryStoreTest < ActiveSupport::TestCase
   end
 
   def new_store
-    InventoryStore.new(path: @path, sandbox_path: @sandbox_path)
+    InventoryStore.new(path: @path)
   end
 
   test "load empty when file missing" do
@@ -66,9 +66,4 @@ class InventoryStoreTest < ActiveSupport::TestCase
     end
   end
 
-  test "sandbox validation prevents escape" do
-    assert_raises(SecurityError) do
-      InventoryStore.new(path: "/tmp/outside.json", sandbox_path: @sandbox_path)
-    end
-  end
 end

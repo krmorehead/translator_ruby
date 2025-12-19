@@ -3,8 +3,6 @@
 
 # LLM-callable tool for managing inventory via InventoryStore.
 class InventoryTool < BaseTool
-  DEFAULT_FILENAME = "inventory.json"
-  PATH = File.join("tmp", "dnd_chat_sandbox", DEFAULT_FILENAME)
   NAME = "inventory".freeze
   OP_ADD_ITEM = "add_item".freeze
   OP_REMOVE_ITEM = "remove_item".freeze
@@ -37,8 +35,7 @@ class InventoryTool < BaseTool
         },
         path: {
           type: "string",
-          description: "Optional inventory file path (defaults to sandbox/inventory.json)",
-          nullable: false
+          description: "Inventory file path (optional, defaults to agent data path)"
         },
         name: { type: "string", description: "Item name" },
         weight: { type: "number", description: "Item weight" },
@@ -46,14 +43,14 @@ class InventoryTool < BaseTool
         property_type: { type: "string", description: "Item type" },
         quantity: { type: "integer", description: "Item quantity" }
       },
-      required: [],  # No required fields - operation defaults to add_item
+      required: [],
       additionalProperties: false
     }
   end
 
   def execute(operation: OP_ADD_ITEM, path: nil, name: nil, weight: nil, description: nil, property_type: nil, quantity: nil)
     op, store_path, normalized = normalize_args(operation, path, name, weight, description, property_type, quantity)
-    store = InventoryStore.new(path: store_path, sandbox_path: sandbox_path)
+    store = InventoryStore.new(path: store_path)
 
     case op
     when OP_ADD_ITEM
@@ -88,24 +85,11 @@ class InventoryTool < BaseTool
     else
       error_result("Unsupported operation: #{op}")
     end
-  rescue SecurityError => e
-    error_result(e.message)
   rescue ArgumentError => e
     error_result(e.message)
-  rescue => e
-    error_result("Inventory error: #{e.message}")
   end
 
   private
-
-  def resolve_path(path)
-    if path.nil? || path.strip.empty?
-      raise ArgumentError, "sandbox_path required when no path provided" unless sandbox_path
-      File.join(sandbox_path, DEFAULT_FILENAME)
-    else
-      path
-    end
-  end
 
   def ensure_name!(name)
     raise ArgumentError, "name required" if name.to_s.strip.empty?
@@ -115,7 +99,7 @@ class InventoryTool < BaseTool
     op = operation || OP_ADD_ITEM
     op = OP_ADD_ITEM if op == "add"
     op = OP_REMOVE_ITEM if op == "remove"
-    path = resolve_path(path)
+    store_path = path || default_file_path
 
     # Allow a nested item hash
     if name.is_a?(Hash)
@@ -135,7 +119,7 @@ class InventoryTool < BaseTool
       quantity: quantity
     }
 
-    [ op, path, normalized ]
+    [ op, store_path, normalized ]
   end
 end
 

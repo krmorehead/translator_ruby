@@ -6,8 +6,8 @@ class DiceRollTool < BaseTool
   MAX_SIDES = 1000
   NAME = "dice_roll".freeze
 
-  def initialize(sandbox_path: nil, rng: nil)
-    super(sandbox_path: sandbox_path)
+  def initialize(rng: nil)
+    super()
     @rng = rng || Random.new
   end
 

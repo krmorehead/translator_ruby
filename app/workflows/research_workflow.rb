@@ -77,8 +77,7 @@ class ResearchWorkflow < BaseWorkflow
   end
 
   # Setup for compatibility with BaseWorkflow
-  def setup(prompt: nil, conversation: nil, sandbox_path: nil)
-    @research_path ||= sandbox_path
+  def setup(prompt: nil, conversation: nil)
     super
     self
   end
@@ -374,7 +373,7 @@ class ResearchWorkflow < BaseWorkflow
       parent_memory: @research_memory, # Child workflow can query our memory
       max_depth: @max_depth
     )
-    decomposition.setup(sandbox_path: research_path)
+    decomposition.setup
     decomposition.execute
 
     if decomposition.complete?
@@ -523,7 +522,7 @@ class ResearchWorkflow < BaseWorkflow
     discovered = []
 
     # Use FileTreeTool to get structure
-    file_tree = FileTreeTool.new(sandbox_path: research_path)
+    file_tree = FileTreeTool.new
     tree_result = file_tree.execute(path: research_path, extensions: ["rb", "py", "js", "ts"])
 
     if tree_result[:success]
@@ -532,7 +531,7 @@ class ResearchWorkflow < BaseWorkflow
       terms = extract_key_terms(question)
 
       terms.each do |term|
-        grep = GrepTool.new(sandbox_path: research_path)
+        grep = GrepTool.new
         grep_result = grep.execute(
           pattern: term,
           path: research_path,

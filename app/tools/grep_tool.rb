@@ -64,8 +64,6 @@ class GrepTool < BaseTool
   end
 
   def execute(pattern:, path:, extensions: nil, max_results: 100, case_insensitive: false, whole_word: false, context_lines: 0)
-    validate_sandbox_path!(path)
-
     unless File.exist?(path)
       return error_result("Path not found: #{path}")
     end
@@ -101,10 +99,6 @@ class GrepTool < BaseTool
     })
   rescue RegexpError => e
     error_result("Invalid regex pattern: #{e.message}")
-  rescue SecurityError => e
-    error_result(e.message)
-  rescue => e
-    error_result("Error searching files: #{e.message}")
   end
 
   private
@@ -130,9 +124,6 @@ class GrepTool < BaseTool
   end
 
   def should_ignore?(file_path)
-    # Don't ignore paths within our sandbox (if configured)
-    return false if sandbox_path && file_path.start_with?(File.expand_path(sandbox_path))
-
     DEFAULT_IGNORE_DIRS.any? do |dir|
       file_path.include?("/#{dir}/") || file_path.start_with?("#{dir}/")
     end

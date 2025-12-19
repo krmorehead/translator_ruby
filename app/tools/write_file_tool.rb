@@ -32,18 +32,11 @@ class WriteFileTool < BaseTool
   end
 
   def execute(path:, content:)
-    validate_sandbox_path!(path)
-
-    # Create parent directories if they don't exist
     dir = File.dirname(path)
     FileUtils.mkdir_p(dir) unless File.directory?(dir)
 
     File.write(path, content)
     success_result("Successfully wrote #{content.bytesize} bytes to #{path}")
-  rescue SecurityError => e
-    error_result(e.message)
-  rescue => e
-    error_result("Error writing file: #{e.message}")
   end
 end
 

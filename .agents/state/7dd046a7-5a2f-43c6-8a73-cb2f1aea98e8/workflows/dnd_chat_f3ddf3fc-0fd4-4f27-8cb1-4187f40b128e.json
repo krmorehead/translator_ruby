@@ -1,0 +1,88 @@
+{
+  "owner_id": "7dd046a7-5a2f-43c6-8a73-cb2f1aea98e8",
+  "workflow_id": "f3ddf3fc-0fd4-4f27-8cb1-4187f40b128e",
+  "workflow_name": "dnd_chat",
+  "started_at": "2025-12-19T22:13:10Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:13:10 UTC",
+        "duration_in_state": 0.00040842
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-19T22:13:10Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:13:17 UTC",
+        "duration_in_state": 7.226991304
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-19T22:13:17Z",
+        "duration_in_state": 7.226988766
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [],
+    "errors": [],
+    "outputs": [
+      {
+        "narrative": "Your fingers brush against a loose floorboard near the chest, revealing a small pouch tucked beneath it. Inside, you find a tarnished key labeled \"Cellar\" and a faded note with the words \"Beware the shadows\" scrawled in haste.",
+        "actions": [
+          {
+            "action": "roll_dice",
+            "result": {
+              "success": true,
+              "action": "roll_dice_action",
+              "timestamp": "2025-12-19T22:13:12Z",
+              "result": "1d20: [14] = 14",
+              "summary": "Rolled 14 for searching the room for clues",
+              "findings": [
+                {
+                  "text": "searching the room for clues: rolled 14",
+                  "source": "dice"
+                }
+              ],
+              "metadata": {
+                "dice": "1d20",
+                "rolls": [
+                  14
+                ],
+                "modifier": 0,
+                "total": 14,
+                "reason": "searching the room for clues"
+              }
+            }
+          }
+        ],
+        "conversation": "#<Conversation:0x00007a93502af6f8>",
+        "thoughts": null,
+        "agent_metadata": {
+          "iterations": 1,
+          "actions_executed": 1,
+          "started_at": "2025-12-19T22:13:10Z",
+          "completed_at": "2025-12-19T22:13:17Z",
+          "final_state": "complete"
+        },
+        "timestamp": "2025-12-19T22:13:17Z",
+        "state": "running"
+      }
+    ]
+  }
+}

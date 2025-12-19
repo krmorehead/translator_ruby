@@ -1,0 +1,88 @@
+{
+  "owner_id": "ecca61af-c3b2-4a6a-8db7-19599b82a052",
+  "workflow_id": "1e4090be-f6aa-467d-9d09-2c2d5ff988f1",
+  "workflow_name": "dnd_chat",
+  "started_at": "2025-12-19T21:43:55Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-19 21:43:55 UTC",
+        "duration_in_state": 0.000406789
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-19T21:43:55Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-19 21:44:19 UTC",
+        "duration_in_state": 23.88703788
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-19T21:44:19Z",
+        "duration_in_state": 23.887035129
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [],
+    "errors": [],
+    "outputs": [
+      {
+        "narrative": "You sweep the room with your lantern, its light catching dust motes swirling in the stale air. The empty shelves and cracked stone floor yield nothing but a single, water-stained journal page—its ink faded to meaningless smudges. As you close the book, the silence of the abandoned chamber presses in, heavier than before.",
+        "actions": [
+          {
+            "action": "roll_dice",
+            "result": {
+              "success": true,
+              "action": "roll_dice_action",
+              "timestamp": "2025-12-19T21:43:56Z",
+              "result": "1d20: [8] = 8",
+              "summary": "Rolled 8 for Search the room for clues or items",
+              "findings": [
+                {
+                  "text": "Search the room for clues or items: rolled 8",
+                  "source": "dice"
+                }
+              ],
+              "metadata": {
+                "dice": "1d20",
+                "rolls": [
+                  8
+                ],
+                "modifier": 0,
+                "total": 8,
+                "reason": "Search the room for clues or items"
+              }
+            }
+          }
+        ],
+        "conversation": "#<Conversation:0x000070f1211638d8>",
+        "thoughts": null,
+        "agent_metadata": {
+          "iterations": 1,
+          "actions_executed": 1,
+          "started_at": "2025-12-19T21:43:55Z",
+          "completed_at": "2025-12-19T21:44:19Z",
+          "final_state": "complete"
+        },
+        "timestamp": "2025-12-19T21:44:19Z",
+        "state": "running"
+      }
+    ]
+  }
+}

@@ -3,8 +3,6 @@
 
 # LLM-callable tool to read/update memory sections.
 class MemoryTool < BaseTool
-  DEFAULT_FILENAME = "memory.json"
-  PATH = File.join("tmp", "dnd_chat_sandbox", DEFAULT_FILENAME)
   NAME = "memory".freeze
   OP_LIST = "list_sections".freeze
   OP_GET = "get_section".freeze
@@ -35,16 +33,14 @@ class MemoryTool < BaseTool
         },
         path: {
           type: "string",
-          description: "Optional memory file path (defaults to sandbox/memory.json)",
-          nullable: true
+          description: "Memory file path (optional, defaults to agent data path)"
         },
-        section: { type: "string", description: "Section name", nullable: true },
+        section: { type: "string", description: "Section name" },
         content: {
           description: "Content to store (string or object)",
-          type: [ "string", "object", "array", "number", "boolean", "null" ],
-          nullable: true
+          type: [ "string", "object", "array", "number", "boolean", "null" ]
         },
-        append: { type: "boolean", description: "Append (true) or replace (false) for update", nullable: true }
+        append: { type: "boolean", description: "Append (true) or replace (false) for update" }
       },
       required: [ "operation" ],
       additionalProperties: false
@@ -53,7 +49,7 @@ class MemoryTool < BaseTool
 
   def execute(operation:, section: nil, content: nil, append: true, path: nil)
     op, store_path, normalized = normalize_args(operation, path, section, content, append)
-    store = MemoryStore.new(path: store_path, sandbox_path: sandbox_path)
+    store = MemoryStore.new(path: store_path)
 
     case op
     when OP_LIST
@@ -70,29 +66,11 @@ class MemoryTool < BaseTool
     else
       error_result("Unsupported operation: #{op}")
     end
-  rescue SecurityError => e
-    error_result(e.message)
   rescue ArgumentError => e
     error_result(e.message)
-  rescue => e
-    error_result("Memory error: #{e.message}")
   end
 
   private
-
-  def resolve_path(path)
-    return path if path && !path.to_s.strip.empty? && File.absolute_path?(path)
-    
-    if sandbox_path
-      File.join(sandbox_path, DEFAULT_FILENAME)
-    else
-      PATH
-    end
-  end
-
-  def ensure_section!(section)
-    raise ArgumentError, ERR_SECTION_REQUIRED if section.to_s.strip.empty?
-  end
 
   def normalize_args(operation, path, section, content, append)
     op = operation || OP_UPDATE
@@ -100,7 +78,7 @@ class MemoryTool < BaseTool
     op = OP_GET if op == "get"
     op = OP_LIST if op == "list"
 
-    store_path = resolve_path(path)
+    store_path = path || default_file_path
 
     normalized_section = normalize_section(section)
 

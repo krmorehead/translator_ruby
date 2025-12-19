@@ -304,7 +304,7 @@ class AgentWorker < BaseWorker
   # Synthesize all findings into a final result
   # @return [Hash] Synthesized findings
   def synthesize_findings
-    findings = memory_store.get_section(:findings)
+    findings = Array(memory_store.get_section(:findings))
     return { summary: "No findings" } if findings.empty?
 
     prompt = Research::SynthesisPrompt.new
@@ -325,12 +325,14 @@ class AgentWorker < BaseWorker
     context.add_sub_context(:actions, @action_history_context)
 
     # Add recent findings from memory
-    findings = memory_store.get_section(:findings)
+    findings = Array(memory_store.get_section(:findings))
     findings.last(10).each do |finding|
+      content_text = finding.is_a?(Hash) ? (finding[:text] || finding.to_s) : finding.to_s
+      source = finding.is_a?(Hash) ? finding[:source] : "finding"
       context.add(
-        content: finding[:text],
-        topics: ["finding", finding[:source]].compact,
-        source: finding[:source]
+        content: content_text,
+        topics: ["finding", source].compact,
+        source: source
       )
     end
 

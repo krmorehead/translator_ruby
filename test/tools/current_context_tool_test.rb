@@ -5,7 +5,7 @@ class CurrentContextToolTest < ActiveSupport::TestCase
     @sandbox = Rails.root.join("tmp", "current_context_tool_test").to_s
     FileUtils.mkdir_p(@sandbox)
     @memory_path = File.join(@sandbox, "memory.json")
-    @store = MemoryStore.new(path: @memory_path, sandbox_path: @sandbox)
+    @store = MemoryStore.new(path: @memory_path)
     @store.set_section(MemoryKinds::CURRENT_SCENE, "A dimly lit tavern")
     @store.set_section(MemoryKinds::PEOPLE, [ { text: "Barkeep" } ])
     @store.set_section(MemoryKinds::CURRENT_GOAL, "Find the missing scout")
@@ -17,7 +17,7 @@ class CurrentContextToolTest < ActiveSupport::TestCase
   end
 
   test "returns current context sections" do
-    tool = CurrentContextTool.new(sandbox_path: @sandbox)
+    tool = CurrentContextTool.new()
     result = tool.execute(path: @memory_path)
 
     assert result[:success]

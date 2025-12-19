@@ -5,7 +5,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     @sandbox_path = Rails.root.join("tmp", "dep_graph_test_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(File.join(@sandbox_path, "lib"))
     FileUtils.mkdir_p(File.join(@sandbox_path, "app", "services"))
-    @tool = DependencyGraphTool.new(sandbox_path: @sandbox_path)
+    @tool = DependencyGraphTool.new()
 
     # Create test files with dependencies
     File.write(File.join(@sandbox_path, "lib", "calculator.rb"), <<~RUBY)
@@ -176,7 +176,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
       from mypackage import helper
     PYTHON
 
-    tool = DependencyGraphTool.new(sandbox_path: @sandbox_path)
+    tool = DependencyGraphTool.new()
     result = tool.execute(path: py_file)
 
     assert result[:success]
@@ -196,7 +196,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
       const lodash = require('lodash');
     JAVASCRIPT
 
-    tool = DependencyGraphTool.new(sandbox_path: @sandbox_path)
+    tool = DependencyGraphTool.new()
     result = tool.execute(path: js_file)
 
     assert result[:success]

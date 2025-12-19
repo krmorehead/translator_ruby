@@ -2,12 +2,13 @@ require "test_helper"
 
 class GrepToolTest < ActiveSupport::TestCase
   def setup
-    @sandbox_path = Rails.root.join("tmp", "grep_test_#{Process.pid}_#{Thread.current.object_id}").to_s
-    FileUtils.mkdir_p(@sandbox_path)
-    @tool = GrepTool.new(sandbox_path: @sandbox_path)
+    # Use test/tool_test instead of tmp to avoid being ignored by GrepTool
+    @test_path = Rails.root.join("test", "tool_test", "grep_test_#{Process.pid}_#{Thread.current.object_id}").to_s
+    FileUtils.mkdir_p(@test_path)
+    @tool = GrepTool.new
 
     # Create test files
-    File.write(File.join(@sandbox_path, "calculator.rb"), <<~RUBY)
+    File.write(File.join(@test_path, "calculator.rb"), <<~RUBY)
       class Calculator
         def add(a, b)
           a + b
@@ -19,7 +20,7 @@ class GrepToolTest < ActiveSupport::TestCase
       end
     RUBY
 
-    File.write(File.join(@sandbox_path, "formatter.rb"), <<~RUBY)
+    File.write(File.join(@test_path, "formatter.rb"), <<~RUBY)
       class Formatter
         def initialize(calculator:)
           @calculator = calculator
@@ -27,18 +28,18 @@ class GrepToolTest < ActiveSupport::TestCase
       end
     RUBY
 
-    File.write(File.join(@sandbox_path, "readme.txt"), <<~TEXT)
+    File.write(File.join(@test_path, "readme.txt"), <<~TEXT)
       This is a README file.
       It describes the Calculator and Formatter classes.
     TEXT
   end
 
   def teardown
-    FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
+    FileUtils.rm_rf(@test_path) if @test_path && File.exist?(@test_path)
   end
 
   test "finds pattern in files" do
-    result = @tool.execute(pattern: "Calculator", path: @sandbox_path)
+    result = @tool.execute(pattern: "Calculator", path: @test_path)
 
     assert result[:success]
     assert result[:result][:match_count] >= 2
@@ -46,7 +47,7 @@ class GrepToolTest < ActiveSupport::TestCase
   end
 
   test "returns line numbers" do
-    result = @tool.execute(pattern: "def add", path: @sandbox_path)
+    result = @tool.execute(pattern: "def add", path: @test_path)
 
     assert result[:success]
     match = result[:result][:matches].first
@@ -55,7 +56,7 @@ class GrepToolTest < ActiveSupport::TestCase
   end
 
   test "respects max_results" do
-    result = @tool.execute(pattern: "def", path: @sandbox_path, max_results: 1)
+    result = @tool.execute(pattern: "def", path: @test_path, max_results: 1)
 
     assert result[:success]
     assert_equal 1, result[:result][:matches].size
@@ -63,33 +64,33 @@ class GrepToolTest < ActiveSupport::TestCase
   end
 
   test "handles regex patterns" do
-    result = @tool.execute(pattern: "def \\w+\\(", path: @sandbox_path)
+    result = @tool.execute(pattern: "def \\w+\\(", path: @test_path)
 
     assert result[:success]
     assert result[:result][:match_count] >= 2
   end
 
   test "case_insensitive option works" do
-    result = @tool.execute(pattern: "CALCULATOR", path: @sandbox_path, case_insensitive: true)
+    result = @tool.execute(pattern: "CALCULATOR", path: @test_path, case_insensitive: true)
 
     assert result[:success]
     assert result[:result][:match_count] >= 1
 
     # Without case insensitive
-    result2 = @tool.execute(pattern: "CALCULATOR", path: @sandbox_path, case_insensitive: false)
+    result2 = @tool.execute(pattern: "CALCULATOR", path: @test_path, case_insensitive: false)
     assert result2[:success]
     assert_equal 0, result2[:result][:match_count]
   end
 
   test "whole_word option works" do
-    result = @tool.execute(pattern: "add", path: @sandbox_path, whole_word: true)
+    result = @tool.execute(pattern: "add", path: @test_path, whole_word: true)
 
     assert result[:success]
     # Should match "def add" but not if "add" appears in other words
   end
 
   test "filters by extension" do
-    result = @tool.execute(pattern: "Calculator", path: @sandbox_path, extensions: ["rb"])
+    result = @tool.execute(pattern: "Calculator", path: @test_path, extensions: ["rb"])
 
     assert result[:success]
     # Should not include readme.txt match
@@ -99,21 +100,21 @@ class GrepToolTest < ActiveSupport::TestCase
   end
 
   test "handles non-existent path" do
-    result = @tool.execute(pattern: "test", path: File.join(@sandbox_path, "nonexistent"))
+    result = @tool.execute(pattern: "test", path: File.join(@test_path, "nonexistent"))
 
     assert_equal false, result[:success]
     assert_includes result[:error], "not found"
   end
 
   test "handles invalid regex" do
-    result = @tool.execute(pattern: "[invalid", path: @sandbox_path)
+    result = @tool.execute(pattern: "[invalid", path: @test_path)
 
     assert_equal false, result[:success]
     assert_includes result[:error], "Invalid regex"
   end
 
   test "includes context lines when requested" do
-    result = @tool.execute(pattern: "def add", path: @sandbox_path, context_lines: 2)
+    result = @tool.execute(pattern: "def add", path: @test_path, context_lines: 2)
 
     assert result[:success]
     match = result[:result][:matches].first
@@ -137,4 +138,3 @@ class GrepToolTest < ActiveSupport::TestCase
     assert_not_nil grep_tool
   end
 end
-

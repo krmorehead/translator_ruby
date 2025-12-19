@@ -6,7 +6,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
     FileUtils.mkdir_p(@sandbox_path)
     @path = File.join(@sandbox_path, "memory.json")
 
-    @store = MemoryStore.new(path: @path, sandbox_path: @sandbox_path)
+    @store = MemoryStore.new(path: @path)
     @store.update_section(name: :quests, content: "Rescue the prince", append: true)
     @store.update_section(name: :quests, content: "Find the lost sword", append: true)
     @store.update_section(name: :current_goal, content: "Enter the castle", append: false)
@@ -26,7 +26,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
   end
 
   test "summarizes a person" do
-    tool = MemorySummarizeTool.new(sandbox_path: @sandbox_path)
+    tool = MemorySummarizeTool.new()
     result = tool.execute(target: "person", name: "Aria", path: @path)
 
     assert result[:success]
@@ -37,7 +37,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
 
   test "summarizes a location" do
     @store.update_section(name: :current_scene, content: "A quiet forest", append: false)
-    tool = MemorySummarizeTool.new(sandbox_path: @sandbox_path)
+    tool = MemorySummarizeTool.new()
     result = tool.execute(target: "location", name: "forest", path: @path)
 
     assert result[:success]
@@ -47,7 +47,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
   end
 
   test "summarizes quest log" do
-    tool = MemorySummarizeTool.new(sandbox_path: @sandbox_path)
+    tool = MemorySummarizeTool.new()
     result = tool.execute(target: "quest_log", path: @path)
 
     assert result[:success]

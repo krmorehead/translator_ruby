@@ -7,11 +7,10 @@ class MemoryStore
     h[klass.section_name.to_sym] = klass.default.dup
   end.freeze
 
-  attr_reader :path, :sandbox_path
+  attr_reader :path
 
-  def initialize(path:, sandbox_path: nil)
+  def initialize(path:)
     @path = path
-    @sandbox_path = sandbox_path
     @sections = load_sections
     @section_contexts = {}
   end
@@ -103,8 +102,8 @@ class MemoryStore
   end
 
   # Load a memory store from a file
-  def self.load(path, sandbox_path: nil)
-    new(path: path, sandbox_path: sandbox_path)
+  def self.load(path)
+    new(path: path)
   end
 
   # File modified time - use for versioning instead of per-entry timestamps
@@ -121,8 +120,6 @@ class MemoryStore
 
     data = JSON.parse(File.read(path), symbolize_names: true)
     DEFAULT_SECTIONS.merge(data)
-  rescue JSON::ParserError
-    deep_dup(DEFAULT_SECTIONS)
   end
 
   def save!

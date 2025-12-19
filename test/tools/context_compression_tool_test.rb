@@ -5,7 +5,7 @@ class ContextCompressionToolTest < ActiveSupport::TestCase
     @sandbox = Rails.root.join("tmp", "context_compression_tool_test").to_s
     FileUtils.mkdir_p(@sandbox)
     @memory_path = File.join(@sandbox, "memory.json")
-    @store = MemoryStore.new(path: @memory_path, sandbox_path: @sandbox)
+    @store = MemoryStore.new(path: @memory_path)
     @store.update_section(name: :current_scene, content: "A misty glade", append: false)
     @store.update_section(name: :people, content: "Elder Rowan", append: true)
     @store.update_section(name: :quest_log, content: "Recover the moonstone", append: true)
@@ -16,7 +16,7 @@ class ContextCompressionToolTest < ActiveSupport::TestCase
   end
 
   test "returns weighted summaries for all sections" do
-    tool = ContextCompressionTool.new(sandbox_path: @sandbox)
+    tool = ContextCompressionTool.new()
     result = tool.execute(path: @memory_path)
 
     assert result[:success]

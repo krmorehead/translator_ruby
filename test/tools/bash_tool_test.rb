@@ -5,7 +5,7 @@ class BashToolTest < ActiveSupport::TestCase
     # Use unique directory per test to avoid parallel test conflicts
     @sandbox_path = Rails.root.join("test", "tool_test", "bash_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(@sandbox_path)
-    @tool = BashTool.new(sandbox_path: @sandbox_path)
+    @tool = BashTool.new()
   end
 
   def teardown
@@ -110,7 +110,7 @@ class BashToolTest < ActiveSupport::TestCase
     arguments = bash_action[:arguments] || {}
     arguments[:command] ||= "ls #{@sandbox_path}"
 
-    service = ToolCallService.new(sandbox_path: @sandbox_path)
+    service = ToolCallService.new()
     result = service.execute(tool_name: "bash", arguments: arguments)
 
     assert_equal true, result[:success], "Bash command should succeed"

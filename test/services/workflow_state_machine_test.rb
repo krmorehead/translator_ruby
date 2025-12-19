@@ -6,7 +6,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   class TestWorkflow < BaseWorkflow
     attr_reader :setup_called
 
-    def setup(prompt: nil, conversation: nil, sandbox_path: nil)
+    def setup(prompt: nil, conversation: nil)
       @setup_called = true
       super
     end
@@ -60,7 +60,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   test "workflow can transition through states" do
     workflow = TestWorkflow.new
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
     workflow.execute
 
     assert workflow.complete?
@@ -70,7 +70,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Custom workflow with overridden states
   test "custom workflow overrides parent transitions" do
     workflow = CustomStateWorkflow.new
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
     workflow.execute
 
     assert workflow.complete?
@@ -92,7 +92,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Workflow memory tests
   test "workflow creates workflow_memory when setup is called with owner_id" do
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
 
     assert_not_nil workflow.workflow_memory
     assert_instance_of WorkflowMemoryStore, workflow.workflow_memory
@@ -100,7 +100,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   test "workflow memory records state transitions" do
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
     workflow.execute
 
     history = workflow.workflow_memory.state_history
@@ -136,7 +136,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
       owner_id: SecureRandom.uuid,
       parent_memory: parent
     )
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
 
     result = workflow.query_parent_memory(:research_goal, :findings)
     assert_equal [{ text: "Main Goal" }], result[:research_goal]
@@ -149,7 +149,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
       owner_id: SecureRandom.uuid,
       parent_memory: parent
     )
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
 
     context = workflow.parent_context
     assert_equal({ summary: "test summary" }, context)
@@ -158,7 +158,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Decision recording tests
   test "workflow can record decisions to memory" do
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
 
     workflow.record_decision(
       decision: "Use parallel processing",
@@ -174,7 +174,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Memory summary tests
   test "memory_summary returns workflow metadata" do
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
     workflow.execute
 
     summary = workflow.memory_summary
@@ -195,7 +195,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   test "failing workflow transitions to failed state" do
     workflow = FailingWorkflow.new(owner_id: SecureRandom.uuid)
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
     workflow.execute
 
     assert workflow.failed?
@@ -204,7 +204,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   test "failing workflow records error to memory" do
     workflow = FailingWorkflow.new(owner_id: SecureRandom.uuid)
-    workflow.setup(sandbox_path: temp_dir)
+    workflow.setup()
     workflow.execute
 
     errors = workflow.workflow_memory.get_section(:errors)

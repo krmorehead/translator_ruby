@@ -1,0 +1,23 @@
+{
+  "owner_id": "80b24d06-6134-4287-b2f2-a1481e62bb34",
+  "workflow_id": "34dceecc-6617-4574-8601-a57f566e00ce",
+  "workflow_name": "test_workflow",
+  "started_at": "2025-12-19T22:03:57Z",
+  "sections": {
+    "state_transitions": [],
+    "workflow_context": [],
+    "decisions": [
+      {
+        "decision": "Use parallel processing",
+        "rationale": "More efficient",
+        "context": {
+          "file_count": 10
+        },
+        "state": "pending",
+        "timestamp": "2025-12-19T22:03:57Z"
+      }
+    ],
+    "errors": [],
+    "outputs": []
+  }
+}

@@ -3,13 +3,13 @@ require "test_helper"
 class WriteFileToolTest < ActiveSupport::TestCase
   def setup
     # Use unique directory per test to avoid parallel test conflicts
-    @sandbox_path = Rails.root.join("test", "tool_test", "write_#{Process.pid}_#{Thread.current.object_id}").to_s
-    FileUtils.mkdir_p(@sandbox_path)
-    @tool = WriteFileTool.new(sandbox_path: @sandbox_path)
+    @test_path = Rails.root.join("test", "tool_test", "write_#{Process.pid}_#{Thread.current.object_id}").to_s
+    FileUtils.mkdir_p(@test_path)
+    @tool = WriteFileTool.new
   end
 
   def teardown
-    FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
+    FileUtils.rm_rf(@test_path) if @test_path && File.exist?(@test_path)
   end
 
   test "schema returns valid OpenAI function format with path and content parameters" do
@@ -30,7 +30,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
   end
 
   test "execute creates file with correct content" do
-    test_file = File.join(@sandbox_path, "test_write.txt")
+    test_file = File.join(@test_path, "test_write.txt")
     content = "Hello, World!"
 
     result = @tool.execute(path: test_file, content: content)
@@ -41,7 +41,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
   end
 
   test "execute creates nested directories as needed" do
-    nested_file = File.join(@sandbox_path, "nested", "deep", "file.txt")
+    nested_file = File.join(@test_path, "nested", "deep", "file.txt")
     content = "Nested content"
 
     result = @tool.execute(path: nested_file, content: content)
@@ -51,25 +51,8 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert_equal content, File.read(nested_file)
   end
 
-  test "execute returns error when path escapes sandbox" do
-    result = @tool.execute(path: "/tmp/outside_sandbox.txt", content: "test")
-
-    assert_equal false, result[:success]
-    assert_includes result[:error], "outside the sandbox"
-    assert_not File.exist?("/tmp/outside_sandbox.txt")
-  end
-
-  test "execute returns error for relative path escape attempt" do
-    escape_path = File.join(@sandbox_path, "..", "..", "tmp", "escape.txt")
-
-    result = @tool.execute(path: escape_path, content: "test")
-
-    assert_equal false, result[:success]
-    assert_includes result[:error], "outside the sandbox"
-  end
-
   test "file content is correctly written and readable" do
-    test_file = File.join(@sandbox_path, "verify.txt")
+    test_file = File.join(@test_path, "verify.txt")
     content = "Line 1\nLine 2\nSpecial chars: áéíóú"
 
     @tool.execute(path: test_file, content: content)
@@ -78,7 +61,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
   end
 
   test "overwrites existing file" do
-    test_file = File.join(@sandbox_path, "overwrite.txt")
+    test_file = File.join(@test_path, "overwrite.txt")
     File.write(test_file, "Original content")
 
     result = @tool.execute(path: test_file, content: "New content")
@@ -88,7 +71,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
   end
 
   test "result includes byte count" do
-    test_file = File.join(@sandbox_path, "bytes.txt")
+    test_file = File.join(@test_path, "bytes.txt")
     content = "12345"
 
     result = @tool.execute(path: test_file, content: content)
@@ -103,19 +86,9 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert_not_nil write_file_tool
   end
 
-  test "without sandbox allows writing to accessible locations" do
-    tool_no_sandbox = WriteFileTool.new
-    test_file = File.join(@sandbox_path, "no_sandbox.txt")
-
-    result = tool_no_sandbox.execute(path: test_file, content: "test")
-
-    assert_equal true, result[:success]
-    assert File.exist?(test_file)
-  end
-
   # LLM Integration Test via prompt
   test "LLM can request write_file tool to write a file" do
-    test_file = File.join(@sandbox_path, "llm_write_test.txt")
+    test_file = File.join(@test_path, "llm_write_test.txt")
     expected_content = "Hello from the LLM!"
 
     tools = ToolCallService.available_tools
@@ -140,7 +113,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
     arguments[:path] = test_file
     arguments[:content] = expected_content
 
-    service = ToolCallService.new(sandbox_path: @sandbox_path)
+    service = ToolCallService.new
     result = service.execute(tool_name: "write_file", arguments: arguments)
 
     assert_equal true, result[:success], "Write file should succeed"

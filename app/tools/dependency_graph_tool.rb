@@ -97,8 +97,6 @@ class DependencyGraphTool < BaseTool
   end
 
   def execute(path:, depth: 3, language_hint: nil)
-    validate_sandbox_path!(path)
-
     unless File.exist?(path)
       return error_result("Path not found: #{path}")
     end
@@ -127,10 +125,6 @@ class DependencyGraphTool < BaseTool
       edge_count: edges.uniq.size,
       root: path
     })
-  rescue SecurityError => e
-    error_result(e.message)
-  rescue => e
-    error_result("Error analyzing dependencies: #{e.message}")
   end
 
   private

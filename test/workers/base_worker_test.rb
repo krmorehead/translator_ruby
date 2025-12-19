@@ -76,10 +76,14 @@ class BaseWorkerTest < ActiveSupport::TestCase
     end
   end
 
-  test "rejects non-existent paths" do
-    assert_raises(ArgumentError) do
-      BaseWorker.new(goal: "test goal", path: "/non/existent/path/#{SecureRandom.uuid}")
-    end
+  test "creates directory for non-existent paths" do
+    # BaseWorker now creates directories for agent data paths
+    test_path = File.join(temp_dir, "new_subdir_#{SecureRandom.hex(4)}")
+    refute File.exist?(test_path)
+
+    worker = BaseWorker.new(goal: "test goal", path: test_path)
+    assert File.exist?(test_path), "Worker should create non-existent directory"
+    assert_equal File.expand_path(test_path), worker.path
   end
 
   test "parallel workers have isolated state" do

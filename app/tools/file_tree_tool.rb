@@ -60,8 +60,6 @@ class FileTreeTool < BaseTool
   end
 
   def execute(path:, max_depth: 10, extensions: nil, ignore_patterns: nil)
-    validate_sandbox_path!(path)
-
     unless File.exist?(path)
       return error_result("Path not found: #{path}")
     end
@@ -81,10 +79,6 @@ class FileTreeTool < BaseTool
       file_count: count_files(tree),
       directory_count: count_directories(tree)
     })
-  rescue SecurityError => e
-    error_result(e.message)
-  rescue => e
-    error_result("Error listing directory: #{e.message}")
   end
 
   private
@@ -139,15 +133,8 @@ class FileTreeTool < BaseTool
     end
   end
 
-  # Returns effective ignore patterns, being less aggressive for sandbox paths
   def effective_ignore_patterns(dir_path, patterns)
-    # If the directory is within our sandbox, be less aggressive with ignores
-    if sandbox_path && File.expand_path(dir_path).start_with?(File.expand_path(sandbox_path))
-      # Only keep truly harmful patterns
-      patterns.select { |p| %w[.git node_modules vendor/bundle].include?(p) }
-    else
-      patterns
-    end
+    patterns
   end
 
   def format_tree(node, prefix = "", is_last = true)

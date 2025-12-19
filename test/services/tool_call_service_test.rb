@@ -36,18 +36,6 @@ class ToolCallServiceTest < ActiveSupport::TestCase
     end
   end
 
-  test "sandbox_path is stored on service" do
-    service = ToolCallService.new(sandbox_path: "/tmp/test_sandbox")
-
-    result = service.execute(
-      tool_name: DiceRollTool::NAME,
-      arguments: { dice: "d6" }
-    )
-
-    assert_equal true, result[:success]
-    assert_equal "/tmp/test_sandbox", service.instance_variable_get(:@sandbox_path)
-  end
-
   test "execute handles string keys in arguments" do
     service = ToolCallService.new
 

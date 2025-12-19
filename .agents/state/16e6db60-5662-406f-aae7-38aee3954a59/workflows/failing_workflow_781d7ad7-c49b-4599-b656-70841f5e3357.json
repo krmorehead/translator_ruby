@@ -1,0 +1,53 @@
+{
+  "owner_id": "16e6db60-5662-406f-aae7-38aee3954a59",
+  "workflow_id": "781d7ad7-c49b-4599-b656-70841f5e3357",
+  "workflow_name": "failing_workflow",
+  "started_at": "2025-12-19T22:17:34Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:17:34 UTC",
+        "duration_in_state": 0.000446831
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-19T22:17:34Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "failed",
+        "event": "fail",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:17:34 UTC",
+        "duration_in_state": 0.000270674
+      },
+      {
+        "from": "running",
+        "to": "failed",
+        "event": "fail",
+        "payload": {},
+        "timestamp": "2025-12-19T22:17:34Z",
+        "duration_in_state": 0.000226241
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [],
+    "errors": [
+      {
+        "error": "Something went wrong",
+        "error_class": null,
+        "state": "running",
+        "timestamp": "2025-12-19T22:17:34Z"
+      }
+    ],
+    "outputs": []
+  }
+}

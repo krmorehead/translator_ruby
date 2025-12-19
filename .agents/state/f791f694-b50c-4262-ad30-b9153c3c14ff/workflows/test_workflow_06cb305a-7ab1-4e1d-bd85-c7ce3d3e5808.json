@@ -1,0 +1,52 @@
+{
+  "owner_id": "f791f694-b50c-4262-ad30-b9153c3c14ff",
+  "workflow_id": "06cb305a-7ab1-4e1d-bd85-c7ce3d3e5808",
+  "workflow_name": "test_workflow",
+  "started_at": "2025-12-19T22:17:34Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:17:34 UTC",
+        "duration_in_state": 0.000096029
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-19T22:17:34Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:17:34 UTC",
+        "duration_in_state": 0.00019106
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-19T22:17:34Z",
+        "duration_in_state": 0.000176686
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [],
+    "errors": [],
+    "outputs": [
+      {
+        "result": "done",
+        "timestamp": "2025-12-19T22:17:34Z",
+        "state": "running"
+      }
+    ]
+  }
+}

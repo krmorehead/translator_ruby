@@ -10,8 +10,8 @@ class WorkflowOrchestrator
     validate_workflow!
   end
 
-  def process(prompt:, conversation:, sandbox_path:)
-    @workflow.setup(prompt: prompt, conversation: conversation, sandbox_path: sandbox_path)
+  def process(prompt:, conversation:)
+    @workflow.setup(prompt: prompt, conversation: conversation)
     @workflow.execute
     @workflow
   end

@@ -12,7 +12,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
   end
 
   def new_store
-    MemoryStore.new(path: @path, sandbox_path: @sandbox_path)
+    MemoryStore.new(path: @path)
   end
 
   test "initializes defaults when file missing" do

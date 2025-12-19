@@ -7,7 +7,7 @@ class QuestLogMemoryTest < ActiveSupport::TestCase
     @sandbox_path = Rails.root.join("test", "tool_test", "quest_log_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(@sandbox_path)
     @path = File.join(@sandbox_path, "memory.json")
-    @store = MemoryStore.new(path: @path, sandbox_path: @sandbox_path)
+    @store = MemoryStore.new(path: @path)
   end
 
   def teardown

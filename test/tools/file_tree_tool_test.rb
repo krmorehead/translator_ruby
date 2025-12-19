@@ -4,7 +4,7 @@ class FileTreeToolTest < ActiveSupport::TestCase
   def setup
     @sandbox_path = Rails.root.join("tmp", "file_tree_test_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(@sandbox_path)
-    @tool = FileTreeTool.new(sandbox_path: @sandbox_path)
+    @tool = FileTreeTool.new()
 
     # Create test directory structure
     FileUtils.mkdir_p(File.join(@sandbox_path, "lib"))

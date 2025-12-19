@@ -6,7 +6,7 @@ class BaseWorkflowTest < ActiveSupport::TestCase
   class SampleWorkflow < BaseWorkflow
     def execute
       trigger(:start) # Move to running state
-      mark_complete(ok: true, prompt: prompt, sandbox_path: sandbox_path)
+      mark_complete(ok: true, prompt: prompt)
     end
   end
 
@@ -21,15 +21,14 @@ class BaseWorkflowTest < ActiveSupport::TestCase
     assert_raises(NotImplementedError) { BaseWorkflow.new.execute }
   end
 
-  test "setup stores prompt conversation and sandbox_path" do
+  test "setup stores prompt and conversation" do
     workflow = SampleWorkflow.new
     conversation = Object.new
-    result = workflow.setup(prompt: "hi", conversation: conversation, sandbox_path: "/tmp/sandbox")
+    result = workflow.setup(prompt: "hi", conversation: conversation)
 
     assert_equal workflow, result
     assert_equal "hi", workflow.prompt
     assert_equal conversation, workflow.conversation
-    assert_equal "/tmp/sandbox", workflow.sandbox_path
   end
 
   test "workflow_name returns underscored class name" do
@@ -38,18 +37,18 @@ class BaseWorkflowTest < ActiveSupport::TestCase
 
   test "marks complete with result" do
     workflow = SampleWorkflow.new
-    workflow.setup(prompt: "hi", conversation: nil, sandbox_path: "/tmp/sandbox")
+    workflow.setup(prompt: "hi", conversation: nil)
     workflow.execute
 
     assert_predicate workflow, :complete?
     refute_predicate workflow, :failed?
-    assert_equal({ ok: true, prompt: "hi", sandbox_path: "/tmp/sandbox" }, workflow.result)
+    assert_equal({ ok: true, prompt: "hi" }, workflow.result)
     assert_nil workflow.error
   end
 
   test "marks failed with error" do
     workflow = FailingWorkflow.new
-    workflow.setup(prompt: "oops", conversation: nil, sandbox_path: "/tmp/sandbox")
+    workflow.setup(prompt: "oops", conversation: nil)
     workflow.execute
 
     assert_predicate workflow, :failed?

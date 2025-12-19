@@ -3,7 +3,9 @@
 # Abstract base class for all tools that can be called by the LLM.
 # Subclasses must implement the schema class method and execute instance method.
 class BaseTool
-  attr_reader :sandbox_path
+  # Default base path for agent data storage
+  # Override with AGENT_DATA_PATH env var
+  DEFAULT_DATA_PATH = ".agents/memories"
 
   # Base tool config for OpenAI tool calling
   def self.tool_choice
@@ -14,8 +16,17 @@ class BaseTool
     [ schema ]
   end
 
-  def initialize(sandbox_path: nil)
-    @sandbox_path = sandbox_path
+  # Base path for agent data - use env var or default
+  def self.data_path
+    ENV.fetch("AGENT_DATA_PATH", DEFAULT_DATA_PATH)
+  end
+
+  # Default file path for this tool's data
+  def self.default_file_path
+    File.join(data_path, "#{name_identifier}.json")
+  end
+
+  def initialize
   end
 
   # Returns the OpenAI function calling schema for this tool.
@@ -53,6 +64,16 @@ class BaseTool
     raise NotImplementedError, "#{self.class.name} must implement #execute"
   end
 
+  # Instance method to access data path
+  def data_path
+    self.class.data_path
+  end
+
+  # Instance method to access default file path
+  def default_file_path
+    self.class.default_file_path
+  end
+
   protected
 
   # Builds a success result hash
@@ -63,19 +84,5 @@ class BaseTool
   # Builds an error result hash
   def error_result(error)
     { success: false, result: nil, error: error }
-  end
-
-  # Validates that a path is within the sandbox (if sandbox is configured)
-  def validate_sandbox_path!(path)
-    return true unless sandbox_path
-
-    expanded_path = File.expand_path(path)
-    expanded_sandbox = File.expand_path(sandbox_path)
-
-    unless expanded_path.start_with?(expanded_sandbox)
-      raise SecurityError, "Path '#{path}' is outside the sandbox '#{sandbox_path}'"
-    end
-
-    true
   end
 end

@@ -1,0 +1,88 @@
+{
+  "owner_id": "1ec8d1ab-d955-45c8-a67d-f5ade2dc8448",
+  "workflow_id": "31877ce8-2306-4449-9f31-9e4222d4c1b5",
+  "workflow_name": "dnd_chat",
+  "started_at": "2025-12-19T22:21:34Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:21:34 UTC",
+        "duration_in_state": 0.000319033
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-19T22:21:34Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-19 22:21:48 UTC",
+        "duration_in_state": 13.712328819
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-19T22:21:48Z",
+        "duration_in_state": 13.712319881
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [],
+    "errors": [],
+    "outputs": [
+      {
+        "narrative": "The player's frantic search through the room turned up only dust motes and a single, forgotten button. The chest remained stubbornly locked, its rusted hinges resisting all effort, while the barred window offered no escape. Defeat settled over the empty space as the player realized they'd found nothing of value.",
+        "actions": [
+          {
+            "action": "roll_dice",
+            "result": {
+              "success": true,
+              "action": "roll_dice_action",
+              "timestamp": "2025-12-19T22:21:36Z",
+              "result": "1d20: [4] = 4",
+              "summary": "Rolled 4 for Searching the room for clues or items",
+              "findings": [
+                {
+                  "text": "Searching the room for clues or items: rolled 4",
+                  "source": "dice"
+                }
+              ],
+              "metadata": {
+                "dice": "1d20",
+                "rolls": [
+                  4
+                ],
+                "modifier": 0,
+                "total": 4,
+                "reason": "Searching the room for clues or items"
+              }
+            }
+          }
+        ],
+        "conversation": "#<Conversation:0x000072f6c4ce7650>",
+        "thoughts": null,
+        "agent_metadata": {
+          "iterations": 1,
+          "actions_executed": 1,
+          "started_at": "2025-12-19T22:21:34Z",
+          "completed_at": "2025-12-19T22:21:48Z",
+          "final_state": "complete"
+        },
+        "timestamp": "2025-12-19T22:21:48Z",
+        "state": "running"
+      }
+    ]
+  }
+}

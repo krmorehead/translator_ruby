@@ -1,0 +1,1 @@
+This is secret content that only the LLM should read.

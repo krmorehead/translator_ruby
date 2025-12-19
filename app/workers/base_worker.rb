@@ -193,9 +193,9 @@ class BaseWorker
 
   def validate_path!(path)
     expanded = File.expand_path(path)
-    unless File.exist?(expanded) && File.readable?(expanded)
-      raise ArgumentError, "Path does not exist or is not readable: #{path}"
-    end
+    # Create directory if it doesn't exist (for agent data paths)
+    # Research workers will pass codebase paths that should already exist
+    FileUtils.mkdir_p(expanded) unless File.exist?(expanded)
     expanded
   end
 end

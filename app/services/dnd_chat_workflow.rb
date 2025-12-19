@@ -19,13 +19,18 @@ class DndChatWorkflow < BaseWorkflow
     Respond by selecting appropriate tools and narrating outcomes in a story-focused way.
   PROMPT
 
+  DEFAULT_PATH = File.join("tmp", "dnd_chat_sandbox")
+
   def self.workflow_name
     "dnd_chat"
   end
 
-  def initialize(memory_store_class: MemoryStore)
+  attr_reader :agent_path
+
+  def initialize(memory_store_class: MemoryStore, path: nil)
     super()
     @memory_store_class = memory_store_class
+    @agent_path = path || DEFAULT_PATH
   end
 
   # Orchestrates the full workflow using the DndAgentWorker
@@ -33,15 +38,13 @@ class DndChatWorkflow < BaseWorkflow
     trigger(:start)
     state = WorkflowState.new(status: WorkflowState::STATUSES[:running], prompt: prompt)
 
-    # Ensure sandbox path exists
-    agent_path = sandbox_path || Dir.mktmpdir
-    FileUtils.mkdir_p(agent_path) unless File.exist?(agent_path)
+    FileUtils.mkdir_p(@agent_path) unless File.exist?(@agent_path)
 
     memory_store = build_memory_store
 
     agent = DndAgentWorker.new(
       goal: prompt,
-      path: agent_path,
+      path: @agent_path,
       memory_store: memory_store,
       conversation: conversation
     )
@@ -109,8 +112,8 @@ class DndChatWorkflow < BaseWorkflow
   private
 
   def build_memory_store
-    path = File.join(sandbox_path || Dir.mktmpdir, "memory.json")
-    @memory_store_class.new(path: path, sandbox_path: sandbox_path)
+    path = File.join(@agent_path, "memory.json")
+    @memory_store_class.new(path: path)
   end
 
   def system_prompt(extra)

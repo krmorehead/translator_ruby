@@ -99,7 +99,7 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
   def execute_tool_response(parsed)
     tool_name = parsed["tool"]
     args = filter_args_for(tool_name, parsed["arguments"] || {})
-    ToolCallService.new(sandbox_path: @sandbox_path).execute(tool_name: tool_name, arguments: args)
+    ToolCallService.new().execute(tool_name: tool_name, arguments: args)
   end
 
   test "LLM selects dice_roll for advantage request" do
@@ -148,7 +148,7 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     
     result1 = execute_tool_response(parsed1)
     if result1[:success] == false && result1[:error].to_s.include?("section required")
-      result1 = ToolCallService.new(sandbox_path: @sandbox_path).execute(
+      result1 = ToolCallService.new().execute(
         tool_name: MemoryTool::NAME,
         arguments: {
           operation: MemoryTool::OP_UPDATE,

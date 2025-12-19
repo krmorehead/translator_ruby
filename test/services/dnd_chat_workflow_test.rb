@@ -25,7 +25,7 @@ class DndChatWorkflowTest < ActiveSupport::TestCase
     workflow = DndChatWorkflow.new
     conversation = Conversation.new(messages: [ Message.new(source: "user", target: "assistant", message: "Start the adventure") ])
 
-    workflow.setup(prompt: "Search the room", conversation: conversation, sandbox_path: SANDBOX.to_s)
+    workflow.setup(prompt: "Search the room", conversation: conversation)
     state = workflow.execute
 
     assert workflow.complete?, "Workflow should complete: #{workflow.error || state&.error}"

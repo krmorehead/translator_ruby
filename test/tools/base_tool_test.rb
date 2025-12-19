@@ -85,16 +85,9 @@ class BaseToolTest < ActiveSupport::TestCase
     assert_nil result[:error]
   end
 
-  test "sandbox_path is stored when provided" do
-    tool = TestTool.new(sandbox_path: "/tmp/sandbox")
-
-    assert_equal "/tmp/sandbox", tool.sandbox_path
-  end
-
-  test "sandbox_path is nil when not provided" do
+  test "tool can be instantiated without arguments" do
     tool = TestTool.new
-
-    assert_nil tool.sandbox_path
+    assert_not_nil tool
   end
 end
 

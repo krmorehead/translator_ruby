@@ -101,11 +101,13 @@ module Actions
     def build_synthesis_context(findings)
       context = Contexts::BaseContext.new
 
-      findings.each do |finding|
+      Array(findings).each do |finding|
+        content_text = finding.is_a?(Hash) ? (finding[:text] || finding.to_s) : finding.to_s
+        source = finding.is_a?(Hash) ? (finding[:source] || "finding") : "finding"
         context.add(
-          content: finding[:text],
-          topics: ["finding", finding[:source]].compact,
-          source: finding[:source] || "finding"
+          content: content_text,
+          topics: ["finding", source].compact,
+          source: source
         )
       end
 

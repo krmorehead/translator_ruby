@@ -25,7 +25,7 @@ class BaseWorkflow
     record_state_to_memory(from, to, event, payload) if respond_to?(:workflow_memory, true)
   end
 
-  attr_reader :prompt, :conversation, :sandbox_path, :result, :error,
+  attr_reader :prompt, :conversation, :result, :error,
               :workflow_id, :owner_id, :workflow_memory, :parent_memory
 
   def self.workflow_name
@@ -45,10 +45,9 @@ class BaseWorkflow
   end
 
   # Stores incoming context; returns self for chaining.
-  def setup(prompt: nil, conversation: nil, sandbox_path: nil)
+  def setup(prompt: nil, conversation: nil)
     @prompt = prompt
     @conversation = conversation
-    @sandbox_path = sandbox_path
 
     # Initialize workflow memory if we have an owner_id
     initialize_workflow_memory if @owner_id
@@ -156,9 +155,7 @@ class BaseWorkflow
   end
 
   def workflow_memory_path
-    return nil unless sandbox_path
-
-    base = ENV["AGENT_STATE_PATH"] || File.join(sandbox_path, ".agents", "state")
+    base = ENV["AGENT_STATE_PATH"] || File.join(".agents", "state")
     File.join(base, @owner_id, "workflows", "#{self.class.workflow_name}_#{@workflow_id}.json")
   end
 

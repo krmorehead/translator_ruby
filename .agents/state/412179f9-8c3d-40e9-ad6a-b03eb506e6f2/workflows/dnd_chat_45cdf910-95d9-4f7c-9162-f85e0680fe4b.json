@@ -1,0 +1,88 @@
+{
+  "owner_id": "412179f9-8c3d-40e9-ad6a-b03eb506e6f2",
+  "workflow_id": "45cdf910-95d9-4f7c-9162-f85e0680fe4b",
+  "workflow_name": "dnd_chat",
+  "started_at": "2025-12-19T21:54:24Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-19 21:54:24 UTC",
+        "duration_in_state": 0.000302291
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-19T21:54:24Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-19 21:54:32 UTC",
+        "duration_in_state": 7.394090194
+      },
+      {
+        "from": "running",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-19T21:54:32Z",
+        "duration_in_state": 7.394086961
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [],
+    "errors": [],
+    "outputs": [
+      {
+        "narrative": "Your fingers traced the cold stone walls of the chamber, but the search uncovered only dust motes dancing in the torchlight and a single, forgotten bone. The silence deepened as you turned away, the room holding its breath like a secret too weary to share. No hidden latch, no whispered clue—just the hollow echo of your own footsteps fading into the dark.",
+        "actions": [
+          {
+            "action": "roll_dice",
+            "result": {
+              "success": true,
+              "action": "roll_dice_action",
+              "timestamp": "2025-12-19T21:54:25Z",
+              "result": "1d20: [5] = 5",
+              "summary": "Rolled 5 for Search the room for clues or items",
+              "findings": [
+                {
+                  "text": "Search the room for clues or items: rolled 5",
+                  "source": "dice"
+                }
+              ],
+              "metadata": {
+                "dice": "1d20",
+                "rolls": [
+                  5
+                ],
+                "modifier": 0,
+                "total": 5,
+                "reason": "Search the room for clues or items"
+              }
+            }
+          }
+        ],
+        "conversation": "#<Conversation:0x000070ed29a78320>",
+        "thoughts": null,
+        "agent_metadata": {
+          "iterations": 1,
+          "actions_executed": 1,
+          "started_at": "2025-12-19T21:54:24Z",
+          "completed_at": "2025-12-19T21:54:32Z",
+          "final_state": "complete"
+        },
+        "timestamp": "2025-12-19T21:54:32Z",
+        "state": "running"
+      }
+    ]
+  }
+}

@@ -1,12 +1,7 @@
 # frozen_string_literal: true
 
 class DndChatController < ApplicationController
-  SANDBOX_ROOT = Rails.root.join("tmp", "dnd_chat_sandbox")
-  INVENTORY_PATH = SANDBOX_ROOT.join("inventory.json")
-  MEMORY_PATH = SANDBOX_ROOT.join("memory.json")
-  CONVERSATION_PATH = SANDBOX_ROOT.join("conversation.json")
-
-  before_action :ensure_sandbox!
+  before_action :ensure_data_path!
   before_action :ensure_tools_loaded!
 
   def spa
@@ -48,7 +43,7 @@ class DndChatController < ApplicationController
     # DndAgentWorker handles all orchestration and persistence internally
     agent = DndAgentWorker.new(
       goal: user_message,
-      path: SANDBOX_ROOT.to_s,
+      path: data_path,
       memory_store: memory_store,
       conversation: convo
     )
@@ -89,8 +84,24 @@ class DndChatController < ApplicationController
 
   private
 
-  def ensure_sandbox!
-    FileUtils.mkdir_p(SANDBOX_ROOT)
+  def data_path
+    BaseTool.data_path
+  end
+
+  def memory_path
+    File.join(data_path, "memory.json")
+  end
+
+  def inventory_path
+    File.join(data_path, "inventory.json")
+  end
+
+  def conversation_path
+    File.join(data_path, "conversation.json")
+  end
+
+  def ensure_data_path!
+    FileUtils.mkdir_p(data_path)
     reset_conversation_if_requested
     seed_story_if_needed
   end
@@ -109,15 +120,15 @@ class DndChatController < ApplicationController
   end
 
   def memory_store
-    @memory_store ||= MemoryStore.new(path: MEMORY_PATH, sandbox_path: SANDBOX_ROOT)
+    @memory_store ||= MemoryStore.new(path: memory_path)
   end
 
   def inventory_store
-    @inventory_store ||= InventoryStore.new(path: INVENTORY_PATH, sandbox_path: SANDBOX_ROOT)
+    @inventory_store ||= InventoryStore.new(path: inventory_path)
   end
 
   def agent_version_value
-    candidates = [ CONVERSATION_PATH, MEMORY_PATH, INVENTORY_PATH ].select { |p| File.exist?(p) }
+    candidates = [conversation_path, memory_path, inventory_path].select { |p| File.exist?(p) }
     return 0 if candidates.empty?
 
     candidates.map { |p| File.mtime(p).to_i }.max
@@ -127,14 +138,14 @@ class DndChatController < ApplicationController
     reset_flag = ENV.fetch("DND_CHAT_RESET_CONVERSATION", Rails.env.development? ? "true" : "false")
     return unless reset_flag.to_s.downcase == "true"
 
-    FileUtils.rm_f(CONVERSATION_PATH)
+    FileUtils.rm_f(conversation_path)
   end
 
   # Minimal defaults: scenario + main quest only
   def seed_story_if_needed
-    return if File.exist?(MEMORY_PATH)
+    return if File.exist?(memory_path)
 
-    store = MemoryStore.new(path: MEMORY_PATH, sandbox_path: SANDBOX_ROOT)
+    MemoryStore.new(path: memory_path)
     # Leave sections empty; LLM will create scenario + main quest on first interaction per system prompt.
   end
 end

@@ -3,8 +3,6 @@
 
 # Tool that compresses all memory sections using each memory's summarize/weight.
 class ContextCompressionTool < BaseTool
-  DEFAULT_FILENAME = "memory.json"
-  PATH = File.join("tmp", "dnd_chat_sandbox", DEFAULT_FILENAME)
   NAME = "context_compress".freeze
 
   def self.name_identifier
@@ -21,8 +19,7 @@ class ContextCompressionTool < BaseTool
       properties: {
         path: {
           type: "string",
-          description: "Optional memory file path (defaults to sandbox/memory.json)",
-          nullable: true
+          description: "Memory file path (optional, defaults to agent data path)"
         }
       },
       required: [],
@@ -31,11 +28,11 @@ class ContextCompressionTool < BaseTool
   end
 
   def execute(path: nil)
-    store = MemoryStore.new(path: resolve_path(path), sandbox_path: sandbox_path)
+    store = MemoryStore.new(path: path || default_file_path)
 
     summaries = Memories::Registry::ALL.map do |klass|
-      summary = klass.summarize(store: store) rescue { section: klass.section_name, summary: "" }
-      weight = klass.weight rescue 1.0
+      summary = klass.summarize(store: store)
+      weight = klass.weight
       {
         section: summary[:section],
         summary: summary[:summary].to_s,
@@ -51,20 +48,6 @@ class ContextCompressionTool < BaseTool
       overall_summary: overall_summary,
       sections: summaries
     })
-  rescue => e
-    error_result("Context compression error: #{e.message}")
-  end
-
-  private
-
-  def resolve_path(path)
-    return path if path && !path.to_s.strip.empty? && File.absolute_path?(path)
-    
-    if sandbox_path
-      File.join(sandbox_path, DEFAULT_FILENAME)
-    else
-      PATH
-    end
   end
 end
 # Register with ToolCallService

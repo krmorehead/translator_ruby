@@ -27,18 +27,12 @@ class ReadFileTool < BaseTool
   end
 
   def execute(path:)
-    validate_sandbox_path!(path)
-
     unless File.exist?(path)
       return error_result("File not found: #{path}")
     end
 
     content = File.read(path)
     success_result(content)
-  rescue SecurityError => e
-    error_result(e.message)
-  rescue => e
-    error_result("Error reading file: #{e.message}")
   end
 end
 

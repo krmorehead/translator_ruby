@@ -1,0 +1,68 @@
+{
+  "owner_id": "eb75a800-fc42-4635-b696-7982cb6c4ce8",
+  "workflow_id": "13539841-cb6b-4ff6-8608-d9dddeb5d2bf",
+  "workflow_name": "custom_state_workflow",
+  "started_at": "2025-12-19T21:45:25Z",
+  "sections": {
+    "state_transitions": [
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "transitioned_at": "2025-12-19 21:45:25 UTC",
+        "duration_in_state": 0.000403868
+      },
+      {
+        "from": "pending",
+        "to": "running",
+        "event": "start",
+        "payload": {},
+        "timestamp": "2025-12-19T21:45:25Z",
+        "duration_in_state": 0
+      },
+      {
+        "from": "running",
+        "to": "validating",
+        "event": "validated",
+        "payload": {},
+        "transitioned_at": "2025-12-19 21:45:25 UTC",
+        "duration_in_state": 0.000177274
+      },
+      {
+        "from": "running",
+        "to": "validating",
+        "event": "validated",
+        "payload": {},
+        "timestamp": "2025-12-19T21:45:25Z",
+        "duration_in_state": 0.000160364
+      },
+      {
+        "from": "validating",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "transitioned_at": "2025-12-19 21:45:25 UTC",
+        "duration_in_state": 0.004152863
+      },
+      {
+        "from": "validating",
+        "to": "complete",
+        "event": "finish",
+        "payload": {},
+        "timestamp": "2025-12-19T21:45:25Z",
+        "duration_in_state": 0.004155115
+      }
+    ],
+    "workflow_context": [],
+    "decisions": [],
+    "errors": [],
+    "outputs": [
+      {
+        "validated": true,
+        "timestamp": "2025-12-19T21:45:25Z",
+        "state": "validating"
+      }
+    ]
+  }
+}
