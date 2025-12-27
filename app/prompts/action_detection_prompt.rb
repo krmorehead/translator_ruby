@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 
-class ActionDetectionPrompt < BasePrompt
+class ActionDetectionPrompt < ToolCallPrompt
   def initialize(tools:)
     raise ArgumentError, "tools are required for action detection" if tools.nil? || tools.empty?
 
@@ -45,7 +45,7 @@ class ActionDetectionPrompt < BasePrompt
     context.format_for_prompt(question || "", format: :action_detection)
   end
 
-  def execute(prompt:, context: {})
+  def execute(prompt:, context:, model_override: nil)
     result = super
     content = result[:content]
     

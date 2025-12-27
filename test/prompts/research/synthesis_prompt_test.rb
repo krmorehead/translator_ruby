@@ -93,7 +93,8 @@ class SynthesisPromptTest < ActiveSupport::TestCase
 
     validated = result[:content][:validated_insights] || []
     summary = result[:content][:summary].to_s.downcase
-    all_text = validated.map { |v| v[:insight].to_s.downcase }.join(" ") + " " + summary
+    # validated_insights is now an array of strings
+    all_text = validated.map { |v| v.to_s.downcase }.join(" ") + " " + summary
 
     # If we have any text, check for relevant terms
     if all_text.strip.present?
@@ -113,10 +114,10 @@ class SynthesisPromptTest < ActiveSupport::TestCase
     assert result[:content][:conflicts] || result[:content][:validated_insights]
   end
 
-  test "multi_pass: has filtered_out key" do
+  test "multi_pass: has open_questions key" do
     result = multi_pass_synthesis
 
-    assert result[:content].key?(:filtered_out)
+    assert result[:content].key?(:open_questions)
   end
 
   test "multi_pass: summary is non-empty string" do

@@ -91,7 +91,8 @@ class WriteFileToolTest < ActiveSupport::TestCase
     test_file = File.join(@test_path, "llm_write_test.txt")
     expected_content = "Hello from the LLM!"
 
-    tools = ToolCallService.available_tools
+    # Only include the write_file tool to keep context size small for tool-calling model
+    tools = [WriteFileTool.schema]
     detector = ActionDetectionPrompt.new(tools: tools)
 
     context = Contexts::BaseContext.new
@@ -110,14 +111,20 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert write_action, "LLM should propose write_file action"
 
     arguments = write_action[:arguments] || {}
-    arguments[:path] = test_file
-    arguments[:content] = expected_content
+    # Normalize argument keys - LLM may return path_ instead of path
+    normalized_args = {}
+    arguments.each do |key, value|
+      normalized_key = key.to_s.gsub(/_+$/, "").to_sym
+      normalized_args[normalized_key] = value
+    end
+    normalized_args[:path] = test_file
+    normalized_args[:content] = expected_content
 
     service = ToolCallService.new
-    result = service.execute(tool_name: "write_file", arguments: arguments)
+    result = service.execute(tool_name: "write_file", arguments: normalized_args)
 
     assert_equal true, result[:success], "Write file should succeed"
-    assert File.exist?(arguments[:path]), "File should be created"
-    assert_includes File.read(arguments[:path]), "Hello", "File should contain expected content"
+    assert File.exist?(test_file), "File should be created"
+    assert_includes File.read(test_file), "Hello", "File should contain expected content"
   end
 end

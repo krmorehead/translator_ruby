@@ -3,10 +3,10 @@
 require "test_helper"
 
 class NarrativePromptTest < ActiveSupport::TestCase
-  test "model comes from BasePrompt" do
+  test "model comes from general_llm capability via BasePrompt" do
     prompt = NarrativePrompt.new
-    # Model should come from LLM_MODEL via BasePrompt, not a per-prompt override
-    assert_equal ENV["LLM_MODEL"], prompt.model
+    # Model should come from general_llm capability via BasePrompt, not a per-prompt override
+    assert_equal "./vllm/models/qwen3_30b_a3b_moe", prompt.model
   end
 
   test "system prompt sets DM voice" do

@@ -86,12 +86,7 @@ module Research
           output << ""
           output << "The following questions remain unanswered or need further investigation:"
           output << ""
-          open_questions.each do |q|
-            question = q[:question]
-            reason = q[:reason]
-            output << "- **#{question}**"
-            output << "  - #{reason}" if reason
-          end
+          open_questions.each { |q| output << "- #{q}" }
           output << ""
         end
 

@@ -21,10 +21,12 @@ class BasePrompt
     ENV.fetch("MAX_SAFE_CONTEXT").to_i
   end
 
-  # Default model comes from the shared LLM_MODEL env var.
+  # Default model comes from the general_llm capability.
   # Raises an error if not configured to fail fast with helpful message.
   def model
-    ENV["LLM_MODEL"].presence || raise_missing_model_error
+    GenericLlmClient.model_for(:general_llm)
+  rescue ArgumentError => e
+    raise_missing_model_error
   end
 
   # Must return a system prompt string.
@@ -69,6 +71,25 @@ class BasePrompt
     messages = build_messages(prompt, context)
     validate_context_size!(messages)
 
+    parameters = build_parameters(messages)
+
+    response = @client.chat(parameters: parameters)
+    parse_response(response)
+  rescue JSON::ParserError => e
+    raise "Failed to parse LLM response as JSON: #{e.message}"
+  rescue => e
+    raise "LLM prompt execution failed: #{e.message}"
+  end
+
+  private
+
+  def base_system_prompt
+    BASE_SYSTEM_PROMPT
+  end
+
+  # Build parameters for the LLM API call
+  # Subclasses can override to add tools or other parameters
+  def build_parameters(messages)
     parameters = {
       model: model,
       messages: messages
@@ -85,18 +106,7 @@ class BasePrompt
       }
     end
 
-    response = @client.chat(parameters: parameters)
-    parse_response(response)
-  rescue JSON::ParserError => e
-    raise "Failed to parse LLM response as JSON: #{e.message}"
-  rescue => e
-    raise "LLM prompt execution failed: #{e.message}"
-  end
-
-  private
-
-  def base_system_prompt
-    BASE_SYSTEM_PROMPT
+    parameters
   end
 
   # Validate that the total context size doesn't exceed MAX_SAFE_CONTEXT
@@ -141,16 +151,16 @@ class BasePrompt
   end
 
   def default_client
-    client = GenericLlmClient.instance
+    client = GenericLlmClient.client_for(:general_llm)
     raise "LLM client not configured" unless client
     client
   end
 
   def raise_missing_model_error
     raise <<~ERROR.squish
-      LLM_MODEL environment variable is not set.
-      Ensure your .env file is loaded properly (check .env for development, .env.test for tests).
-      Example: LLM_MODEL=your-model-name
+      LLM configuration error: Unable to determine model for capability.
+      Ensure your .env file is loaded properly with API_KEY and LLM_URL configured
+      (check .env for development, .env.test for tests).
     ERROR
   end
 end

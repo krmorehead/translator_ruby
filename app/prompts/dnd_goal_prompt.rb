@@ -2,7 +2,7 @@
 
 # Prompt for evaluating whether the player's intent has been satisfied.
 # Used by the D&D agent to decide when to stop executing actions and narrate.
-class DndGoalPrompt < BasePrompt
+class DndGoalPrompt < ToolCallPrompt
   def system_prompt
     <<~PROMPT
       You evaluate whether the player's intent has been satisfied by the completed actions.

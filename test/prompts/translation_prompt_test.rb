@@ -29,8 +29,7 @@ class TranslationPromptTest < ActiveSupport::TestCase
     assert_equal "string", schema[:properties][:translation][:type]
   end
 
-  test "model falls back to translation-specific env or default" do
-    ENV.delete("TRANSLATION_MODEL")
+  test "model comes from general_llm capability" do
     prompt = TranslationPrompt.new(
       protected_strings: [],
       target_language: "Spanish",
@@ -38,7 +37,7 @@ class TranslationPromptTest < ActiveSupport::TestCase
       formality: "formal"
     )
 
-    assert_equal ENV["LLM_MODEL"].presence || "gpt-4o-mini", prompt.model
+    assert_equal "./vllm/models/qwen3_30b_a3b_moe", prompt.model
   end
 
   test "format_context includes provided metadata" do

@@ -194,12 +194,8 @@ class OutputTemplatesTest < ActiveSupport::TestCase
         detailed_sections: [
           { sub_question: "How are tokens generated?", answer: "Using JWT library", key_findings: ["Uses HS256"] }
         ],
-        validated_insights: [
-          { insight: "Tokens expire after 24 hours", confidence: 0.9 }
-        ],
-        open_questions: [
-          { question: "What about refresh tokens?", reason: "Not implemented yet" }
-        ]
+        validated_insights: ["Tokens expire after 24 hours"],
+        open_questions: ["What about refresh tokens?"]
       }
 
       result = @template.render(data)
@@ -212,7 +208,7 @@ class OutputTemplatesTest < ActiveSupport::TestCase
       assert_includes result, "### Key Findings"
       assert_includes result, "HS256"
       assert_includes result, "## Validated Insights"
-      assert_includes result, "90%"
+      assert_includes result, "Tokens expire"
       assert_includes result, "## Open Questions"
     end
   end

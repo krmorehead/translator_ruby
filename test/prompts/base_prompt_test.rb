@@ -21,11 +21,9 @@ class BasePromptTest < ActiveSupport::TestCase
     assert_equal BasePrompt::BASE_SYSTEM_PROMPT, prompt.system_prompt
   end
 
-  test "model defaults to env value" do
-    with_env("LLM_MODEL", "demo-model") do
-      prompt = OutcomePrompt.new
-      assert_equal "demo-model", prompt.model
-    end
+  test "model defaults to general_llm capability" do
+    prompt = OutcomePrompt.new
+    assert_equal "./vllm/models/qwen3_30b_a3b_moe", prompt.model
   end
 
   test "tools accessor returns passed tools" do

@@ -6,46 +6,13 @@ module Research
   class SynthesisPrompt < BaseResearchPrompt
     def system_prompt
       <<~PROMPT
-        You are a research synthesis expert. Your task is to combine findings from multiple
-        analysis passes into a coherent, validated understanding.
+        Synthesize findings from multiple analysis passes into a validated understanding.
 
-        ## Synthesis Process
-
-        1. **Cross-Validation**: Include insights that appear in 2+ analysis passes as validated
-        2. **Conflict Detection**: Flag areas where passes disagree
-        3. **Relevance Filtering**: Remove findings irrelevant to the original topic
-        4. **Hierarchy Reconstruction**: Organize findings by the goal decomposition tree
-        5. **Gap Identification**: Note areas that need further investigation
-
-        ## Cross-Validation Rules
-
-        - An insight is VALIDATED if it appears (even with slightly different wording) in at least 2 analysis passes
-        - When validating, preserve the key terms from the original findings in your insight text
-        - An insight is CONFLICTED if passes give contradictory information
-        - Include unvalidated insights (appearing in only 1 pass) with lower confidence
-
-        ## IMPORTANT: Preserving Finding Content
-
-        When creating validated_insights, use the same key terms from the original findings.
-        For example, if passes mention "addition", your validated insight MUST include the word "addition".
-
-        ## Filtering Criteria
-
-        Filter out findings that are:
-        - Tangentially related but don't address the core question
-        - Implementation details when researching architecture (or vice versa)
-        - Generic observations that don't provide specific value
-
-        ## Output Structure
-
-        Create a coherent narrative that:
-        - Addresses the original research goal directly
-        - Organizes insights by sub-questions
-        - Highlights key findings with confidence levels
-        - Notes conflicts for human review
-        - Identifies remaining open questions
-
-        ALWAYS provide a non-empty summary field addressing the research goal.
+        Rules:
+        - VALIDATED: insight appears in 2+ passes (preserve original key terms)
+        - CONFLICTED: passes disagree - flag for review
+        - Filter irrelevant or generic findings
+        - Always provide a summary addressing the research goal
       PROMPT
     end
 
@@ -53,86 +20,12 @@ module Research
       {
         type: "object",
         properties: {
-          validated_insights: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                insight: { type: "string" },
-                sub_question: { type: "string", description: "Which sub-question this addresses" },
-                confidence: { type: "number", description: "Validation confidence (0-1)" },
-                supporting_passes: { type: "integer", description: "How many passes support this" },
-                source_files: {
-                  type: "array",
-                  items: { type: "string" }
-                }
-              },
-              required: %w[insight sub_question confidence supporting_passes],
-              additionalProperties: false
-            }
-          },
-          conflicts: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                topic: { type: "string" },
-                pass_1_finding: { type: "string" },
-                pass_2_finding: { type: "string" },
-                resolution_suggestion: { type: "string" }
-              },
-              required: %w[topic pass_1_finding pass_2_finding],
-              additionalProperties: false
-            }
-          },
-          filtered_out: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                finding: { type: "string" },
-                reason: { type: "string" }
-              },
-              required: %w[finding reason],
-              additionalProperties: false
-            }
-          },
-          summary: {
-            type: "string",
-            description: "Coherent narrative addressing the research goal"
-          },
-          detailed_sections: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                sub_question: { type: "string" },
-                answer: { type: "string" },
-                key_findings: {
-                  type: "array",
-                  items: { type: "string" }
-                },
-                confidence: { type: "number" }
-              },
-              required: %w[sub_question answer key_findings confidence],
-              additionalProperties: false
-            }
-          },
-          open_questions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                question: { type: "string" },
-                reason: { type: "string", description: "Why this remains unanswered" },
-                suggested_investigation: { type: "string" }
-              },
-              required: %w[question reason],
-              additionalProperties: false
-            }
-          }
+          validated_insights: { type: "array", items: { type: "string" } },
+          conflicts: { type: "array", items: { type: "string" } },
+          summary: { type: "string" },
+          open_questions: { type: "array", items: { type: "string" } }
         },
-        required: %w[validated_insights conflicts filtered_out summary detailed_sections open_questions],
+        required: %w[validated_insights conflicts summary open_questions],
         additionalProperties: false
       }
     end

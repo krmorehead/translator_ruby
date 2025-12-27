@@ -666,9 +666,7 @@ class ResearchWorkflow < BaseWorkflow
         "summary" => "No findings were generated during research.",
         "validated_insights" => [],
         "conflicts" => [],
-        "filtered_out" => [],
-        "detailed_sections" => [],
-        "open_questions" => [{ "question" => goal, "reason" => "No relevant files found" }]
+        "open_questions" => ["No relevant files found for: #{goal}"]
       }
     end
 
@@ -679,7 +677,17 @@ class ResearchWorkflow < BaseWorkflow
       leaf_syntheses: @leaf_syntheses
     )
 
-    result[:content]
+    # Add detailed_sections from leaf syntheses for output formatting
+    content = result[:content] || {}
+    content[:detailed_sections] = @leaf_syntheses.map do |leaf|
+      {
+        sub_question: leaf[:sub_question] || leaf["sub_question"],
+        answer: leaf[:summary] || leaf["summary"] || "",
+        key_findings: (leaf[:key_findings] || leaf["key_findings"] || []).map { |f| f.is_a?(Hash) ? f[:finding] : f.to_s },
+        confidence: leaf[:confidence] || leaf["confidence"] || 0.5
+      }
+    end
+    content
   end
 
   def collect_leaves(node, leaves = [])

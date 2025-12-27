@@ -24,12 +24,8 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
           confidence: 0.85
         }
       ],
-      validated_insights: [
-        { insight: "Calculator is the core class", confidence: 0.95 }
-      ],
-      open_questions: [
-        { question: "How is error handling tested?", reason: "No test files found" }
-      ],
+      validated_insights: ["Calculator is the core class"],
+      open_questions: ["How is error handling tested?"],
       conflicts: []
     }
   end

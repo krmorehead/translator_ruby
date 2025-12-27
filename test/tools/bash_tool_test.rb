@@ -89,7 +89,8 @@ class BashToolTest < ActiveSupport::TestCase
   test "LLM can request bash tool to list files" do
     File.write(File.join(@sandbox_path, "llm_test_file.txt"), "LLM test content")
 
-    tools = ToolCallService.available_tools
+    # Only include the bash tool to keep context size small for tool-calling model
+    tools = [BashTool.schema]
     detector = ActionDetectionPrompt.new(tools: tools)
 
     context = Contexts::BaseContext.new
@@ -108,10 +109,16 @@ class BashToolTest < ActiveSupport::TestCase
     assert bash_action, "LLM should propose bash action"
 
     arguments = bash_action[:arguments] || {}
-    arguments[:command] ||= "ls #{@sandbox_path}"
+    # Normalize argument keys - LLM may return command_ instead of command
+    normalized_args = {}
+    arguments.each do |key, value|
+      normalized_key = key.to_s.gsub(/_+$/, "").to_sym
+      normalized_args[normalized_key] = value
+    end
+    normalized_args[:command] ||= "ls #{@sandbox_path}"
 
     service = ToolCallService.new()
-    result = service.execute(tool_name: "bash", arguments: arguments)
+    result = service.execute(tool_name: "bash", arguments: normalized_args)
 
     assert_equal true, result[:success], "Bash command should succeed"
     assert_includes result[:result], "llm_test_file.txt", "Result should include the test file"

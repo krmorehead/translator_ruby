@@ -3,10 +3,10 @@
 require "test_helper"
 
 class OutcomePromptTest < ActiveSupport::TestCase
-  test "model comes from BasePrompt" do
+  test "model comes from general_llm capability via BasePrompt" do
     prompt = OutcomePrompt.new
-    # Model should come from LLM_MODEL via BasePrompt, not a per-prompt override
-    assert_equal ENV["LLM_MODEL"], prompt.model
+    # Model should come from general_llm capability via BasePrompt, not a per-prompt override
+    assert_equal "./vllm/models/qwen3_30b_a3b_moe", prompt.model
   end
 
   test "response schema expects consequence" do

@@ -10,21 +10,69 @@ module GenericLlmClient
     Net::OpenTimeout
   ].freeze
 
+  # Capability definitions mapping to model configs
+  CAPABILITIES = {
+    general_llm: {
+      model_name: "./vllm/models/qwen3_30b_a3b_moe",
+      port: 52003
+    },
+    tool_calling: {
+      model_name: "./vllm/models/hivata____functionary__small__v3.2__AWQ/snapshots/bee9e4cae2fd117dfcc32780d7ac165074d2f679",
+      port: 52004
+    }
+  }.freeze
+
   module_function
 
-  def instance
-    @instance ||= build_from_env
+  # Get a client for the specified capability
+  # @param capability [Symbol] The capability (:general_llm or :tool_calling)
+  # @return [ClientRetryWrapper, nil] The LLM client for this capability
+  def client_for(capability)
+    @clients ||= {}
+    @clients[capability] ||= build_client_for_capability(capability)
   end
 
-  def build_from_env
+  # Legacy instance method for backward compatibility
+  def instance
+    client_for(:general_llm)
+  end
+
+  def build_client_for_capability(capability)
+    config = CAPABILITIES[capability]
+    raise ArgumentError, "Unknown capability: #{capability}" unless config
+
     return nil unless ENV["API_KEY"].present? && ENV["LLM_URL"].present?
 
+    url = build_url_for_capability(config[:port])
     client = OpenAI::Client.new(
       access_token: ENV["API_KEY"],
-      uri_base: ENV["LLM_URL"],
+      uri_base: url,
       request_timeout: request_timeout
     )
     wrap_with_retry(client)
+  end
+
+  # Extract host from LLM_URL and replace port
+  # @param port [Integer] The port for this capability
+  # @return [String] The full URL with updated port
+  def build_url_for_capability(port)
+    base_url = ENV["LLM_URL"]
+    uri = URI.parse(base_url)
+    uri.port = port
+    uri.to_s
+  end
+
+  # Get model name for a capability
+  # @param capability [Symbol] The capability
+  # @return [String] The model name
+  def model_for(capability)
+    config = CAPABILITIES[capability]
+    raise ArgumentError, "Unknown capability: #{capability}" unless config
+    config[:model_name]
+  end
+
+  def build_from_env
+    build_client_for_capability(:general_llm)
   end
 
   def request_timeout
@@ -45,7 +93,7 @@ module GenericLlmClient
   end
 
   def retry_attempts
-    ENV.fetch("LLM_RETRY", 1).to_i
+    ENV.fetch("LLM_RETRY_AT", 1).to_i
   end
 
   def retry_delay

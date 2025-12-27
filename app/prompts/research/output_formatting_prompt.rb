@@ -163,18 +163,11 @@ module Research
 
       prompt_parts << "\n## Validated Insights:"
       insights = synthesis[:validated_insights] || []
-      insights.each do |insight|
-        text = insight[:insight]
-        conf = insight[:confidence]
-        prompt_parts << "- #{text} (confidence: #{conf})"
-      end
+      insights.each { |insight| prompt_parts << "- #{insight}" }
 
       if (open_qs = synthesis[:open_questions])&.any?
         prompt_parts << "\n## Open Questions:"
-        open_qs.each do |q|
-          question = q[:question]
-          prompt_parts << "- #{question}"
-        end
+        open_qs.each { |q| prompt_parts << "- #{q}" }
       end
 
       prompt_parts << "\n## Format Specifications:"

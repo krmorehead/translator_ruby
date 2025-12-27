@@ -2,7 +2,7 @@
 
 # Prompt for the D&D agent to select the next action based on player intent.
 # Uses a tight context format optimized for quick decision making.
-class DndPlanningPrompt < BasePrompt
+class DndPlanningPrompt < ToolCallPrompt
   def initialize(actions:)
     super()
     @actions = actions

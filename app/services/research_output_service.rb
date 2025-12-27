@@ -198,11 +198,7 @@ class ResearchOutputService
     if insights.any?
       output << "## Validated Insights"
       output << ""
-      insights.each do |insight|
-        text = insight[:insight]
-        conf = insight[:confidence]
-        output << "- **#{text}** (confidence: #{(conf * 100).round}%)"
-      end
+      insights.each { |insight| output << "- #{insight}" }
       output << ""
     end
 
@@ -211,12 +207,7 @@ class ResearchOutputService
     if open_qs.any?
       output << "## Open Questions"
       output << ""
-      open_qs.each do |q|
-        question = q[:question]
-        reason = q[:reason]
-        output << "- **#{question}**"
-        output << "  - #{reason}" if reason
-      end
+      open_qs.each { |q| output << "- #{q}" }
       output << ""
     end
 
@@ -225,12 +216,8 @@ class ResearchOutputService
     if conflicts.any?
       output << "## Conflicts Requiring Review"
       output << ""
-      conflicts.each do |c|
-        output << "### #{c[:topic]}"
-        output << "- Pass 1: #{c[:pass_1_finding]}"
-        output << "- Pass 2: #{c[:pass_2_finding]}"
-        output << ""
-      end
+      conflicts.each { |c| output << "- #{c}" }
+      output << ""
     end
 
     output.join("\n")
