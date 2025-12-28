@@ -41,7 +41,7 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     body = JSON.parse(response.body)
 
-    assert_equal true, body["success"]
+    assert_equal true, body["success"], "Expected success, got: #{body['error']}"
     assert body["reply"].present?
     assert body["conversation"]["messages"].size >= 2
     refute body.key?("tool")

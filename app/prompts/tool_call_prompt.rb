@@ -4,17 +4,26 @@
 # Inherits from BasePrompt but routes to the tool_calling capability by default.
 # Provides execute_with_general_llm for scenarios requiring more complex reasoning.
 class ToolCallPrompt < BasePrompt
-  # Tool-calling models have smaller context windows, so we use a tighter limit
-  TOOL_CALL_MAX_CONTEXT = 1000
+  # Default fallback values if not configured in CAPABILITIES
+  TOOL_CALL_MAX_CONTEXT = 1500
+  # Max response tokens for tool-calling (reserve room for input)
+  TOOL_CALL_MAX_RESPONSE = 1500
 
   # Returns the model name for tool calling capability
   def model
     GenericLlmClient.model_for(:tool_calling)
   end
 
-  # Override max context for tool-calling models (smaller context window)
+  # Override max context for tool-calling models (read from capability config)
   def max_safe_context
-    ENV.fetch("TOOL_CALL_MAX_CONTEXT", TOOL_CALL_MAX_CONTEXT).to_i
+    config = GenericLlmClient::CAPABILITIES[:tool_calling]
+    config[:max_context] || TOOL_CALL_MAX_CONTEXT
+  end
+
+  # Override max response tokens for tool-calling (reserve room for input)
+  def max_response_tokens
+    # Use about 25% of max context for response, rest for input
+    ENV.fetch("TOOL_CALL_MAX_RESPONSE", max_safe_context / 4).to_i
   end
 
   # Compact tool serialization for smaller context window
@@ -79,7 +88,8 @@ class ToolCallPrompt < BasePrompt
   def build_parameters_for_capability(capability, messages)
     parameters = {
       model: GenericLlmClient.model_for(capability),
-      messages: messages
+      messages: messages,
+      max_tokens: max_response_tokens
     }
 
     if response_schema

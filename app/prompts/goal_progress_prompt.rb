@@ -3,7 +3,8 @@
 # Prompt to evaluate progress toward a goal.
 # Used by the agent to determine if the goal has been achieved
 # or if more work is needed.
-class GoalProgressPrompt < BasePrompt
+# Uses tool_calling LLM for efficient structured evaluation.
+class GoalProgressPrompt < ToolCallPrompt
   def system_prompt
     <<~PROMPT
       You are evaluating whether a research goal has been achieved based on the

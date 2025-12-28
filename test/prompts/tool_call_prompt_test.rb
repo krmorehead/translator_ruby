@@ -26,7 +26,7 @@ class ToolCallPromptTest < ActiveSupport::TestCase
 
   test "uses tool_calling capability model by default" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
-    expected = "./vllm/models/hivata____functionary__small__v3.2__AWQ/snapshots/bee9e4cae2fd117dfcc32780d7ac165074d2f679"
+    expected = GenericLlmClient::CAPABILITIES[:tool_calling][:model_name]
     assert_equal expected, prompt.model
   end
 
@@ -40,7 +40,7 @@ class ToolCallPromptTest < ActiveSupport::TestCase
   end
 
   test "execute with model_override uses specified capability" do
-    skip "Requires live LLM connection" unless llm_configured?
+    assert llm_configured?, "LLM must be configured for this test"
     
     prompt = ActionDetectionPrompt.new(tools: @tools)
     context = Contexts::DndChatContext.new
@@ -58,11 +58,18 @@ class ToolCallPromptTest < ActiveSupport::TestCase
   end
 
   test "subclasses inherit tool_calling capability" do
-    # ActionDetectionPrompt, DndPlanningPrompt, DndGoalPrompt should all use tool_calling
+    # ActionDetectionPrompt should use tool_calling
     action_prompt = ActionDetectionPrompt.new(tools: @tools)
-    expected = "./vllm/models/hivata____functionary__small__v3.2__AWQ/snapshots/bee9e4cae2fd117dfcc32780d7ac165074d2f679"
+    expected = GenericLlmClient::CAPABILITIES[:tool_calling][:model_name]
     
     assert_equal expected, action_prompt.model
+  end
+
+  test "max_safe_context reads from capability config" do
+    prompt = ActionDetectionPrompt.new(tools: @tools)
+    expected = GenericLlmClient::CAPABILITIES[:tool_calling][:max_context]
+    
+    assert_equal expected, prompt.max_safe_context
   end
 
   private
@@ -71,4 +78,3 @@ class ToolCallPromptTest < ActiveSupport::TestCase
     ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
   end
 end
-

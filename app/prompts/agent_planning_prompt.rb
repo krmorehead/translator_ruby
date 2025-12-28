@@ -3,6 +3,7 @@
 # Prompt for the agent planner to select the next action.
 # Given the current state, goal, and available actions, the planner
 # decides what action to take next (or composes a custom workflow).
+# Uses general_llm because it may compose multi-step custom workflows.
 class AgentPlanningPrompt < BasePrompt
   attr_reader :actions
 

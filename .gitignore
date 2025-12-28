@@ -49,4 +49,4 @@ node_modules/
 /frontend/dist/
 
 #agent artifacts
-.agents/*
+.agents/

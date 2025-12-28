@@ -154,15 +154,31 @@ class AgentWorkerTest < ActiveSupport::TestCase
   # ==========================================================================
 
   test "available_actions returns registered action definitions" do
-    worker = CodebaseResearcher.new(goal: "Test", path: @test_path)
+    # Create an AgentWorker subclass with registered actions for testing
+    test_class = Class.new(AgentWorker) do
+      include ActionRegistry
+
+      register_action :test_action,
+        class_name: "Actions::SearchFilesAction",
+        description: "Test action",
+        category: :test,
+        parameters: { pattern: { type: :string, required: true } }
+
+      def create_memory_store
+        OpenStruct.new(
+          get_section: ->(_) { [] },
+          set_section: ->(_, _) {},
+          record_state_transition: ->(**_) {}
+        )
+      end
+    end
+
+    worker = test_class.new(goal: "Test", path: @test_path)
 
     actions = worker.available_actions
     action_names = actions.map { |a| a[:name] }
 
-    assert_includes action_names, "search_files"
-    assert_includes action_names, "locate_definition"
-    assert_includes action_names, "analyze_file"
-    assert_includes action_names, "decompose_question"
+    assert_includes action_names, "test_action"
   end
 
   private

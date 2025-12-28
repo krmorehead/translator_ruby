@@ -57,7 +57,7 @@ class ResearchWorkflow < BaseWorkflow
   # @param parent_memory [#get_section, nil] Parent worker's memory for context queries
   # @param max_depth [Integer] Maximum goal decomposition depth
   # @param output_modes [Array<Symbol>] Output modes to generate (default: [:report, :documentation])
-  def initialize(goal:, owner_id:, research_path:, context: {}, parent_memory: nil, max_depth: 4, output_modes: [:report, :documentation])
+  def initialize(goal:, owner_id:, research_path:, context: {}, parent_memory: nil, max_depth: 20, output_modes: [:report, :documentation])
     super(owner_id: owner_id, parent_memory: parent_memory)
     @goal = goal
     @research_path = research_path

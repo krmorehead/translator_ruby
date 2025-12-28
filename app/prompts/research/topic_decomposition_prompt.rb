@@ -4,6 +4,7 @@ module Research
   # Prompt that breaks research topics into focused sub-questions with base case detection.
   # Guides the LLM to produce actionable, specific questions and identify when questions
   # are "leaf" level (no further decomposition needed).
+  # Uses general_llm because it produces variable-length output with multiple sub-questions.
   class TopicDecompositionPrompt < BaseResearchPrompt
     def system_prompt
       <<~PROMPT

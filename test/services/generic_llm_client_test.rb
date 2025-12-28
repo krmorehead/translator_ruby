@@ -41,17 +41,29 @@ class GenericLlmClientTest < ActiveSupport::TestCase
   end
 
   test "build_url_for_capability extracts host and updates port" do
-    ENV["LLM_URL"] = "http://localhost:52003/"
-    url = GenericLlmClient.build_url_for_capability(52004)
-    # URL may have trailing slash depending on the base URL
-    assert_match %r{^http://localhost:52004/?$}, url
+    # Use the configured base_url from the capability config
+    config = GenericLlmClient::CAPABILITIES[:tool_calling]
+    base_url = ENV.fetch(config[:base_url], "http://localhost")
+    
+    url = GenericLlmClient.build_url_for_capability(52999, base_url)
+    
+    # Should keep the host and update only the port
+    uri = URI.parse(url)
+    assert_equal 52999, uri.port
+    assert_equal URI.parse(base_url).host, uri.host
   end
 
   test "model_for returns correct model for capability" do
-    assert_equal "./vllm/models/qwen3_30b_a3b_moe", 
-                 GenericLlmClient.model_for(:general_llm)
-    assert_equal "./vllm/models/hivata____functionary__small__v3.2__AWQ/snapshots/bee9e4cae2fd117dfcc32780d7ac165074d2f679",
-                 GenericLlmClient.model_for(:tool_calling)
+    # Both capabilities return valid model names from the config
+    general_model = GenericLlmClient.model_for(:general_llm)
+    tool_model = GenericLlmClient.model_for(:tool_calling)
+    
+    assert general_model.present?, "general_llm should have a model"
+    assert tool_model.present?, "tool_calling should have a model"
+    
+    # Verify they match the CAPABILITIES config
+    assert_equal GenericLlmClient::CAPABILITIES[:general_llm][:model_name], general_model
+    assert_equal GenericLlmClient::CAPABILITIES[:tool_calling][:model_name], tool_model
   end
 
   test "instance returns general_llm client for backward compatibility" do

@@ -4,6 +4,7 @@ module Research
   # Prompt that synthesizes findings for a single leaf sub-question.
   # Designed for focused, small-context synthesis during iterative research.
   # Much simpler than global SynthesisPrompt since it handles one question at a time.
+  # Uses general_llm because synthesis may produce variable-length insights.
   class LeafSynthesisPrompt < BaseResearchPrompt
     def system_prompt
       <<~PROMPT

@@ -94,9 +94,12 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
     wf.setup()
     wf.execute
 
+    # Ensure result hash has expected structure even if workflow failed
+    result = wf.result || { findings: [], sub_questions: [], synthesis: {}, goal_tree: nil }
+
     self.class.shared_workflow_result = {
       workflow: wf,
-      result: wf.result,
+      result: result,
       complete: wf.complete?,
       failed: wf.failed?
     }

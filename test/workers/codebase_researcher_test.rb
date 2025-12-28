@@ -5,7 +5,8 @@ require "test_helper"
 class CodebaseResearcherTest < ActiveSupport::TestCase
   include ResearchTestFactory
 
-  # Shared execution result - runs once, used by many tests
+  # Shared execution result - runs once per test process, used by many tests
+  # Uses FIXTURE_PATH to share fixtures across test files
   class << self
     attr_accessor :shared_result, :shared_worker, :shared_computed
   end
@@ -15,7 +16,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
 
     worker = CodebaseResearcher.new(
       goal: "How does the calculator work?",
-      path: temp_dir
+      path: FIXTURE_PATH,
+      max_depth: 1
     )
     result = worker.execute
 
@@ -26,7 +28,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     [worker, result]
   end
 
-  # Lazy-evaluated temp directory
+  # Lazy-evaluated temp directory for tests that need a writable path
   def temp_dir
     @temp_dir ||= begin
       dir = Rails.root.join("tmp", "codebase_researcher_test_#{Process.pid}").to_s
@@ -68,23 +70,24 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
-  test "inherits from AgentWorker" do
-    assert CodebaseResearcher < AgentWorker
-  end
-
-  test "inherits from BaseWorker through AgentWorker" do
+  test "inherits from BaseWorker" do
     assert CodebaseResearcher < BaseWorker
   end
 
-  test "has agent states defined" do
+  test "registers GoalDecompositionWorkflow and ResearchWorkflow" do
+    workflows = CodebaseResearcher.registered_workflows
+    assert_includes workflows, GoalDecompositionWorkflow
+    assert_includes workflows, ResearchWorkflow
+  end
+
+  test "has researcher states defined" do
     states = CodebaseResearcher.states
 
-    # Agent states
+    # Researcher-specific states
     assert_includes states, :pending
     assert_includes states, :running
-    assert_includes states, :planning
-    assert_includes states, :executing
-    assert_includes states, :evaluating
+    assert_includes states, :decomposing
+    assert_includes states, :researching
     assert_includes states, :synthesizing
     assert_includes states, :complete
     assert_includes states, :failed
@@ -93,9 +96,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   test "states have phase metadata" do
     assert_nil CodebaseResearcher._states[:pending][:phase]
     assert_equal :setup, CodebaseResearcher._states[:running][:phase]
-    assert_equal :reasoning, CodebaseResearcher._states[:planning][:phase]
-    assert_equal :work, CodebaseResearcher._states[:executing][:phase]
-    assert_equal :reasoning, CodebaseResearcher._states[:evaluating][:phase]
+    assert_equal :planning, CodebaseResearcher._states[:decomposing][:phase]
+    assert_equal :work, CodebaseResearcher._states[:researching][:phase]
     assert_equal :output, CodebaseResearcher._states[:synthesizing][:phase]
   end
 
@@ -109,17 +111,17 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
-  test "phase method returns current phase" do
+  test "current_phase method returns phase for current state" do
     worker = CodebaseResearcher.new(
       goal: "Test research",
       path: temp_dir
     )
 
-    assert_nil worker.phase  # pending has no phase
+    assert_nil worker.current_phase  # pending has no phase
 
     # Force to running to check phase
     worker.trigger(:start)
-    assert_equal :setup, worker.phase
+    assert_equal :setup, worker.current_phase
   end
 
   test "accepts context parameter using factory" do
@@ -153,16 +155,24 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_equal 6, worker.instance_variable_get(:@max_depth)
   end
 
-  test "registers research actions" do
-    actions = CodebaseResearcher.action_definitions
-    action_names = actions.map { |a| a[:name] }
+  test "output_modes defaults to report and documentation" do
+    worker = CodebaseResearcher.new(
+      goal: "Test research",
+      path: temp_dir
+    )
 
-    assert_includes action_names, "search_files"
-    assert_includes action_names, "locate_definition"
-    assert_includes action_names, "analyze_file"
-    assert_includes action_names, "decompose_question"
-    assert_includes action_names, "trace_references"
-    assert_includes action_names, "synthesize_partial"
+    assert_includes worker.output_modes, :report
+    assert_includes worker.output_modes, :documentation
+  end
+
+  test "output_modes can be customized" do
+    worker = CodebaseResearcher.new(
+      goal: "Test research",
+      path: temp_dir,
+      output_modes: [:report]
+    )
+
+    assert_equal [:report], worker.output_modes
   end
 
   # ============================================================================
@@ -213,7 +223,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   test "shared: action history is tracked" do
     _worker, result = shared_execution
 
-    # Agent tracks actions in action_history
+    # Worker tracks actions in action_history
     assert result[:action_history].is_a?(Array)
   end
 
@@ -229,12 +239,30 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert result[:metadata].key?(:context)
   end
 
-  test "shared: cache stats are included in result" do
+  test "shared: has goal_tree from decomposition" do
+    worker, result = shared_execution
+
+    assert_not_nil worker.goal_tree
+    # Goal tree should have at least the root goal
+    assert worker.goal_tree[:text].present? || worker.goal_tree[:goal].present?
+  end
+
+  test "shared: has findings from research" do
     _worker, result = shared_execution
 
-    assert result[:cache_stats].is_a?(Hash)
-    assert result[:cache_stats].key?(:hits)
-    assert result[:cache_stats].key?(:misses)
+    assert result[:findings].is_a?(Array)
+  end
+
+  test "shared: has sub_questions from decomposition" do
+    _worker, result = shared_execution
+
+    assert result[:sub_questions].is_a?(Array)
+  end
+
+  test "shared: workflow results are stored" do
+    _worker, result = shared_execution
+
+    assert result[:metadata][:workflow_results].is_a?(Hash)
   end
 
   # ============================================================================

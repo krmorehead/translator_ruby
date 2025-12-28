@@ -92,8 +92,9 @@ class BasePrompt
   def build_parameters(messages)
     parameters = {
       model: model,
-      messages: messages
-    }
+      messages: messages,
+      max_tokens: max_response_tokens
+    }.compact
 
     if response_schema
       parameters[:response_format] = {
@@ -107,6 +108,13 @@ class BasePrompt
     end
 
     parameters
+  end
+
+  # Maximum tokens for response generation
+  # Subclasses can override for prompts needing longer responses
+  def max_response_tokens
+    value = ENV.fetch("MAX_RESPONSE_TOKENS", 0).to_i
+    value.zero? ? nil : value
   end
 
   # Validate that the total context size doesn't exceed MAX_SAFE_CONTEXT
@@ -127,6 +135,12 @@ class BasePrompt
     message = response.dig("choices", 0, "message") || {}
     content = message["content"]
     thoughts = response["thoughts"]
+    finish_reason = response.dig("choices", 0, "finish_reason")
+
+    # Check if response was truncated due to length
+    if finish_reason == "length"
+      Rails.logger.warn "[LLM] Response truncated due to max_tokens limit"
+    end
 
     parsed_content = if response_schema
       raise "LLM response missing content" unless content

@@ -88,8 +88,7 @@ class SynthesisPromptTest < ActiveSupport::TestCase
   test "multi_pass: has relevant validated insights" do
     result = multi_pass_synthesis
 
-    # Skip check if result is empty (can happen in parallel test runs)
-    return if result[:content].nil? || result[:content].empty?
+    assert result[:content].present?, "Result content should not be empty"
 
     validated = result[:content][:validated_insights] || []
     summary = result[:content][:summary].to_s.downcase
@@ -105,6 +104,8 @@ class SynthesisPromptTest < ActiveSupport::TestCase
                      all_text.include?("arithmetic") ||
                      all_text.include?("operation")
       assert has_relevant, "Should have insight about XYZABC_CALCULATOR or math. Got: #{all_text[0, 200]}"
+    else
+      pass
     end
   end
 

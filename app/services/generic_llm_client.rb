@@ -10,15 +10,30 @@ module GenericLlmClient
     Net::OpenTimeout
   ].freeze
 
+  # Token thresholds for logging warnings
+  TOKEN_THRESHOLDS = {
+    info: 500,      # Log at info level above this
+    warning: 2000,  # Log warning above this
+    critical: 5000  # Log critical warning above this
+  }.freeze
+
+  # Approximate characters per token (conservative estimate)
+  CHARS_PER_TOKEN = 4
+
   # Capability definitions mapping to model configs
+  # All capabilities use LLM_URL (host) with different ports
   CAPABILITIES = {
     general_llm: {
       model_name: "./vllm/models/qwen3_30b_a3b_moe",
-      port: 52003
+      port: 52003,
+      max_context: 10000,
+      base_url: "ELDER_PEBBLE_LLM_URL"
     },
     tool_calling: {
-      model_name: "./vllm/models/hivata____functionary__small__v3.2__AWQ/snapshots/bee9e4cae2fd117dfcc32780d7ac165074d2f679",
-      port: 52004
+      model_name: "./vllm/models/qwen3_30b_a3b_moe",
+      port: 52004,
+      max_context: 2000,
+      base_url: "LLM_URL"
     }
   }.freeze
 
@@ -40,23 +55,21 @@ module GenericLlmClient
   def build_client_for_capability(capability)
     config = CAPABILITIES[capability]
     raise ArgumentError, "Unknown capability: #{capability}" unless config
-
-    return nil unless ENV["API_KEY"].present? && ENV["LLM_URL"].present?
-
-    url = build_url_for_capability(config[:port])
+    base_url = ENV.fetch(config[:base_url], nil)
+    raise "Base URL not found for capability: #{capability}" unless base_url
+    url = build_url_for_capability(config[:port], base_url)
     client = OpenAI::Client.new(
       access_token: ENV["API_KEY"],
       uri_base: url,
       request_timeout: request_timeout
     )
-    wrap_with_retry(client)
+    wrap_with_retry(client, capability: capability)
   end
 
   # Extract host from LLM_URL and replace port
   # @param port [Integer] The port for this capability
   # @return [String] The full URL with updated port
-  def build_url_for_capability(port)
-    base_url = ENV["LLM_URL"]
+  def build_url_for_capability(port, base_url)
     uri = URI.parse(base_url)
     uri.port = port
     uri.to_s
@@ -79,13 +92,13 @@ module GenericLlmClient
     ENV.fetch("LLM_REQUEST_TIMEOUT", 60).to_i
   end
 
-  def wrap_with_retry(client)
+  def wrap_with_retry(client, capability: :general_llm)
     # Always wrap client for response processing (think tag filtering)
     # Default to 1 retry attempt if not specified
     attempts = retry_attempts
     attempts = 1 if attempts.zero?
     
-    ClientRetryWrapper.new(client: client, attempts: attempts, delay: retry_delay)
+    ClientRetryWrapper.new(client: client, attempts: attempts, delay: retry_delay, capability: capability)
   end
 
   def retry_enabled?
@@ -101,15 +114,18 @@ module GenericLlmClient
   end
 
   class ClientRetryWrapper
-    def initialize(client:, attempts:, delay:)
+    def initialize(client:, attempts:, delay:, capability: :general_llm)
       @client = client
       @attempts = attempts
       @delay = delay
+      @capability = capability
     end
 
     # Executes chat request with retry logic and processes response to extract thoughts.
     # Always filters <think> tags from content and adds thoughts field to response.
     def chat(parameters:)
+      log_token_usage(parameters)
+
       last_error = nil
       @attempts.times do |i|
         begin
@@ -117,6 +133,7 @@ module GenericLlmClient
           return process_response(response)
         rescue *GenericLlmClient::RETRY_ERRORS => e
           last_error = e
+          log_retry_attempt(i, e, parameters)
           sleep(@delay) if i < @attempts - 1
         end
       end
@@ -124,6 +141,80 @@ module GenericLlmClient
     end
 
     private
+
+    def log_token_usage(parameters)
+      tokens = estimate_tokens(parameters)
+      caller_info = extract_caller_info
+      max_tokens = parameters[:max_tokens] || "unset"
+
+      log_entry = "[LLM:#{@capability}] #{caller_info} - #{tokens} input tokens, max_output=#{max_tokens}"
+
+      if tokens > GenericLlmClient::TOKEN_THRESHOLDS[:critical]
+        log(:warn, "⚠️  CRITICAL #{log_entry}")
+      elsif tokens > GenericLlmClient::TOKEN_THRESHOLDS[:warning]
+        log(:warn, "⚠️  HIGH #{log_entry}")
+      elsif tokens > GenericLlmClient::TOKEN_THRESHOLDS[:info]
+        log(:info, log_entry)
+      else
+        log(:debug, log_entry)
+      end
+    end
+
+    def log_retry_attempt(attempt, error, parameters)
+      tokens = estimate_tokens(parameters)
+      caller_info = extract_caller_info
+      log(:warn, "[LLM:#{@capability}] Retry #{attempt + 1}/#{@attempts} for #{caller_info} (#{tokens} tokens) - #{error.class}: #{error.message}")
+    end
+
+    def estimate_tokens(parameters)
+      total_chars = 0
+
+      # Count message content
+      messages = parameters[:messages] || []
+      messages.each do |msg|
+        total_chars += (msg[:content] || msg["content"] || "").length
+        total_chars += (msg[:role] || msg["role"] || "").length
+      end
+
+      # Count response schema if present
+      if parameters[:response_format]
+        total_chars += JSON.generate(parameters[:response_format]).length
+      end
+
+      # Count tools if present
+      if parameters[:tools]
+        total_chars += JSON.generate(parameters[:tools]).length
+      end
+
+      (total_chars.to_f / GenericLlmClient::CHARS_PER_TOKEN).ceil
+    end
+
+    def extract_caller_info
+      # Walk up the call stack to find the prompt class
+      caller_locations(5, 20).each do |loc|
+        path = loc.path
+        next if path.include?("generic_llm_client")
+        next if path.include?("ruby/")
+        next if path.include?("gems/")
+
+        if path.include?("prompts/")
+          # Extract prompt class name from path
+          match = path.match(%r{prompts/(.+)\.rb})
+          return match[1].camelize if match
+        elsif path.include?("workflows/")
+          match = path.match(%r{workflows/(.+)\.rb})
+          return "Workflow::#{match[1].camelize}" if match
+        elsif path.include?("workers/")
+          match = path.match(%r{workers/(.+)\.rb})
+          return "Worker::#{match[1].camelize}" if match
+        end
+      end
+      "Unknown"
+    end
+
+    def log(level, message)
+      Rails.logger.send(level, message)
+    end
 
     # Processes response to extract and filter think tags.
     # Returns modified response with filtered content and added thoughts field.
