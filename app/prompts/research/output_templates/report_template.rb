@@ -141,8 +141,7 @@ module Research
         output.join("\n")
       end
 
-      private
-
+      
       # Generate a slug from text for anchors/filenames
       # Only used in report template for anchor generation
       def slugify(text)

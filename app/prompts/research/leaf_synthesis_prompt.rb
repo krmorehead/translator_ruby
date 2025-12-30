@@ -38,21 +38,20 @@ module Research
       {
         type: "object",
         properties: {
-          summary: {
-            type: "string",
-            description: "Concise answer to the sub-question (2-4 sentences)"
-          },
+          summary: { type: "string", maxLength: 300 },
           key_findings: {
             type: "array",
+            maxItems: 5,
             items: {
               type: "object",
               properties: {
-                finding: { type: "string" },
-                confidence: { type: "number", description: "Confidence 0-1 based on pass agreement" },
-                supporting_passes: { type: "integer", description: "Number of passes supporting this" },
+                finding: { type: "string", maxLength: 100 },
+                confidence: { type: "number" },
+                supporting_passes: { type: "integer" },
                 source_files: {
                   type: "array",
-                  items: { type: "string" }
+                  maxItems: 3,
+                  items: { type: "string", maxLength: 80 }
                 }
               },
               required: %w[finding confidence supporting_passes],
@@ -61,24 +60,22 @@ module Research
           },
           conflicts: {
             type: "array",
+            maxItems: 3,
             items: {
               type: "object",
               properties: {
-                topic: { type: "string" },
-                description: { type: "string" }
+                topic: { type: "string", maxLength: 50 },
+                description: { type: "string", maxLength: 80 }
               },
               required: %w[topic description],
               additionalProperties: false
             }
           },
-          confidence: {
-            type: "number",
-            description: "Overall confidence in the synthesis (0-1)"
-          },
+          confidence: { type: "number" },
           gaps: {
             type: "array",
-            items: { type: "string" },
-            description: "Areas that could not be fully answered"
+            maxItems: 3,
+            items: { type: "string", maxLength: 80 }
           }
         },
         required: %w[summary key_findings conflicts confidence gaps],
@@ -100,8 +97,7 @@ module Research
       execute(prompt: prompt, context: context)
     end
 
-    private
-
+    
     def build_prompt(sub_question, findings)
       prompt_parts = ["Sub-Question: #{sub_question}"]
 

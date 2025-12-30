@@ -83,8 +83,7 @@ module Actions
       )
     end
 
-    private
-
+    
     def resolve_file_path(file_path)
       # Try absolute path first
       return file_path if file_path.start_with?("/") && File.exist?(file_path)

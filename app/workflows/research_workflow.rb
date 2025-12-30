@@ -163,16 +163,12 @@ class ResearchWorkflow < BaseWorkflow
     files_to_analyze = @explored_files.select { |f| File.exist?(f) }
     return if files_to_analyze.empty?
 
-    # Analyze files in parallel using threads
+    # Analyze files sequentially to avoid overwhelming the LLM
+    # Parallelism can cause truncated responses with limited context models
     mutex = Mutex.new
-    threads = files_to_analyze.map do |file_path|
-      Thread.new do
-        analyze_single_file(file_path, mutex)
-      end
+    files_to_analyze.each do |file_path|
+      analyze_single_file(file_path, mutex)
     end
-
-    # Wait for all threads to complete
-    threads.each(&:join)
   end
 
   # Analyze a single file with multiple passes
@@ -260,18 +256,15 @@ class ResearchWorkflow < BaseWorkflow
     files_to_document = @explored_files.select { |f| File.exist?(f) }
     return if files_to_document.empty?
 
+    # Document files sequentially to avoid overwhelming the LLM
     mutex = Mutex.new
-    threads = files_to_document.map do |file_path|
-      Thread.new do
-        document_single_file(file_path, mutex)
-      end
+    files_to_document.each do |file_path|
+      document_single_file(file_path, mutex)
     end
-
-    threads.each(&:join)
 
     record_decision(
       decision: "Documented #{@file_analyses.size} files",
-      rationale: "Per-file documentation generated in parallel",
+      rationale: "Per-file documentation generated sequentially",
       context: { documented_count: @file_analyses.size }
     )
   end
@@ -322,8 +315,7 @@ class ResearchWorkflow < BaseWorkflow
     end
   end
 
-  private
-
+  
   def initialize_memory
     store_path = File.join(
       ENV["AGENT_STATE_PATH"] || File.join(research_path, ".agents", "state"),

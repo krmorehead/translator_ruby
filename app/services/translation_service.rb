@@ -153,8 +153,7 @@ class TranslationService
     end
   end
 
-  private
-
+  
   def convert_language_code_to_name(language_code)
     # Try to look up the language by code
     language_entry = Iso639[language_code]

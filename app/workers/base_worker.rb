@@ -131,8 +131,7 @@ class BaseWorker
     in_state?(:failed)
   end
 
-  protected
-
+  
   # Transition to running state
   def mark_running
     trigger(:start)
@@ -176,8 +175,7 @@ class BaseWorker
     FileUtils.mkdir_p(output_path)
   end
 
-  private
-
+  
   def record_state_transition_to_memory(from, to, event, payload)
     return unless respond_to?(:memory_store) && memory_store
     return unless memory_store.respond_to?(:record_state_transition)

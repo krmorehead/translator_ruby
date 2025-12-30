@@ -54,8 +54,7 @@ class Logger
     end
   end
 
-  private
-
+  
   def should_log?(msg_level)
     LEVELS[msg_level] >= LEVELS[@level]
   end

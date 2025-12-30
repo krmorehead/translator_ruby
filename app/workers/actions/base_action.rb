@@ -84,8 +84,7 @@ module Actions
       raise NotImplementedError, "#{self.class.name} must implement #execute"
     end
 
-    protected
-
+    
     # Build a successful result
     # @param data [Hash] Result data
     # @return [Hash] Success result

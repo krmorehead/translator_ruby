@@ -65,8 +65,7 @@ module Actions
       )
     end
 
-    private
-
+    
     def gather_findings(focus)
       findings = memory_store.get_section(:findings)
 

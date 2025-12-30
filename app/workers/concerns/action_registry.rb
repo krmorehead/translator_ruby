@@ -83,8 +83,7 @@ module ActionRegistry
       _registered_actions.key?(name.to_sym)
     end
 
-    private
-
+    
     def resolve_action_class(class_ref)
       # class_ref must be provided - it's required
       class_ref.to_s.constantize
@@ -157,8 +156,7 @@ module ActionRegistry
     action.execute(**arguments)
   end
 
-  private
-
+  
   # Check if a dependency is satisfied
   # Override in subclasses for custom dependency logic
   # @param dependency [Symbol] The dependency to check

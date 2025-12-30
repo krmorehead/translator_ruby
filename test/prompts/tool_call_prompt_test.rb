@@ -72,8 +72,7 @@ class ToolCallPromptTest < ActiveSupport::TestCase
     assert_equal expected, prompt.max_safe_context
   end
 
-  private
-
+  
   def llm_configured?
     ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
   end

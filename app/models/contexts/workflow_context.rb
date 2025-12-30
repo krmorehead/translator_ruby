@@ -245,8 +245,7 @@ module Contexts
       context
     end
 
-    private
-
+    
     def summarize_data(data)
       return data.to_s if data.is_a?(String)
       return "#{data.size} items" if data.is_a?(Array)

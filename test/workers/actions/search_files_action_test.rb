@@ -68,8 +68,7 @@ class SearchFilesActionTest < ActiveSupport::TestCase
     assert result[:error]
   end
 
-  private
-
+  
   def create_action
     Actions::SearchFilesAction.new(
       agent: @agent,

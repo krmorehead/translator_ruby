@@ -66,8 +66,7 @@ class BaseActionTest < ActiveSupport::TestCase
     assert matches.any? { |m| m[:content].include?("class Calculator") }
   end
 
-  private
-
+  
   def create_action
     Actions::BaseAction.new(
       agent: @agent,

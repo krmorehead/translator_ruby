@@ -113,8 +113,7 @@ class MemoryStore
     File.mtime(path)
   end
 
-  private
-
+  
   def load_sections
     return deep_dup(DEFAULT_SECTIONS) unless File.exist?(path)
 

@@ -262,8 +262,7 @@ module Contexts
       parts.join("\n\n")
     end
 
-    protected
-
+    
     # Override to boost relevance for DnD-specific keywords
     def calculate_relevance_score(entry, question_keywords)
       base_score = super

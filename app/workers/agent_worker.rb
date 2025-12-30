@@ -169,8 +169,7 @@ class AgentWorker < BaseWorker
     self.class.action_definitions
   end
 
-  protected
-
+  
   # Initialize agent-specific components
   # Subclasses should override to set up domain-specific state
   def initialize_agent

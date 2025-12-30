@@ -101,8 +101,7 @@ class GrepTool < BaseTool
     error_result("Invalid regex pattern: #{e.message}")
   end
 
-  private
-
+  
   def files_to_search(path, extensions)
     if File.file?(path)
       return [path]

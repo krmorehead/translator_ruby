@@ -19,7 +19,6 @@ class Conversation
     { messages: messages.map(&:to_h) }
   end
 
-  private
 
   def coerce_message(message)
     return message if message.is_a?(Message)

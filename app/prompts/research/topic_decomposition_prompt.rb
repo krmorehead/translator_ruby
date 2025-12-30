@@ -53,43 +53,26 @@ module Research
         properties: {
           questions: {
             type: "array",
+            maxItems: 5,
             items: {
               type: "object",
               properties: {
-                question: {
-                  type: "string",
-                  description: "The sub-question text"
-                },
-                priority: {
-                  type: "integer",
-                  description: "Investigation priority (1 = highest priority)"
-                },
-                rationale: {
-                  type: "string",
-                  description: "Why this question is important for understanding the topic"
-                },
-                is_leaf: {
-                  type: "boolean",
-                  description: "True if no further decomposition is needed"
-                },
-                parent_id: {
-                  type: "string",
-                  description: "Optional ID of parent question for tree building"
-                },
+                question: { type: "string", maxLength: 100 },
+                priority: { type: "integer" },
+                rationale: { type: "string", maxLength: 80 },
+                is_leaf: { type: "boolean" },
+                parent_id: { type: "string", maxLength: 50 },
                 aspects: {
                   type: "array",
-                  items: { type: "string" },
-                  description: "Which aspects this question addresses (architecture, implementation, etc.)"
+                  maxItems: 3,
+                  items: { type: "string", maxLength: 30 }
                 }
               },
               required: %w[question priority rationale is_leaf],
               additionalProperties: false
             }
           },
-          topic_summary: {
-            type: "string",
-            description: "Brief summary of what the research topic encompasses"
-          }
+          topic_summary: { type: "string", maxLength: 150 }
         },
         required: %w[questions topic_summary],
         additionalProperties: false
@@ -105,56 +88,42 @@ module Research
       execute(prompt: prompt, context: context)
     end
 
-    private
-
+    
     def build_prompt(topic, context)
-      prompt_parts = ["Research Topic: #{topic}"]
+      prompt_parts = ["Research Topic: #{topic.to_s.truncate(200)}"]
 
-      # Include codebase summary if provided
+      # Include truncated codebase summary if provided
       if context[:codebase_summary]
-        prompt_parts << "\nCodebase Context:\n#{context[:codebase_summary]}"
+        prompt_parts << "\nCodebase Context:\n#{context[:codebase_summary].to_s.truncate(300)}"
       end
 
-      # Include file tree if provided
+      # Include truncated file tree if provided (limit to avoid context overflow)
       if context[:file_tree]
-        prompt_parts << "\nFile Structure:\n#{context[:file_tree]}"
+        prompt_parts << "\nFile Structure:\n#{context[:file_tree].to_s.truncate(400)}"
       end
 
       # Include focus guidance from seed context
       if context[:focus_guidance]
-        prompt_parts << "\n#{context[:focus_guidance]}"
+        prompt_parts << "\n#{context[:focus_guidance].to_s.truncate(200)}"
       end
 
-      # Include known relevant files
+      # Include known relevant files (limit to 5)
       if context[:known_relevant_files]&.any?
         prompt_parts << "\nKnown Relevant Files:"
-        context[:known_relevant_files].each { |f| prompt_parts << "- #{f}" }
-      end
-
-      # Include prior knowledge from previous research
-      if context[:prior_knowledge]
-        prompt_parts << "\nPrior Knowledge:\n#{context[:prior_knowledge]}"
-      end
-
-      # Include any constraints
-      if context[:constraints]
-        constraints_text = context[:constraints].is_a?(Hash) ? context[:constraints].to_json : context[:constraints].to_s
-        prompt_parts << "\nConstraints: #{constraints_text}"
+        context[:known_relevant_files].first(5).each { |f| prompt_parts << "- #{f}" }
       end
 
       # Handle parent question (recursive decomposition)
       if context[:parent_question]
-        prompt_parts << "\nThis is a decomposition of: #{context[:parent_question]}"
-        prompt_parts << "Focus on breaking this specific question into smaller, more actionable sub-questions."
+        prompt_parts << "\nDecomposing: #{context[:parent_question].to_s.truncate(100)}"
       else
-        prompt_parts << "\nBreak this topic into 3-7 focused sub-questions that would help understand this codebase."
-        prompt_parts << "Start with high-level questions, marking specific questions as leaf nodes."
+        prompt_parts << "\nBreak into 3-5 focused sub-questions."
       end
 
-      # Include previous questions at this level to avoid duplication
+      # Include previous questions to avoid duplication (limit to 3)
       if context[:previous_questions]&.any?
-        prompt_parts << "\nAlready generated questions (avoid duplicating):"
-        context[:previous_questions].each { |q| prompt_parts << "- #{q}" }
+        prompt_parts << "\nAvoid duplicating:"
+        context[:previous_questions].first(3).each { |q| prompt_parts << "- #{q.to_s.truncate(50)}" }
       end
 
       prompt_parts.join("\n")

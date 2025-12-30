@@ -12,8 +12,7 @@ class TranslationTreeService
     traverse_internal(symbolized, translation_callback, path)
   end
 
-  private
-
+  
   def deep_symbolize_keys(node)
     case node
     when Hash

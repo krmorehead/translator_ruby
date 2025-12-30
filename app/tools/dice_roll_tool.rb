@@ -78,8 +78,7 @@ class DiceRollTool < BaseTool
     error_result("Error rolling dice: #{e.message}")
   end
 
-  private
-
+  
   def parse_dice(dice)
     match = /^([0-9]+)?d([0-9]+)$/i.match(dice.to_s.strip)
     return { error: "Invalid dice format. Use NdM like d20 or 2d6" } unless match

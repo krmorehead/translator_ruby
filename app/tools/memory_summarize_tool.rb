@@ -61,8 +61,7 @@ class MemorySummarizeTool < BaseTool
     error_result(e.message)
   end
 
-  private
-
+  
   # Extract text from entry - handles both strings and hashes
   def extract_text(entry)
     case entry

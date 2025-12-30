@@ -241,8 +241,7 @@ class WorkflowMemoryStore
     true
   end
 
-  private
-
+  
   def default_path
     base = ENV["AGENT_STATE_PATH"] || ".agents/state"
     File.join(base, owner_id, "workflows", "#{workflow_name}_#{workflow_id}.json")

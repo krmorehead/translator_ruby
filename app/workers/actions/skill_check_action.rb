@@ -34,8 +34,7 @@ module Actions
       )
     end
 
-    private
-
+    
     def build_result_text(skill, roll, modifier, total, dc, success, natural_20, natural_1)
       parts = ["#{skill} check: d20(#{roll})"]
       parts << (modifier >= 0 ? "+#{modifier}" : modifier.to_s) if modifier != 0

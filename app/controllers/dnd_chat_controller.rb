@@ -82,7 +82,6 @@ class DndChatController < ApplicationController
     render json: { success: false, error: e.message }, status: :internal_server_error
   end
 
-  private
 
   def data_path
     BaseTool.data_path

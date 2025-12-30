@@ -17,8 +17,7 @@ module Research
         raise NotImplementedError, "#{self.class.name} must define #render"
       end
 
-      protected
-
+      
       # Interpolate variables in a template string
       # @param template [String] Template with {variable} placeholders
       # @param variables [Hash] Variables to interpolate

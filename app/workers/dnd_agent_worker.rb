@@ -131,8 +131,7 @@ class DndAgentWorker < AgentWorker
     handle_error(e)
   end
 
-  protected
-
+  
   # Use external memory store if provided, otherwise create one
   def create_memory_store
     @external_memory_store || MemoryStore.new(

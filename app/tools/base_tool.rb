@@ -74,8 +74,7 @@ class BaseTool
     self.class.default_file_path
   end
 
-  protected
-
+  
   # Builds a success result hash
   def success_result(result)
     { success: true, result: result, error: nil }

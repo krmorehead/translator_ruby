@@ -17,8 +17,7 @@ module Actions
       )
     end
 
-    private
-
+    
     def category_to_section(category)
       case category.to_s.downcase
       when "quest" then MemoryKinds::QUEST_LOG

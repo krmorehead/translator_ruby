@@ -51,8 +51,13 @@ class GoalDecompositionWorkflow < BaseWorkflow
   end
 
   # Execute the recursive decomposition
-  def execute
-    trigger(:start)
+
+def execute
+  trigger(:start)
+  Rails.logger.info "[GoalDecompositionWorkflow] Starting decomposition for goal: #{goal}"
+  Rails.logger.info "[GoalDecompositionWorkflow] Using context: #{context.inspect}"
+  
+  begin
     record_decision(
       decision: "Starting goal decomposition",
       rationale: "Breaking down: #{goal}",
@@ -60,13 +65,19 @@ class GoalDecompositionWorkflow < BaseWorkflow
     )
 
     trigger(:initialized)
+    Rails.logger.info "[GoalDecompositionWorkflow] Building initial context"
+    decomp_context = build_initial_context
+    Rails.logger.info "[GoalDecompositionWorkflow] Initial context built: #{decomp_context.inspect}"
+    
     @goal_tree = decompose_recursively(
       goal: goal,
       parent_id: nil,
       depth: 0,
-      decomp_context: build_initial_context
+      decomp_context: decomp_context
     )
 
+    Rails.logger.info "[GoalDecompositionWorkflow] Decomposition completed with tree: #{@goal_tree.inspect}"
+    
     mark_complete({
       goal_tree: @goal_tree,
       leaf_count: count_leaves(@goal_tree),
@@ -78,9 +89,12 @@ class GoalDecompositionWorkflow < BaseWorkflow
 
     result
   rescue StandardError => e
+    Rails.logger.error "[GoalDecompositionWorkflow] Error during execution: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
     mark_failed(e.message)
     nil
   end
+end
 
   # Get all leaf goals (ready for investigation)
   # @return [Array<Hash>] Array of leaf goal nodes
@@ -88,8 +102,7 @@ class GoalDecompositionWorkflow < BaseWorkflow
     collect_leaves(@goal_tree)
   end
 
-  private
-
+  
   def build_initial_context
     initial = {}
 
@@ -245,4 +258,3 @@ class GoalDecompositionWorkflow < BaseWorkflow
     leaves
   end
 end
-

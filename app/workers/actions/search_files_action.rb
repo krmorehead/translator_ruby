@@ -74,8 +74,7 @@ module Actions
       )
     end
 
-    private
-
+    
     def search_by_filename(pattern, file_types, limit)
       # Build glob pattern
       glob = build_filename_glob(pattern, file_types)

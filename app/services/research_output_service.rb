@@ -120,8 +120,7 @@ class ResearchOutputService
     created_files
   end
 
-  private
-
+  
   def ensure_output_directory!
     FileUtils.mkdir_p(output_path)
   end

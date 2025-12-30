@@ -21,8 +21,7 @@ class Message
     payload
   end
 
-  private
-
+  
   def normalize_string(value, field)
     string = value.to_s.strip
     raise ArgumentError, "#{field} required" if string.empty?

@@ -275,8 +275,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
     end
   end
 
-  private
-
+  
   def generate_comparison_report(worker_result, cursor_output)
     report = []
     report << "# Research Comparison Report"

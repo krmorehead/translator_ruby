@@ -28,8 +28,7 @@ class ChatResponseSerializer
     JSON.pretty_generate(serialize)
   end
 
-  private
-
+  
   def safe_conversation
     return unless @workflow.respond_to?(:conversation)
 

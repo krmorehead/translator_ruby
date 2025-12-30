@@ -55,26 +55,26 @@ module Research
         properties: {
           mode: {
             type: "string",
-            enum: %w[language_specific language_agnostic],
-            description: "The analysis mode determined from the goal"
+            enum: %w[language_specific language_agnostic]
           },
           mode_rationale: {
             type: "string",
-            description: "Why this mode was chosen"
+            maxLength: 100
           },
           purpose_summary: {
             type: "string",
-            description: "What this code does and why"
+            maxLength: 200
           },
           key_components: {
             type: "array",
+            maxItems: 5,
             items: {
               type: "object",
               properties: {
-                name: { type: "string" },
-                type: { type: "string", description: "class, function, module, etc." },
-                description: { type: "string" },
-                line_reference: { type: "string", description: "Line number(s) if in specific mode" }
+                name: { type: "string", maxLength: 50 },
+                type: { type: "string", maxLength: 30 },
+                description: { type: "string", maxLength: 100 },
+                line_reference: { type: "string", maxLength: 20 }
               },
               required: %w[name type description],
               additionalProperties: false
@@ -82,12 +82,13 @@ module Research
           },
           dependencies: {
             type: "array",
+            maxItems: 5,
             items: {
               type: "object",
               properties: {
-                name: { type: "string" },
-                relationship: { type: "string", description: "imports, inherits, uses, etc." },
-                purpose: { type: "string" }
+                name: { type: "string", maxLength: 50 },
+                relationship: { type: "string", maxLength: 30 },
+                purpose: { type: "string", maxLength: 80 }
               },
               required: %w[name relationship purpose],
               additionalProperties: false
@@ -95,17 +96,18 @@ module Research
           },
           patterns_identified: {
             type: "array",
-            items: { type: "string" },
-            description: "Design patterns or idioms found"
+            maxItems: 3,
+            items: { type: "string", maxLength: 50 }
           },
           insights: {
             type: "array",
+            maxItems: 3,
             items: {
               type: "object",
               properties: {
-                finding: { type: "string" },
-                relevance: { type: "string", description: "How this relates to the goal" },
-                confidence: { type: "number", description: "Confidence in this finding (0-1)" }
+                finding: { type: "string", maxLength: 100 },
+                relevance: { type: "string", maxLength: 80 },
+                confidence: { type: "number" }
               },
               required: %w[finding relevance confidence],
               additionalProperties: false
@@ -113,12 +115,12 @@ module Research
           },
           architectural_notes: {
             type: "string",
-            description: "For agnostic mode: role in broader architecture"
+            maxLength: 150
           },
           specific_issues: {
             type: "array",
-            items: { type: "string" },
-            description: "For specific mode: potential issues or code smells"
+            maxItems: 3,
+            items: { type: "string", maxLength: 80 }
           }
         },
         required: %w[mode mode_rationale purpose_summary key_components dependencies patterns_identified insights],
@@ -140,8 +142,7 @@ module Research
       execute(prompt: prompt, context: context)
     end
 
-    private
-
+    
     def build_prompt(content, goal, file_path, previous_context)
       prompt_parts = ["Research Goal: #{goal}"]
       prompt_parts << "File: #{file_path}" if file_path

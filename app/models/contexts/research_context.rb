@@ -173,8 +173,7 @@ module Contexts
       parts.join("\n")
     end
 
-    protected
-
+    
     # Override to boost relevance for goal-related keywords
     def calculate_relevance_score(entry, question_keywords)
       base_score = super
@@ -189,8 +188,7 @@ module Contexts
       end
     end
 
-    private
-
+    
     def build_topics_for_finding(file_path, sub_question)
       topics = []
 

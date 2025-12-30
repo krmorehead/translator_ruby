@@ -192,8 +192,7 @@ class BaseTool
     { type: "auto" }
   end
   
-  protected
-  
+    
   def success_result(result)
     { success: true, result: result }
   end

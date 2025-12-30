@@ -99,8 +99,7 @@ class NotificationService
     @pending_notifications.clear
   end
 
-  private
-
+  
   def deliver(notification)
     # Simulate delivery based on channel
     case notification[:channel]

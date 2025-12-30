@@ -50,30 +50,21 @@ module Research
         properties: {
           evaluations: {
             type: "array",
+            maxItems: 10,
             items: {
               type: "object",
               properties: {
-                file_path: {
-                  type: "string",
-                  description: "The file being evaluated"
-                },
-                relevance_score: {
-                  type: "number",
-                  description: "Relevance score from 0.0 to 1.0"
-                },
-                reasoning: {
-                  type: "string",
-                  description: "Brief explanation for the score"
-                },
+                file_path: { type: "string", maxLength: 100 },
+                relevance_score: { type: "number" },
+                reasoning: { type: "string", maxLength: 80 },
                 key_terms_found: {
                   type: "array",
-                  items: { type: "string" },
-                  description: "Relevant terms found in the file"
+                  maxItems: 3,
+                  items: { type: "string", maxLength: 30 }
                 },
                 recommended_priority: {
                   type: "string",
-                  enum: %w[high medium low skip],
-                  description: "Recommended investigation priority"
+                  enum: %w[high medium low skip]
                 }
               },
               required: %w[file_path relevance_score reasoning key_terms_found recommended_priority],
@@ -104,8 +95,7 @@ module Research
       execute(prompt: prompt, context: { question: question })
     end
 
-    private
-
+    
     def build_prompt(files, question)
       file_descriptions = files.map do |file|
         preview = file[:preview]&.lines&.first(30)&.join || "(empty file)"

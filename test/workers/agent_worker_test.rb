@@ -181,8 +181,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
     assert_includes action_names, "test_action"
   end
 
-  private
-
+  
   def create_minimal_agent(**options)
     # Create a minimal agent subclass for testing
     test_class = Class.new(AgentWorker) do

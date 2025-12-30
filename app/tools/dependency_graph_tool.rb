@@ -127,8 +127,7 @@ class DependencyGraphTool < BaseTool
     })
   end
 
-  private
-
+  
   def analyze_file(file_path, nodes, edges, visited, remaining_depth, language_hint)
     return if visited.include?(file_path)
     return if remaining_depth <= 0

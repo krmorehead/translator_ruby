@@ -79,8 +79,7 @@ module Actions
       )
     end
 
-    private
-
+    
     def find_references(symbol, exclude_definitions)
       references = []
       escaped_symbol = Regexp.escape(symbol)

@@ -101,8 +101,7 @@ class UserService
     @sessions.size
   end
 
-  private
-
+  
   def hash_password(password)
     # Simple hash for demo - in real app would use bcrypt
     Digest::SHA256.hexdigest("salt_#{password}_pepper")

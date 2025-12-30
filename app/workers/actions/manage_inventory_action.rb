@@ -19,8 +19,7 @@ module Actions
       end
     end
 
-    private
-
+    
     def add_item(item, quantity)
       memory_store.update_section(
         name: MemoryKinds::INVENTORY,

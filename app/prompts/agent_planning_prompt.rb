@@ -96,8 +96,7 @@ class AgentPlanningPrompt < BasePrompt
     context.format_for_prompt(question)
   end
 
-  private
-
+  
   def format_actions
     return "No actions available" if @actions.empty?
 

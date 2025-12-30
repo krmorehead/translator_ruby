@@ -109,8 +109,7 @@ class MathService
     }
   end
 
-  private
-
+  
   def empty_statistics
     {
       count: 0,

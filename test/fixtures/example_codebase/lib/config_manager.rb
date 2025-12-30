@@ -79,8 +79,7 @@ class ConfigManager
     @config.dup
   end
 
-  private
-
+  
   def serialize_config
     # Simple YAML-like serialization
     serialize_hash(@config, 0)

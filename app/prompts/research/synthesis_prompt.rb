@@ -20,10 +20,10 @@ module Research
       {
         type: "object",
         properties: {
-          validated_insights: { type: "array", items: { type: "string" } },
-          conflicts: { type: "array", items: { type: "string" } },
-          summary: { type: "string" },
-          open_questions: { type: "array", items: { type: "string" } }
+          validated_insights: { type: "array", maxItems: 5, items: { type: "string", maxLength: 100 } },
+          conflicts: { type: "array", maxItems: 3, items: { type: "string", maxLength: 80 } },
+          summary: { type: "string", maxLength: 300 },
+          open_questions: { type: "array", maxItems: 3, items: { type: "string", maxLength: 80 } }
         },
         required: %w[validated_insights conflicts summary open_questions],
         additionalProperties: false
@@ -61,8 +61,7 @@ module Research
       execute(prompt: prompt, context: context)
     end
 
-    private
-
+    
     def build_combination_prompt(goal, leaf_syntheses)
       prompt_parts = ["Research Goal: #{goal}"]
 

@@ -81,8 +81,7 @@ class FileTreeTool < BaseTool
     })
   end
 
-  private
-
+  
   def build_tree(dir_path, max_depth, extensions, ignore_patterns, current_depth)
     return nil if current_depth > max_depth
 

@@ -215,8 +215,7 @@ module Contexts
       context
     end
 
-    protected
-
+    
     # Boost relevance for matching source terms
     def calculate_relevance_score(entry, question_keywords)
       base_score = super

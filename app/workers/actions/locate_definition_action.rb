@@ -96,8 +96,7 @@ module Actions
       end
     end
 
-    private
-
+    
     def find_definitions(symbol, type)
       patterns = build_patterns(symbol, type)
       definitions = []

@@ -123,8 +123,7 @@ class FileDocumentationWriter
     @documented_files.keys
   end
 
-  private
-
+  
   # Convert absolute source path to relative path
   def relative_to_source(path)
     if path.start_with?(source_base_path)

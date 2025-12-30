@@ -119,8 +119,7 @@ class BaseWorkflow
     workflow_memory.summarize
   end
 
-  protected
-
+  
   def mark_running
     trigger(:start)
   end
@@ -142,8 +141,7 @@ class BaseWorkflow
     trigger(:fail)
   end
 
-  private
-
+  
   def initialize_workflow_memory
     @workflow_memory = WorkflowMemoryStore.new(
       owner_id: @owner_id,

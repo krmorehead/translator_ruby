@@ -240,8 +240,7 @@ module Contexts
       context
     end
 
-    protected
-
+    
     # Boost relevance for location and NPC mentions
     def calculate_relevance_score(entry, question_keywords)
       base_score = super

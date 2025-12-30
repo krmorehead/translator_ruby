@@ -114,8 +114,7 @@ module Research
         output.join("\n")
       end
 
-      private
-
+      
       # Sanitize a string for use as a mermaid node ID
       # Mermaid IDs can't have spaces or special characters
       def sanitize_mermaid_id(name)

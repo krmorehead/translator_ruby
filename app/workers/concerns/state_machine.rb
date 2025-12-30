@@ -71,8 +71,7 @@ module StateMachine
       subclass._transition_hooks = _transition_hooks.dup
     end
 
-    private
-
+    
     def deep_dup_hash(hash)
       return {} if hash.nil?
 
@@ -300,8 +299,7 @@ module StateMachine
     @state_entered_at = Time.now.utc
   end
 
-  private
-
+  
   # Find the matching route for the current state
   def find_route(transition, from_state)
     routes = transition[:routes] || [transition]

@@ -128,8 +128,7 @@ module Research
       { content: analysis, thoughts: result[:thoughts] }
     end
 
-    private
-
+    
     def build_prompt(content, file_path, goal_context, sub_questions, prior_context = nil)
       parts = []
 

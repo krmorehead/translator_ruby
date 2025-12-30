@@ -109,8 +109,7 @@ class DndChatWorkflow < BaseWorkflow
     params
   end
 
-  private
-
+  
   def build_memory_store
     path = File.join(@agent_path, "memory.json")
     @memory_store_class.new(path: path)

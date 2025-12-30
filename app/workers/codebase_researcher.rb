@@ -59,9 +59,25 @@ class CodebaseResearcher < BaseWorker
     @max_depth = options.fetch(:max_depth, 4)
     @goal_tree = nil
     @research_result = nil
+    @metadata = { decomposition_id: nil, constraints: {} }
   end
 
-  # Execute the full research pipeline
+  def metadata
+    @metadata
+  end
+
+  def initialize_worker
+    ensure_state_directory!
+    ensure_output_directory!
+    @memory_store = create_memory_store
+
+    record_decision(
+      decision: "Starting codebase research",
+      rationale: "Goal: #{goal}",
+      context: { path: path, output_modes: output_modes, max_depth: @max_depth }
+    )
+  end
+
   def execute
     trigger(:start)
     initialize_worker
@@ -74,30 +90,63 @@ class CodebaseResearcher < BaseWorker
 
     trigger(:researched)
     synthesize_results
-
-    trigger(:finish)
-    # Update final_state after transition to :complete
-    @result[:metadata][:final_state] = current_state
-    @result
-  rescue StandardError => e
-    Rails.logger.error "[CodebaseResearcher] Error: #{e.message}"
-    Rails.logger.error e.backtrace.first(10).join("\n")
-    mark_failed(e.message)
-    build_error_result(e)
   end
 
-  protected
+  # Phase : Decompose the goal using GoalDecompositionWorkflow
+  def decompose_goal
+    record_decision(
+      decision: "Decomposing research goal",
+      rationale: "Breaking down goal for systematic research",
+      context: { goal: goal, max_depth: @max_depth }
+    )
 
-  # Initialize the worker and create memory store
-  def initialize_worker
-    ensure_state_directory!
-    ensure_output_directory!
-    @memory_store = create_memory_store
+    workflow = GoalDecompositionWorkflow.new(
+      goal: goal,
+      owner_id: owner_id,
+      context: context.merge(goal_tree: @goal_tree),
+      parent_memory: memory_store,
+      max_depth: @max_depth
+    )
+
+    workflow.setup
+    workflow.execute
+
+    if workflow.failed?
+      Rails.logger.warn "Decomposition failed: #{workflow.error}"
+      # Fallback to minimal structure
+      @goal_tree = { is_leaf: true, text: "Fallback question" }
+      record_decision(decision: "Using fallback decomposition", rationale: "Original decomposition failed")
+    else
+      @goal_tree = workflow.result[:goal_tree]
+      @metadata[:decomposition_id] = @goal_tree[:metadata][:decomposition_id]
+      @metadata[:constraints] = @goal_tree[:metadata][:constraints]
+      store_workflow_result(:goal_decomposition, workflow.result)
+    end
+
+    # Convert UUID-based tree to flat structure
+    flat_structure = process_goal_tree(@goal_tree)
+
+    # Store sub-questions in memory
+    flat_structure.each do |leaf|
+      memory_store.update_section(
+        name: :sub_questions,
+        content: {
+          text: leaf[:text],
+          status: "pending",
+          parent_id: leaf[:parent_id],
+          decomposition_metadata: leaf[:metadata]
+        },
+        append: true
+      )
+    end
 
     record_decision(
-      decision: "Starting codebase research",
-      rationale: "Goal: #{goal}",
-      context: { path: path, output_modes: output_modes, max_depth: @max_depth }
+      decision: "Goal decomposition complete",
+      rationale: "Processed #{flat_structure.size} questions",
+      context: {
+        leaf_count: flat_structure.size,
+        decomposition_status: workflow.failed? ? "fallback" : "success"
+      }
     )
   end
 
@@ -114,48 +163,10 @@ class CodebaseResearcher < BaseWorker
   end
 
   # Phase 1: Decompose the goal using GoalDecompositionWorkflow
-  def decompose_goal
-    record_decision(
-      decision: "Decomposing research goal",
-      rationale: "Breaking down goal for systematic research",
-      context: { goal: goal, max_depth: @max_depth }
-    )
-
-    workflow = GoalDecompositionWorkflow.new(
-      goal: goal,
-      owner_id: owner_id,
-      context: context,
-      parent_memory: memory_store,
-      max_depth: @max_depth
-    )
-
-    workflow.setup
-    workflow.execute
-
-    if workflow.failed?
-      raise "Goal decomposition failed: #{workflow.error}"
-    end
-
-    @goal_tree = workflow.result[:goal_tree]
-    store_workflow_result(:goal_decomposition, workflow.result)
-
-    # Store sub-questions in memory
-    leaf_goals = collect_leaves(@goal_tree)
-    leaf_goals.each do |leaf|
-      memory_store.update_section(
-        name: :sub_questions,
-        content: { text: leaf[:text], status: "pending", parent_id: leaf[:parent_id] },
-        append: true
-      )
-    end
-
-    record_decision(
-      decision: "Goal decomposition complete",
-      rationale: "Found #{leaf_goals.size} leaf questions to research",
-      context: { leaf_count: leaf_goals.size }
-    )
+  def process_goal_tree(tree)
+    convert_to_flat_structure(tree)
   end
-
+  public :process_goal_tree
   # Phase 2: Research using ResearchWorkflow
   def perform_research
     record_decision(
@@ -163,6 +174,15 @@ class CodebaseResearcher < BaseWorker
       rationale: "Researching decomposed goals",
       context: { output_modes: output_modes }
     )
+
+    Rails.logger.info "[CodebaseResearcher] Starting ResearchWorkflow with goal: #{goal}"
+    Rails.logger.info "[CodebaseResearcher] Using context: #{context.inspect}"
+    Rails.logger.info "[CodebaseResearcher] goal_tree: #{@goal_tree.inspect}"
+
+    unless @goal_tree
+      Rails.logger.error "[CodebaseResearcher] Missing goal_tree - cannot proceed with research"
+      raise "Missing goal_tree: Goal decomposition must be completed before research can begin"
+    end
 
     workflow = ResearchWorkflow.new(
       goal: goal,
@@ -175,13 +195,19 @@ class CodebaseResearcher < BaseWorker
     )
 
     workflow.setup
-    workflow.execute
-
-    if workflow.failed?
-      raise "Research workflow failed: #{workflow.error}"
+    begin
+      workflow.execute
+      if workflow.failed?
+        raise "Research workflow failed: #{workflow.error}"
+      end
+    rescue StandardError => e
+      Rails.logger.error "[CodebaseResearcher] Research workflow error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+      raise e
     end
 
     @research_result = workflow.result
+    Rails.logger.info "[CodebaseResearcher] Research result: #{@research_result.inspect}"
     store_workflow_result(:research, @research_result)
 
     # Transfer findings to our memory store
@@ -223,7 +249,7 @@ class CodebaseResearcher < BaseWorker
       goal_tree: @goal_tree,
       findings: research[:findings] || memory_store.get_section(:findings),
       synthesis: research[:synthesis] || {},
-      file_analyses: research[:file_analyses] || [],
+      file_an: research[:file_analyses] || [],
       sub_questions: memory_store.get_section(:sub_questions),
       relevant_files: research[:relevant_files] || [],
       relevant_files_tree: research[:relevant_files_tree] || "",
@@ -240,9 +266,10 @@ class CodebaseResearcher < BaseWorker
         completed_at: Time.now.utc.iso8601,
         final_state: current_state,
         workflow_results: {
-          goal_decomposition: workflow_result(:goal_decomposition)&.slice(:leaf_count, :max_depth_reached),
-          research: workflow_result(:research)&.slice(:goal, :output_modes)
-        }
+          goal_decomposition: workflow_result(:goal_decomposition),
+          research: workflow_result(:research)
+        },
+        decomposition_metadata: @goal_tree&.fetch(:metadata, {})
       }
     }
   end
@@ -267,12 +294,15 @@ class CodebaseResearcher < BaseWorker
       cache_stats: {},
       metadata: {
         final_state: current_state,
-        error: error.message
+        error: error.message,
+        decomposition_status: "failed",
+        workflow_results: {
+          goal_decomposition: workflow_result(:goal_decomposition),
+          research: workflow_result(:research)
+        }
       }
     }
   end
-
-  private
 
   def record_decision(decision:, rationale:, context:)
     return unless memory_store
@@ -292,14 +322,25 @@ class CodebaseResearcher < BaseWorker
     (completed.to_f / sub_questions.size * 100).round
   end
 
-  # Collect all leaf nodes from the goal tree
-  def collect_leaves(node)
+  # Convert UUID-based tree structure to flat array of leaf nodes
+  def convert_to_flat_structure(node, parent_id = nil)
     return [] unless node
 
     if node[:is_leaf]
-      [node]
+      {
+        text: node[:text],
+        parent_id: parent_id,
+        metadata: {
+          decomposition_id: node[:id],
+          depth: node[:depth],
+          focus_area: node[:focus_area],
+          constraints: node[:constraints]
+        }
+      }
     else
-      (node[:children] || []).flat_map { |child| collect_leaves(child) }
+      (node[:children] || []).flat_map do |child|
+        convert_to_flat_structure(child, node[:id])
+      end
     end
   end
 end

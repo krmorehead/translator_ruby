@@ -413,8 +413,7 @@ module Contexts
         .map { |s| s[:entry] }
     end
 
-    protected
-
+    
     # Subclasses can override to provide custom keyword extraction
     def extract_keywords(text)
       return [] if text.nil?
@@ -448,8 +447,7 @@ module Contexts
       @entries.last(MAX_CANDIDATE_ENTRIES)
     end
 
-    private
-
+    
     def normalize_topics(topics)
       Array(topics).map { |t| t.to_s.downcase.strip }.reject(&:empty?)
     end

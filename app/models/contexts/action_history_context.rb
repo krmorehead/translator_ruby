@@ -181,7 +181,6 @@ module Contexts
       context
     end
 
-    private
 
     def extract_result_summary(result)
       return result[:error] if result[:error]

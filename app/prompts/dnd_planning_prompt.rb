@@ -45,8 +45,7 @@ class DndPlanningPrompt < ToolCallPrompt
     context.format_for_prompt(question || "", format: :brief)
   end
 
-  private
-
+  
   def format_actions
     @actions.map do |action|
       params = action[:parameters]&.map { |k, v| "#{k}: #{v}" }&.join(", ") || "none"

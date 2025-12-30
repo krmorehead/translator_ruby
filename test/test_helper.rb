@@ -32,8 +32,7 @@ module ActiveSupport
       cleanup_test_agent_data
     end
 
-    private
-
+    
     def cleanup_test_agent_data
       test_data_path = ENV.fetch("AGENT_DATA_PATH", "tmp/test_agent_data")
       FileUtils.rm_rf(test_data_path) if File.exist?(test_data_path)

@@ -72,8 +72,7 @@ module Actions
       )
     end
 
-    private
-
+    
     def leaf_question?(question)
       # Simple heuristics for leaf questions
       words = question.split.size

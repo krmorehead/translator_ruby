@@ -20,11 +20,6 @@ class ToolCallPrompt < BasePrompt
     config[:max_context] || TOOL_CALL_MAX_CONTEXT
   end
 
-  # Override max response tokens for tool-calling (reserve room for input)
-  def max_response_tokens
-    # Use about 25% of max context for response, rest for input
-    ENV.fetch("TOOL_CALL_MAX_RESPONSE", max_safe_context / 4).to_i
-  end
 
   # Compact tool serialization for smaller context window
   # Format: "- name: description (param1*: type, param2: type)"
@@ -65,8 +60,7 @@ class ToolCallPrompt < BasePrompt
     end
   end
 
-  private
-
+  
   # Execute with a specific capability
   def execute_with_capability(capability, prompt:, context:)
     client = GenericLlmClient.client_for(capability)
@@ -88,8 +82,7 @@ class ToolCallPrompt < BasePrompt
   def build_parameters_for_capability(capability, messages)
     parameters = {
       model: GenericLlmClient.model_for(capability),
-      messages: messages,
-      max_tokens: max_response_tokens
+      messages: messages
     }
 
     if response_schema

@@ -16,7 +16,7 @@ class WorkflowOrchestrator
     @workflow
   end
 
-  private
+
 
   def validate_workflow!
     missing = REQUIRED_METHODS.reject { |method| @workflow.respond_to?(method) }

@@ -38,8 +38,7 @@ class DndChatWorkflowTest < ActiveSupport::TestCase
     assert result.key?(:thoughts), "Result should include thoughts field"
   end
 
-  private
-
+  
   def load_tools
     %w[dice_roll_tool skill_check_tool inventory_tool memory_tool memory_summarize_tool read_file_tool write_file_tool].each do |file|
       require Rails.root.join("app", "tools", file)

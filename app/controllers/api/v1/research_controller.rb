@@ -117,7 +117,6 @@ module Api
         }, status: :internal_server_error
       end
 
-      private
 
       def normalize_context(context)
         return {} if context.blank?

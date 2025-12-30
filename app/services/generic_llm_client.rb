@@ -24,15 +24,15 @@ module GenericLlmClient
   # All capabilities use LLM_URL (host) with different ports
   CAPABILITIES = {
     general_llm: {
-      model_name: "./vllm/models/qwen3_30b_a3b_moe",
+      model_name: "./vllm/models/qwen3_32B_dense",
       port: 52003,
-      max_context: 10000,
-      base_url: "ELDER_PEBBLE_LLM_URL"
+      max_context: 64000,
+      base_url: "LLM_URL"
     },
     tool_calling: {
-      model_name: "./vllm/models/qwen3_30b_a3b_moe",
-      port: 52004,
-      max_context: 2000,
+      model_name: "./vllm/models/qwen3_32B_dense",
+      port: 52003,
+      max_context: 64000,
       base_url: "LLM_URL"
     }
   }.freeze
@@ -106,7 +106,7 @@ module GenericLlmClient
   end
 
   def retry_attempts
-    ENV.fetch("LLM_RETRY_AT", 1).to_i
+    ENV.fetch("LLM_RETRY", "1").to_i
   end
 
   def retry_delay
@@ -140,14 +140,12 @@ module GenericLlmClient
       raise last_error
     end
 
-    private
-
+    
     def log_token_usage(parameters)
       tokens = estimate_tokens(parameters)
       caller_info = extract_caller_info
-      max_tokens = parameters[:max_tokens] || "unset"
 
-      log_entry = "[LLM:#{@capability}] #{caller_info} - #{tokens} input tokens, max_output=#{max_tokens}"
+      log_entry = "[LLM:#{@capability}] #{caller_info} - #{tokens} input tokens"
 
       if tokens > GenericLlmClient::TOKEN_THRESHOLDS[:critical]
         log(:warn, "⚠️  CRITICAL #{log_entry}")

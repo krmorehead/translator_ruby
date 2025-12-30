@@ -78,7 +78,6 @@ class GithubStatusChecks
     end
   end
 
-  private
     def github_repo_from_remote_url
       url = `git config --get remote.origin.url`.strip.delete_suffix(".git")
       if url.start_with?("https://github.com/")

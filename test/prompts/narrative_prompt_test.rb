@@ -52,8 +52,7 @@ class NarrativePromptTest < ActiveSupport::TestCase
     refute_includes result[:content].downcase, "dice"
   end
 
-  private
-
+  
   def llm_configured?
     ENV["API_KEY"].to_s.strip.present? && ENV["LLM_URL"].to_s.strip.present?
   end

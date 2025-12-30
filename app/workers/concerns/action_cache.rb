@@ -78,8 +78,7 @@ module ActionCache
     end
   end
 
-  private
-
+  
   def action_cache_store
     @action_cache ||= {}
   end

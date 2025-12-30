@@ -338,8 +338,7 @@ class ResearchMemoryStore
     Digest::SHA256.hexdigest(goal.to_s.strip.downcase)
   end
 
-  private
-
+  
   # Build a context instance from section data
   def build_context(section_key, context)
     section_data = @sections[section_key]

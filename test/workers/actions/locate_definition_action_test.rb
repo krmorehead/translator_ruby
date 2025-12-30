@@ -71,8 +71,7 @@ class LocateDefinitionActionTest < ActiveSupport::TestCase
     end
   end
 
-  private
-
+  
   def create_action
     Actions::LocateDefinitionAction.new(
       agent: @agent,

@@ -206,8 +206,7 @@ module Contexts
       context
     end
 
-    private
-
+    
     def find_goal(goal_id)
       return @primary_goal if @primary_goal && @primary_goal[:id] == goal_id
 

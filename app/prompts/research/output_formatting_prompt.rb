@@ -144,8 +144,7 @@ module Research
       output.join("\n")
     end
 
-    private
-
+    
     def build_prompt(synthesis, format_spec)
       prompt_parts = ["Format the following research findings into documentation:"]
 

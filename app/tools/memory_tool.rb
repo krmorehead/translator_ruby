@@ -70,8 +70,7 @@ class MemoryTool < BaseTool
     error_result(e.message)
   end
 
-  private
-
+  
   def normalize_args(operation, path, section, content, append)
     op = operation || OP_UPDATE
     op = OP_UPDATE if op == "update" || op == "write"

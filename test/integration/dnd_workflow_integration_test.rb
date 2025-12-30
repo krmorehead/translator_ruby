@@ -42,8 +42,7 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
     assert_conversation_persisted_with_messages(4)
   end
 
-  private
-
+  
   def skip_unless_llm_configured!
     creds = ENV["API_KEY"].to_s.strip
     url = ENV["LLM_URL"].to_s.strip

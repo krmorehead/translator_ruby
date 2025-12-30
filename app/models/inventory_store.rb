@@ -49,8 +49,7 @@ class InventoryStore
     @items.map(&:to_h)
   end
 
-  private
-
+  
   def load_items
     return [] unless File.exist?(path)
 

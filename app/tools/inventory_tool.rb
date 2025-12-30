@@ -89,8 +89,7 @@ class InventoryTool < BaseTool
     error_result(e.message)
   end
 
-  private
-
+  
   def ensure_name!(name)
     raise ArgumentError, "name required" if name.to_s.strip.empty?
   end
