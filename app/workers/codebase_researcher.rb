@@ -90,6 +90,14 @@ class CodebaseResearcher < BaseWorker
 
     trigger(:researched)
     synthesize_results
+    
+    # Transition to complete state after synthesis is done
+    trigger(:finish)
+    
+    # Update metadata with final state after transition
+    @result[:metadata][:final_state] = current_state if @result&.dig(:metadata)
+    
+    @result
   end
 
   # Phase : Decompose the goal using GoalDecompositionWorkflow
@@ -198,7 +206,8 @@ class CodebaseResearcher < BaseWorker
     begin
       workflow.execute
       if workflow.failed?
-        raise "Research workflow failed: #{workflow.error}"
+        error_detail = workflow.error.is_a?(Exception) ? "#{workflow.error.class}: #{workflow.error.message}\n#{workflow.error.backtrace&.first(10)&.join("\n")}" : workflow.error
+        raise "Research workflow failed: #{error_detail}"
       end
     rescue StandardError => e
       Rails.logger.error "[CodebaseResearcher] Research workflow error: #{e.message}"
@@ -234,7 +243,10 @@ class CodebaseResearcher < BaseWorker
       context: {}
     )
 
+    # Build result before state transition so current_state reflects synthesis phase
     @result = build_result
+    
+    @result
   end
 
   # Build the final result combining all workflow results
@@ -327,7 +339,7 @@ class CodebaseResearcher < BaseWorker
     return [] unless node
 
     if node[:is_leaf]
-      {
+      [{
         text: node[:text],
         parent_id: parent_id,
         metadata: {
@@ -336,7 +348,7 @@ class CodebaseResearcher < BaseWorker
           focus_area: node[:focus_area],
           constraints: node[:constraints]
         }
-      }
+      }]
     else
       (node[:children] || []).flat_map do |child|
         convert_to_flat_structure(child, node[:id])

@@ -25,25 +25,13 @@ module Contexts
     # Default max entries when condensing
     DEFAULT_CONDENSE_LIMIT = 10
 
-    Entry = Struct.new(:id, :content, :topics, :source, :timestamp, :metadata, keyword_init: true) do
-      def to_h
-        {
-          id: id,
-          content: content,
-          topics: topics,
-          source: source,
-          timestamp: timestamp,
-          metadata: metadata
-        }
-      end
-    end
-
-    attr_reader :entries, :sub_contexts
+    attr_reader :entries, :sub_contexts, :condensed_context
 
     def initialize
       @entries = []
       @topic_index = Hash.new { |h, k| h[k] = Set.new }  # topic -> entry_ids
       @sub_contexts = {}  # name -> Context instance
+      @condensed_context = nil
     end
 
     # Add a context entry with explicit topics
@@ -51,14 +39,12 @@ module Contexts
     # @param topics [Array<String>] Topics this context relates to
     # @param source [String] Where this context came from (file, question, etc)
     # @param metadata [Hash] Additional metadata
-    # @return [Entry] The created entry
+    # @return [Entries::BaseEntry] The created entry
     def add(content:, topics:, source:, metadata: {})
-      entry = Entry.new(
-        id: SecureRandom.uuid,
+      entry = Entries::BaseEntry.new(
         content: content,
-        topics: normalize_topics(topics),
+        topics: topics,
         source: source,
-        timestamp: Time.now.utc.iso8601,
         metadata: metadata || {}
       )
 
@@ -73,10 +59,10 @@ module Contexts
     end
 
     # Get context entries relevant to a question/topic
-    # Uses deterministic keyword matching
+    # Uses keyword matching for relevance
     # @param question [String] The question to find relevant context for
     # @param limit [Integer] Maximum entries to return
-    # @return [Array<Entry>] Relevant entries, most relevant first
+    # @return [Array<Entry>] Relevant entries, sorted by relevance
     def relevant_to(question, limit: MAX_PROMPT_ENTRIES)
       return [] if @entries.empty?
 
@@ -102,7 +88,7 @@ module Contexts
         relevant
       end
     end
-
+    
     # Get entries by topic (exact match)
     # @param topic [String] The topic to filter by
     # @return [Array<Entry>] Entries tagged with this topic
@@ -177,10 +163,10 @@ module Contexts
     # @param data [Hash] Serialized context data
     # @param context_registry [Hash] Optional mapping of class names to classes for sub-contexts
     # @return [BaseContext] Deserialized context
-    def self.from_h(data, context_registry: nil)
+    def self.from_h(data)
       context = new
       load_entries_from_h(context, data)
-      load_sub_contexts_from_h(context, data, context_registry)
+      load_sub_contexts_from_h(context, data)
       context
     end
 
@@ -189,36 +175,21 @@ module Contexts
     def self.from_section_data(data, source:)
       return new unless data
 
-      # Try to extract context_class - works for Hash, fails for Array
-      context_class_name = begin
-        data[:context_class]
-      rescue TypeError
-        nil
-      end
-
-      if context_class_name
-        klass = resolve_context_class(context_class_name, nil)
-        return klass.from_h(data)
-      end
-
-      # Raw entries array
-      context = new
-      Array(data).each { |entry| context.add_from_entry(entry, source: source) }
-      context
+      klass = resolve_context_class(data[:context_class], nil)
+      return klass.from_h(data)
     end
 
     # Helper to load entries from serialized data
     def self.load_entries_from_h(context, data)
-      entries_data = data[:entries] || []
+      raise TypeError, "data must be a Hash" unless data.is_a?(Hash)
+      raise ArgumentError, "data must contain :entries key" unless data.key?(:entries)
+      raise TypeError, "entries must be an Array" unless data[:entries].is_a?(Array)
+
+      entries_data = data[:entries]
       entries_data.each do |entry_data|
-        entry = Entry.new(
-          id: entry_data[:id],
-          content: entry_data[:content],
-          topics: entry_data[:topics] || [],
-          source: entry_data[:source],
-          timestamp: entry_data[:timestamp],
-          metadata: entry_data[:metadata] || {}
-        )
+        raise TypeError, "each entry must be a Hash" unless entry_data.is_a?(Hash)
+        
+        entry = Entries::BaseEntry.from_h(entry_data)
         context.instance_variable_get(:@entries) << entry
         entry.topics.each do |topic|
           context.instance_variable_get(:@topic_index)[topic].add(entry.id)
@@ -227,21 +198,21 @@ module Contexts
     end
 
     # Helper to load sub-contexts from serialized data
-    def self.load_sub_contexts_from_h(context, data, context_registry)
+    def self.load_sub_contexts_from_h(context, data)
       sub_contexts_data = data[:sub_contexts] || {}
       sub_contexts_data.each do |name, sub_data|
         class_name = sub_data[:context_class]
-        sub_class = resolve_context_class(class_name, context_registry)
-        sub_context = sub_class.from_h(sub_data, context_registry: context_registry)
+        sub_class = resolve_context_class(class_name)
+        sub_context = sub_class.from_h(sub_data)
         context.add_sub_context(name, sub_context)
       end
     end
 
     # Resolve a context class from its name
-    def self.resolve_context_class(class_name, context_registry)
+    def self.resolve_context_class(class_name)
       return BaseContext unless class_name
 
-      context_registry&.fetch(class_name, nil) || class_name.constantize
+      class_name.constantize
     end
 
     # Get size of context store
@@ -378,42 +349,6 @@ module Contexts
 
       result
     end
-
-    # Get relevant entries including from sub-contexts
-    # @param question [String] The question to find relevant context for
-    # @param limit [Integer] Maximum entries to return
-    # @param include_sub_contexts [Boolean] Whether to search sub-contexts
-    # @return [Array<Entry>] Relevant entries
-    def relevant_to_deep(question, limit: MAX_PROMPT_ENTRIES, include_sub_contexts: true)
-      all_scored = []
-
-      question_keywords = extract_keywords(question)
-
-      # Score entries from this context
-      candidates_for_relevance.each do |entry|
-        score = calculate_relevance_score(entry, question_keywords)
-        all_scored << { entry: entry, score: score, source: :self }
-      end
-
-      # Score entries from sub-contexts
-      if include_sub_contexts
-        @sub_contexts.each do |name, sub_ctx|
-          sub_ctx.candidates_for_relevance.each do |entry|
-            score = sub_ctx.send(:calculate_relevance_score, entry, question_keywords)
-            all_scored << { entry: entry, score: score, source: name }
-          end
-        end
-      end
-
-      # Take highest scoring entries
-      all_scored
-        .select { |s| s[:score] >= KEYWORD_RELEVANCE_THRESHOLD }
-        .sort_by { |s| -s[:score] }
-        .first(limit)
-        .map { |s| s[:entry] }
-    end
-
-    
     # Subclasses can override to provide custom keyword extraction
     def extract_keywords(text)
       return [] if text.nil?
@@ -466,4 +401,3 @@ module Contexts
     end
   end
 end
-

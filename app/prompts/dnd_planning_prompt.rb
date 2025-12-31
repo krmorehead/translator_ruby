@@ -3,9 +3,14 @@
 # Prompt for the D&D agent to select the next action based on player intent.
 # Uses a tight context format optimized for quick decision making.
 class DndPlanningPrompt < ToolCallPrompt
+  attr_reader :actions
+  
   def initialize(actions:)
-    super()
+    raise ArgumentError, "actions must be an Array" unless actions.is_a?(Array)
+    raise ArgumentError, "actions cannot be empty" if actions.empty?
+    
     @actions = actions
+    super(tools: []) # No tools needed, uses JSON schema
   end
 
   def system_prompt

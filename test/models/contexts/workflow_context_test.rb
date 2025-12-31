@@ -27,42 +27,67 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal :running, context.current_state
   end
 
-  test "record_transition creates entry" do
-    context.record_transition(from: :pending, to: :running, event: :start, payload: { reason: "test" })
+  test "record_transition creates transition object and entry" do
+    transition = context.record_transition(from: :pending, to: :running, event: :start, payload: { reason: "test" })
 
+    # Check transition object
+    assert_instance_of Contexts::Workflow::StateTransition, transition
+    assert_equal :pending, transition.from_state
+    assert_equal :running, transition.to_state
+    assert_equal :start, transition.event
+    assert_equal({ reason: "test" }, transition.payload)
+
+    # Check entry was created
     assert_equal 1, context.size
-    entry = context.entries.first
-    assert_equal :transition, entry.metadata[:entity_type]
-    assert_equal :running, entry.metadata[:to]
+    assert_equal 1, context.transitions.size
   end
 
-  test "record_decision creates decision entry" do
-    context.record_decision(
+  test "record_decision creates decision object and entry" do
+    decision = context.record_decision(
       decision: "Use parallel processing",
       rationale: "Large file count",
       context: { file_count: 100 }
     )
 
-    entry = context.entries.first
-    assert_equal :decision, entry.metadata[:entity_type]
-    assert entry.content.include?("Use parallel processing")
+    # Check decision object
+    assert_instance_of Contexts::Workflow::Decision, decision
+    assert_equal "Use parallel processing", decision.decision
+    assert_equal "Large file count", decision.rationale
+    assert_equal({ file_count: 100 }, decision.decision_context)
+    assert_equal :pending, decision.state_at_decision
+
+    # Check entry was created
+    assert_equal 1, context.size
+    assert_equal 1, context.decisions.size
   end
 
-  test "record_error creates error entry" do
-    context.record_error("Connection timeout", recoverable: true)
+  test "record_error creates error object and entry" do
+    error_obj = context.record_error("Connection timeout", recoverable: true)
 
-    entry = context.entries.first
-    assert_equal :error, entry.metadata[:entity_type]
-    assert entry.metadata[:recoverable]
-    assert entry.content.include?("[WARN]")
+    # Check error object
+    assert_instance_of Contexts::Workflow::WorkflowError, error_obj
+    assert_equal "Connection timeout", error_obj.error_message
+    assert error_obj.recoverable?
+    assert_not error_obj.fatal?
+    assert_equal :pending, error_obj.state_at_error
+
+    # Check entry was created
+    assert_equal 1, context.size
+    assert_equal 1, context.errors.size
   end
 
   test "record_error handles exceptions" do
     error = StandardError.new("Something went wrong")
-    context.record_error(error, recoverable: false)
+    error_obj = context.record_error(error, recoverable: false)
 
+    # Check error object
+    assert_equal "Something went wrong", error_obj.error_message
+    assert_equal "StandardError", error_obj.error_class
+    assert_not error_obj.recoverable?
+    assert error_obj.fatal?
+
+    # Check entry was created
     entry = context.entries.first
-    assert_equal "StandardError", entry.metadata[:error_class]
     assert entry.content.include?("[ERROR]")
   end
 
@@ -80,31 +105,39 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal :output, entry.metadata[:entity_type]
   end
 
-  test "transitions returns all transition entries" do
+  test "transitions returns all transition objects" do
     context.record_transition(from: :pending, to: :running, event: :start)
     context.record_decision(decision: "test", rationale: "test")
     context.record_transition(from: :running, to: :complete, event: :finish)
 
     assert_equal 2, context.transitions.size
+    assert context.transitions.all? { |t| t.is_a?(Contexts::Workflow::StateTransition) }
   end
 
-  test "decisions returns all decision entries" do
+  test "decisions returns all decision objects" do
     context.record_decision(decision: "A", rationale: "reason A")
     context.record_transition(from: :pending, to: :running, event: :start)
     context.record_decision(decision: "B", rationale: "reason B")
 
     assert_equal 2, context.decisions.size
+    assert context.decisions.all? { |d| d.is_a?(Contexts::Workflow::Decision) }
   end
 
-  test "errors returns error entries" do
+  test "errors returns error objects" do
     context.record_error("Error 1", recoverable: true)
     context.record_error("Error 2", recoverable: false)
 
     all_errors = context.errors
     assert_equal 2, all_errors.size
+    assert all_errors.all? { |e| e.is_a?(Contexts::Workflow::WorkflowError) }
 
-    fatal_only = context.errors(include_recovered: false)
+    fatal_only = context.fatal_errors
     assert_equal 1, fatal_only.size
+    assert fatal_only.first.fatal?
+
+    recoverable_only = context.recoverable_errors
+    assert_equal 1, recoverable_only.size
+    assert recoverable_only.first.recoverable?
   end
 
   test "states_visited returns ordered list of states" do
@@ -151,17 +184,22 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert formatted.include?("pending")
   end
 
-  test "serializes with workflow metadata" do
+  test "serializes with workflow metadata and entities" do
     context.record_transition(from: :pending, to: :running, event: :start)
+    context.record_decision(decision: "test", rationale: "testing")
 
     hash = context.to_h
     assert_equal "test_workflow", hash[:workflow_name]
     assert_equal "wf-123", hash[:workflow_id]
     assert_equal :running, hash[:current_state]
+    assert_equal 1, hash[:transitions].size
+    assert_equal 1, hash[:decisions].size
   end
 
-  test "deserializes with workflow metadata" do
+  test "deserializes with workflow metadata and entities" do
     context.record_transition(from: :pending, to: :running, event: :start)
+    context.record_decision(decision: "test", rationale: "testing")
+    context.record_error("test error", recoverable: true)
 
     hash = context.to_h
     restored = Contexts::WorkflowContext.from_h(hash)
@@ -169,7 +207,10 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal "test_workflow", restored.workflow_name
     assert_equal "wf-123", restored.workflow_id
     assert_equal :running, restored.current_state
-    assert_equal 1, restored.size
+    assert_equal 1, restored.transitions.size
+    assert_equal 1, restored.decisions.size
+    assert_equal 1, restored.errors.size
+    assert_equal 3, restored.size  # 3 entries
   end
 end
 

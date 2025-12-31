@@ -52,11 +52,15 @@ class CurrentSceneContextTest < ActiveSupport::TestCase
   end
 
   test "add_exit adds an exit entry" do
-    context.add_exit(direction: "north", destination: "Castle Gates")
+    exit_entry = context.add_exit(direction: "north", destination: "Castle Gates")
 
+    assert_instance_of Contexts::Entries::SceneEntry, exit_entry
+    assert_equal :exit, exit_entry.entity_type
+    assert_equal "north", exit_entry.entity_name
+    assert_equal "Castle Gates", exit_entry.metadata[:destination]
+    
     exits = context.exits
     assert_equal 1, exits.size
-    assert_equal "north", exits.first.metadata[:direction]
   end
 
   test "format_immersive creates narrative description" do

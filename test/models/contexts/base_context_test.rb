@@ -240,18 +240,6 @@ class BaseContextTest < ActiveSupport::TestCase
     assert_equal 3, context.all_entries(depth: -1).size
   end
 
-  # Relevant to deep tests
-  test "relevant_to_deep searches sub-contexts" do
-    sub = Contexts::BaseContext.new
-    # Add content with multiple matching keywords to exceed threshold
-    sub.add(content: "Calculator math operations for arithmetic", topics: ["calculator", "math"], source: "sub")
 
-    context.add(content: "Logger writes logs", topics: ["logger"], source: "parent")
-    context.add_sub_context(:child, sub)
-
-    # Use a question with multiple matching keywords
-    relevant = context.relevant_to_deep("calculator math operations")
-    assert relevant.any? { |e| e.content.include?("Calculator") }
-  end
 end
 

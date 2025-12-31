@@ -28,119 +28,112 @@ module Contexts
 
     attr_reader :primary_goal, :sub_goals
 
-    def initialize(goal_text: nil)
+    def initialize(goal_text:)
       super()
-      @primary_goal = nil
-      @sub_goals = []
-
-      set_primary_goal(goal_text) if goal_text
+      set_primary_goal(goal_text)
     end
 
     # Set the primary goal
-    # @param text [String] The goal description
+    # @param goal_text [String] The goal description
     # @param metadata [Hash] Additional metadata
-    def set_primary_goal(text, metadata: {})
-      @primary_goal = {
-        id: SecureRandom.uuid,
-        text: text,
-        status: :in_progress,
-        progress: 0,
-        created_at: Time.now.utc.iso8601,
-        metadata: metadata
-      }
+    def set_primary_goal(goal_text, metadata: {})
+      raise ArgumentError, "goal_text must be a String" unless goal_text.is_a?(String)
 
-      add(
-        content: "Primary Goal: #{text}",
+      entry = add(
+        content: "Primary Goal: #{goal_text}",
         topics: ["goal", "primary_goal"],
         source: "goal_context",
-        metadata: { goal_id: @primary_goal[:id] }
+        metadata: { goal_text: goal_text }
       )
 
+      @primary_goal = Goals::PrimaryGoal.new(
+        goal_text: goal_text,
+        entry_id: entry.id,
+        metadata: metadata
+      )
       @primary_goal
     end
 
     # Add a sub-goal
-    # @param text [String] The sub-goal description
+    # @param goal_text [String] The sub-goal description
     # @param priority [Integer] Priority (1 = highest)
-    # @param parent_id [String] Parent goal ID (defaults to primary goal)
     # @param metadata [Hash] Additional metadata
-    # @return [Hash] The created sub-goal
-    def add_sub_goal(text, priority: 1, parent_id: nil, metadata: {})
-      parent = parent_id || @primary_goal&.dig(:id)
+    # @return [Goals::SubGoal] The created sub-goal
+    def add_sub_goal(goal_text, priority: 2, metadata: {})
+      raise ArgumentError, "goal_text must be a String" unless goal_text.is_a?(String)
+      raise ArgumentError, "priority must be an Integer" unless priority.is_a?(Integer)
+      raise TypeError, "Primary goal must be set first" unless @primary_goal
 
-      sub_goal = {
-        id: SecureRandom.uuid,
-        text: text,
-        priority: priority,
-        status: :pending,
-        parent_id: parent,
-        created_at: Time.now.utc.iso8601,
-        metadata: metadata
-      }
-
-      @sub_goals << sub_goal
-      @sub_goals.sort_by! { |g| g[:priority] }
-
-      add(
-        content: "Sub-goal (priority #{priority}): #{text}",
+      entry = add(
+        content: "Sub-goal (priority #{priority}): #{goal_text}",
         topics: ["goal", "sub_goal"],
         source: "goal_context",
-        metadata: { goal_id: sub_goal[:id], parent_id: parent }
+        metadata: { parent_id: @primary_goal.id, priority: priority }
       )
-
+      
+      sub_goal = @primary_goal.add_sub_goal(
+        goal_text: goal_text,
+        entry_id: entry.id,
+        priority: priority,
+        metadata: metadata
+      )
+      
+      # Update entry with sub_goal id now that we have it
+      entry.metadata[:goal_id] = sub_goal.id
+      
       sub_goal
+    end
+
+    def sub_goals
+      raise TypeError, "Primary goal must be set first" unless @primary_goal
+      @primary_goal.sub_goals_sorted
     end
 
     # Mark progress on a goal
     # @param goal_id [String] The goal ID
-    # @param status [Symbol] New status (:pending, :in_progress, :completed, :failed)
+    # @param status [Symbol] New status (:not_started, :in_progress, :complete, :failed)
     # @param progress [Integer] Progress percentage (0-100)
     def mark_progress(goal_id, status, progress: nil)
-      raise ArgumentError, "Invalid status: #{status}" unless VALID_STATUSES.include?(status)
-
-      goal = find_goal(goal_id)
+      raise ArgumentError, "goal_id must be a String" unless goal_id.is_a?(String)
+      raise TypeError, "Primary goal must be set first" unless @primary_goal
+      
+      goal = @primary_goal.find_goal(goal_id)
       raise ArgumentError, "Goal not found: #{goal_id}" unless goal
 
-      goal[:status] = status
-      goal[:progress] = progress if progress
-      goal[:updated_at] = Time.now.utc.iso8601
-
-      add(
-        content: "Goal '#{goal[:text].truncate(50)}' marked as #{status}",
+      entry = add(
+        content: "Goal '#{goal.goal_text.truncate(50)}' marked as #{status}",
         topics: ["goal", "progress", status.to_s],
         source: "goal_context",
         metadata: { goal_id: goal_id, status: status, progress: progress }
       )
+
+      goal.update_status(status: status, entry_id: entry.id, progress: progress)
     end
 
     # Get pending sub-goals sorted by priority
-    # @return [Array<Hash>] Pending sub-goals
+    # @return [Array<Goals::SubGoal>] Pending sub-goals
     def pending_sub_goals
-      @sub_goals.select { |g| g[:status] == :pending }
+      raise TypeError, "Primary goal must be set first" unless @primary_goal
+      @primary_goal.sub_goals_sorted.select { |g| g.status == :not_started || g.status == :pending }
     end
 
     # Get completed sub-goals
-    # @return [Array<Hash>] Completed sub-goals
+    # @return [Array<Goals::SubGoal>] Completed sub-goals
     def completed_sub_goals
-      @sub_goals.select { |g| g[:status] == :completed }
+      raise TypeError, "Primary goal must be set first" unless @primary_goal
+      @primary_goal.sub_goals_sorted.select { |g| g.status == :complete }
     end
 
     # Calculate overall progress based on sub-goals
     # @return [Integer] Progress percentage (0-100)
     def overall_progress
-      return 0 if @sub_goals.empty?
-
-      completed = @sub_goals.count { |g| g[:status] == :completed }
-      ((completed.to_f / @sub_goals.size) * 100).round
+      @primary_goal.sub_goal_progress
     end
 
     # Check if the primary goal is achieved
     # @return [Boolean]
     def goal_achieved?
-      return false unless @primary_goal
-
-      @primary_goal[:status] == :completed ||
-        (@sub_goals.any? && @sub_goals.all? { |g| g[:status] == :completed })
+      @primary_goal.completed?
     end
 
     # Format for prompt output
@@ -150,22 +143,23 @@ module Contexts
       parts = []
 
       if @primary_goal
-        status = @primary_goal[:status].to_s.tr("_", " ")
+        status = @primary_goal.status.to_s.tr("_", " ")
         parts << "## Primary Goal (#{status})"
-        parts << @primary_goal[:text]
+        parts << @primary_goal.goal_text
         parts << ""
       end
 
-      if @sub_goals.any?
+      sorted_sub_goals = sub_goals
+      if sorted_sub_goals.any?
         parts << "## Sub-goals"
-        @sub_goals.each do |sg|
-          status_icon = case sg[:status]
-                        when :completed then "[x]"
+        sorted_sub_goals.each do |sg|
+          status_icon = case sg.status
+                        when :complete then "[x]"
                         when :in_progress then "[~]"
                         when :failed then "[!]"
                         else "[ ]"
                         end
-          parts << "#{status_icon} (P#{sg[:priority]}) #{sg[:text]}"
+          parts << "#{status_icon} (P#{sg.priority}) #{sg.goal_text}"
         end
         parts << ""
         parts << "Progress: #{overall_progress}%"
@@ -177,9 +171,10 @@ module Contexts
     # Serialize to hash
     # @return [Hash]
     def to_h
+      raise TypeError, "Primary goal must be set first" unless @primary_goal
+      
       super.merge(
-        primary_goal: @primary_goal,
-        sub_goals: @sub_goals,
+        primary_goal: @primary_goal.to_h,
         overall_progress: overall_progress
       )
     end
@@ -188,29 +183,26 @@ module Contexts
     # @param hash [Hash] Serialized data
     # @return [GoalContext]
     def self.from_h(hash)
-      context = new
-      context.instance_variable_set(:@primary_goal, hash[:primary_goal] || hash["primary_goal"])
-      context.instance_variable_set(:@sub_goals, hash[:sub_goals] || hash["sub_goals"] || [])
+      raise TypeError, "Expected Hash, got #{hash.class}" unless hash.is_a?(Hash)
+      raise ArgumentError, "Hash keys must be symbols" if hash.keys.any? { |k| !k.is_a?(Symbol) }
+      raise ArgumentError, "Missing required key :primary_goal" unless hash.key?(:primary_goal)
+      raise TypeError, "primary_goal must be a Hash" unless hash[:primary_goal].is_a?(Hash)
 
-      # Restore entries
-      entries_data = hash[:entries] || hash["entries"] || []
-      entries_data.each do |entry_data|
-        context.add(
-          content: entry_data[:content] || entry_data["content"],
-          topics: entry_data[:topics] || entry_data["topics"] || [],
-          source: entry_data[:source] || entry_data["source"],
-          metadata: entry_data[:metadata] || entry_data["metadata"] || {}
-        )
-      end
+      # Reconstruct primary goal object
+      primary_goal = Goals::PrimaryGoal.from_h(hash[:primary_goal])
+      
+      # Create context with the goal_text from the primary goal
+      context = allocate
+      context.instance_variable_set(:@primary_goal, primary_goal)
+      context.instance_variable_set(:@entries, [])
+      context.instance_variable_set(:@topic_index, Hash.new { |h, k| h[k] = Set.new })
+      context.instance_variable_set(:@sub_contexts, {})
+
+      # Restore entries as Entry objects
+      load_entries_from_h(context, hash)
+      load_sub_contexts_from_h(context, hash)
 
       context
-    end
-
-    
-    def find_goal(goal_id)
-      return @primary_goal if @primary_goal && @primary_goal[:id] == goal_id
-
-      @sub_goals.find { |g| g[:id] == goal_id }
     end
   end
 end

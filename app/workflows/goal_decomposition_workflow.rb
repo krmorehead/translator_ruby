@@ -166,13 +166,19 @@ end
     end
 
     # Build tree node with children
+    node_id = SecureRandom.uuid
     node = {
-      id: SecureRandom.uuid,
+      id: node_id,
       text: goal,
       parent_id: parent_id,
       depth: depth,
       is_leaf: false,
-      children: []
+      children: [],
+      metadata: {
+        decomposition_id: node_id,
+        constraints: decomp_context[:constraints] || {},
+        focus_area: decomp_context[:focus_guidance]
+      }
     }
 
     questions.each do |q|
@@ -212,14 +218,20 @@ end
   end
 
   def create_leaf_node(text, parent_id, depth, rationale)
+    leaf_id = SecureRandom.uuid
     {
-      id: SecureRandom.uuid,
+      id: leaf_id,
       text: text,
       parent_id: parent_id,
       depth: depth,
       is_leaf: true,
       rationale: rationale,
-      children: []
+      children: [],
+      metadata: {
+        decomposition_id: leaf_id,
+        constraints: {},
+        focus_area: nil
+      }
     }
   end
 

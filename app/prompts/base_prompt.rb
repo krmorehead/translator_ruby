@@ -6,13 +6,10 @@ class ContextSizeExceededError < StandardError; end
 # Abstract base class for all LLM-backed prompts.
 # Subclasses must implement system_prompt and response_schema.
 class BasePrompt
-  attr_reader :tools
-
   # Approximate characters per token for context size estimation
   CHARS_PER_TOKEN = 4
 
-  def initialize(tools: [])
-    @tools = tools || []
+  def initialize()
     @client = default_client
   end
 
@@ -50,24 +47,15 @@ class BasePrompt
   # @param context [Contexts::BaseContext] The context (required)
   # @param question [String, nil] Optional question for relevance filtering
   # @return [String] Formatted context string
-  def format_context(context, question: nil)
-    raise ArgumentError, "context is required" if context.nil?
+  def format_context(context, question: '')
 
-    context.format_for_prompt(question || "")
+    context.format_for_prompt(question)
   end
-
-  # Serialize tool schemas for inclusion in prompts.
-  def serialize_tools(tool_schemas)
-    JSON.pretty_generate(tool_schemas || [])
-  end
-
   # Execute the prompt against the LLM and parse the response.
   # Returns hash with :content (structured JSON or raw text) and :thoughts (extracted reasoning).
   # - For prompts with response_schema: { content: parsed_json_hash, thoughts: thoughts }
   # - For prompts without schema: { content: text_string, thoughts: thoughts }
-  def execute(prompt:, context: {})
-    raise "LLM client not configured" unless @client
-
+  def execute(prompt:, context:)
     messages = build_messages(prompt, context)
     validate_context_size!(messages)
 

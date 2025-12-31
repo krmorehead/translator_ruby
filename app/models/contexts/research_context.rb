@@ -18,12 +18,17 @@ module Contexts
       class: "class:"
     }.freeze
 
-    attr_reader :research_goal
+    attr_reader :research_goal, :findings_list, :sub_questions_list, :file_summaries_list
 
     def initialize(research_goal: nil)
       super()
       @research_goal = research_goal
       @goal_keywords = research_goal ? extract_keywords(research_goal) : []
+      
+      # Dedicated collections for research entities
+      @findings_list = []
+      @sub_questions_list = []
+      @file_summaries_list = []
     end
 
     # Add a finding from code analysis
@@ -31,62 +36,87 @@ module Contexts
     # @param file_path [String] Path to the source file
     # @param sub_question [String] The sub-question this finding addresses
     # @param confidence [Float] Confidence score (0-1)
-    # @return [Entry]
+    # @return [Entries::ResearchEntry]
     def add_finding(finding:, file_path:, sub_question:, confidence: 0.5)
       topics = build_topics_for_finding(file_path, sub_question)
 
-      add(
-        content: finding,
+      entry = Entries::ResearchEntry.new(
+        finding: finding,
+        file_path: file_path,
+        sub_question: sub_question,
+        confidence: confidence,
         topics: topics,
         source: file_path,
-        metadata: {
-          type: :finding,
-          sub_question: sub_question,
-          confidence: confidence
-        }
+        metadata: {}
       )
+      
+      @findings_list << entry
+      @entries << entry
+      
+      # Index by topics
+      entry.topics.each do |topic|
+        @topic_index[topic].add(entry.id)
+      end
+      
+      entry
     end
 
     # Add a sub-question from goal decomposition
     # @param question [String] The sub-question text
     # @param parent_question [String] Parent question if any
     # @param priority [Integer] Priority level
-    # @return [Entry]
+    # @return [Entries::BaseEntry]
     def add_sub_question(question:, parent_question: nil, priority: 1)
       topics = ["#{TOPIC_PREFIXES[:question]}#{normalize_question(question)}"]
       topics << "#{TOPIC_PREFIXES[:question]}#{normalize_question(parent_question)}" if parent_question
 
-      add(
+      entry = Entries::BaseEntry.new(
         content: question,
         topics: topics,
         source: "goal_decomposition",
         metadata: {
-          type: :sub_question,
           parent: parent_question,
           priority: priority
         }
       )
+      
+      @sub_questions_list << entry
+      @entries << entry
+      
+      # Index by topics
+      entry.topics.each do |topic|
+        @topic_index[topic].add(entry.id)
+      end
+      
+      entry
     end
 
     # Add a file summary
     # @param file_path [String] Path to the file
     # @param summary [String] Summary of the file's purpose
     # @param methods [Array<String>] Key methods in the file
-    # @return [Entry]
+    # @return [Entries::BaseEntry]
     def add_file_summary(file_path:, summary:, methods: [])
       file_name = File.basename(file_path, ".*")
       topics = ["#{TOPIC_PREFIXES[:file]}#{file_name}"]
       methods.each { |m| topics << "#{TOPIC_PREFIXES[:method]}#{m}" }
 
-      add(
+      entry = Entries::BaseEntry.new(
         content: summary,
         topics: topics,
         source: file_path,
-        metadata: {
-          type: :file_summary,
-          methods: methods
-        }
+        metadata: { methods: methods }
       )
+      
+      @file_summaries_list << entry
+      @entries << entry
+      
+      # Index by topics
+      entry.topics.each do |topic|
+        @topic_index[topic].add(entry.id)
+      end
+      
+      entry
     end
 
     # Get context relevant to a specific sub-question
@@ -156,16 +186,15 @@ module Contexts
     # Groups findings by sub-question
     # @return [String] Formatted context
     def format_for_synthesis
-      findings = @entries.select { |e| e.metadata[:type] == :finding }
-      return "" if findings.empty?
+      return "" if @findings_list.empty?
 
-      by_question = findings.group_by { |e| e.metadata[:sub_question] || "general" }
+      by_question = @findings_list.group_by { |f| f.sub_question || "general" }
 
       parts = []
       by_question.each do |question, question_findings|
         parts << "## #{question}"
         question_findings.last(3).each do |f|
-          conf = f.metadata[:confidence] || 0.5
+          conf = f.confidence || 0.5
           parts << "- (#{(conf * 100).round}%) #{f.content}"
         end
       end
@@ -173,6 +202,23 @@ module Contexts
       parts.join("\n")
     end
 
+    # Get all findings
+    # @return [Array<Entries::ResearchEntry>] All findings
+    def findings
+      @findings_list
+    end
+    
+    # Get all sub-questions
+    # @return [Array<Entries::BaseEntry>] All sub-questions
+    def sub_questions
+      @sub_questions_list
+    end
+    
+    # Get all file summaries
+    # @return [Array<Entries::BaseEntry>] All file summaries
+    def file_summaries
+      @file_summaries_list
+    end
     
     # Override to boost relevance for goal-related keywords
     def calculate_relevance_score(entry, question_keywords)

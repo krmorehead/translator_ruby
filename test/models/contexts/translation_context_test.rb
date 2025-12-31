@@ -20,43 +20,53 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
   end
 
   test "add_protected_term adds to protected_strings and creates entry" do
-    context.add_protected_term(term: "CompanyName", reason: "Brand name")
+    entry = context.add_protected_term(term: "CompanyName", reason: "Brand name")
 
     assert_includes context.protected_strings, "CompanyName"
+    assert_instance_of Contexts::Entries::ProtectedTermEntry, entry
+    assert_equal "CompanyName", entry.term
+    assert_equal 1, context.protected_term_entries.size
     assert_equal 1, context.size
   end
 
   test "add_glossary_entry creates searchable glossary" do
-    context.add_glossary_entry(
+    entry = context.add_glossary_entry(
       source_term: "child",
       target_term: "niño",
       context_hint: "when referring to students"
     )
 
-    entry = context.entries.first
+    assert_instance_of Contexts::Entries::GlossaryEntry, entry
     assert entry.content.include?("child → niño")
     assert entry.topics.any? { |t| t.include?("glossary:") }
+    assert_equal "child", entry.source_term
+    assert_equal "niño", entry.target_term
+    assert_equal 1, context.glossary_entries.size
   end
 
   test "add_translation records translation history" do
-    context.add_translation(
+    entry = context.add_translation(
       source_text: "Hello",
       translated_text: "Hola",
       context_path: "greetings.welcome"
     )
 
-    entry = context.entries.first
-    assert_equal :translation, entry.metadata[:entity_type]
+    assert_instance_of Contexts::Entries::TranslationHistoryEntry, entry
+    assert_equal "Hello", entry.source_text
+    assert_equal "Hola", entry.translated_text
+    assert_equal 1, context.translation_history.size
   end
 
   test "add_style_guideline creates style entry" do
-    context.add_style_guideline(
+    entry = context.add_style_guideline(
       guideline: "Use formal 'usted' form",
       category: "formality"
     )
 
-    entry = context.entries.first
-    assert_equal :style_guideline, entry.metadata[:entity_type]
+    assert_instance_of Contexts::Entries::StyleGuidelineEntry, entry
+    assert_equal "Use formal 'usted' form", entry.guideline
+    assert_equal "formality", entry.category
+    assert_equal 1, context.style_guidelines.size
   end
 
   test "glossary_for finds relevant glossary entries" do

@@ -23,7 +23,7 @@ class ResearchContextTest < ActiveSupport::TestCase
   end
 
   test "add_finding creates entry with proper topics" do
-    context.add_finding(
+    entry = context.add_finding(
       finding: "Calculator has add method",
       file_path: "lib/calculator.rb",
       sub_question: "What methods exist?",
@@ -31,35 +31,38 @@ class ResearchContextTest < ActiveSupport::TestCase
     )
 
     assert_equal 1, context.size
-
-    entry = context.entries.first
-    assert_equal :finding, entry.metadata[:type]
-    assert_equal 0.9, entry.metadata[:confidence]
+    assert_instance_of Contexts::Entries::ResearchEntry, entry
+    assert_equal 0.9, entry.confidence
+    assert_equal "lib/calculator.rb", entry.file_path
+    assert_equal "What methods exist?", entry.sub_question
     assert entry.topics.any? { |t| t.include?("calculator") }
+    assert_equal 1, context.findings.size
   end
 
   test "add_sub_question creates entry with question topic" do
-    context.add_sub_question(
+    entry = context.add_sub_question(
       question: "What methods does Calculator expose?",
       parent_question: "How does Calculator work?",
       priority: 1
     )
 
-    entry = context.entries.first
-    assert_equal :sub_question, entry.metadata[:type]
+    assert_instance_of Contexts::Entries::BaseEntry, entry
     assert_equal 1, entry.metadata[:priority]
+    assert_equal "How does Calculator work?", entry.metadata[:parent]
+    assert_equal 1, context.sub_questions.size
   end
 
   test "add_file_summary creates entry with method topics" do
-    context.add_file_summary(
+    entry = context.add_file_summary(
       file_path: "lib/calculator.rb",
       summary: "Basic arithmetic operations",
       methods: ["add", "subtract", "multiply"]
     )
 
-    entry = context.entries.first
-    assert_equal :file_summary, entry.metadata[:type]
+    assert_instance_of Contexts::Entries::BaseEntry, entry
     assert_equal ["add", "subtract", "multiply"], entry.metadata[:methods]
+    assert_equal "Basic arithmetic operations", entry.content
+    assert_equal 1, context.file_summaries.size
   end
 
   test "for_sub_question returns entries tagged with that question" do
@@ -149,8 +152,8 @@ class ResearchContextTest < ActiveSupport::TestCase
     ctx = context_with_data
 
     assert ctx.size > 0, "Should have entries"
-    assert ctx.entries.any? { |e| e.metadata[:type] == :sub_question }
-    assert ctx.entries.any? { |e| e.metadata[:type] == :finding }
+    assert ctx.sub_questions.size > 0, "Should have sub-questions"
+    assert ctx.findings.size > 0, "Should have findings"
   end
 end
 
