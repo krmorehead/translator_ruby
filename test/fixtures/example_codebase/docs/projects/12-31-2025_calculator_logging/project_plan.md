@@ -2,232 +2,185 @@
 
 **Goal**: Add logging to Calculator
 
-## Milestone 1: Set Up Logging Framework
+## Milestone 1: Design Logging System
 
-Initialize logging infrastructure
+Create logging architecture
 
-### Step 1.1: Add logging library
+### Step 1.1: Add log file
 
-**Intent**: Enable logging functionality
+**Intent**: Create storage for logs
 
 **Details**:
-- Install logging package
-- Configure log levels (debug, info, error)
-- Set up log file output directory
+- Create log directory in /var/log/app
+- Use rotating file handler for log files
+- Set log file size limit to 10MB
 
 **Tests**:
-- Verify package is installed
-- Test log output at different levels
+- Verify log directory is created on startup
+- Test log rotation when file exceeds 10MB
 
 ---
 
-### Step 1.2: Configure logger
+### Step 1.2: Create logger interface
 
-**Intent**: Set log level and format
+**Intent**: Define logging contract
 
 **Details**:
-- Use environment variable for log level
-- Format logs with timestamp and level
-- Enable structured logging for machine readability
+- Specify log levels (debug, info, error)
+- Define write method signature
 
 **Tests**:
-- Verify log level changes with env var
-- Check log format includes timestamp and level
+- Verify interface compiles
+- Ensure all required methods exist
 
 ---
 
-### Step 1.3: Instrument calculator
+### Step 1.3: Implement file logger
 
-**Intent**: Add log statements to key operations
-
-**Details**:
-- Add logging to add/subtract/multiply functions
-- Log input values and results
-- Use console.log with timestamps
-
-**Tests**:
-- Verify log output for 5+3=8
-- Check error log for invalid inputs
-
----
-
-### Step 1.4: Verify logs
-
-**Intent**: Confirm logging works as expected
-
-**Details**:
-- Check log levels are set correctly in config
-- Ensure logs are written to the correct file path
-
-**Tests**:
-- Test info, warning, error logs are generated
-- Verify log file exists and has content
-
-## Milestone 2: Instrument Core Functions
-
-Add logs to basic operations
-
-### Step 2.1: Add Log File Creation
-
-**Intent**: Create log file on startup
+**Intent**: Write logs to file
 
 **Details**:
 - Create log directory if not exists
-- Generate timestamped log file name
-- Open file for writing
+- Format log messages with timestamp
+- Write logs to file with rotation
 
 **Tests**:
-- Verify log directory exists after startup
-- Check log file has correct timestamp format
+- Verify log file creation and content
+- Test log rotation when file size exceeds limit
 
 ---
 
-### Step 2.2: Log Inputs
+### Step 1.4: Add log levels
 
-**Intent**: Record all calculator inputs
+**Intent**: Support different severities
 
 **Details**:
-- Create input log file in JSON format
-- Store timestamp with each entry
-- Log every user input operation
+- Add debug, info, warn, error levels
+- Map levels to numeric values (DEBUG=1 to ERROR=4)
+- Ensure level determines message handling
 
 **Tests**:
-- Verify log file is created on first input
-- Test log contains correct input values and timestamps
+- Verify level conversion from string to number
+- Test message routing based on level
+
+## Milestone 2: Implement Logging
+
+Add logging to calculator
+
+### Step 2.1: Add Log File
+
+**Intent**: Create log storage
+
+**Details**:
+- Create log directory in system temp folder
+- Implement log rotation to keep 5 most recent files
+- Format log entries with timestamp and severity level
+
+**Tests**:
+- Verify log file is created with correct permissions
+- Test log rotation keeps only 5 files after 6th log is generated
 
 ---
 
-### Step 2.3: Log Results
+### Step 2.2: Log Errors
 
-**Intent**: Record all calculation results
-
-**Details**:
-- Store results in database with timestamp
-- Include input parameters and output
-- Support result retrieval by ID
-
-**Tests**:
-- Verify data is persisted after restart
-- Confirm result contains all parameters
-
----
-
-### Step 2.4: Add Error Logging
-
-**Intent**: Capture error conditions
+**Intent**: Capture error events
 
 **Details**:
-- Create error logging module
-- Log errors to file with timestamp
-- Include error type and message
+- Create error logging system
+- Log error details to file
+- Include timestamp and error message
 
 **Tests**:
-- Verify error is logged when exception thrown
+- Verify error is written to log file
 - Check log file contains correct timestamp
 
-## Milestone 3: Implement Log Levels
+---
 
-Support different verbosity levels
+### Step 2.3: Log Inputs
 
-### Step 3.1: Create log level enum
-
-**Intent**: Define severity levels for logs
+**Intent**: Track user actions
 
 **Details**:
-- Levels: Debug, Info, Warning, Error, Critical
-- Add numeric values 1-5 for ordering
-- Implement string conversion for each level
+- Record timestamp
+- Capture input method (keyboard/touch)
+- Store in database
 
 **Tests**:
-- Verify numeric values match level order
-- Check string conversion returns correct names
+- Verify timestamps are unique
+- Check input method validation
 
 ---
 
-### Step 3.2: Add logger interface
+### Step 2.4: Log Results
 
-**Intent**: Standardize logging across components
+**Intent**: Record calculation outcomes
 
 **Details**:
-- Define interface with log, error, warn methods
-- Ensure consistent message formatting
-- Allow different implementations
+- Create log entry with timestamp
+- Store input values and result
+- Format as JSON for readability
 
 **Tests**:
-- Verify all methods exist and have correct signatures
-- Test message formatting with sample inputs
+- Verify log file contains correct timestamp
+- Check JSON structure validity
+
+## Milestone 3: Test Logging
+
+Verify logging functionality
+
+### Step 3.1: Create logger interface
+
+**Intent**: Define logging contract for implementation
+
+**Details**:
+- Define methods: log(level, message), setLevel(level)
+- Support levels: debug, info, warning, error
+- Ensure thread-safe method access
+
+**Tests**:
+- Verify all level constants are available
+- Test method throws on invalid level input
 
 ---
 
-### Step 3.3: Implement debug logging
+### Step 3.2: Implement console logger
 
-**Intent**: Capture detailed operational data
+**Intent**: Provide basic logging output to console
 
 **Details**:
-- Add log statements to critical paths
-- Use structured format with timestamps
+- Create logging module with debug/info/warn/error levels
+- Format messages with timestamp and level prefix
+- Enable log level filtering via configuration
 
 **Tests**:
-- Verify logs capture errors
-- Check log format compliance
+- Verify message appears in console with correct format
+- Confirm only messages above configured level are shown
 
 ---
 
-### Step 3.4: Implement error logging
+### Step 3.3: Add logging to calculator
 
-**Intent**: Track exceptional conditions
-
-**Details**:
-- Log errors to file with timestamp and stack trace
-- Include error severity levels (info, warning, error)
-
-**Tests**:
-- Verify error log file is created and populated with errors
-- Check log entries contain correct severity levels and timestamps
-
-## Milestone 4: Add Log Persistence
-
-Store logs to file system
-
-### Step 4.1: Create Log Model
-
-**Intent**: Define data structure for storing logs
+**Intent**: Instrument calculator operations with logs
 
 **Details**:
-- Add log_id, timestamp, level, message fields
-- Support JSON serialization/deserialization
-- Include error code and stack trace fields
+- Log input values and operation type before calculation
+- Record result and execution time after calculation
 
 **Tests**:
-- Validate required fields are not null
-- Test JSON round-trip preserves data
+- Verify log entries contain operation type and values
+- Confirm timestamp and duration are logged for each calculation
 
 ---
 
-### Step 4.2: Add Logging DB
+### Step 3.4: Verify log output
 
-**Intent**: Implement database for storing logs
-
-**Details**:
-- Create schema for logs table
-- Add timestamps and error codes
-- Support log levels (info/warning/error)
-
-**Tests**:
-- Verify log entry insertion
-- Test query for specific log level
-
----
-
-### Step 4.3: Persist Logs
-
-**Intent**: Save logs after each operation
+**Intent**: Confirm logging works with test cases
 
 **Details**:
-- Create log table with timestamp, level, message
-- Add database connection for logging
-- Write log after each operation
+- Check log file format matches schema
+- Validate log entries contain timestamps
 
 **Tests**:
-- Verify log entry in DB after operation
-- Check log table creation
+- Test empty log file returns no entries
+- Test log rotation preserves oldest entries
