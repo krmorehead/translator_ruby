@@ -141,7 +141,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
 
   test "shared: creates memory store during execution" do
     worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
     assert_not_nil worker.memory_store
     assert_instance_of ResearchMemoryStore, worker.memory_store
@@ -150,50 +150,54 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
 
   test "shared: execute returns structured result" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    # Result should have structure
-    assert_kind_of Hash, result
-    assert result.key?(:success)
-    assert result.key?(:goal)
-    assert result.key?(:project_name)
+    # Result should be a ProjectPlanner::Result object
+    assert_instance_of ProjectPlanner::Result, result
+    assert_equal true, result.success
+    assert_not_nil result.goal
+    assert_not_nil result.project_name
   end
 
   test "shared: result includes file paths" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    assert_not_nil result[:project_path]
-    assert_not_nil result[:file_references_path]
-    assert_not_nil result[:project_plan_path]
+    assert_not_nil result.project_path
+    assert_not_nil result.file_references_path
+    assert_not_nil result.project_plan_path
   end
 
   test "shared: result includes milestones" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    assert_kind_of Array, result[:milestones]
+    # Result has planning_result which contains milestones
+    assert_not_nil result.planning_result
+    assert_kind_of Array, result.planning_result.milestones
   end
 
   test "shared: result includes existing and planned files" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    assert_kind_of Array, result[:existing_files]
-    assert_kind_of Array, result[:planned_files]
+    # Result has planning_result which contains file references
+    assert_not_nil result.planning_result
+    assert_kind_of Array, result.planning_result.existing_files
+    assert_kind_of Array, result.planning_result.planned_files
   end
 
   test "shared: final state is complete" do
     worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    assert_equal :complete, result[:metadata][:final_state]
+    assert_equal :complete, result.metadata[:final_state]
     assert worker.complete?
   end
 
   test "shared: creates state directory" do
     worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
     assert File.exist?(worker.state_path)
     assert File.directory?(worker.state_path)
@@ -201,10 +205,10 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
 
   test "shared: output files are created" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    assert File.exist?(result[:file_references_path])
-    assert File.exist?(result[:project_plan_path])
+    assert File.exist?(result.file_references_path)
+    assert File.exist?(result.project_plan_path)
   end
 
   # ============================================================================
@@ -225,8 +229,10 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
 
     result = worker.execute
 
-    assert_equal false, result[:success]
-    assert_includes result[:error], "Simulated error"
+    assert_instance_of ProjectPlanner::Result, result
+    assert_equal false, result.success
+    assert result.failed?
+    assert_includes result.error, "Simulated error"
     assert worker.failed?
   end
 end

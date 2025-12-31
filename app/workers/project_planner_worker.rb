@@ -30,6 +30,7 @@
 #
 class ProjectPlannerWorker < BaseWorker
   # Register the workflows this worker uses
+  register_workflow ResearchWorkflow
   register_workflow ProjectPlanningWorkflow
 
   # Planner-specific states
@@ -76,9 +77,13 @@ class ProjectPlannerWorker < BaseWorker
     trigger(:planned)
     write_output_files
 
+    # Build result before final state transition
+    result = @result
     trigger(:finish)
-    @result[:metadata][:final_state] = current_state
-    @result
+    
+    # Update metadata with final state after transition
+    result.metadata[:final_state] = current_state
+    result
   rescue StandardError => e
     Rails.logger.error "[ProjectPlannerWorker] Error: #{e.message}"
     Rails.logger.error e.backtrace.first(10).join("\n")
@@ -105,7 +110,7 @@ class ProjectPlannerWorker < BaseWorker
     ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
   end
 
-  # Phase 1: Research the codebase using CodebaseResearcher
+  # Phase 1: Research the codebase using ResearchWorkflow
   def perform_research
     record_decision(
       decision: "Starting codebase research",
@@ -113,21 +118,26 @@ class ProjectPlannerWorker < BaseWorker
       context: { goal: goal, max_depth: @max_research_depth }
     )
 
-    researcher = CodebaseResearcher.new(
+    # Use ResearchWorkflow directly instead of CodebaseResearcher worker
+    workflow = ResearchWorkflow.new(
       goal: goal,
-      path: path,
+      owner_id: owner_id,
+      research_path: path,
       context: context,
+      parent_memory: memory_store,
       max_depth: @max_research_depth,
       output_modes: [:report]
     )
 
-    @research_result = researcher.execute
+    workflow.setup
+    workflow.execute
 
-    if !@research_result[:success]
-      raise "Codebase research failed: #{@research_result[:error]}"
+    if workflow.failed?
+      raise "Research workflow failed: #{workflow.error}"
     end
 
-    store_workflow_result(:codebase_research, @research_result)
+    @research_result = workflow.result
+    store_workflow_result(:research, @research_result)
 
     record_decision(
       decision: "Codebase research complete",
@@ -159,12 +169,13 @@ class ProjectPlannerWorker < BaseWorker
       raise "Project planning failed: #{workflow.error}"
     end
 
+    # Result is now a Planning::Result object
     @planning_result = workflow.result
     store_workflow_result(:project_planning, @planning_result)
 
     record_decision(
       decision: "Project plan generation complete",
-      rationale: "Generated #{(@planning_result[:milestones] || []).size} milestones",
+      rationale: "Generated #{@planning_result.milestone_count} milestones",
       context: {}
     )
   end
@@ -183,67 +194,71 @@ class ProjectPlannerWorker < BaseWorker
     )
 
     output_paths = output_service.write(
-      file_references_content: @planning_result[:file_references_content],
-      project_plan_content: @planning_result[:project_plan_content]
+      file_references_content: @planning_result.file_references_content,
+      project_plan_content: @planning_result.project_plan_content
     )
 
+    # Build result before final state transition
     @result = build_result(output_paths)
   end
 
   # Build the final result
   def build_result(output_paths)
-    {
+    research_summary = if @research_result[:synthesis]
+      @research_result[:synthesis][:summary] || @research_result[:synthesis]["summary"]
+    end
+
+    metadata = {
+      max_research_depth: @max_research_depth,
+      context: context,
+      started_at: Time.now.utc.iso8601,
+      completed_at: Time.now.utc.iso8601,
+      final_state: current_state,
+      workflow_results: {
+        research: workflow_result(:research)&.slice(:goal, :findings)&.tap { |h| h[:findings_count] = h.delete(:findings)&.size },
+        project_planning: { milestone_count: @planning_result.milestone_count, step_count: @planning_result.step_count }
+      }
+    }
+
+    ProjectPlanner::Result.new(
       success: true,
       goal: goal,
       path: path,
       project_name: project_name,
       owner_id: owner_id,
+      planning_result: @planning_result,
       project_path: output_paths[:project_path],
       file_references_path: output_paths[:file_references_path],
       project_plan_path: output_paths[:project_plan_path],
-      research_summary: @research_result[:synthesis]&.dig(:summary) || @research_result[:synthesis]&.dig("summary"),
-      milestones: @planning_result[:milestones] || [],
-      existing_files: @planning_result[:existing_files] || [],
-      planned_files: @planning_result[:planned_files] || [],
-      metadata: {
-        max_research_depth: @max_research_depth,
-        context: context,
-        started_at: Time.now.utc.iso8601,
-        completed_at: Time.now.utc.iso8601,
-        final_state: current_state,
-        workflow_results: {
-          codebase_research: workflow_result(:codebase_research)&.slice(:goal, :findings)&.tap { |h| h[:findings_count] = h.delete(:findings)&.size },
-          project_planning: workflow_result(:project_planning)&.slice(:milestones)&.tap { |h| h[:milestone_count] = h.delete(:milestones)&.size }
-        }
-      }
-    }
+      research_summary: research_summary,
+      metadata: metadata
+    )
   end
 
   def build_error_result(error)
-    {
+    research_summary = if @research_result && @research_result[:synthesis]
+      @research_result[:synthesis][:summary] || @research_result[:synthesis]["summary"]
+    end
+
+    metadata = {
+      final_state: current_state,
+      error: error.message
+    }
+
+    ProjectPlanner::Result.new(
       success: false,
       goal: goal,
       path: path,
       project_name: project_name,
       owner_id: owner_id,
       error: error.message,
-      project_path: nil,
-      file_references_path: nil,
-      project_plan_path: nil,
-      research_summary: @research_result&.dig(:synthesis, :summary),
-      milestones: [],
-      existing_files: [],
-      planned_files: [],
-      metadata: {
-        final_state: current_state,
-        error: error.message
-      }
-    }
+      research_summary: research_summary,
+      metadata: metadata
+    )
   end
 
   
   def record_decision(decision:, rationale:, context:)
-    return unless memory_store
 
     memory_store.record_action(
       action: :decision,

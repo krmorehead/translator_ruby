@@ -25,30 +25,35 @@
 | `test/workers/codebase_researcher_test.rb` | CodebaseResearcher tests | Test pattern reference |
 | `test/support/research_test_factory.rb` | Research test factory helpers | Extend for new tests |
 
-## Planned Files
+## Created Files (OOP Refactoring)
 
-| File Path | Description | Created In |
-|-----------|-------------|------------|
-| `app/workers/project_planner_worker.rb` | Worker that orchestrates project planning | 1.1 |
-| `app/workflows/project_planning_workflow.rb` | Workflow for project plan generation | 1.2 |
-| `app/prompts/planning/base_planning_prompt.rb` | Base class for planning prompts | 2.1 |
-| `app/prompts/planning/plan_structure_prompt.rb` | Generates milestone/step structure | 2.2 |
-| `app/prompts/planning/file_references_prompt.rb` | Generates file references document | 2.3 |
-| `app/prompts/planning/plan_synthesis_prompt.rb` | Synthesizes research into plan | 2.4 |
-| `app/services/project_plan_output_service.rb` | Writes project plan files | 3.1 |
-| `app/controllers/project_planning_controller.rb` | Controller for project planning UI/API | 4.1 |
-| `frontend/src/api/projectPlanApi.js` | API functions for project planning | 5.1 |
-| `frontend/src/store/projectPlanStore.js` | Zustand store for project planning state | 5.2 |
-| `frontend/src/components/ProjectPlanPage.jsx` | Project planning chat UI | 5.3 |
-| `frontend/src/components/PlanViewer.jsx` | Component to display generated plans | 5.4 |
-| `test/workers/project_planner_worker_test.rb` | Unit tests for ProjectPlannerWorker | 1.1 |
-| `test/workflows/project_planning_workflow_test.rb` | Unit tests for ProjectPlanningWorkflow | 1.2 |
-| `test/prompts/planning/plan_structure_prompt_test.rb` | Tests for plan structure prompt | 2.2 |
-| `test/prompts/planning/file_references_prompt_test.rb` | Tests for file references prompt | 2.3 |
-| `test/prompts/planning/plan_synthesis_prompt_test.rb` | Tests for plan synthesis prompt | 2.4 |
-| `test/services/project_plan_output_service_test.rb` | Tests for output service | 3.1 |
-| `test/controllers/project_planning_controller_test.rb` | Controller tests | 4.1 |
-| `test/integration/project_planner_integration_test.rb` | End-to-end integration tests | 6.1 |
+| File Path | Description | Phase |
+|-----------|-------------|-------|
+| `app/models/planning/file_reference.rb` | Domain object for file references | Phase 1 |
+| `app/models/planning/step.rb` | Domain object for plan steps | Phase 1 |
+| `app/models/planning/milestone.rb` | Domain object for plan milestones | Phase 1 |
+| `app/models/planning/result.rb` | Planning workflow result object | Phase 1 |
+| `app/models/project_planner/result.rb` | Worker result object | Phase 1 |
+| `app/services/planning/file_references_formatter.rb` | Formats file_references.md | Phase 2 |
+| `app/services/planning/project_plan_formatter.rb` | Formats project_plan.md | Phase 2 |
+| `test/models/planning/file_reference_test.rb` | Tests for FileReference | Phase 1 |
+| `test/models/planning/step_test.rb` | Tests for Step | Phase 1 |
+| `test/models/planning/milestone_test.rb` | Tests for Milestone | Phase 1 |
+| `test/models/planning/result_test.rb` | Tests for Planning::Result | Phase 1 |
+| `test/models/project_planner/result_test.rb` | Tests for ProjectPlanner::Result | Phase 1 |
+| `test/services/planning/file_references_formatter_test.rb` | Tests for FileReferencesFormatter | Phase 2 |
+| `test/services/planning/project_plan_formatter_test.rb` | Tests for ProjectPlanFormatter | Phase 2 |
+
+## Refactored Files
+
+| File Path | Changes | Phase |
+|-----------|---------|-------|
+| `app/workflows/project_planning_workflow.rb` | Now uses domain objects and formatters | Phase 3 |
+| `app/workers/project_planner_worker.rb` | Uses ResearchWorkflow, returns domain objects | Phase 4 |
+| `app/controllers/project_planning_controller.rb` | Handles domain objects | Phase 5 |
+| `test/workflows/project_planning_workflow_test.rb` | Updated for domain objects | Phase 6 |
+| `test/workers/project_planner_worker_test.rb` | Updated for domain objects | Phase 6 |
+| `app/prompts/planning/base_planning_prompt.rb` | Added execute override | Phase 3 |
 
 ## Document Tree
 

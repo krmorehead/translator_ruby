@@ -67,7 +67,7 @@ class ProjectPlanningController < ApplicationController
     # Normalize context keys to symbols
     normalized_context = normalize_context(context)
 
-    # Execute project planning
+    # Execute project planning - returns ProjectPlanner::Result object
     result = execute_project_planning(
       goal: goal,
       path: expanded_path,
@@ -75,22 +75,12 @@ class ProjectPlanningController < ApplicationController
       context: normalized_context
     )
 
-    if result[:success]
-      render json: {
-        success: true,
-        project_path: result[:project_path],
-        file_references_path: result[:file_references_path],
-        project_plan_path: result[:project_plan_path],
-        research_summary: result[:research_summary],
-        milestones: result[:milestones],
-        existing_files: result[:existing_files],
-        planned_files: result[:planned_files]
-      }, status: :ok
+    if result.success?
+      # Serialize result object to hash for JSON response
+      render json: result.to_h, status: :ok
     else
-      render json: {
-        success: false,
-        error: result[:error]
-      }, status: :ok
+      # Serialize error result to hash for JSON response
+      render json: result.to_h, status: :ok
     end
   rescue StandardError => e
     render json: {
@@ -107,6 +97,7 @@ class ProjectPlanningController < ApplicationController
 
   # Execute project planning using the worker
   # Logic is delegated to service object per project rules
+  # Returns ProjectPlanner::Result object
   def execute_project_planning(goal:, path:, project_name:, context:)
     worker = ProjectPlannerWorker.new(
       goal: goal,

@@ -35,11 +35,9 @@ class ProjectPlanningWorkflow < BaseWorkflow
     @project_name = project_name
     @research_results = research_results || {}
     @output_path = output_path || "docs/projects/"
-    @existing_files = []
-    @planned_files = []
-    @milestones = []
-    @file_references_content = nil
-    @project_plan_content = nil
+    @existing_files = []  # Array of Planning::FileReference
+    @planned_files = []   # Array of Planning::FileReference
+    @milestones = []      # Array of Planning::Milestone
   end
 
   def setup(prompt: nil, conversation: nil)
@@ -73,16 +71,18 @@ class ProjectPlanningWorkflow < BaseWorkflow
     # Phase 5: Generate output content (no LLM - just formatting)
     synthesize_output
 
-    mark_complete({
+    # Build Planning::Result object with all domain objects
+    planning_result = Planning::Result.new(
       goal: goal,
       project_name: project_name,
-      file_references_content: @file_references_content,
-      project_plan_content: @project_plan_content,
       milestones: @milestones,
       existing_files: @existing_files,
       planned_files: @planned_files,
-      workflow_memory_summary: memory_summary
-    })
+      file_references_content: @file_references_content,
+      project_plan_content: @project_plan_content
+    )
+
+    mark_complete(planning_result)
 
     result
   rescue StandardError => e
@@ -93,9 +93,8 @@ class ProjectPlanningWorkflow < BaseWorkflow
   
   # Extract existing files from research results
   def extract_existing_files
-    relevant_files = research_results[:relevant_files] || []
-    file_analyses = research_results[:file_analyses] || []
-
+    relevant_files = research_results[:relevant_files] || research_results["relevant_files"] || []
+    
     seen_paths = Set.new
 
     relevant_files.each do |file_info|
@@ -103,11 +102,16 @@ class ProjectPlanningWorkflow < BaseWorkflow
       next if path.nil? || seen_paths.include?(path)
       seen_paths.add(path)
 
-      @existing_files << {
+      reasoning = file_info[:reasoning] || file_info["reasoning"] || "Relevant file"
+      
+      # Create Planning::FileReference object
+      file_ref = Planning::FileReference.new(
         path: path,
-        description: (file_info[:reasoning] || file_info["reasoning"] || "Relevant file").to_s.truncate(50),
+        description: reasoning.to_s.truncate(50),
         relevance: "Research"
-      }
+      )
+      
+      @existing_files << file_ref
     end
 
     # Limit to 10 files to avoid context bloat
@@ -125,12 +129,13 @@ class ProjectPlanningWorkflow < BaseWorkflow
     )
 
     milestones_data = result.dig(:content, :milestones) || result.dig(:content, "milestones") || []
-    @milestones = milestones_data.first(4).map do |m|
-      {
-        "title" => (m[:title] || m["title"]).to_s.truncate(50),
-        "description" => (m[:description] || m["description"]).to_s.truncate(100),
-        "steps" => []
-      }
+    @milestones = milestones_data.first(4).map.with_index do |m, index|
+      # Create Planning::Milestone object
+      Planning::Milestone.new(
+        number: index + 1,
+        title: (m[:title] || m["title"]).to_s.truncate(50),
+        description: (m[:description] || m["description"]).to_s.truncate(100)
+      )
     end
   end
 
@@ -140,19 +145,23 @@ class ProjectPlanningWorkflow < BaseWorkflow
 
     @milestones.each do |milestone|
       result = prompt.generate(
-        milestone_title: milestone["title"],
-        milestone_description: milestone["description"],
+        milestone_title: milestone.title,
+        milestone_description: milestone.description,
         goal: goal
       )
 
       steps_data = result.dig(:content, :steps) || result.dig(:content, "steps") || []
-      milestone["steps"] = steps_data.first(4).map do |s|
-        {
-          "title" => (s[:title] || s["title"]).to_s.truncate(50),
-          "intent" => (s[:intent] || s["intent"]).to_s.truncate(100),
-          "details" => [],
-          "tests" => []
-        }
+      steps_data.first(4).each_with_index do |s, index|
+        # Create Planning::Step object with placeholder details/tests
+        step = Planning::Step.new(
+          number: "#{milestone.number}.#{index + 1}",
+          title: (s[:title] || s["title"]).to_s.truncate(50),
+          intent: (s[:intent] || s["intent"]).to_s.truncate(100),
+          details: [],  # Will be filled in add_step_details
+          tests: []     # Will be filled in add_step_details
+        )
+        
+        milestone.add_step(step)
       end
     end
   end
@@ -161,29 +170,49 @@ class ProjectPlanningWorkflow < BaseWorkflow
   def add_step_details
     prompt = Planning::StepDetailPrompt.new
 
-    @milestones.each_with_index do |milestone, mi|
-      (milestone["steps"] || []).each_with_index do |step, si|
+    @milestones.each do |milestone|
+      # Need to rebuild steps with details
+      updated_steps = []
+      
+      milestone.steps.each do |step|
         result = prompt.generate(
-          step_title: step["title"],
-          step_intent: step["intent"],
-          milestone_title: milestone["title"],
+          step_title: step.title,
+          step_intent: step.intent,
+          milestone_title: milestone.title,
           goal: goal
         )
 
         content = result[:content] || {}
-        step["number"] = "#{mi + 1}.#{si + 1}"
-        step["details"] = (content[:details] || content["details"] || []).first(3).map { |d| d.to_s.truncate(100) }
-        step["tests"] = (content[:tests] || content["tests"] || []).first(2).map { |t| t.to_s.truncate(100) }
+        details = (content[:details] || content["details"] || []).first(3).map { |d| d.to_s.truncate(100) }
+        tests = (content[:tests] || content["tests"] || []).first(2).map { |t| t.to_s.truncate(100) }
 
-        # Extract planned files
-        step["details"].each do |detail|
+        # Create new step with details and tests
+        updated_step = Planning::Step.new(
+          number: step.number,
+          title: step.title,
+          intent: step.intent,
+          details: details,
+          tests: tests
+        )
+        
+        updated_steps << updated_step
+
+        # Extract planned files from details
+        details.each do |detail|
           if detail =~ /[Cc]reate\s+[`']?([a-z_\/]+\.[a-z]+)[`']?/
-            @planned_files << { path: $1, description: detail.truncate(50), created_in: step["number"] }
+            file_ref = Planning::FileReference.new(
+              path: $1,
+              description: detail.truncate(50),
+              created_in_step: step.number
+            )
+            @planned_files << file_ref
           end
         end
       end
-
-      milestone["number"] = mi + 1
+      
+      # Replace milestone's steps with updated versions
+      # Clear existing steps and add updated ones
+      milestone.instance_variable_set(:@steps, updated_steps)
     end
 
     @planned_files = @planned_files.first(10)
@@ -192,69 +221,37 @@ class ProjectPlanningWorkflow < BaseWorkflow
   # Phase 4: Quick validation (single call)
   def validate_plan
     prompt = Planning::ValidationPrompt.new
-    prompt.validate(goal: goal, milestones: @milestones)
+    # Convert milestones to hash format for the validation prompt
+    milestones_for_validation = @milestones.map do |m|
+      {
+        "title" => m.title,
+        "steps" => m.steps.map { |s| { "title" => s.title } }
+      }
+    end
+    prompt.validate(goal: goal, milestones: milestones_for_validation)
     # We don't fail on validation issues, just record them
   end
 
-  # Phase 5: Generate markdown output (no LLM)
+  # Phase 5: Generate markdown output using formatters
   def synthesize_output
-    @file_references_content = generate_file_references_markdown
-    @project_plan_content = generate_project_plan_markdown
+    # Use FileReferencesFormatter to generate file_references.md content
+    file_refs_formatter = Planning::FileReferencesFormatter.new(
+      existing_files: @existing_files,
+      planned_files: @planned_files
+    )
+    @file_references_content = file_refs_formatter.generate
+
+    # Use ProjectPlanFormatter to generate project_plan.md content
+    plan_formatter = Planning::ProjectPlanFormatter.new(
+      goal: goal,
+      milestones: @milestones
+    )
+    @project_plan_content = plan_formatter.generate
   end
 
   def format_research_summary
-    synthesis = research_results[:synthesis] || {}
+    synthesis = research_results[:synthesis] || research_results["synthesis"] || {}
     summary = synthesis[:summary] || synthesis["summary"] || ""
     summary.to_s.truncate(150)
-  end
-
-  def generate_file_references_markdown
-    lines = ["# File References", ""]
-    lines << "## Existing Files"
-    lines << ""
-
-    if @existing_files.any?
-      @existing_files.each { |f| lines << "- `#{f[:path]}`: #{f[:description]}" }
-    else
-      lines << "_No existing files identified._"
-    end
-
-    lines << ""
-    lines << "## Planned Files"
-    lines << ""
-
-    if @planned_files.any?
-      @planned_files.each { |f| lines << "- `#{f[:path]}`: #{f[:description]}" }
-    else
-      lines << "_No new files planned._"
-    end
-
-    lines.join("\n")
-  end
-
-  def generate_project_plan_markdown
-    lines = ["# Project Plan", "", "**Goal**: #{goal}", ""]
-
-    @milestones.each do |m|
-      lines << "## Milestone #{m['number']}: #{m['title']}"
-      lines << ""
-      lines << m["description"]
-      lines << ""
-
-      (m["steps"] || []).each do |s|
-        lines << "### Step #{s['number']}: #{s['title']}"
-        lines << ""
-        lines << "**Intent**: #{s['intent']}"
-        lines << ""
-        lines << "**Details**:"
-        (s["details"] || []).each { |d| lines << "- #{d}" }
-        lines << ""
-        lines << "**Tests**:"
-        (s["tests"] || []).each { |t| lines << "- #{t}" }
-        lines << ""
-      end
-    end
-
-    lines.join("\n")
   end
 end

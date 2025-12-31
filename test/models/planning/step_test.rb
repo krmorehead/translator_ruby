@@ -1,0 +1,329 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+module Planning
+  class StepTest < ActiveSupport::TestCase
+    test "initialization with all required fields" do
+      step = Step.new(
+        number: "1.1",
+        title: "Create User Model",
+        intent: "Define the core user entity",
+        details: ["Add email field", "Add password field"],
+        tests: ["Test user creation", "Test validations"]
+      )
+
+      assert_equal "1.1", step.number
+      assert_equal "Create User Model", step.title
+      assert_equal "Define the core user entity", step.intent
+      assert_equal ["Add email field", "Add password field"], step.details
+      assert_equal ["Test user creation", "Test validations"], step.tests
+    end
+
+    test "validates number must be a String" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: 1.1,
+          title: "Test",
+          intent: "Test intent",
+          details: [],
+          tests: []
+        )
+      end
+      assert_match(/number must be a String/, error.message)
+    end
+
+    test "validates title must be a String" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: "1.1",
+          title: 123,
+          intent: "Test intent",
+          details: [],
+          tests: []
+        )
+      end
+      assert_match(/title must be a String/, error.message)
+    end
+
+    test "validates title cannot be empty" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: "1.1",
+          title: "  ",
+          intent: "Test intent",
+          details: [],
+          tests: []
+        )
+      end
+      assert_match(/title cannot be empty/, error.message)
+    end
+
+    test "validates intent must be a String" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: "1.1",
+          title: "Test",
+          intent: 123,
+          details: [],
+          tests: []
+        )
+      end
+      assert_match(/intent must be a String/, error.message)
+    end
+
+    test "validates intent cannot be empty" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: "1.1",
+          title: "Test",
+          intent: "  ",
+          details: [],
+          tests: []
+        )
+      end
+      assert_match(/intent cannot be empty/, error.message)
+    end
+
+    test "validates details must be an Array" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: "1.1",
+          title: "Test",
+          intent: "Test intent",
+          details: "not an array",
+          tests: []
+        )
+      end
+      assert_match(/details must be an Array/, error.message)
+    end
+
+    test "validates tests must be an Array" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: "1.1",
+          title: "Test",
+          intent: "Test intent",
+          details: [],
+          tests: "not an array"
+        )
+      end
+      assert_match(/tests must be an Array/, error.message)
+    end
+
+    test "validates all details must be Strings" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: "1.1",
+          title: "Test",
+          intent: "Test intent",
+          details: ["valid", 123, "another"],
+          tests: []
+        )
+      end
+      assert_match(/all details must be Strings/, error.message)
+    end
+
+    test "validates all tests must be Strings" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: "1.1",
+          title: "Test",
+          intent: "Test intent",
+          details: [],
+          tests: ["valid", 123, "another"]
+        )
+      end
+      assert_match(/all tests must be Strings/, error.message)
+    end
+
+    test "validates number format matches milestone.step pattern" do
+      error = assert_raises(ArgumentError) do
+        Step.new(
+          number: "1",
+          title: "Test",
+          intent: "Test intent",
+          details: [],
+          tests: []
+        )
+      end
+      assert_match(/number must match pattern/, error.message)
+    end
+
+    test "accepts valid number formats" do
+      valid_numbers = ["1.1", "2.3", "10.5", "99.99"]
+      
+      valid_numbers.each do |num|
+        step = Step.new(
+          number: num,
+          title: "Test",
+          intent: "Test intent",
+          details: ["detail"],
+          tests: ["test"]
+        )
+        assert_equal num, step.number
+      end
+    end
+
+    test "rejects invalid number formats" do
+      invalid_numbers = ["1", "a.b", "1.1.1", "1-1"]
+      
+      invalid_numbers.each do |num|
+        assert_raises(ArgumentError) do
+          Step.new(
+            number: num,
+            title: "Test",
+            intent: "Test intent",
+            details: [],
+            tests: []
+          )
+        end
+      end
+    end
+
+    test "milestone_number extracts milestone from step number" do
+      step = Step.new(
+        number: "3.5",
+        title: "Test",
+        intent: "Test intent",
+        details: ["detail"],
+        tests: ["test"]
+      )
+
+      assert_equal 3, step.milestone_number
+    end
+
+    test "step_index extracts step index from step number" do
+      step = Step.new(
+        number: "3.5",
+        title: "Test",
+        intent: "Test intent",
+        details: ["detail"],
+        tests: ["test"]
+      )
+
+      assert_equal 5, step.step_index
+    end
+
+    test "complete? returns true when all fields present" do
+      step = Step.new(
+        number: "1.1",
+        title: "Test",
+        intent: "Test intent",
+        details: ["detail"],
+        tests: ["test"]
+      )
+
+      assert step.complete?
+    end
+
+    test "complete? returns false when details empty" do
+      step = Step.new(
+        number: "1.1",
+        title: "Test",
+        intent: "Test intent",
+        details: [],
+        tests: ["test"]
+      )
+
+      refute step.complete?
+    end
+
+    test "complete? returns false when tests empty" do
+      step = Step.new(
+        number: "1.1",
+        title: "Test",
+        intent: "Test intent",
+        details: ["detail"],
+        tests: []
+      )
+
+      refute step.complete?
+    end
+
+    test "to_h produces correct hash structure" do
+      step = Step.new(
+        number: "1.1",
+        title: "Create User Model",
+        intent: "Define the core user entity",
+        details: ["Add email field"],
+        tests: ["Test user creation"]
+      )
+
+      hash = step.to_h
+
+      assert_equal "1.1", hash[:number]
+      assert_equal "Create User Model", hash[:title]
+      assert_equal "Define the core user entity", hash[:intent]
+      assert_equal ["Add email field"], hash[:details]
+      assert_equal ["Test user creation"], hash[:tests]
+    end
+
+    test "from_h reconstructs object correctly with symbol keys" do
+      original = Step.new(
+        number: "1.1",
+        title: "Create User Model",
+        intent: "Define the core user entity",
+        details: ["Add email field"],
+        tests: ["Test user creation"]
+      )
+
+      hash = original.to_h
+      reconstructed = Step.from_h(hash)
+
+      assert_equal original.number, reconstructed.number
+      assert_equal original.title, reconstructed.title
+      assert_equal original.intent, reconstructed.intent
+      assert_equal original.details, reconstructed.details
+      assert_equal original.tests, reconstructed.tests
+    end
+
+    test "from_h reconstructs object correctly with string keys" do
+      hash = {
+        "number" => "1.1",
+        "title" => "Create User Model",
+        "intent" => "Define user entity",
+        "details" => ["Add email field"],
+        "tests" => ["Test user creation"]
+      }
+
+      reconstructed = Step.from_h(hash)
+
+      assert_equal "1.1", reconstructed.number
+      assert_equal "Create User Model", reconstructed.title
+      assert_equal "Define user entity", reconstructed.intent
+      assert_equal ["Add email field"], reconstructed.details
+      assert_equal ["Test user creation"], reconstructed.tests
+    end
+
+    test "from_h validates input must be Hash" do
+      error = assert_raises(ArgumentError) do
+        Step.from_h("not a hash")
+      end
+      assert_match(/hash must be a Hash/, error.message)
+    end
+
+    test "serialization round-trip preserves data" do
+      original = Step.new(
+        number: "2.3",
+        title: "Implement authentication",
+        intent: "Add secure user login",
+        details: ["Use bcrypt", "Add session management"],
+        tests: ["Test login", "Test logout", "Test security"]
+      )
+
+      hash = original.to_h
+      reconstructed = Step.from_h(hash)
+
+      assert_equal original.number, reconstructed.number
+      assert_equal original.title, reconstructed.title
+      assert_equal original.intent, reconstructed.intent
+      assert_equal original.details, reconstructed.details
+      assert_equal original.tests, reconstructed.tests
+      assert_equal original.milestone_number, reconstructed.milestone_number
+      assert_equal original.step_index, reconstructed.step_index
+      assert_equal original.complete?, reconstructed.complete?
+    end
+  end
+end
+

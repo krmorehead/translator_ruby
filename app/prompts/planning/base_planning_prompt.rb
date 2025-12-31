@@ -103,6 +103,12 @@ module Planning
     def generate_date_prefix
       Time.now.strftime("%m-%d-%Y")
     end
+
+    # Override execute to provide empty context by default
+    # Planning prompts don't use context objects
+    def execute(prompt:, context: "")
+      super(prompt: prompt, context: context)
+    end
   end
 end
 
