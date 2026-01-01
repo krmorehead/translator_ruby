@@ -52,11 +52,11 @@ class WorkflowMemoryStore
       @started_at = Time.parse(data[:started_at])
       @last_transition_at = Time.parse(data[:last_transition_at])
       @sections = {
-        state_transitions: deserialize_array(data: data[:sections][:state_transitions], klass: WorkflowMemories::StateTransition),
-        workflow_context: deserialize_array(data: data[:sections][:workflow_context], klass: WorkflowMemories::Context),
-        decisions: deserialize_array(data: data[:sections][:decisions], klass: WorkflowMemories::Decision),
-        errors: deserialize_array(data: data[:sections][:errors], klass: WorkflowMemories::Error),
-        outputs: deserialize_array(data: data[:sections][:outputs], klass: WorkflowMemories::Output),
+        state_transitions: self.class.deserialize_array(data: data[:sections][:state_transitions], klass: WorkflowMemories::StateTransition),
+        workflow_context: self.class.deserialize_array(data: data[:sections][:workflow_context], klass: WorkflowMemories::Context),
+        decisions: self.class.deserialize_array(data: data[:sections][:decisions], klass: WorkflowMemories::Decision),
+        errors: self.class.deserialize_array(data: data[:sections][:errors], klass: WorkflowMemories::Error),
+        outputs: self.class.deserialize_array(data: data[:sections][:outputs], klass: WorkflowMemories::Output),
         checkpoints: data[:sections][:checkpoints]
       }
     else
@@ -81,16 +81,24 @@ class WorkflowMemoryStore
     
     # Deserialize sections
     deserialized_sections = {
-      state_transitions: store.send(:deserialize_array, data: sections[:state_transitions], klass: WorkflowMemories::StateTransition),
-      workflow_context: store.send(:deserialize_array, data: sections[:workflow_context], klass: WorkflowMemories::Context),
-      decisions: store.send(:deserialize_array, data: sections[:decisions], klass: WorkflowMemories::Decision),
-      errors: store.send(:deserialize_array, data: sections[:errors], klass: WorkflowMemories::Error),
-      outputs: store.send(:deserialize_array, data: sections[:outputs], klass: WorkflowMemories::Output),
+      state_transitions: WorkflowMemoryStore.deserialize_array(data: sections[:state_transitions], klass: WorkflowMemories::StateTransition),
+      workflow_context: WorkflowMemoryStore.deserialize_array(data: sections[:workflow_context], klass: WorkflowMemories::Context),
+      decisions: WorkflowMemoryStore.deserialize_array(data: sections[:decisions], klass: WorkflowMemories::Decision),
+      errors: WorkflowMemoryStore.deserialize_array(data: sections[:errors], klass: WorkflowMemories::Error),
+      outputs: WorkflowMemoryStore.deserialize_array(data: sections[:outputs], klass: WorkflowMemories::Output),
       checkpoints: sections[:checkpoints]
     }
     store.instance_variable_set(:@sections, deserialized_sections)
     
     store
+  end
+
+  # Deserialize array of hashes to objects
+  # @param data [Array<Hash>] Array of serialized objects
+  # @param klass [Class] Class to deserialize to (must have from_h method)
+  # @return [Array] Array of deserialized objects
+  def self.deserialize_array(data:, klass:)
+    data.map { |hash| klass.from_h(**hash.deep_symbolize_keys) }
   end
 
   # Query parent for a compressed context summary matching our work
@@ -387,14 +395,6 @@ class WorkflowMemoryStore
       outputs: @sections[:outputs].map(&:to_h),
       checkpoints: @sections[:checkpoints]
     }
-  end
-
-  # Deserialize array of hashes to objects
-  # @param data [Array<Hash>] Array of serialized objects
-  # @param klass [Class] Class to deserialize to (must have from_h method)
-  # @return [Array] Array of deserialized objects
-  def deserialize_array(data:, klass:)
-    data.map { |hash| klass.from_h(**hash.deep_symbolize_keys) }
   end
 
   def save!
