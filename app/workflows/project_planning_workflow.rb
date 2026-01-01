@@ -73,7 +73,6 @@ class ProjectPlanningWorkflow < BaseWorkflow
 
     # Build Planning::Result object with all domain objects
     planning_result = Planning::Result.new(
-      id: SecureRandom.uuid,
       goal: goal,
       project_name: project_name,
       milestones: @milestones,

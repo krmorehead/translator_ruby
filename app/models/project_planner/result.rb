@@ -117,28 +117,27 @@ module ProjectPlanner
     # @param hash [Hash] Hash containing result data
     # @return [ProjectPlanner::Result] Reconstructed result
     def self.from_h(hash)
-      raise ArgumentError, "hash must be a Hash, got #{hash.class}" unless hash.is_a?(Hash)
+      hash = hash.deep_symbolize_keys
       
       # Reconstruct planning result if present
       planning_result = nil
-      if hash[:planning_result] || hash["planning_result"]
-        planning_result_hash = hash[:planning_result] || hash["planning_result"]
-        planning_result = Planning::Result.from_h(**planning_result_hash.deep_symbolize_keys)
+      if hash[:planning_result]
+        planning_result = Planning::Result.from_h(**hash[:planning_result])
       end
       
       new(
-        success: hash[:success] || hash["success"],
-        goal: hash[:goal] || hash["goal"],
-        path: hash[:path] || hash["path"],
-        project_name: hash[:project_name] || hash["project_name"],
-        owner_id: hash[:owner_id] || hash["owner_id"],
+        success: hash[:success],
+        goal: hash[:goal],
+        path: hash[:path],
+        project_name: hash[:project_name],
+        owner_id: hash[:owner_id],
         planning_result: planning_result,
-        project_path: hash[:project_path] || hash["project_path"],
-        file_references_path: hash[:file_references_path] || hash["file_references_path"],
-        project_plan_path: hash[:project_plan_path] || hash["project_plan_path"],
-        research_summary: hash[:research_summary] || hash["research_summary"],
-        error: hash[:error] || hash["error"],
-        metadata: hash[:metadata] || hash["metadata"] || {}
+        project_path: hash[:project_path],
+        file_references_path: hash[:file_references_path],
+        project_plan_path: hash[:project_plan_path],
+        research_summary: hash[:research_summary],
+        error: hash[:error],
+        metadata: hash[:metadata]
       )
     end
 
