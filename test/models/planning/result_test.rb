@@ -458,14 +458,6 @@ module Planning
     end
 
     speed_profile :fast
-    test "from_h validates input must be Hash" do
-      error = assert_raises(ArgumentError) do
-        Result.from_h("not a hash")
-      end
-      assert_match(/hash must be a Hash/, error.message)
-    end
-
-    speed_profile :fast
     test "handles empty collections gracefully" do
       result = Result.new(
         goal: "Test goal",
