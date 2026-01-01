@@ -3,7 +3,7 @@
 require "test_helper"
 
 class VectorMemoryIntegrationTest < ActiveSupport::TestCase
-  let(:temp_dir) { create_git_temp_dir }
+  let(:temp_dir) { create_temp_git_repo }
 
   let(:store) do
     path = File.join(temp_dir, "vector_store.json")
