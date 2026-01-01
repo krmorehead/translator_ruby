@@ -3,6 +3,12 @@
 require "test_helper"
 
 class WorkflowStateMachineTest < ActiveSupport::TestCase
+  let(:temp_dir) { create_temp_git_repo }
+  
+  teardown do
+    FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
+  end
+
   class TestWorkflow < BaseWorkflow
     attr_reader :setup_called
 
@@ -92,15 +98,19 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Workflow memory tests
   speed_profile :fast
   test "workflow creates workflow_memory when setup is called with owner_id" do
+    ENV["AGENT_STATE_PATH"] = temp_dir
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
     workflow.setup()
 
     assert_not_nil workflow.workflow_memory
     assert_instance_of WorkflowMemoryStore, workflow.workflow_memory
+  ensure
+    ENV.delete("AGENT_STATE_PATH")
   end
 
   speed_profile :fast
   test "workflow memory records state transitions" do
+    ENV["AGENT_STATE_PATH"] = temp_dir
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
     workflow.setup()
     workflow.execute
@@ -112,6 +122,8 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     events = history.map(&:event)
     assert_includes events, :start
     assert_includes events, :finish
+  ensure
+    ENV.delete("AGENT_STATE_PATH")
   end
 
   # Parent memory query tests
@@ -160,6 +172,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Memory summary tests
   speed_profile :fast
   test "memory_summary returns workflow metadata" do
+    ENV["AGENT_STATE_PATH"] = temp_dir
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
     workflow.setup()
     workflow.execute
@@ -168,6 +181,8 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     assert_equal "test_workflow", summary[:workflow_name]
     assert_not_nil summary[:workflow_id]
     assert summary[:transition_count] > 0
+  ensure
+    ENV.delete("AGENT_STATE_PATH")
   end
 
   # Error handling with state machine
