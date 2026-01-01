@@ -128,8 +128,10 @@ class WorkflowMemoryStore
       state: to  # New state after transition
     )
     @sections[:state_transitions] << memory
+    puts "DEBUG: After adding StateTransition, array has: #{@sections[:state_transitions].map(&:class)}"
     @last_transition_at = Time.now.utc
     save!
+    puts "DEBUG: After save!, array has: #{@sections[:state_transitions].map(&:class)}"
     memory
   end
 
