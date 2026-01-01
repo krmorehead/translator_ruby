@@ -188,6 +188,23 @@ class CheckpointService
     result[:output].strip
   end
 
+  # Get current checkpoint ID, creating a new checkpoint if codebase has changed
+  #
+  # @return [String] Checkpoint ID (commit hash)
+  def current_checkpoint_id
+    # Initialize cached checkpoint to HEAD if not set
+    @current_checkpoint ||= get_checkpoint(current_commit_id)
+
+    # If nothing has changed, return cached checkpoint
+    return @current_checkpoint.id unless has_uncommitted_changes?
+
+    # Codebase has changed - create new checkpoint with auto-generated message
+    message = "Checkpoint at #{Time.now.utc.iso8601}"
+    checkpoint = create_checkpoint(message)
+    @current_checkpoint = checkpoint
+    checkpoint.id
+  end
+
   # Retrieve metadata for a checkpoint
   #
   # @param checkpoint_id [String] Git commit hash

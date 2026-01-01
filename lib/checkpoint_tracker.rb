@@ -25,22 +25,10 @@ class CheckpointTracker
   # Creates a new checkpoint if the codebase has changed since the last checkpoint.
   #
   # @param path [String] The repository path
-  # @param message [String] Optional message for new checkpoint
-  # @param milestone_id [String, nil] Optional milestone ID
-  # @param worker_id [String, nil] Optional worker ID
   # @return [String] The current checkpoint ID
-  def current_id(path:, message: nil, milestone_id: nil, worker_id: nil)
+  def current_id(path:)
     @mutex.synchronize do
-      service = checkpoint_service_for(path)
-      checkpoint = @checkpoints_by_path[path]
-
-      # If nothing changed, return current checkpoint
-      return checkpoint.id unless codebase_changed?(service)
-
-      # Codebase has changed - create new checkpoint
-      checkpoint = create_checkpoint(service, message, milestone_id, worker_id)
-      @checkpoints_by_path[path] = checkpoint
-      checkpoint.id
+      checkpoint_service_for(path).current_checkpoint_id
     end
   end
 
@@ -95,31 +83,7 @@ class CheckpointTracker
   private
 
   def checkpoint_service_for(path)
-    @checkpoint_services[path] ||= begin
-      service = CheckpointService.new(path: path)
-      # Initialize checkpoint to HEAD when service is created
-      head_id = service.current_commit_id
-      @checkpoints_by_path[path] = service.get_checkpoint(head_id)
-      service
-    end
-  end
-
-  def codebase_changed?(service)
-    service.has_uncommitted_changes?
-  end
-
-  def create_checkpoint(service, message, milestone_id, worker_id)
-    # Generate message if not provided
-    message ||= "Automatic checkpoint at #{Time.now.utc.iso8601}"
-    
-    service.create_checkpoint(
-      message,
-      milestone_id: milestone_id,
-      worker_id: worker_id
-    )
-  rescue StandardError => e
-    Rails.logger.error "[CheckpointTracker] Failed to create checkpoint: #{e.message}"
-    raise
+    @checkpoint_services[path] ||= CheckpointService.new(path: path)
   end
 end
 
