@@ -395,9 +395,8 @@ class WorkflowMemoryStore
   # @param data [Array<Hash>] Array of serialized objects
   # @param klass [Class] Class to deserialize to (must have from_h method)
   # @return [Array] Array of deserialized objects
-  # @raise [TypeError, ArgumentError] If deserialization fails
   def deserialize_array(data, klass)
-    data.map { |hash| klass.from_h(hash) }
+    data.map { |hash| klass.from_h(**hash.deep_symbolize_keys) }
   end
 
   def save!
