@@ -45,43 +45,45 @@ class WorkflowMemoryStore
     @workflow_name = workflow_name
     @parent_memory = parent_memory
     @path = path
-    @sections = load_sections
+    @sections = deep_dup(DEFAULT_SECTIONS)
     @started_at = Time.now.utc
-    @last_transition_at = Time.now.utc  # Always initialized, never nil
+    @last_transition_at = Time.now.utc
   end
 
-  # Query the parent memory for specific sections
-  # @param section_names [Array<Symbol>] Section names to retrieve
-  # @return [Hash] Hash of section_name => section_data
-  def query_parent(*section_names)
-    return {} unless parent_memory
-
-    result = {}
-    section_names.each do |name|
-      begin
-        data = parent_memory.get_section(name)
-        result[name] = data if data
-      rescue StandardError
-        # Section doesn't exist in parent, skip
-      end
-    end
-    result
+  # Load WorkflowMemoryStore from disk
+  # @param path [String] Path to the JSON file
+  # @return [WorkflowMemoryStore] Loaded memory store
+  def self.from_h(owner_id:, workflow_id:, workflow_name:, path:, sections:, started_at:, last_transition_at:, parent_memory: nil)
+    store = allocate
+    store.instance_variable_set(:@owner_id, owner_id)
+    store.instance_variable_set(:@workflow_id, workflow_id)
+    store.instance_variable_set(:@workflow_name, workflow_name)
+    store.instance_variable_set(:@parent_memory, parent_memory)
+    store.instance_variable_set(:@path, path)
+    store.instance_variable_set(:@started_at, Time.parse(started_at))
+    store.instance_variable_set(:@last_transition_at, Time.parse(last_transition_at))
+    
+    # Deserialize sections
+    deserialized_sections = {
+      state_transitions: store.send(:deserialize_array, data: sections[:state_transitions], klass: WorkflowMemories::StateTransition),
+      workflow_context: store.send(:deserialize_array, data: sections[:workflow_context], klass: WorkflowMemories::Context),
+      decisions: store.send(:deserialize_array, data: sections[:decisions], klass: WorkflowMemories::Decision),
+      errors: store.send(:deserialize_array, data: sections[:errors], klass: WorkflowMemories::Error),
+      outputs: store.send(:deserialize_array, data: sections[:outputs], klass: WorkflowMemories::Output),
+      checkpoints: sections[:checkpoints]
+    }
+    store.instance_variable_set(:@sections, deserialized_sections)
+    
+    store
   end
 
-  # Query parent for a compressed context summary
-  # @param sections [Array<Symbol>] Optional specific sections to summarize
+  # Query parent for a compressed context summary matching our work
   # @return [Hash] Summary of parent context
-  def query_parent_context(sections: nil)
+  def query_parent_context
     return {} unless parent_memory
-
-    if parent_memory.respond_to?(:summarize_findings)
-      parent_memory.summarize_findings
-    elsif sections
-      query_parent(*sections)
-    else
-      # Try to get common context sections
-      query_parent(:research_goal, :sub_questions, :context_chain, :findings)
-    end
+    
+    # Only query for contextually relevant information
+    parent_memory.context_for(workflow_name)
   end
 
   # Record a state transition to memory
@@ -367,28 +369,8 @@ class WorkflowMemoryStore
       decisions: @sections[:decisions].map(&:to_h),
       errors: @sections[:errors].map(&:to_h),
       outputs: @sections[:outputs].map(&:to_h),
-      checkpoints: @sections[:checkpoints]  # Keep as hashes
+      checkpoints: @sections[:checkpoints]
     }
-  end
-
-  def load_sections
-    return deep_dup(DEFAULT_SECTIONS) unless File.exist?(path)
-
-    data = JSON.parse(File.read(path), symbolize_names: true)
-    sections = data[:sections]
-    @started_at = Time.parse(data[:started_at])
-    @last_transition_at = Time.parse(data[:last_transition_at])
-
-    {
-      state_transitions: deserialize_array(data: sections[:state_transitions], klass: WorkflowMemories::StateTransition),
-      workflow_context: deserialize_array(data: sections[:workflow_context], klass: WorkflowMemories::Context),
-      decisions: deserialize_array(data: sections[:decisions], klass: WorkflowMemories::Decision),
-      errors: deserialize_array(data: sections[:errors], klass: WorkflowMemories::Error),
-      outputs: deserialize_array(data: sections[:outputs], klass: WorkflowMemories::Output),
-      checkpoints: sections[:checkpoints]
-    }
-  rescue JSON::ParserError
-    deep_dup(DEFAULT_SECTIONS)
   end
 
   # Deserialize array of hashes to objects
