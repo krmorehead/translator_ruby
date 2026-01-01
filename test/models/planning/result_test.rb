@@ -414,7 +414,7 @@ module Planning
       )
 
       hash = original.to_h
-      reconstructed = Result.from_h(hash)
+      reconstructed = Result.from_h(**hash)
 
       assert_equal original.goal, reconstructed.goal
       assert_equal original.project_name, reconstructed.project_name
@@ -488,7 +488,7 @@ module Planning
       )
 
       hash = original.to_h
-      reconstructed = Result.from_h(hash)
+      reconstructed = Result.from_h(**hash)
 
       # Verify domain objects are reconstructed, not hashes
       assert_instance_of Milestone, reconstructed.milestones.first
