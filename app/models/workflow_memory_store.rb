@@ -48,7 +48,10 @@ class WorkflowMemoryStore
     
     # Load from disk if file exists, otherwise initialize fresh
     if File.exist?(path) && File.size(path) > 0
+      puts "DEBUG: Loading from disk: #{path}"
       data = JSON.parse(File.read(path), symbolize_names: true)
+      puts "DEBUG: Sections keys: #{data[:sections]&.keys}"
+      puts "DEBUG: state_transitions count: #{data[:sections][:state_transitions]&.size}"
       @started_at = Time.parse(data[:started_at])
       @last_transition_at = Time.parse(data[:last_transition_at])
       @sections = {
@@ -59,7 +62,9 @@ class WorkflowMemoryStore
         outputs: self.class.deserialize_array(data: data[:sections][:outputs], klass: WorkflowMemories::Output),
         checkpoints: data[:sections][:checkpoints]
       }
+      puts "DEBUG: After deserialization, state_transitions has: #{@sections[:state_transitions].map(&:class)}"
     else
+      puts "DEBUG: Initializing fresh (file doesn't exist or is empty)"
       @sections = deep_dup(DEFAULT_SECTIONS)
       @started_at = Time.now.utc
       @last_transition_at = Time.now.utc
