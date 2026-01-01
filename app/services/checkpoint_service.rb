@@ -115,7 +115,7 @@ class CheckpointService
     result = run_git_command("show --no-patch --pretty=format:'%H|%s|%at' #{checkpoint_id}")
     return nil unless result[:success]
     
-    hash, message, timestamp = result[:output].strip.split("|", 3)
+    id_hash, message, timestamp = result[:output].strip.split("|", 3)
     
     # Get files changed in this commit
     files_changed = get_files_changed(checkpoint_id)
@@ -125,7 +125,7 @@ class CheckpointService
     
     # Create and return Checkpoint object
     Checkpoint.new(
-      id: hash,
+      id: id_hash,
       message: message,
       created_at: Time.at(timestamp.to_i),
       files_changed: files_changed,
