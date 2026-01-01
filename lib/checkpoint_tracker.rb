@@ -32,13 +32,9 @@ class CheckpointTracker
   def current_id(path:, message: nil, milestone_id: nil, worker_id: nil)
     @mutex.synchronize do
       service = checkpoint_service_for(path)
-      last_checkpoint = @checkpoints_by_path[path]
 
-      # If codebase hasn't changed since last checkpoint, return it
-      return last_checkpoint.id if last_checkpoint && !codebase_changed?(service)
-
-      # If no last checkpoint and nothing changed, use HEAD
-      if last_checkpoint.nil? && !codebase_changed?(service)
+      # If nothing changed, use current HEAD as checkpoint
+      unless codebase_changed?(service)
         head_id = service.current_commit_id
         checkpoint = service.get_checkpoint(head_id)
         @checkpoints_by_path[path] = checkpoint
