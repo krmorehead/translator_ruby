@@ -236,14 +236,8 @@ class CheckpointService
   end
 
   def create_git_commit(message)
-    # Stage all changes
-    stage_result = run_git_command("add -A")
-    unless stage_result[:success]
-      raise RuntimeError, "Failed to stage changes: #{stage_result[:output]}"
-    end
-    
-    # Commit staged changes
-    result = run_git_command("commit -m '#{escape_single_quotes(message)}'")
+    # Commit all tracked files with changes
+    result = run_git_command("commit -a -m '#{escape_single_quotes(message)}'")
     
     unless result[:success]
       raise RuntimeError, "Failed to create checkpoint: #{result[:output]}"
