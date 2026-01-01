@@ -175,23 +175,21 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
       @sections = sections
     end
 
-    def get_section(name)
-      @sections[name.to_sym]
+    def context_for(workflow_name)
+      # Return a proper Context object with relevant entries
+      Contexts::BaseContext.new
     end
   end
 
   speed_profile :fast
-  test "query_parent returns empty hash without parent" do
-    result = store.query_parent(:research_goal, :findings)
+  test "query_parent_context returns empty context without parent" do
+    result = store.query_parent_context
     assert_equal({}, result)
   end
 
   speed_profile :fast
-  test "query_parent retrieves sections from parent" do
-    parent = MockParentMemory.new(
-      research_goal: [{ text: "Test Goal" }],
-      findings: [{ text: "Finding 1" }]
-    )
+  test "query_parent_context gets context from parent" do
+    parent = MockParentMemory.new
 
     store_with_parent = WorkflowMemoryStore.new(
       owner_id: owner_id,
@@ -201,28 +199,8 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
       path: File.join(temp_dir, "with_parent.json")
     )
 
-    result = store_with_parent.query_parent(:research_goal, :findings)
-    assert_equal [{ text: "Test Goal" }], result[:research_goal]
-    assert_equal [{ text: "Finding 1" }], result[:findings]
-  end
-
-  speed_profile :fast
-  test "query_parent_context gets compressed context" do
-    parent = MockParentMemory.new(
-      research_goal: [{ text: "Main Goal" }],
-      context_chain: [{ key_insights: "insight 1" }]
-    )
-
-    store_with_parent = WorkflowMemoryStore.new(
-      owner_id: owner_id,
-      workflow_id: workflow_id,
-      workflow_name: workflow_name,
-      parent_memory: parent,
-      path: File.join(temp_dir, "context.json")
-    )
-
     result = store_with_parent.query_parent_context
-    assert result[:research_goal].present?
+    assert_instance_of Contexts::BaseContext, result
   end
 
   # Merge tests

@@ -5,10 +5,10 @@ require "test_helper"
 class ExecutionOrchestrationServiceTest < ActiveSupport::TestCase
   def setup
     @service = ExecutionOrchestrationService.new
-    @test_dir = Rails.root.join("test", "tmp", "execution_orchestration_test")
+    @test_dir = Rails.root.join("test", "tmp", "execution_orchestration_test_#{SecureRandom.hex(8)}")
     FileUtils.mkdir_p(@test_dir)
     @test_project = File.join(@test_dir, "test_project")
-    Dir.mkdir(@test_project) unless Dir.exist?(@test_project)
+    FileUtils.mkdir_p(@test_project)
     @test_plan = File.join(@test_dir, "test_plan.md")
     File.write(@test_plan, "# Test Plan\n\nTest content")
   end

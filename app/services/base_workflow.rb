@@ -77,19 +77,10 @@ class BaseWorkflow
     current_state == :failed
   end
 
-  # Query parent memory for specific sections
-  # @param section_names [Array<Symbol>] Sections to retrieve
-  # @return [Hash] Section data from parent
-  def query_parent_memory(*section_names)
-    return {} unless workflow_memory
-
-    workflow_memory.query_parent(*section_names)
-  end
-
-  # Get compressed context from parent memory
-  # @return [Hash] Summary of parent context
+  # Get compressed context from parent memory relevant to this workflow
+  # @return [Contexts::BaseContext] Context object with relevant parent information
   def parent_context
-    return {} unless workflow_memory
+    return Contexts::BaseContext.new unless workflow_memory
 
     workflow_memory.query_parent_context
   end

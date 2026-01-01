@@ -45,9 +45,25 @@ class WorkflowMemoryStore
     @workflow_name = workflow_name
     @parent_memory = parent_memory
     @path = path
-    @sections = deep_dup(DEFAULT_SECTIONS)
-    @started_at = Time.now.utc
-    @last_transition_at = Time.now.utc
+    
+    # Load from disk if file exists, otherwise initialize fresh
+    if File.exist?(path) && File.size(path) > 0
+      data = JSON.parse(File.read(path), symbolize_names: true)
+      @started_at = Time.parse(data[:started_at])
+      @last_transition_at = Time.parse(data[:last_transition_at])
+      @sections = {
+        state_transitions: deserialize_array(data: data[:sections][:state_transitions], klass: WorkflowMemories::StateTransition),
+        workflow_context: deserialize_array(data: data[:sections][:workflow_context], klass: WorkflowMemories::Context),
+        decisions: deserialize_array(data: data[:sections][:decisions], klass: WorkflowMemories::Decision),
+        errors: deserialize_array(data: data[:sections][:errors], klass: WorkflowMemories::Error),
+        outputs: deserialize_array(data: data[:sections][:outputs], klass: WorkflowMemories::Output),
+        checkpoints: data[:sections][:checkpoints]
+      }
+    else
+      @sections = deep_dup(DEFAULT_SECTIONS)
+      @started_at = Time.now.utc
+      @last_transition_at = Time.now.utc
+    end
   end
 
   # Load WorkflowMemoryStore from disk

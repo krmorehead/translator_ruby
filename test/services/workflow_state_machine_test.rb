@@ -120,35 +120,14 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
       @data = data
     end
 
-    def get_section(name)
-      @data[name.to_sym]
-    end
-
-    def summarize_findings
-      { summary: "test summary" }
+    def context_for(workflow_name)
+      # Return a proper Context object with relevant entries
+      Contexts::BaseContext.new
     end
   end
 
   speed_profile :fast
-  test "workflow can query parent memory" do
-    parent = MockParentMemory.new(
-      research_goal: [{ text: "Main Goal" }],
-      findings: [{ text: "Finding 1" }]
-    )
-
-    workflow = TestWorkflow.new(
-      owner_id: SecureRandom.uuid,
-      parent_memory: parent
-    )
-    workflow.setup()
-
-    result = workflow.query_parent_memory(:research_goal, :findings)
-    assert_equal [{ text: "Main Goal" }], result[:research_goal]
-    assert_equal [{ text: "Finding 1" }], result[:findings]
-  end
-
-  speed_profile :fast
-  test "workflow can get parent context summary" do
+  test "workflow can get parent context" do
     parent = MockParentMemory.new
     workflow = TestWorkflow.new(
       owner_id: SecureRandom.uuid,
@@ -157,7 +136,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     workflow.setup()
 
     context = workflow.parent_context
-    assert_equal({ summary: "test summary" }, context)
+    assert_instance_of Contexts::BaseContext, context
   end
 
   # Decision recording tests
