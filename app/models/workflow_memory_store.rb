@@ -380,11 +380,11 @@ class WorkflowMemoryStore
     @last_transition_at = Time.parse(data[:last_transition_at]) if data[:last_transition_at]
 
     {
-      state_transitions: deserialize_array(sections[:state_transitions], WorkflowMemories::StateTransition),
-      workflow_context: deserialize_array(sections[:workflow_context], WorkflowMemories::Context),
-      decisions: deserialize_array(sections[:decisions], WorkflowMemories::Decision),
-      errors: deserialize_array(sections[:errors], WorkflowMemories::Error),
-      outputs: deserialize_array(sections[:outputs], WorkflowMemories::Output),
+      state_transitions: deserialize_array(data: sections[:state_transitions], klass: WorkflowMemories::StateTransition),
+      workflow_context: deserialize_array(data: sections[:workflow_context], klass: WorkflowMemories::Context),
+      decisions: deserialize_array(data: sections[:decisions], klass: WorkflowMemories::Decision),
+      errors: deserialize_array(data: sections[:errors], klass: WorkflowMemories::Error),
+      outputs: deserialize_array(data: sections[:outputs], klass: WorkflowMemories::Output),
       checkpoints: sections[:checkpoints] || []
     }
   rescue JSON::ParserError
