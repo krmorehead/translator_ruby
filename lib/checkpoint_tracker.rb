@@ -42,26 +42,6 @@ class CheckpointTracker
     end
   end
 
-  # Force creation of a new checkpoint regardless of changes
-  #
-  # @param path [String] The repository path
-  # @param message [String] The checkpoint message
-  # @param milestone_id [String, nil] Optional milestone ID
-  # @param worker_id [String, nil] Optional worker ID
-  # @return [String] The new checkpoint ID
-  def force_checkpoint(path:, message:, milestone_id: nil, worker_id: nil)
-    @mutex.synchronize do
-      service = checkpoint_service_for(path)
-      checkpoint = service.create_checkpoint(
-        message,
-        milestone_id: milestone_id,
-        worker_id: worker_id
-      )
-      @checkpoints_by_path[path] = checkpoint
-      checkpoint.id
-    end
-  end
-
   # Clear cached checkpoint for a path (useful for testing)
   #
   # @param path [String] The repository path

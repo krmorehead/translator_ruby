@@ -15,9 +15,10 @@ module Planning
   #     project_plan_content: "# Project Plan..."
   #   )
   class Result
-    attr_reader :goal, :project_name, :milestones, :existing_files, :planned_files,
+    attr_reader :id, :goal, :project_name, :milestones, :existing_files, :planned_files,
                 :file_references_content, :project_plan_content
 
+    # @param id [String] Unique identifier for this planning result
     # @param goal [String] The project goal
     # @param project_name [String] The project name
     # @param milestones [Array<Planning::Milestone>] Array of milestone objects
@@ -26,10 +27,11 @@ module Planning
     # @param file_references_content [String] Generated markdown for file_references.md
     # @param project_plan_content [String] Generated markdown for project_plan.md
     def initialize(goal:, project_name:, milestones:, existing_files:, planned_files:,
-                   file_references_content:, project_plan_content:)
-      validate_types!(goal, project_name, milestones, existing_files, planned_files,
+                   file_references_content:, project_plan_content:, id: SecureRandom.uuid)
+      validate_types!(id, goal, project_name, milestones, existing_files, planned_files,
                       file_references_content, project_plan_content)
       
+      @id = id
       @goal = goal
       @project_name = project_name
       @milestones = milestones
@@ -69,6 +71,7 @@ module Planning
     # @return [Hash] Hash representation of the result
     def to_h
       {
+        id: @id,
         goal: @goal,
         project_name: @project_name,
         milestones: @milestones.map(&:to_h),
@@ -80,38 +83,45 @@ module Planning
     end
 
     # Reconstruct a Planning::Result from a hash
-    # @param hash [Hash] Hash containing result data
+    # @param id [String] Unique identifier (required - we're hydrating an existing object)
+    # @param goal [String] The project goal
+    # @param project_name [String] The project name
+    # @param milestones [Array<Hash>] Array of milestone hashes
+    # @param existing_files [Array<Hash>] Array of existing file reference hashes
+    # @param planned_files [Array<Hash>] Array of planned file reference hashes
+    # @param file_references_content [String] Generated markdown for file_references.md
+    # @param project_plan_content [String] Generated markdown for project_plan.md
     # @return [Planning::Result] Reconstructed result
-    def self.from_h(hash)
-      raise ArgumentError, "hash must be a Hash, got #{hash.class}" unless hash.is_a?(Hash)
-      
+    def self.from_h(id:, goal:, project_name:, milestones:, existing_files:, planned_files:,
+                    file_references_content:, project_plan_content:)
       # Reconstruct milestone objects
-      milestones_data = hash[:milestones] || hash["milestones"] || []
-      milestones = milestones_data.map { |m| Milestone.from_h(m) }
+      milestone_objects = milestones.map { |m| Milestone.from_h(m) }
       
       # Reconstruct existing file reference objects
-      existing_files_data = hash[:existing_files] || hash["existing_files"] || []
-      existing_files = existing_files_data.map { |f| FileReference.from_h(f) }
+      existing_file_objects = existing_files.map { |f| FileReference.from_h(f) }
       
       # Reconstruct planned file reference objects
-      planned_files_data = hash[:planned_files] || hash["planned_files"] || []
-      planned_files = planned_files_data.map { |f| FileReference.from_h(f) }
+      planned_file_objects = planned_files.map { |f| FileReference.from_h(f) }
       
       new(
-        goal: hash[:goal] || hash["goal"],
-        project_name: hash[:project_name] || hash["project_name"],
-        milestones: milestones,
-        existing_files: existing_files,
-        planned_files: planned_files,
-        file_references_content: hash[:file_references_content] || hash["file_references_content"] || "",
-        project_plan_content: hash[:project_plan_content] || hash["project_plan_content"] || ""
+        id: id,
+        goal: goal,
+        project_name: project_name,
+        milestones: milestone_objects,
+        existing_files: existing_file_objects,
+        planned_files: planned_file_objects,
+        file_references_content: file_references_content,
+        project_plan_content: project_plan_content
       )
     end
 
     private
 
-    def validate_types!(goal, project_name, milestones, existing_files, planned_files,
+    def validate_types!(id, goal, project_name, milestones, existing_files, planned_files,
                         file_references_content, project_plan_content)
+      raise ArgumentError, "id must be a String, got #{id.class}" unless id.is_a?(String)
+      raise ArgumentError, "id cannot be empty" if id.strip.empty?
+      
       raise ArgumentError, "goal must be a String, got #{goal.class}" unless goal.is_a?(String)
       raise ArgumentError, "goal cannot be empty" if goal.strip.empty?
       
