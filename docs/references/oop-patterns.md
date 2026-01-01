@@ -1063,6 +1063,132 @@ end
 
 ---
 
+### Lesson 13: Centralized Test Infrastructure
+
+**Problem:** Test infrastructure code (speed profiling, setup, etc.) is duplicated across every test file, violating DRY and making changes difficult.
+
+**Bad Pattern:**
+```javascript
+// In EVERY test file
+const speed_profile = (profile) => (name, fn) => {
+  const timeouts = { fast: 1000, medium: 5000, slow: 30000 };
+  return test(name, fn, timeouts[profile]);
+};
+
+describe("MyComponent", () => {
+  speed_profile("fast")("test name", () => { /* ... */ });
+});
+```
+
+**Good Pattern:**
+```javascript
+// In frontend/src/test/speedProfile.js (ONCE)
+const SPEED_LEVELS = Object.freeze({
+  FAST: 'fast',
+  MEDIUM: 'medium',
+  SLOW: 'slow'
+});
+
+const SPEED_LIMITS = Object.freeze({
+  [SPEED_LEVELS.FAST]: 1000,
+  [SPEED_LEVELS.MEDIUM]: 5000,
+  [SPEED_LEVELS.SLOW]: 30000
+});
+
+export const speed_profile = (profile) => {
+  if (!Object.values(SPEED_LEVELS).includes(profile)) {
+    throw new Error(`Invalid speed profile: ${profile}`);
+  }
+  
+  return (name, fn, options = {}) => {
+    const timeout = SPEED_LIMITS[profile];
+    return test(name, fn, { timeout, ...options });
+  };
+};
+
+// In test files
+import { speed_profile } from "../../test/speedProfile";
+
+describe("MyComponent", () => {
+  speed_profile("fast")("test name", () => { /* ... */ });
+});
+```
+
+**Backend Pattern (Ruby):**
+```ruby
+# In test/support/speed_profile.rb (ONCE)
+module SpeedProfile
+  SPEED_LEVELS = [
+    FAST = :fast,
+    MEDIUM = :medium,
+    SLOW = :slow
+  ].freeze
+
+  SPEED_LIMITS = {
+    FAST => 10,
+    MEDIUM => 60,
+    SLOW => 120
+  }.freeze
+
+  def self.included(base)
+    base.class_eval do
+      def speed_profile(level)
+        unless SPEED_LEVELS.include?(level)
+          raise ArgumentError, "Invalid speed profile: #{level}"
+        end
+        @next_speed_profile = level
+      end
+    end
+  end
+
+  private
+
+  def validate_speed_profile!
+    speed = self.class.speed_profile_for(name)
+    raise ArgumentError, "Test must declare speed_profile" unless speed
+  end
+end
+
+# In test/test_helper.rb
+module ActiveSupport
+  class TestCase
+    include SpeedProfile
+  end
+end
+
+# In test files
+class MyTest < ActiveSupport::TestCase
+  speed_profile :fast
+  test "something" do
+    # ...
+  end
+end
+```
+
+**Key Principles:**
+1. **Single Definition** - Test infrastructure defined once, used everywhere
+2. **Fail Fast** - Invalid profiles raise errors immediately
+3. **Type Safety** - Frozen constants prevent modification
+4. **Enforced** - Tests without speed profiles fail with clear error
+5. **Consistent** - Same pattern across backend and frontend
+
+**Why This Matters:**
+- Change timeout limits in ONE place
+- Add new speed levels in ONE place
+- Ensure ALL tests follow the same pattern
+- Clear error messages when misused
+- Easier to maintain and update
+
+**Migration Checklist:**
+- [ ] Create centralized speed profile module
+- [ ] Export it from test setup/helper
+- [ ] Update all test files to import from central module
+- [ ] Remove duplicated speed_profile definitions
+- [ ] Add validation/enforcement
+- [ ] Document usage in testing guide
+
+---
+
 ## References
 
 - [Serialization Guide](./serialization-guide.md)

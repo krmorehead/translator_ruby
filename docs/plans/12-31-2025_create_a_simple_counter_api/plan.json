@@ -1,0 +1,386 @@
+{
+  "goal": "Create a simple counter API",
+  "milestones": [
+    {
+      "id": "753208c9-7519-4510-a601-8391dcf01589",
+      "title": "API Foundation",
+      "description": "Create basic API structure and routing",
+      "steps": [
+        {
+          "id": "c81d81e4-3015-4e11-83dd-a325fe9f506d",
+          "title": "Create API route",
+          "intent": "Establish endpoint for counter API",
+          "details": [
+            "Define /counter endpoint",
+            "Use Rails API module",
+            "Create corresponding controller"
+          ],
+          "tests": [
+            "Verify route is recognized",
+            "Test 404 for unimplemented endpoint"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        },
+        {
+          "id": "3b18462a-2bfa-4d31-870a-ce8a67c8d697",
+          "title": "Create CounterController",
+          "intent": "Provide controller for counter API",
+          "details": [
+            "Generate controller with index action",
+            "Set content type to JSON",
+            "Basic response structure"
+          ],
+          "tests": [
+            "Confirm controller responds to GET",
+            "Verify JSON response format"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 1
+        }
+      ],
+      "order_index": 0,
+      "estimated_duration": null,
+      "success_criteria": null
+    },
+    {
+      "id": "aa1039a3-64b7-4fcb-978f-3a325eb0ee19",
+      "title": "Counter Logic",
+      "description": "Implement core counter functionality",
+      "steps": [
+        {
+          "id": "3f591f3f-8e17-43d4-8067-406739d22469",
+          "title": "Create Counter model",
+          "intent": "Store and manage counter state",
+          "details": [
+            "Create database migration",
+            "Define Counter class",
+            "Add value and increment logic"
+          ],
+          "tests": [
+            "Test counter initialization",
+            "Verify increment operation",
+            "Check persistence between requests"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        },
+        {
+          "id": "b86e38d1-dc21-4264-a4f0-ea9c78dd5e1c",
+          "title": "Implement GET endpoint",
+          "intent": "Return current counter value",
+          "details": [
+            "Add show action to controller",
+            "Fetch current counter",
+            "Return JSON response"
+          ],
+          "tests": [
+            "Test GET /counter returns value",
+            "Verify response format",
+            "Test error handling"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 1
+        },
+        {
+          "id": "66e020ac-f9bc-4a6d-970d-6b845bfdf08b",
+          "title": "Implement increment endpoint",
+          "intent": "Provide way to increase counter",
+          "details": [
+            "Add increment action",
+            "Handle POST request",
+            "Update counter value"
+          ],
+          "tests": [
+            "Test POST /counter increments value",
+            "Verify IDempotency",
+            "Test error handling"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 2
+        }
+      ],
+      "order_index": 1,
+      "estimated_duration": null,
+      "success_criteria": null
+    },
+    {
+      "id": "08a195bd-72e4-4b31-95d3-07d61eda2e98",
+      "title": "Error Handling",
+      "description": "Add proper error handling and validation",
+      "steps": [
+        {
+          "id": "7b9d4b32-f253-4fce-ba53-009bf65f4ae5",
+          "title": "Add error boundaries",
+          "intent": "Handle exceptional cases",
+          "details": [
+            "Add rescue_from in controller",
+            "Handle ActiveRecord errors",
+            "Return appropriate status codes"
+          ],
+          "tests": [
+            "Test database error handling",
+            "Verify 500 responses",
+            "Test 404 for invalid resources"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        },
+        {
+          "id": "ff7519b0-6987-4275-a323-b23f9f0943ce",
+          "title": "Add input validation",
+          "intent": "Ensure proper data handling",
+          "details": [
+            "Validate increment parameters",
+            "Add format validation",
+            "Prevent negative values"
+          ],
+          "tests": [
+            "Test invalid increment values",
+            "Verify validation errors",
+            "Test edge cases"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 1
+        }
+      ],
+      "order_index": 2,
+      "estimated_duration": null,
+      "success_criteria": null
+    },
+    {
+      "id": "1f1155a1-912f-473a-a194-d5f737a7279c",
+      "title": "Testing and Validation",
+      "description": "Ensure API works as expected",
+      "steps": [
+        {
+          "id": "6d396daa-398b-4a53-aa7b-1a834d9df987",
+          "title": "Write integration tests",
+          "intent": "Test complete API flow",
+          "details": [
+            "Test sequence: get -> increment -> get",
+            "Test error scenarios",
+            "Test concurrent requests"
+          ],
+          "tests": [
+            "Verify end-to-end functionality",
+            "Test error propagation",
+            "Test idempotency"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        },
+        {
+          "id": "fcccb9ec-a0d8-4365-8310-7085df196bd2",
+          "title": "Add monitoring endpoints",
+          "intent": "Provide health checks",
+          "details": [
+            "Add GET /health endpoint",
+            "Return status and counter stats",
+            "Add metrics collection"
+          ],
+          "tests": [
+            "Test health check response",
+            "Verify metrics format",
+            "Test monitoring integration"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 1
+        }
+      ],
+      "order_index": 3,
+      "estimated_duration": null,
+      "success_criteria": null
+    },
+    {
+      "id": "33d6892a-29b1-4c97-b18d-330675df9d99",
+      "title": "Deployment Preparation",
+      "description": "Prepare for production deployment",
+      "steps": [
+        {
+          "id": "45058c13-6190-425d-b4a0-b66458369148",
+          "title": "Add environment config",
+          "intent": "Configure for different environments",
+          "details": [
+            "Add config for development/test/production",
+            "Set default counter value",
+            "Add environment-specific settings"
+          ],
+          "tests": [
+            "Test config loading",
+            "Verify environment-specific behavior",
+            "Test fallback values"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        },
+        {
+          "id": "f2b60150-3e73-4301-877f-e10f3c31a2cf",
+          "title": "Add logging",
+          "intent": "Improve observability",
+          "details": [
+            "Add request logging",
+            "Log errors with backtraces",
+            "Add performance metrics"
+          ],
+          "tests": [
+            "Test log output",
+            "Verify error logging",
+            "Test metrics collection"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 1
+        },
+        {
+          "id": "f8dfdba6-890b-4586-a914-8334b56c4fc8",
+          "title": "Write documentation",
+          "intent": "Document API usage",
+          "details": [
+            "Create API spec in RDocs",
+            "Document endpoints",
+            "Provide usage examples"
+          ],
+          "tests": [
+            "Test documentation rendering",
+            "Verify endpoint documentation",
+            "Test example usage"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 2
+        }
+      ],
+      "order_index": 4,
+      "estimated_duration": null,
+      "success_criteria": null
+    },
+    {
+      "id": "ad21f6e6-6c26-4351-b527-1118cf9717c5",
+      "title": "Security Implementation",
+      "description": "Add security features",
+      "steps": [
+        {
+          "id": "655f0dbd-6a4b-42c4-898b-875f54c787c9",
+          "title": "Add rate limiting",
+          "intent": "Prevent abuse",
+          "details": [
+            "Implement token bucket algorithm",
+            "Add middleware for tracking",
+            "Configure rate limits"
+          ],
+          "tests": [
+            "Test rate limit enforcement",
+            "Verify reset behavior",
+            "Test error responses"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        },
+        {
+          "id": "88e454c8-9292-44db-a5e7-e11fdaca4101",
+          "title": "Add authentication",
+          "intent": "Secure the API",
+          "details": [
+            "Implement API key authentication",
+            "Add middleware for validation",
+            "Configure access levels"
+          ],
+          "tests": [
+            "Test valid authentication",
+            "Verify invalid keys",
+            "Test unauthorized access"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 1
+        },
+        {
+          "id": "d3ff47e2-c6b2-4d47-94f3-ba3d1766f2ad",
+          "title": "Add input sanitization",
+          "intent": "Prevent injection attacks",
+          "details": [
+            "Sanitize request parameters",
+            "Validate content types",
+            "Add input scrubbing"
+          ],
+          "tests": [
+            "Test malicious inputs",
+            "Verify sanitization",
+            "Test validation errors"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 2
+        }
+      ],
+      "order_index": 5,
+      "estimated_duration": null,
+      "success_criteria": null
+    }
+  ],
+  "created_at": "2026-01-01T06:04:59Z",
+  "metadata": {
+    "analysis_results": {
+      "relevant_files": [],
+      "patterns": [],
+      "constraints": [],
+      "context": "Analysis failed: undefined method 'lines' for nil"
+    }
+  },
+  "constraints": [
+    "Must follow REST principles",
+    "Write tests first",
+    "Use JSON API format"
+  ],
+  "assumptions": [
+    "Rails 7 environment",
+    "PostgreSQL database"
+  ],
+  "risks": [
+    "Counter concurrency issues",
+    "Security vulnerabilities",
+    "Environment misconfiguration"
+  ]
+}

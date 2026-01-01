@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import ChatPage from "./components/ChatPage";
 import InspectorPage from "./pages/InspectorPage";
 import ProjectPlanPage from "./components/ProjectPlanPage";
+import DaedalusPage from "./components/DaedalusPage";
 import SisyphusPage from "./components/SisyphusPage";
 import { useChatStore } from "./store/chatStore";
 import "./App.css";
@@ -28,6 +29,11 @@ function App() {
   // Project Planning mode - skip D&D initialization
   if (path.startsWith("/project_planning")) {
     return <ProjectPlanPage />;
+  }
+
+  // Daedalus mode - skip D&D initialization
+  if (path.startsWith("/daedalus")) {
+    return <DaedalusPage />;
   }
 
   // Inspector mode - skip D&D initialization

@@ -1,4 +1,6 @@
+import { describe, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { speed_profile } from "../../test/speedProfile";
 import ChatPage from "../ChatPage";
 
 describe("ChatPage", () => {
@@ -12,23 +14,25 @@ describe("ChatPage", () => {
     error: ""
   };
 
-  test("renders messages and inspector", () => {
-    render(<ChatPage {...baseProps} onSend={vi.fn()} />);
+  speed_profile("fast")("renders messages and inspector", () => {
+    const handleSend = () => {};
+    render(<ChatPage {...baseProps} onSend={handleSend} />);
 
     expect(screen.getByText(/Welcome!/i)).toBeInTheDocument();
     expect(screen.getByText(/Hello/i)).toBeInTheDocument();
     expect(screen.getByText(/Agent Inspector/i)).toBeInTheDocument();
   });
 
-  test("submits input via onSend", () => {
-    const handleSend = vi.fn();
+  speed_profile("fast")("submits input via onSend", () => {
+    let sentMessage = null;
+    const handleSend = (msg) => { sentMessage = msg; };
+    
     render(<ChatPage {...baseProps} onSend={handleSend} />);
 
     const input = screen.getByPlaceholderText(/Type your action/i);
     fireEvent.change(input, { target: { value: "Attack" } });
     fireEvent.click(screen.getByRole("button", { name: /send/i }));
 
-    expect(handleSend).toHaveBeenCalledWith("Attack");
+    expect(sentMessage).toBe("Attack");
   });
 });
-

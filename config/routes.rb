@@ -25,6 +25,10 @@ Rails.application.routes.draw do
   get "/project_planning", to: "project_planning#spa"
   post "/project_planning/create", to: "project_planning#create"
 
+  # Daedalus (Execution Plan Generation) routes
+  get "/daedalus", to: "daedalus#spa"
+  post "/daedalus/create", to: "daedalus#create"
+
   # Sisyphus Agent Worker routes
   get "/sisyphus", to: "sisyphus#index"
   

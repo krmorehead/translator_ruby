@@ -55,4 +55,7 @@ alwaysApply: true
 
 [DATA][!REAL-DATA] Use real data and factories. Create tests with actual data, not mocks or stubs.
 
+[FRONTEND][!SEPARATE] For frontend testing, see rules/frontend-testing-rule.mdc
+
 Reference: docs/test_speed_profiling_quick_reference.md
+Frontend Reference: docs/frontend_testing_guide.md

@@ -1,0 +1,127 @@
+---
+globs: frontend/src/**/*.test.{js,jsx}
+alwaysApply: true
+---
+
+[LANG][!JAVASCRIPT] This is a React project. All tests use Vitest with React Testing Library.
+
+[TEST][!FOCUSED] Write focused unit tests that are isolated and follow React testing best practices.
+
+[RUN][!COMMAND] Run frontend tests with: `cd frontend && npm run test -- --run`
+
+[WATCH][!DEV] During development, use watch mode: `cd frontend && npm test`
+
+[TOOLS][!TESTING-LIBRARY] Use React Testing Library for component testing:
+  - Use `render()` to mount components
+  - Query by role/label/text (not implementation details)
+  - Use `fireEvent` or `userEvent` for interactions
+  - Use `waitFor` for async assertions
+  
+[SPEED][!PROFILE] EVERY test MUST declare speed_profile before the test:
+  ```javascript
+  const speed_profile = (profile) => (name, fn) => {
+    const timeouts = { fast: 1000, medium: 5000, slow: 30000 };
+    return test(name, fn, timeouts[profile]);
+  };
+  
+  speed_profile("fast")("renders correctly", () => {
+    // Test implementation
+  });
+  
+  speed_profile("medium")("calls real API", async () => {
+    // Test with API call
+  });
+  ```
+
+[SPEED][!CATEGORIES] Speed profile guidelines:
+  - fast (< 1s): Pure rendering, state updates, validation
+  - medium (< 5s): Real API calls, file I/O
+  - slow (< 30s): Integration tests, LLM calls
+
+[NO-MOCK][!REAL] Never mock. Use real implementations:
+  - Real stores with real state
+  - Real API calls (or skip if unavailable)
+  - Real data from factories
+  - If external system unavailable, skip explicitly
+
+[ASSERTIONS][!ACCESSIBLE] Prefer accessible queries:
+  - `getByRole()` - BEST for interactive elements
+  - `getByLabelText()` - BEST for form inputs
+  - `getByText()` - OK for static content
+  - Avoid `getByTestId()` unless necessary
+
+[SETUP][!ISOLATION] Each test should be isolated:
+  - Clear all mocks in `beforeEach`
+  - Don't rely on test execution order
+  - Reset component state between tests
+
+[COVERAGE][!COMPREHENSIVE] Test the following for each component:
+  - Rendering with default props
+  - User interactions (clicks, typing, form submission)
+  - Conditional rendering (loading, error, success states)
+  - Props validation and edge cases
+  - State updates and side effects
+
+[STRUCTURE][!ORGANIZED] Organize tests logically:
+  ```javascript
+  describe("ComponentName", () => {
+    const defaultProps = { /* ... */ };
+    
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+    
+    test("renders with required props", () => { /* ... */ });
+    test("handles user interaction", () => { /* ... */ });
+    test("displays error state", () => { /* ... */ });
+  });
+  ```
+
+[ASYNC][!WAIT] Handle async operations properly:
+  ```javascript
+  test("fetches and displays data", async () => {
+    render(<Component />);
+    await waitFor(() => {
+      expect(screen.getByText(/data loaded/i)).toBeInTheDocument();
+    });
+  });
+  ```
+
+[FORMS][!CONTROLLED] Test form interactions realistically:
+  ```javascript
+  const input = screen.getByLabelText(/email/i);
+  fireEvent.change(input, { target: { value: 'test@example.com' } });
+  expect(input.value).toBe('test@example.com');
+  ```
+
+[PERF][!FAST] Keep tests fast:
+  - Mock heavy computations
+  - Avoid unnecessary renders
+  - Use shallow mocking where appropriate
+  - Target < 1 second per test file
+
+[QUALITY][!READABLE] Write clear, maintainable tests:
+  - Use descriptive test names
+  - Keep tests focused on single behaviors
+  - Avoid test implementation details
+  - Make assertions meaningful
+
+[ACCESSIBILITY][!A11Y] Ensure components are accessible:
+  - Test keyboard navigation
+  - Verify ARIA labels
+  - Check focus management
+  - Validate semantic HTML
+
+[BROWSER][!LIMITATION] Known Browser Automation Issue:
+  - Playwright/browser automation tools may not trigger React synthetic events
+  - For manual verification, create simple HTML test pages
+  - Unit tests with mocked stores are the source of truth
+  - Example: `/public/component_test.html` (remember to clean up after)
+
+[CLEANUP][!ARTIFACTS] After manual browser testing:
+  - Remove any `public/*_test.html` files
+  - Delete temporary test components
+  - Remove debug console.logs
+  - Clean up unused mocks
+
+Reference: docs/frontend_testing_guide.md

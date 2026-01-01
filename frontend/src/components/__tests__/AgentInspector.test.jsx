@@ -1,8 +1,10 @@
+import { describe, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { speed_profile } from "../../test/speedProfile";
 import AgentInspector from "../AgentInspector";
 
 describe("AgentInspector", () => {
-  test("renders version and sections", () => {
+  speed_profile("fast")("renders version and sections", () => {
     render(
       <AgentInspector
         agentState={{
@@ -20,5 +22,3 @@ describe("AgentInspector", () => {
     expect(screen.getByText(/Torch/i)).toBeInTheDocument();
   });
 });
-
-
