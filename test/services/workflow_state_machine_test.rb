@@ -40,11 +40,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     end
   end
 
-  let(:temp_dir) do
-    dir = Rails.root.join("tmp", "workflow_state_test_#{Process.pid}").to_s
-    FileUtils.mkdir_p(dir)
-    dir
-  end
+  let(:temp_dir) { create_temp_git_repo }
 
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
