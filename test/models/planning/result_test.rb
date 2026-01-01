@@ -427,6 +427,7 @@ module Planning
     speed_profile :fast
     test "from_h reconstructs nested objects correctly with string keys" do
       hash = {
+        "id" => SecureRandom.uuid,
         "goal" => "Test goal",
         "project_name" => "test",
         "milestones" => [
@@ -449,7 +450,7 @@ module Planning
         "project_plan_content" => "# Project Plan"
       }
 
-      reconstructed = Result.from_h(hash)
+      reconstructed = Result.from_h(**hash.deep_symbolize_keys)
 
       assert_equal "Test goal", reconstructed.goal
       assert_equal "test", reconstructed.project_name
