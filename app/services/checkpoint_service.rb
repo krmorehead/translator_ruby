@@ -173,9 +173,10 @@ class CheckpointService
 
   # Check if there are uncommitted changes in the working directory
   #
-  # @return [Boolean] True if there are uncommitted changes (staged or unstaged)
+  # @return [Boolean] True if there are uncommitted changes (staged or unstaged, excluding untracked)
   def has_uncommitted_changes?
-    result = run_git_command("status --porcelain")
+    # Only check for modifications to tracked files, not untracked files
+    result = run_git_command("diff HEAD")
     !result[:output].strip.empty?
   end
 
