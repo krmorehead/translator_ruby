@@ -34,29 +34,21 @@ class CheckpointTracker
       service = checkpoint_service_for(path)
       last_checkpoint = @checkpoints_by_path[path]
 
-      # If no previous checkpoint, check if we need to create one or use HEAD
-      if last_checkpoint.nil?
-        if codebase_changed?(service)
-          # Create checkpoint for uncommitted changes
-          checkpoint = create_checkpoint(service, message, milestone_id, worker_id)
-          @checkpoints_by_path[path] = checkpoint
-          checkpoint.id
-        else
-          # No changes, use current HEAD as checkpoint
-          head_id = service.current_commit_id
-          checkpoint = service.get_checkpoint(head_id)
-          @checkpoints_by_path[path] = checkpoint
-          checkpoint.id
-        end
-      elsif codebase_changed?(service)
-        # Codebase has changed since last checkpoint, create new one
-        checkpoint = create_checkpoint(service, message, milestone_id, worker_id)
+      # If codebase hasn't changed since last checkpoint, return it
+      return last_checkpoint.id if last_checkpoint && !codebase_changed?(service)
+
+      # If no last checkpoint and nothing changed, use HEAD
+      if last_checkpoint.nil? && !codebase_changed?(service)
+        head_id = service.current_commit_id
+        checkpoint = service.get_checkpoint(head_id)
         @checkpoints_by_path[path] = checkpoint
-        checkpoint.id
-      else
-        # No changes, return last checkpoint
-        last_checkpoint.id
+        return checkpoint.id
       end
+
+      # Codebase has changed - create new checkpoint
+      checkpoint = create_checkpoint(service, message, milestone_id, worker_id)
+      @checkpoints_by_path[path] = checkpoint
+      checkpoint.id
     end
   end
 
