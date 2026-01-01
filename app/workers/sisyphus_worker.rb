@@ -469,7 +469,7 @@ class SisyphusWorker < BaseWorker
   
   # Generate diffs for changed files
   # @param file_paths [Array<String>]
-  # @return [Hash] Diffs keyed by file path
+  # @return [Hash] Diffs keyed by file path (diff_content strings)
   def generate_diffs_for_changes(file_paths)
     diffs = {}
     
@@ -483,14 +483,15 @@ class SisyphusWorker < BaseWorker
       # In a real implementation, we'd get this from git or cached state
       old_content = ""
       
-      # Generate diff
-      diff = @diff_service.generate_diff(
+      # Generate diff (returns FileDiff object)
+      file_diff = @diff_service.generate_diff(
         file_path: file_path,
         old_content: old_content,
         new_content: new_content
       )
       
-      diffs[file_path] = diff
+      # Store the diff content string
+      diffs[file_path] = file_diff.diff_content
     rescue StandardError => e
       Rails.logger.warn "[SisyphusWorker] Failed to generate diff for #{file_path}: #{e.message}"
     end
@@ -524,18 +525,26 @@ class SisyphusWorker < BaseWorker
   def create_initial_checkpoint
     return unless checkpoint_service_available?
     
-    checkpoint_id = @checkpoint_service.create_checkpoint(
+    checkpoint = @checkpoint_service.create_checkpoint(
       "Execution start: #{@execution_plan.goal}",
       execution_id: @owner_id,
       milestone_id: "initial"
     )
     
-    @execution_record.add_checkpoint(checkpoint_id)
+    # Store in execution record
+    @execution_record.add_checkpoint(checkpoint.id)
+    
+    # Store in memory with full metadata
+    @memory_store.record_checkpoint(checkpoint)
     
     record_decision(
       decision: "initial_checkpoint_created",
       reasoning: "Created initial checkpoint before execution",
-      evidence: { checkpoint_id: checkpoint_id }
+      evidence: { 
+        checkpoint_id: checkpoint.id,
+        short_id: checkpoint.short_id,
+        files_changed: checkpoint.file_count
+      }
     )
   rescue StandardError => e
     Rails.logger.warn "[SisyphusWorker] Failed to create initial checkpoint: #{e.message}"
@@ -549,18 +558,24 @@ class SisyphusWorker < BaseWorker
     
     trigger(:checkpoint)
     
-    checkpoint_id = @checkpoint_service.create_checkpoint(
+    checkpoint = @checkpoint_service.create_checkpoint(
       "#{milestone.title} - Complete",
       milestone_id: milestone.number.to_s,
       execution_id: @owner_id,
       step_ids: milestone.steps.map(&:number)
     )
     
-    @execution_record.add_checkpoint(checkpoint_id)
+    # Store in execution record
+    @execution_record.add_checkpoint(checkpoint.id)
+    
+    # Store in memory with full metadata
+    @memory_store.record_checkpoint(checkpoint)
     
     emit_progress(:checkpoint_created, {
       milestone_number: milestone.number,
-      checkpoint_id: checkpoint_id
+      checkpoint_id: checkpoint.id,
+      short_id: checkpoint.short_id,
+      files_changed: checkpoint.file_count
     })
     
     record_decision(
@@ -568,8 +583,10 @@ class SisyphusWorker < BaseWorker
       reasoning: "Created checkpoint for milestone: #{milestone.title}",
       evidence: { 
         milestone_number: milestone.number,
-        checkpoint_id: checkpoint_id,
-        steps_completed: milestone.step_count
+        checkpoint_id: checkpoint.id,
+        short_id: checkpoint.short_id,
+        steps_completed: milestone.step_count,
+        files_changed: checkpoint.file_count
       }
     )
     

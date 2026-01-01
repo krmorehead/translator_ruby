@@ -5,6 +5,18 @@ Rails.application.routes.draw do
       post "translate", to: "translation#translate"
       post "translate_text", to: "translation#translate_text"
       post "research", to: "research#create"
+      
+      # Checkpoint management routes
+      resources :checkpoints, only: [:create, :index, :show] do
+        member do
+          get "diff"
+          post "rollback"
+        end
+        collection do
+          get "candidates"
+          get "current"
+        end
+      end
     end
   end
   get "/dnd_chat/messages", to: "dnd_chat#messages"
@@ -31,6 +43,9 @@ Rails.application.routes.draw do
 
   # Sisyphus Agent Worker routes
   get "/sisyphus", to: "sisyphus#index"
+  
+  # Checkpoint Manager SPA
+  get "/checkpoints", to: "sisyphus#index"  # Reuse Sisyphus controller for SPA
   
   # Sisyphus API routes
   post "/api/sisyphus/executions", to: "sisyphus#create_execution"

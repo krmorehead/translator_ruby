@@ -46,16 +46,20 @@ class CheckpointServiceTest < ActiveSupport::TestCase
 
   # Checkpoint creation
   speed_profile :fast
-  test "create_checkpoint creates a git commit and returns hash" do
+  test "create_checkpoint creates a git commit and returns Checkpoint object" do
     Dir.chdir(@temp_dir) do
       File.write("test.txt", "test content\n")
       system("git add test.txt")
     end
     
-    checkpoint_id = @service.create_checkpoint("Test checkpoint", milestone_id: "m1")
+    checkpoint = @service.create_checkpoint("Test checkpoint", milestone_id: "m1")
     
-    assert_not_nil checkpoint_id
-    assert_match(/^[0-9a-f]{40}$/, checkpoint_id, "Should return full SHA-1 hash")
+    assert_instance_of Checkpoint, checkpoint
+    assert_not_nil checkpoint.id
+    assert_match(/^[0-9a-f]{40}$/, checkpoint.id, "Should have full SHA-1 hash")
+    assert_includes checkpoint.message, "Test checkpoint"
+    assert_equal "m1", checkpoint.milestone_id
+    assert_includes checkpoint.files_changed, "test.txt"
   end
 
   speed_profile :fast
@@ -65,13 +69,11 @@ class CheckpointServiceTest < ActiveSupport::TestCase
       system("git add file.rb")
     end
     
-    checkpoint_id = @service.create_checkpoint("Custom message", step_ids: ["s1"])
+    checkpoint = @service.create_checkpoint("Custom message", step_ids: ["s1"])
     
-    # Verify commit message
-    Dir.chdir(@temp_dir) do
-      message = `git log -1 --pretty=%B #{checkpoint_id}`.strip
-      assert_includes message, "Custom message"
-    end
+    assert_instance_of Checkpoint, checkpoint
+    assert_includes checkpoint.message, "Custom message"
+    assert_equal ["s1"], checkpoint.step_ids
   end
 
   speed_profile :fast
@@ -82,13 +84,12 @@ class CheckpointServiceTest < ActiveSupport::TestCase
     end
     
     metadata = { milestone_id: "m1", step_ids: ["s1", "s2"], worker_id: "w1" }
-    checkpoint_id = @service.create_checkpoint("With metadata", **metadata)
+    checkpoint = @service.create_checkpoint("With metadata", **metadata)
     
-    stored_metadata = @service.checkpoint_metadata(checkpoint_id)
-    
-    assert_equal "m1", stored_metadata[:milestone_id]
-    assert_equal ["s1", "s2"], stored_metadata[:step_ids]
-    assert_equal "w1", stored_metadata[:worker_id]
+    assert_instance_of Checkpoint, checkpoint
+    assert_equal "m1", checkpoint.milestone_id
+    assert_equal ["s1", "s2"], checkpoint.step_ids
+    assert_equal "w1", checkpoint.worker_id
   end
 
   speed_profile :fast
@@ -98,17 +99,15 @@ class CheckpointServiceTest < ActiveSupport::TestCase
       system("git add prefix_test.txt")
     end
     
-    checkpoint_id = @service.create_checkpoint("Milestone Complete")
+    checkpoint = @service.create_checkpoint("Milestone Complete")
     
-    Dir.chdir(@temp_dir) do
-      message = `git log -1 --pretty=%B #{checkpoint_id}`.strip
-      assert message.start_with?("Sisyphus:"), "Message should start with 'Sisyphus:'"
-    end
+    assert_instance_of Checkpoint, checkpoint
+    assert checkpoint.message.start_with?("Sisyphus:"), "Message should start with 'Sisyphus:'"
   end
 
   # Listing checkpoints
   speed_profile :fast
-  test "list_checkpoints returns array of checkpoints" do
+  test "list_checkpoints returns array of Checkpoint objects" do
     # Create multiple checkpoints
     2.times do |i|
       Dir.chdir(@temp_dir) do
@@ -121,7 +120,8 @@ class CheckpointServiceTest < ActiveSupport::TestCase
     checkpoints = @service.list_checkpoints(limit: 10)
     
     assert_instance_of Array, checkpoints
-    sisyphus_checkpoints = checkpoints.select { |cp| cp[:message].include?("Sisyphus:") }
+    assert checkpoints.all? { |cp| cp.is_a?(Checkpoint) }
+    sisyphus_checkpoints = checkpoints.select { |cp| cp.message.include?("Sisyphus:") }
     assert sisyphus_checkpoints.size >= 2
   end
 
@@ -143,19 +143,20 @@ class CheckpointServiceTest < ActiveSupport::TestCase
 
   # Getting checkpoint details
   speed_profile :fast
-  test "get_checkpoint returns checkpoint details" do
+  test "get_checkpoint returns Checkpoint object" do
     Dir.chdir(@temp_dir) do
       File.write("detail_test.txt", "details\n")
       system("git add .")
     end
     
-    checkpoint_id = @service.create_checkpoint("Detail Test")
-    details = @service.get_checkpoint(checkpoint_id)
+    created_checkpoint = @service.create_checkpoint("Detail Test")
+    retrieved_checkpoint = @service.get_checkpoint(created_checkpoint.id)
     
-    assert_equal checkpoint_id, details[:id]
-    assert_includes details[:message], "Detail Test"
-    assert_instance_of Time, details[:timestamp]
-    assert_instance_of Array, details[:files_changed]
+    assert_instance_of Checkpoint, retrieved_checkpoint
+    assert_equal created_checkpoint.id, retrieved_checkpoint.id
+    assert_includes retrieved_checkpoint.message, "Detail Test"
+    assert_instance_of Time, retrieved_checkpoint.created_at
+    assert_instance_of Array, retrieved_checkpoint.files_changed
   end
 
   speed_profile :fast
@@ -183,7 +184,7 @@ class CheckpointServiceTest < ActiveSupport::TestCase
     end
     checkpoint2 = @service.create_checkpoint("Version 2")
     
-    diff = @service.diff_checkpoint(checkpoint1, checkpoint2)
+    diff = @service.diff_checkpoint(checkpoint1.id, checkpoint2.id)
     
     assert_not_nil diff
     assert_includes diff, "diff1.txt"
@@ -197,14 +198,14 @@ class CheckpointServiceTest < ActiveSupport::TestCase
       File.write("since_test.txt", "initial\n")
       system("git add .")
     end
-    checkpoint_id = @service.create_checkpoint("Before changes")
+    checkpoint = @service.create_checkpoint("Before changes")
     
     # Make uncommitted changes
     Dir.chdir(@temp_dir) do
       File.write("since_test.txt", "modified\n")
     end
     
-    diff = @service.diff_since_checkpoint(checkpoint_id)
+    diff = @service.diff_since_checkpoint(checkpoint.id)
     
     assert_not_nil diff
     assert_includes diff, "since_test.txt"
@@ -217,9 +218,9 @@ class CheckpointServiceTest < ActiveSupport::TestCase
       File.write("valid.txt", "valid\n")
       system("git add .")
     end
-    checkpoint_id = @service.create_checkpoint("Valid")
+    checkpoint = @service.create_checkpoint("Valid")
     
-    assert @service.validate_checkpoint(checkpoint_id)
+    assert @service.validate_checkpoint(checkpoint.id)
   end
 
   speed_profile :fast

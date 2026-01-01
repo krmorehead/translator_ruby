@@ -4,6 +4,7 @@ import InspectorPage from "./pages/InspectorPage";
 import ProjectPlanPage from "./components/ProjectPlanPage";
 import DaedalusPage from "./components/DaedalusPage";
 import SisyphusPage from "./components/SisyphusPage";
+import CheckpointManager from "./components/CheckpointManager";
 import { useChatStore } from "./store/chatStore";
 import "./App.css";
 
@@ -20,6 +21,11 @@ function App() {
   const stopVersionPolling = useChatStore((state) => state.stopVersionPolling);
 
   const path = window.location.pathname;
+
+  // Checkpoint Manager mode
+  if (path.startsWith("/checkpoints")) {
+    return <CheckpointManager />;
+  }
 
   // Sisyphus Agent Worker mode - no initialization needed
   if (path.startsWith("/sisyphus")) {

@@ -32,28 +32,52 @@ class DiffGenerationService
   # @param old_content [String, nil] Content before change (nil for creation)
   # @param new_content [String, nil] Content after change (nil for deletion)
   # @param context_lines [Integer] Number of context lines (default: 3)
-  # @return [String] Unified diff format
+  # @return [FileDiff] FileDiff object with structured diff information
   # @raise [ArgumentError] If file_path missing or invalid parameters
   def generate_diff(file_path:, old_content:, new_content:, context_lines: DEFAULT_CONTEXT_LINES)
     validate_diff_params!(file_path, old_content, new_content)
 
-    # Handle binary files
-    if binary_content?(old_content) || binary_content?(new_content)
-      return generate_binary_diff(file_path, old_content, new_content)
+    # Check if binary
+    is_binary = binary_content?(old_content) || binary_content?(new_content)
+
+    # Determine change type
+    change_type = if new_content.nil?
+      FileDiff::DELETED
+    elsif old_content.nil? || old_content.empty?
+      FileDiff::ADDED
+    else
+      FileDiff::MODIFIED
     end
 
-    # Handle file deletion
-    if new_content.nil?
-      return generate_deletion_diff(file_path, old_content)
+    # Generate diff content
+    if is_binary
+      diff_content = generate_binary_diff_content(file_path, old_content, new_content)
+      insertions = 0
+      deletions = 0
+    else
+      diff_content = case change_type
+      when FileDiff::DELETED
+        generate_deletion_diff(file_path, old_content)
+      when FileDiff::ADDED
+        generate_creation_diff(file_path, new_content)
+      else
+        generate_modification_diff(file_path, old_content, new_content, context_lines)
+      end
+
+      # Calculate stats
+      stats = calculate_diff_stats(diff_content)
+      insertions = stats[:insertions]
+      deletions = stats[:deletions]
     end
 
-    # Handle file creation
-    if old_content.nil? || old_content.empty?
-      return generate_creation_diff(file_path, new_content)
-    end
-
-    # Handle modification
-    generate_modification_diff(file_path, old_content, new_content, context_lines)
+    FileDiff.new(
+      file_path: file_path,
+      change_type: change_type,
+      insertions: insertions,
+      deletions: deletions,
+      diff_content: diff_content,
+      is_binary: is_binary
+    )
   end
 
   # Generate a workspace-wide diff from a ChangeSet
@@ -76,9 +100,27 @@ class DiffGenerationService
   
   # Calculate statistics for a diff, with special handling for workspace diffs from ChangeSets
   #
-  # @param diff [String, Execution::ChangeSet] Diff content or ChangeSet
+  # @param diff [String, FileDiff, Execution::ChangeSet, Array<FileDiff>] Diff content or objects
   # @return [Hash] Statistics with :lines_added, :lines_removed, :files_changed
   def diff_stats(diff)
+    # Handle FileDiff object
+    if diff.is_a?(FileDiff)
+      return {
+        lines_added: diff.insertions,
+        lines_removed: diff.deletions,
+        files_changed: 1
+      }
+    end
+    
+    # Handle Array of FileDiff objects
+    if diff.is_a?(Array) && diff.all? { |d| d.is_a?(FileDiff) }
+      return {
+        lines_added: diff.sum(&:insertions),
+        lines_removed: diff.sum(&:deletions),
+        files_changed: diff.size
+      }
+    end
+    
     # Handle ChangeSet directly
     if diff.is_a?(Execution::ChangeSet)
       files_changed = diff.files.size
@@ -162,7 +204,7 @@ class DiffGenerationService
   end
 
   # Diff generation methods
-  def generate_binary_diff(file_path, old_content, new_content)
+  def generate_binary_diff_content(file_path, old_content, new_content)
     if new_content.nil?
       "Binary file #{file_path} deleted\n"
     elsif old_content.nil?
@@ -170,6 +212,20 @@ class DiffGenerationService
     else
       "Binary file #{file_path} modified\n"
     end
+  end
+  
+  def calculate_diff_stats(diff_content)
+    lines = diff_content.split("\n")
+    
+    insertions = lines.count do |line|
+      line.start_with?("+") && !line.start_with?("+++")
+    end
+    
+    deletions = lines.count do |line|
+      line.start_with?("-") && !line.start_with?("---")
+    end
+    
+    { insertions: insertions, deletions: deletions }
   end
 
   def generate_deletion_diff(file_path, old_content)

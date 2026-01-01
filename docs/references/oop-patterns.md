@@ -1189,10 +1189,881 @@ end
 
 ---
 
+### Lesson 14: Deep Validation for Collection Parameters
+
+**Problem:** Validating that a parameter is an Array is not enough - the array elements must also be validated to prevent runtime errors.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Only validates container type, not contents
+class Checkpoint
+  def initialize(id:, files_changed: [])
+    raise TypeError, "files_changed must be an Array" unless files_changed.is_a?(Array)
+    @files_changed = files_changed
+  end
+end
+
+# Later in code:
+checkpoint = Checkpoint.new(id: "abc", files_changed: ["file.rb", 123, nil])
+# No error! But files_changed now contains invalid types
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Validates both container and contents
+class Checkpoint
+  def initialize(id:, files_changed: [])
+    validate_files_changed!(files_changed)
+    @files_changed = files_changed
+  end
+
+  private
+
+  def validate_files_changed!(files_changed)
+    raise TypeError, "files_changed must be an Array, got #{files_changed.class}" unless files_changed.is_a?(Array)
+    
+    # Validate ALL elements
+    unless files_changed.all? { |f| f.is_a?(String) }
+      invalid_types = files_changed.map(&:class).uniq - [String]
+      raise TypeError, "files_changed must contain only Strings, found: #{invalid_types.join(', ')}"
+    end
+  end
+end
+```
+
+**Key Principles:**
+1. **Deep Validation** - Check container type AND element types
+2. **Descriptive Errors** - Show what invalid types were found
+3. **Fail Fast** - Catch errors at object creation, not later during iteration
+4. **Type Safety** - Guarantee internal state is always valid
+
+**Why This Matters:**
+- Prevents `NoMethodError` when calling String methods on non-strings
+- Makes debugging easier (fails at creation, not usage)
+- Documents expected types clearly
+- Enables safe iteration without type checking
+
+---
+
+### Lesson 15: Immutable Collection Accessors
+
+**Problem:** Exposing mutable collections via `attr_reader` allows external code to modify internal state, violating encapsulation.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Exposes mutable array
+class CheckpointRegistry
+  attr_reader :checkpoints  # Returns @checkpoints array directly
+  
+  def initialize
+    @checkpoints = []
+  end
+  
+  def add(checkpoint)
+    @checkpoints << checkpoint
+  end
+end
+
+# External code can break invariants:
+registry = CheckpointRegistry.new
+registry.checkpoints << "not a checkpoint"  # BAD!
+registry.checkpoints.clear  # BAD!
+registry.checkpoints.sort!  # Changes internal order!
+```
+
+**Good Pattern - Option 1: Defensive Copy:**
+```ruby
+# ✅ GOOD: Return frozen copy
+class CheckpointRegistry
+  def initialize
+    @checkpoints = []
+  end
+  
+  # Return defensive copy
+  def all
+    @checkpoints.dup.freeze
+  end
+  
+  def add(checkpoint)
+    validate_checkpoint!(checkpoint)
+    @checkpoints << checkpoint
+  end
+end
+
+# External code cannot mutate:
+registry = CheckpointRegistry.new
+registry.all << "test"  # RuntimeError: can't modify frozen Array
+```
+
+**Good Pattern - Option 2: Enumerable Interface:**
+```ruby
+# ✅ BETTER: Provide iteration methods, don't expose array
+class CheckpointRegistry
+  include Enumerable
+  
+  def initialize
+    @checkpoints = []
+  end
+  
+  # Implement Enumerable interface
+  def each(&block)
+    @checkpoints.each(&block)
+  end
+  
+  # Provide specific query methods
+  def count
+    @checkpoints.size
+  end
+  
+  def latest
+    @checkpoints.last
+  end
+  
+  def find(id)
+    @checkpoints.find { |cp| cp.id == id }
+  end
+end
+
+# External code can iterate but not mutate:
+registry.each { |cp| puts cp.id }  # Works
+registry.map(&:id)  # Works
+registry.clear  # NoMethodError - collection is protected
+```
+
+**Key Principles:**
+1. **Never expose mutable collections** - Use `dup.freeze` or provide iterator methods
+2. **Prefer Enumerable** - Implement `each` and include `Enumerable` for full interface
+3. **Specific accessors** - Provide query methods for common operations
+4. **Protect invariants** - Internal state cannot be corrupted from outside
+
+**Why This Matters:**
+- Maintains encapsulation
+- Prevents accidental mutations
+- Makes threading safer (immutable data)
+- Clear API (explicit methods vs. array manipulation)
+
+---
+
+### Lesson 16: Polymorphic Parameters with Type Guards
+
+**Problem:** APIs often need to accept multiple related types (domain object or primitive ID), requiring type extraction logic.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Callers must always convert to ID
+class GitRollbackService
+  def rollback_to(checkpoint_id)  # Only accepts String
+    # ...
+  end
+end
+
+# Usage requires conversion:
+checkpoint = find_checkpoint(...)
+service.rollback_to(checkpoint.id)  # Caller must know to extract ID
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Accept both types with type guard
+class GitRollbackService
+  def rollback_to(checkpoint, strategy: :hard)
+    checkpoint_id = extract_checkpoint_id(checkpoint)
+    # ...
+  end
+
+  private
+
+  def extract_checkpoint_id(checkpoint)
+    case checkpoint
+    when Checkpoint
+      checkpoint.id
+    when String
+      checkpoint
+    else
+      raise TypeError, "checkpoint must be a Checkpoint or String, got #{checkpoint.class}"
+    end
+  end
+end
+
+# Usage is flexible:
+service.rollback_to(checkpoint)          # Pass object
+service.rollback_to("abc123")            # Or pass ID directly
+service.rollback_to(123)                 # TypeError with clear message
+```
+
+**Key Principles:**
+1. **Flexible API** - Accept related types that make sense
+2. **Type Guard** - Extract/convert in one place with validation
+3. **Fail Fast** - Raise TypeError for unsupported types
+4. **Clear Errors** - Show what types are accepted
+
+**Benefits:**
+- Convenient for callers (don't need to know internal representation)
+- Type safety maintained (validation in one place)
+- Easy to extend (add more types to the case statement)
+- Self-documenting (error message lists valid types)
+
+---
+
+### Lesson 17: Structured Result Hashes for Decisions
+
+**Problem:** Methods that make decisions should return both the decision AND the reasoning for logging and debugging.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Only returns boolean
+class CheckpointPolicy
+  def should_checkpoint?(context)
+    return false unless config[:enabled]
+    return false if too_soon?(context[:last_checkpoint])
+    true
+  end
+end
+
+# Usage: No insight into WHY
+if policy.should_checkpoint?(context)
+  create_checkpoint
+else
+  # Why not? Who knows!
+  logger.info "Not creating checkpoint"
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Returns decision + reasoning
+class CheckpointPolicy
+  def should_checkpoint?(context)
+    unless config[:enabled]
+      return { should_checkpoint: false, reason: "Checkpoints disabled in config" }
+    end
+    
+    if too_soon?(context[:last_checkpoint])
+      return {
+        should_checkpoint: false,
+        reason: "Minimum interval not elapsed (#{config[:min_interval]}s required)"
+      }
+    end
+    
+    { should_checkpoint: true, reason: "Checkpoint interval elapsed" }
+  end
+end
+
+# Usage: Can log reasoning
+result = policy.should_checkpoint?(context)
+if result[:should_checkpoint]
+  logger.info "Creating checkpoint: #{result[:reason]}"
+  create_checkpoint
+else
+  logger.info "Skipping checkpoint: #{result[:reason]}"
+end
+```
+
+**Key Principles:**
+1. **Structured Results** - Return hash with decision and reasoning
+2. **Always Include Reason** - For both positive and negative decisions
+3. **Actionable Reasons** - Include relevant values/thresholds
+4. **Consistent Structure** - Same keys for all code paths
+
+**Benefits:**
+- Better logging (know why decisions were made)
+- Easier debugging (can trace decision logic)
+- Better UX (can show user why action was/wasn't taken)
+- Self-documenting (reason explains the logic)
+
+---
+
+### Lesson 18: Shell Command Escaping
+
+**Problem:** Building shell commands with string interpolation is dangerous - special characters can break commands or enable injection attacks.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Manual escaping is fragile and incomplete
+def create_backup(message)
+  escaped = message.gsub("'", "\\\\'")  # Only handles single quotes
+  result = `git commit -m '#{escaped}'`
+end
+
+# Breaks with: message = "It's done & saved"
+# Results in: git commit -m 'It'\''s done & saved'
+# The & becomes part of shell syntax!
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Use Shellwords for proper escaping
+require 'shellwords'
+
+def create_backup(message)
+  escaped_message = Shellwords.escape(message)
+  result = `git commit -m #{escaped_message}`
+end
+
+# Handles all special characters:
+# message = "It's done & saved"
+# Becomes: git commit -m It\'s\ done\ \&\ saved
+```
+
+**Best Pattern for Complex Commands:**
+```ruby
+# ✅ BEST: Use array form with Open3 (no shell interpolation)
+require 'open3'
+
+def create_backup(message)
+  stdout, stderr, status = Open3.capture3(
+    'git', 'commit', '-m', message  # Each arg is separate - no escaping needed!
+  )
+  
+  {
+    success: status.success?,
+    output: status.success? ? stdout : stderr
+  }
+end
+```
+
+**Key Principles:**
+1. **Never trust input** - Always escape user-provided strings
+2. **Use Shellwords** - For string interpolation in shell commands
+3. **Prefer array form** - With Open3.capture3 when possible
+4. **Test edge cases** - Try strings with quotes, spaces, special chars
+
+**Why This Matters:**
+- Security: Prevents command injection
+- Correctness: Handles all special characters
+- Reliability: No silent failures from broken commands
+
+---
+
+### Lesson 19: Automatic Collection Ordering
+
+**Problem:** Collections that have a natural order should maintain that order automatically, not require callers to sort.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Caller must remember to sort
+class CheckpointRegistry
+  def add(checkpoint)
+    @checkpoints << checkpoint
+    # No sorting - order is arbitrary
+  end
+  
+  def latest
+    @checkpoints.sort_by(&:created_at).last  # Sorting every time!
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Maintain order automatically
+class CheckpointRegistry
+  def add(checkpoint)
+    validate_checkpoint!(checkpoint)
+    @checkpoints << checkpoint
+    @checkpoints.sort_by!(&:created_at)  # Always maintain chronological order
+    @checkpoint_map[checkpoint.id] = checkpoint
+    checkpoint
+  end
+  
+  def latest
+    @checkpoints.last  # Always returns latest due to maintained order
+  end
+end
+```
+
+**Key Principles:**
+1. **Maintain Invariants** - Keep collection in correct state at all times
+2. **Sort on Modification** - Not on access (pay cost once, not every time)
+3. **Document Ordering** - Make it clear in docs that collection is ordered
+4. **Efficient Access** - `latest` is O(1) instead of O(n log n)
+
+**Benefits:**
+- Simpler API (callers don't need to sort)
+- Better performance (sort once, not every access)
+- Guaranteed correctness (order can't be wrong)
+- Clear semantics (order is part of the contract)
+
+---
+
+### Lesson 20: Required Parameters and No Defensive Nil Checks
+
+**Problem:** Optional parameters with default values lead to defensive `nil` checks throughout the codebase, making code harder to reason about and hiding bugs.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Optional parameter with nil default
+class WorkflowMemoryStore
+  def initialize(owner_id:, workflow_id:, workflow_name:, path: nil)
+    @path = path || default_path
+    @last_transition_at = nil
+  end
+
+  def calculate_duration
+    return 0 unless @last_transition_at  # Defensive nil check
+    Time.now.utc - @last_transition_at
+  end
+
+  def current_checkpoint_id
+    return nil unless @path  # Defensive nil check
+    CheckpointTracker.instance.current_id(path: @path)
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Required parameters, always initialized
+class WorkflowMemoryStore
+  def initialize(owner_id:, workflow_id:, workflow_name:, path:)
+    raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.empty?
+    raise ArgumentError, "workflow_id is required" if workflow_id.nil? || workflow_id.empty?
+    raise ArgumentError, "path is required" if path.nil? || path.empty?
+
+    @owner_id = owner_id
+    @workflow_id = workflow_id
+    @workflow_name = workflow_name
+    @path = path
+    @last_transition_at = Time.now.utc  # Always initialized
+  end
+
+  def calculate_duration
+    # No nil check - @last_transition_at is always a Time object
+    Time.now.utc - @last_transition_at
+  end
+
+  def current_checkpoint_id
+    # No nil check - @path is always present
+    CheckpointTracker.instance.current_id(path: @path)
+  end
+end
+```
+
+**Key Principles:**
+1. **Make required parameters explicit** - No defaults for essential values
+2. **Validate in constructor** - Fail fast with clear error messages
+3. **Initialize all instance variables** - Never leave them nil if they'll be used
+4. **No defensive nil checks** - If something is required, enforce it at creation
+5. **Subclass for variations** - Create specialized classes instead of optional behavior
+
+**When to Use Optional Parameters:**
+```ruby
+# ✅ Optional parameters are OK for true options/configuration
+class MyService
+  def initialize(path:, retry_count: 3, timeout: 30)
+    # These are configuration options with sensible defaults
+    @path = path  # Required
+    @retry_count = retry_count  # Optional with default
+    @timeout = timeout  # Optional with default
+  end
+end
+```
+
+**Why This Matters:**
+- **Eliminates entire classes of bugs** - No more `NoMethodError` on nil
+- **Clearer intent** - Required parameters document dependencies
+- **Simpler code** - No defensive checks scattered throughout
+- **Better errors** - Fail at construction time, not deep in execution
+- **Type safety** - Instance variables have known, guaranteed types
+
+**Migration Strategy:**
+1. Identify optional parameters that are actually required
+2. Change default values from `nil` to required (remove `= nil`)
+3. Add validation in constructor
+4. Initialize all instance variables that will be used
+5. Remove all defensive `return if @var.nil?` checks
+6. Update all call sites to provide required parameters
+
+---
+
+### Lesson 21: Singleton Pattern for Global State Tracking
+
+**Problem:** Services that track global state (like current codebase checkpoint) need to be accessible from anywhere without being passed through every layer.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Pass checkpoint service through every layer
+class Worker
+  def initialize(...)
+    @checkpoint_service = CheckpointService.new(path: @path)
+  end
+
+  def create_memory_store
+    WorkflowMemoryStore.new(..., checkpoint_service: @checkpoint_service)
+  end
+end
+
+class WorkflowMemoryStore
+  def initialize(..., checkpoint_service:)
+    @checkpoint_service = checkpoint_service
+  end
+
+  def record_decision(...)
+    checkpoint_id = @checkpoint_service.current_checkpoint_id
+    # ...
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Singleton for global state
+module CheckpointTracker
+  include Singleton
+
+  def current_id(path:, message: nil, metadata: {})
+    @mutex.synchronize do
+      # Automatically create checkpoint if codebase changed
+      service = checkpoint_service_for(path)
+      if codebase_changed?(service)
+        create_checkpoint(service, path, message, metadata).id
+      else
+        @last_checkpoint[path].id
+      end
+    end
+  end
+end
+
+class WorkflowMemoryStore
+  def record_decision(...)
+    # Access singleton directly - no dependency injection needed
+    checkpoint_id = CheckpointTracker.instance.current_id(path: extract_repo_path)
+    # ...
+  end
+end
+```
+
+**Key Principles:**
+1. **Use for truly global state** - Current checkpoint, configuration, caches
+2. **Thread-safe with mutex** - Protect shared state with synchronization
+3. **Lazy initialization** - Create resources on first use per path/key
+4. **Clear, simple API** - `CheckpointTracker.instance.current_id(path: ...)`
+5. **Automatic behavior** - Checkpoint created only when codebase changes
+
+**When to Use Singleton:**
+- **Global system state** - Current checkpoint, application config
+- **Resource pools** - Database connections, HTTP clients
+- **Caches** - Memoization across requests
+- **System-wide coordinators** - Job schedulers, event buses
+
+**When NOT to Use Singleton:**
+- **Business logic** - Use regular services injected as dependencies
+- **Per-request state** - Use instance variables or request objects
+- **Testable collaborators** - Use dependency injection for easier mocking
+
+**Why This Matters:**
+- **Eliminates parameter threading** - No passing through every layer
+- **Single source of truth** - One place tracks global state
+- **Automatic management** - Handles creation/caching transparently
+- **Cleaner interfaces** - Classes don't need irrelevant constructor params
+
+---
+
+### Lesson 22: Validation Belongs in Constructors, Not Service Methods
+
+**Problem:** Services that validate inputs create redundant checks and hide the true contract. Validation should happen once at object creation, not at every method call.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Service validates inputs
+class VectorizationService
+  def vectorize(text:)
+    raise TypeError, "text must be a String, got #{text.class}" unless text.is_a?(String)
+    raise ArgumentError, "text cannot be empty" if text.empty?
+    
+    embedding = @llm_client.embed(text: text)
+    raise TypeError, "LLM client must return an Embedding, got #{embedding.class}" unless embedding.is_a?(Embedding)
+    
+    embedding
+  end
+
+  def find_similar(query_embedding:, memories:, threshold: 0.70)
+    raise TypeError, "query_embedding must be an Embedding" unless query_embedding.is_a?(Embedding)
+    raise TypeError, "memories must be an Array" unless memories.is_a?(Array)
+    raise ArgumentError, "threshold must be between 0.0 and 1.0" unless threshold.between?(0.0, 1.0)
+    
+    # ... actual logic ...
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Domain objects validate, services trust
+class Embedding
+  def initialize(vector:, text:)
+    raise TypeError, "vector must be an Array, got #{vector.class}" unless vector.is_a?(Array)
+    raise TypeError, "text must be a String, got #{text.class}" unless text.is_a?(String)
+    raise ArgumentError, "text cannot be empty" if text.empty?
+    raise ArgumentError, "vector dimension must be #{STANDARD_DIMENSION}" unless vector.length == STANDARD_DIMENSION
+    
+    @vector = vector.freeze
+    @text = text.freeze
+    freeze
+  end
+end
+
+class VectorizationService
+  # Service trusts inputs - validation happened at construction
+  def vectorize(text:)
+    @llm_client.embed(text: text)  # Returns Embedding (validated in constructor)
+  end
+
+  def find_similar(query_embedding:, memories:, threshold: DEFAULT_SIMILARITY_THRESHOLD)
+    # No validation - query_embedding is an Embedding (already validated)
+    # memories contain objects with #embedding (enforced by type system)
+    results = memories.filter_map do |memory|
+      memory_embedding = memory.embedding
+      similarity = query_embedding.similarity_to(memory_embedding)
+      { memory: memory, similarity: similarity } if similarity >= threshold
+    end
+    results.sort_by { |r| -r[:similarity] }
+  end
+end
+```
+
+**Key Principles:**
+1. **Validate once in constructors** - Domain objects enforce their invariants
+2. **Services trust their inputs** - Assume correct types were passed
+3. **Let errors propagate naturally** - NoMethodError reveals contract violations
+4. **Type system as documentation** - Method signatures show expected types
+
+**Why This Works:**
+- **Impossible invalid states** - Can't create invalid domain objects
+- **Clearer contracts** - Method signatures reveal expectations
+- **Less redundant code** - Validation written once, not everywhere
+- **Better errors** - NoMethodError on wrong type is clear enough
+- **Fail fast at construction** - Problems caught when object is created
+
+**Example Flow:**
+```ruby
+# BAD: Validate at every step
+text = "some text"
+raise TypeError unless text.is_a?(String)  # Check 1
+embedding = service.vectorize(text: text)  # Check 2 inside service
+raise TypeError unless embedding.is_a?(Embedding)  # Check 3
+results = service.find_similar(query_embedding: embedding, ...)  # Check 4 inside service
+
+# GOOD: Validate once at construction
+text = "some text"
+embedding = Embedding.new(vector: [...], text: text)  # Validates here
+results = service.find_similar(query_embedding: embedding, ...)  # Trusts type
+```
+
+**When Services Do Validate:**
+- **Configuration/options with defaults** - e.g., `threshold.between?(0.0, 1.0)`
+- **Business rules** - e.g., "cannot refund after 30 days"
+- **External constraints** - e.g., "API rate limit exceeded"
+
+**When Services Don't Validate:**
+- **Type checking** - Domain objects handle this
+- **Required parameters** - Handled by keyword arguments
+- **Format validation** - Domain objects enforce format
+- **Nil checks** - Required parameters prevent nil
+
+**Benefits:**
+- Services focus on business logic, not validation
+- Single source of truth for what makes a valid object
+- Easier to test (construct valid objects in setup)
+- Clearer separation of concerns
+- Less defensive programming
+
+---
+
+### Lesson 24: Speed Profile Categorization
+
+**Problem:** Tests with incorrect speed profiles either timeout unnecessarily or hide performance issues.
+
+**Speed Profile Guidelines:**
+
+**Fast (<10s):**
+- Unit tests with no external dependencies
+- Pure logic, validation, serialization
+- In-memory operations
+- Object construction and manipulation
+- 95% of tests should be fast
+
+**Medium (10-60s):**
+- Single LLM API calls with tight context
+- Embedding generation (small text)
+- Database queries with reasonable data
+- File I/O operations
+- Integration tests with one external service
+
+**Slow (60-120s):**
+- Multiple LLM API calls
+- Large context processing
+- Complex workflow execution
+- Full end-to-end system tests
+- Tests that process significant data
+
+**Examples:**
+
+```ruby
+# ✅ FAST - Pure object logic
+speed_profile :fast
+test "validates required parameters" do
+  error = assert_raises(ArgumentError) do
+    Decision.new(decision: "", rationale: "test", context: {}, checkpoint_id: "abc", state: :planning)
+  end
+  assert_match(/decision cannot be empty/, error.message)
+end
+
+# ✅ FAST - Serialization round-trip
+speed_profile :fast
+test "serializes and deserializes correctly" do
+  original = Decision.new(decision: "test", rationale: "test", context: {}, checkpoint_id: "abc", state: :planning)
+  hash = original.to_h
+  reconstructed = Decision.from_h(hash)
+  assert_equal original.decision, reconstructed.decision
+end
+
+# ✅ MEDIUM - Single embedding call with small text
+speed_profile :medium
+test "generates embedding lazily" do
+  decision = Decision.new(decision: "test decision", rationale: "test rationale", context: {}, checkpoint_id: "abc", state: :planning)
+  embedding1 = decision.embedding
+  embedding2 = decision.embedding
+  assert_equal embedding1.object_id, embedding2.object_id
+  assert_instance_of Embedding, embedding1
+end
+
+# ✅ MEDIUM - Vector similarity with two embeddings
+speed_profile :medium
+test "similarity_to compares with another decision" do
+  decision1 = Decision.new(decision: "Implement logging", rationale: "Better debugging", context: {}, checkpoint_id: "abc", state: :planning)
+  decision2 = Decision.new(decision: "Add error tracking", rationale: "Improved monitoring", context: {}, checkpoint_id: "def", state: :planning)
+  similarity = decision1.similarity_to(decision2)
+  assert similarity >= 0.0
+  assert similarity <= 1.0
+end
+
+# ✅ SLOW - Full workflow with multiple LLM calls
+speed_profile :slow
+test "executes complete planning workflow" do
+  workflow = PlanningWorkflow.new(goal: "Build feature X")
+  result = workflow.execute
+  assert result.success?
+  assert result.steps.length > 0
+end
+```
+
+**Key Principles:**
+1. **Default to fast** - Most tests should be fast
+2. **Tight context = medium** - Small LLM calls fit in 60s
+3. **Large context = slow** - Multiple calls or big context needs 120s
+4. **Measure actual times** - If test exceeds profile, move it up
+5. **No buffer padding** - Categorize based on actual expected time
+
+**Why This Matters:**
+- Fast feedback loops for developers
+- Parallel execution optimization
+- Clear expectations for test runtime
+- CI/CD pipeline efficiency
+
+---
+
+### Lesson 23: No Skips in Tests - Test Real Behavior
+
+**Problem:** Tests that skip functionality or check ENV variables undermine test suite reliability and hide configuration issues.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Skipping tests based on environment
+test "generates embedding lazily" do
+  skip "Requires LLM client configuration" unless ENV["OPENAI_API_KEY"]
+  
+  embedding = memory.embedding
+  assert_instance_of Embedding, embedding
+end
+
+# ❌ BAD: Conditional test behavior based on ENV
+test "calls external API" do
+  if ENV["RUN_INTEGRATION_TESTS"]
+    result = api.call
+    assert result.success?
+  else
+    skip "Integration tests disabled"
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Test real behavior, trust configuration
+test "generates embedding lazily" do
+  decision = WorkflowMemories::Decision.new(
+    decision: "test decision",
+    rationale: "test rationale",
+    context: {},
+    checkpoint_id: "abc",
+    state: :planning
+  )
+  
+  embedding1 = decision.embedding
+  embedding2 = decision.embedding
+  
+  # Memoization works - same object returned
+  assert_equal embedding1.object_id, embedding2.object_id
+  assert_instance_of Embedding, embedding1
+  assert_equal 1536, embedding1.dimension
+end
+
+# ✅ GOOD: Test with real service, let it fail if misconfigured
+test "vectorization service generates embeddings" do
+  service = VectorizationService.new
+  embedding = service.vectorize(text: "test content")
+  
+  assert_instance_of Embedding, embedding
+  assert_equal "test content", embedding.text
+  assert_equal 1536, embedding.vector.length
+end
+```
+
+**Key Principles:**
+1. **Never skip tests** - If a test can't run, the test suite is broken
+2. **No ENV checks in tests** - Configuration should always work
+3. **Test real behavior** - Don't mock what you should be testing
+4. **Fail loudly** - Better to fail with clear error than silently skip
+5. **Separate test types** - Use test directories, not skips (e.g., `test/unit/`, `test/integration/`)
+
+**Why This Matters:**
+- **Reliability** - Skipped tests hide problems until production
+- **Confidence** - Green suite means everything works, not "everything except skipped tests"
+- **Configuration** - Forces proper test environment setup
+- **Documentation** - Tests show how code actually works
+- **CI/CD** - Automated builds catch configuration issues early
+
+**Global Configuration:**
+- Use `API_KEY` environment variable for all LLM APIs globally
+- Test environment should have all necessary configuration
+- If config is missing, tests fail with clear message (not skip)
+
+**Test Organization Instead of Skips:**
+```
+test/
+├── unit/          # Fast, no external dependencies
+├── integration/   # Real APIs, databases, etc.
+└── system/        # Full end-to-end tests
+
+# Run different suites:
+rails test:unit              # Fast unit tests
+rails test:integration       # Integration tests
+rails test                   # Everything
+```
+
+**Migration from Skips:**
+- Remove all `skip` calls
+- Remove ENV checks from test code
+- Fix configuration issues that caused skips
+- Let tests fail if environment isn't set up correctly
+- Use descriptive error messages if something is missing
+
+---
+
 ## References
 
 - [Serialization Guide](./serialization-guide.md)
 - SOLID Principles
 - Ruby Style Guide
 - Domain-Driven Design patterns
-

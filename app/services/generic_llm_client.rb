@@ -34,6 +34,12 @@ module GenericLlmClient
       port: 52003,
       max_context: 64000,
       base_url: "LLM_URL"
+    },
+    embeddings: {
+      model_name: "./vllm/models/all-MiniLM-L6-v2",
+      port: 52005,  # Separate embedding model server
+      max_context: 8191,  # Max tokens for embedding input
+      base_url: "LLM_URL"
     }
   }.freeze
 
@@ -140,7 +146,52 @@ module GenericLlmClient
       raise last_error
     end
 
-    
+    # Generate embedding for text
+    # @param text [String] Text to embed
+    # @return [Embedding] Embedding domain object
+    # @raise [TypeError] If text is not a String
+    # @raise [ArgumentError] If text is empty
+    def embed(text:)
+      raise TypeError, "text must be a String, got #{text.class}" unless text.is_a?(String)
+      raise ArgumentError, "text cannot be empty" if text.empty?
+
+      parameters = {
+        model: GenericLlmClient.model_for(@capability),
+        input: text
+      }
+
+      last_error = nil
+      @attempts.times do |i|
+        begin
+          response = @client.embeddings(parameters: parameters)
+          vector = extract_embedding_vector(response)
+          return Embedding.new(vector: vector, text: text)
+        rescue *GenericLlmClient::RETRY_ERRORS => e
+          last_error = e
+          log(:warn, "Embedding retry attempt #{i + 1}/#{@attempts} after error: #{e.message}")
+          sleep(@delay) if i < @attempts - 1
+        end
+      end
+      raise last_error
+    end
+
+    private
+
+    def extract_embedding_vector(response)
+      raise TypeError, "Response must have data array" unless response.dig("data")
+      raise TypeError, "Response data must be an Array" unless response["data"].is_a?(Array)
+      raise ArgumentError, "Response data is empty" if response["data"].empty?
+      
+      embedding_data = response["data"][0]
+      raise TypeError, "Embedding data must be a Hash" unless embedding_data.is_a?(Hash)
+      raise ArgumentError, "Embedding missing 'embedding' key" unless embedding_data.key?("embedding")
+      
+      vector = embedding_data["embedding"]
+      raise TypeError, "Embedding vector must be an Array" unless vector.is_a?(Array)
+      
+      vector
+    end
+
     def log_token_usage(parameters)
       tokens = estimate_tokens(parameters)
       caller_info = extract_caller_info

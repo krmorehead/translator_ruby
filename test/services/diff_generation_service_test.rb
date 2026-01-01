@@ -24,10 +24,15 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
       new_content: new_content
     )
     
-    assert_not_nil diff
-    assert_includes diff, "+class Example"
-    assert_includes diff, "+  def test"
-    assert_includes diff, "+    puts 'hello'"
+    assert_instance_of FileDiff, diff
+    assert_equal "app/models/example.rb", diff.file_path
+    assert_equal :added, diff.change_type
+    assert diff.added?
+    assert diff.insertions > 0
+    assert_equal 0, diff.deletions
+    assert_includes diff.diff_content, "+class Example"
+    assert_includes diff.diff_content, "+  def test"
+    assert_includes diff.diff_content, "+    puts 'hello'"
   end
 
   speed_profile :fast
@@ -40,8 +45,9 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
       new_content: new_content
     )
     
-    assert_not_nil diff
-    assert_includes diff, "+# New file"
+    assert_instance_of FileDiff, diff
+    assert_equal :added, diff.change_type
+    assert_includes diff.diff_content, "+# New file"
   end
 
   # File modification diffs
@@ -56,9 +62,13 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
       new_content: new_content
     )
     
-    assert_not_nil diff
-    assert_includes diff, "-    puts 'old'"
-    assert_includes diff, "+    puts 'new'"
+    assert_instance_of FileDiff, diff
+    assert_equal :modified, diff.change_type
+    assert diff.modified?
+    assert diff.insertions > 0
+    assert diff.deletions > 0
+    assert_includes diff.diff_content, "-    puts 'old'"
+    assert_includes diff.diff_content, "+    puts 'new'"
   end
 
   speed_profile :fast
@@ -72,10 +82,11 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
       new_content: new_content
     )
     
-    assert_includes diff, "line2", "Should include context before change"
-    assert_includes diff, "line4", "Should include context after change"
-    assert_includes diff, "-line3"
-    assert_includes diff, "+changed"
+    assert_instance_of FileDiff, diff
+    assert_includes diff.diff_content, "line2", "Should include context before change"
+    assert_includes diff.diff_content, "line4", "Should include context after change"
+    assert_includes diff.diff_content, "-line3"
+    assert_includes diff.diff_content, "+changed"
   end
 
   # File deletion diffs
@@ -89,9 +100,13 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
       new_content: nil
     )
     
-    assert_not_nil diff
-    assert_includes diff, "-class Example"
-    assert_includes diff, "-  def test"
+    assert_instance_of FileDiff, diff
+    assert_equal :deleted, diff.change_type
+    assert diff.deleted?
+    assert_equal 0, diff.insertions
+    assert diff.deletions > 0
+    assert_includes diff.diff_content, "-class Example"
+    assert_includes diff.diff_content, "-  def test"
   end
 
   # Diff stats
@@ -207,7 +222,9 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
     )
     
     # Minimal diff should be shorter
-    assert diff_minimal.length < diff_default.length
+    assert_instance_of FileDiff, diff_default
+    assert_instance_of FileDiff, diff_minimal
+    assert diff_minimal.diff_content.length < diff_default.diff_content.length
   end
 
   # Format for display
@@ -255,10 +272,12 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
       new_content: content
     )
     
-    # No changes, should return empty or minimal diff
-    assert_not_nil diff
-    refute_includes diff, "+"
-    refute_includes diff, "-"
+    # No changes, should return FileDiff with no insertions/deletions
+    assert_instance_of FileDiff, diff
+    assert_equal 0, diff.insertions
+    assert_equal 0, diff.deletions
+    refute_includes diff.diff_content, "+"
+    refute_includes diff.diff_content, "-"
   end
 
   speed_profile :fast
@@ -269,7 +288,8 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
       new_content: ""
     )
     
-    assert_not_nil diff
+    assert_instance_of FileDiff, diff
+    assert_equal :added, diff.change_type
   end
 
   speed_profile :fast
@@ -283,8 +303,10 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
       new_content: new_content
     )
     
-    # Should indicate binary file, not show byte-level diff
-    assert_includes diff.downcase, "binary"
+    # Should return FileDiff with is_binary flag
+    assert_instance_of FileDiff, diff
+    assert diff.is_binary, "Should be marked as binary"
+    assert_includes diff.diff_content.downcase, "binary"
   end
 
   # Validation
@@ -309,9 +331,10 @@ class DiffGenerationServiceTest < ActiveSupport::TestCase
       new_content: nil
     )
     
-    # Deletion should work - should return a diff showing file deleted
-    assert_not_nil diff
-    assert_includes diff, "-old content"
+    # Deletion should work - should return a FileDiff showing file deleted
+    assert_instance_of FileDiff, diff
+    assert_equal :deleted, diff.change_type
+    assert_includes diff.diff_content, "-old content"
   end
 
   speed_profile :fast

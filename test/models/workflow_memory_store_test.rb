@@ -66,11 +66,11 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
       payload: { reason: "test" }
     )
 
-    assert_equal :pending, entry[:from]
-    assert_equal :running, entry[:to]
-    assert_equal :start, entry[:event]
-    assert_equal({ reason: "test" }, entry[:payload])
-    assert entry[:timestamp].present?
+    assert_equal :pending, entry.from
+    assert_equal :running, entry.to
+    assert_equal :start, entry.event
+    assert_equal({ reason: "test" }, entry.payload)
+    assert entry.timestamp.present?
   end
 
   speed_profile :fast
@@ -80,8 +80,8 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
 
     history = store.state_history
     assert_equal 2, history.size
-    assert_equal :pending, history.first[:from]
-    assert_equal :complete, history.last[:to]
+    assert_equal :pending, history.first.from
+    assert_equal :complete, history.last.to
   end
 
   speed_profile :fast
@@ -103,9 +103,9 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
       context: { file_count: 10 }
     )
 
-    assert_equal "Use parallel analysis", entry[:decision]
-    assert_equal "More thorough coverage", entry[:rationale]
-    assert_equal({ file_count: 10 }, entry[:context])
+    assert_equal "Use parallel analysis", entry.decision
+    assert_equal "More thorough coverage", entry.rationale
+    assert_equal({ file_count: 10 }, entry.context)
   end
 
   speed_profile :fast
@@ -113,17 +113,19 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     error = StandardError.new("Test error")
     entry = store.record_error(error, state: :running)
 
-    assert_equal "Test error", entry[:error]
-    assert_equal "StandardError", entry[:error_class]
-    assert_equal :running, entry[:state]
+    assert_instance_of WorkflowMemories::Error, entry
+    assert_equal "Test error", entry.error_message
+    assert_equal "StandardError", entry.error_class
+    assert_equal :running, entry.state
   end
 
   speed_profile :fast
   test "records outputs" do
     entry = store.record_output({ findings: ["A", "B"], success: true })
 
-    assert_equal ["A", "B"], entry[:findings]
-    assert entry[:success]
+    assert_instance_of WorkflowMemories::Output, entry
+    assert_equal ["A", "B"], entry.output_data[:findings]
+    assert entry.output_data[:success]
   end
 
   speed_profile :fast
@@ -263,7 +265,8 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     # :outputs maps to :workflow_outputs in parent
     merged = parent.sections[:workflow_outputs]
     assert_equal 1, merged.size
-    assert_equal "success", merged.first[:result]
+    # Output data is nested under :output_data
+    assert_equal "success", merged.first[:output_data][:result]
     assert_equal workflow_name, merged.first[:source_workflow]
   end
 

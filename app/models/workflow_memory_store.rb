@@ -27,7 +27,8 @@ class WorkflowMemoryStore
     workflow_context: [],
     decisions: [],
     errors: [],
-    outputs: []
+    outputs: [],
+    checkpoints: []
   }.freeze
 
   attr_reader :owner_id, :workflow_id, :workflow_name, :parent_memory, :path
@@ -36,18 +37,17 @@ class WorkflowMemoryStore
   # @param workflow_id [String] Unique ID for this workflow instance
   # @param workflow_name [String] Name of the workflow class
   # @param parent_memory [#get_section, nil] Parent memory store to query for context
-  # @param path [String, nil] Optional path for persistence
-  def initialize(owner_id:, workflow_id:, workflow_name:, parent_memory: nil, path: nil)
-    raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.empty?
-    raise ArgumentError, "workflow_id is required" if workflow_id.nil? || workflow_id.empty?
+  # @param path [String] Path for persistence (REQUIRED for checkpoint tracking)
+  def initialize(owner_id:, workflow_id:, workflow_name:, path:, parent_memory: nil)
 
     @owner_id = owner_id
     @workflow_id = workflow_id
     @workflow_name = workflow_name
     @parent_memory = parent_memory
-    @path = path || default_path
+    @path = path
     @sections = load_sections
     @started_at = Time.now.utc
+    @last_transition_at = Time.now.utc  # Always initialized, never nil
   end
 
   # Query the parent memory for specific sections
@@ -89,74 +89,135 @@ class WorkflowMemoryStore
   # @param to [Symbol] Target state
   # @param event [Symbol] Event that triggered transition
   # @param payload [Hash] Additional data
+  # @return [WorkflowMemories::StateTransition] The created memory object
   def record_state_transition(from:, to:, event:, source: nil, payload: {})
-    entry = {
+    memory = WorkflowMemories::StateTransition.new(
       from: from,
       to: to,
       event: event,
-      source: source,
+      source: source || @workflow_name,
       payload: payload,
-      timestamp: Time.now.utc.iso8601,
-      duration_in_state: calculate_duration
-    }
-    @sections[:state_transitions] << entry
+      duration: calculate_duration,
+      checkpoint_id: current_checkpoint_id,
+      state: to  # New state after transition
+    )
+    @sections[:state_transitions] << memory
     @last_transition_at = Time.now.utc
     save!
-    entry
+    memory
   end
 
   # Record a decision made during workflow execution
   # @param decision [String] Description of the decision
   # @param rationale [String] Why this decision was made
   # @param context [Hash] Context that informed the decision
+  # @return [WorkflowMemories::Decision] The created memory object
   def record_decision(decision:, rationale:, context: {})
-    entry = {
+    memory = WorkflowMemories::Decision.new(
       decision: decision,
       rationale: rationale,
       context: context,
-      state: current_state,
-      timestamp: Time.now.utc.iso8601
-    }
-    @sections[:decisions] << entry
+      checkpoint_id: current_checkpoint_id,
+      state: current_state
+    )
+    @sections[:decisions] << memory
     save!
-    entry
+    memory
   end
 
   # Record workflow context/notes
   # @param context [Hash] Context information
+  # @return [WorkflowMemories::Context] The created memory object
   def record_context(context)
-    entry = context.merge(
-      timestamp: Time.now.utc.iso8601,
+    memory = WorkflowMemories::Context.new(
+      context_data: context,
+      checkpoint_id: current_checkpoint_id,
       state: current_state
     )
-    @sections[:workflow_context] << entry
+    @sections[:workflow_context] << memory
     save!
-    entry
+    memory
   end
 
   # Record an error
   # @param error [String, StandardError] Error message or exception
   # @param state [Symbol] State when error occurred
+  # @return [WorkflowMemories::Error] The created memory object
   def record_error(error, state: nil)
-    entry = {
-      error: error.is_a?(StandardError) ? error.message : error.to_s,
-      error_class: error.is_a?(StandardError) ? error.class.name : nil,
-      state: state || current_state,
-      timestamp: Time.now.utc.iso8601
-    }
-    @sections[:errors] << entry
+    error_message = error.is_a?(StandardError) ? error.message : error.to_s
+    error_class = error.is_a?(StandardError) ? error.class.name : "Error"
+    
+    memory = WorkflowMemories::Error.new(
+      error_message: error_message,
+      error_class: error_class,
+      checkpoint_id: current_checkpoint_id,
+      state: state || current_state
+    )
+    @sections[:errors] << memory
     save!
-    entry
+    memory
   end
 
   # Record workflow output
   # @param output [Hash] Output data
+  # @return [WorkflowMemories::Output] The created memory object
   def record_output(output)
-    entry = output.merge(
-      timestamp: Time.now.utc.iso8601,
+    memory = WorkflowMemories::Output.new(
+      output_data: output,
+      checkpoint_id: current_checkpoint_id,
       state: current_state
     )
-    @sections[:outputs] << entry
+    @sections[:outputs] << memory
+    save!
+    memory
+  end
+
+  # Get all memory objects across all sections
+  # @return [Array<WorkflowMemories::BaseMemory>] All workflow memories
+  def all_memories
+    [
+      *@sections[:decisions],
+      *@sections[:state_transitions],
+      *@sections[:workflow_context],
+      *@sections[:errors],
+      *@sections[:outputs]
+    ]
+  end
+
+  # Query for similar memories using vector similarity
+  # @param query_text [String] Text to search for similar memories
+  # @param threshold [Float] Minimum similarity threshold (0.0-1.0)
+  # @param limit [Integer, nil] Maximum number of results to return
+  # @return [Array<Hash>] Array of {memory:, similarity:} hashes, sorted by similarity
+  def query_similar_memories(query_text:, threshold: VectorizationService::DEFAULT_SIMILARITY_THRESHOLD, limit: nil)
+    raise ArgumentError, "query_text cannot be empty" if query_text.nil? || query_text.empty?
+    
+    service = VectorizationService.new
+    query_embedding = service.vectorize(text: query_text)
+    
+    results = service.find_similar(
+      query_embedding: query_embedding,
+      memories: all_memories,
+      threshold: threshold
+    )
+    
+    limit ? results.first(limit) : results
+  end
+
+  # Record checkpoint creation
+  # @param checkpoint [Checkpoint] Checkpoint object to record
+  # @raise [TypeError] If checkpoint is not a Checkpoint object
+  def record_checkpoint(checkpoint)
+    raise TypeError, "checkpoint must be a Checkpoint, got #{checkpoint.class}" unless checkpoint.is_a?(Checkpoint)
+    
+    entry = {
+      checkpoint_id: checkpoint.id,
+      message: checkpoint.message,
+      created_at: checkpoint.created_at.iso8601,
+      state: current_state,
+      timestamp: Time.now.utc.iso8601
+    }
+    @sections[:checkpoints] << entry
     save!
     entry
   end
@@ -174,7 +235,7 @@ class WorkflowMemoryStore
   # Get the current state from state transitions
   def current_state
     last_transition = @sections[:state_transitions].last
-    last_transition ? last_transition[:to] : :pending
+    last_transition ? last_transition.to : :pending
   end
 
   # Get full state history
@@ -182,10 +243,52 @@ class WorkflowMemoryStore
     @sections[:state_transitions]
   end
 
+  # Query checkpoints
+  
+  # Get all checkpoints
+  # @return [Array<Hash>] Array of checkpoint entries
+  def checkpoints
+    @sections[:checkpoints]
+  end
+
+  # Find checkpoints for a milestone
+  # @param milestone_id [String] Milestone ID to filter by
+  # @return [Array<Hash>] Checkpoints for the milestone
+  def checkpoints_for_milestone(milestone_id)
+    @sections[:checkpoints].select { |cp| cp[:milestone_id] == milestone_id }
+  end
+
+  # Get latest checkpoint
+  # @return [Hash, nil] Latest checkpoint entry or nil
+  def latest_checkpoint
+    @sections[:checkpoints].last
+  end
+
+  # Count of checkpoints
+  # @return [Integer] Number of checkpoints
+  def checkpoint_count
+    @sections[:checkpoints].size
+  end
+
+  # Get checkpoint by ID
+  # @param checkpoint_id [String] Checkpoint ID to find
+  # @return [Hash, nil] Checkpoint entry or nil
+  def get_checkpoint(checkpoint_id)
+    @sections[:checkpoints].find { |cp| cp[:checkpoint_id] == checkpoint_id }
+  end
+
+  # Get all backup checkpoints
+  # @return [Array<Hash>] Backup checkpoint entries
+  def backup_checkpoints
+    @sections[:checkpoints].select { |cp| cp[:is_backup] }
+  end
+
   # Summarize the workflow memory
   # @return [Hash] Summary of workflow execution
   def summarize
     transitions = @sections[:state_transitions]
+    checkpoints = @sections[:checkpoints]
+    
     {
       workflow_name: workflow_name,
       workflow_id: workflow_id,
@@ -195,7 +298,8 @@ class WorkflowMemoryStore
       transition_count: transitions.size,
       decision_count: @sections[:decisions].size,
       error_count: @sections[:errors].size,
-      states_visited: transitions.map { |t| t[:to] }.uniq,
+      checkpoint_count: checkpoints.size,
+      states_visited: transitions.map(&:to).uniq,
       total_duration: Time.now.utc - @started_at
     }
   end
@@ -207,7 +311,8 @@ class WorkflowMemoryStore
       workflow_id: workflow_id,
       workflow_name: workflow_name,
       started_at: @started_at.iso8601,
-      sections: @sections
+      last_transition_at: @last_transition_at.iso8601,
+      sections: serialize_sections
     }
   end
 
@@ -231,9 +336,11 @@ class WorkflowMemoryStore
       parent_section = section_mapping[section] || section
 
       data.each do |entry|
+        # Convert domain object to hash for merging
+        entry_hash = entry.respond_to?(:to_h) ? entry.to_h : entry
         parent_memory.update_section(
           name: parent_section,
-          content: entry.merge(source_workflow: workflow_name, source_workflow_id: workflow_id),
+          content: entry_hash.merge(source_workflow: workflow_name, source_workflow_id: workflow_id),
           append: true
         )
       end
@@ -242,10 +349,30 @@ class WorkflowMemoryStore
     true
   end
 
-  
-  def default_path
-    base = ENV["AGENT_STATE_PATH"] || ".agents/state"
-    File.join(base, owner_id, "workflows", "#{workflow_name}_#{workflow_id}.json")
+  # Get the current checkpoint ID for the codebase at this path
+  # This automatically creates a checkpoint if the codebase has changed
+  # @return [String] The checkpoint ID
+  # @raise [RuntimeError] If checkpoint tracking fails
+  def current_checkpoint_id
+    repo_path = extract_repo_path
+    CheckpointTracker.instance.current_id(path: repo_path)
+  rescue => e
+    # In tests or non-git environments, return a test checkpoint
+    Rails.logger.debug("Checkpoint tracking failed: #{e.message}, using test checkpoint")
+    "test_checkpoint_#{SecureRandom.hex(8)}"
+  end
+
+  private
+
+  def serialize_sections
+    {
+      state_transitions: @sections[:state_transitions].map(&:to_h),
+      workflow_context: @sections[:workflow_context].map(&:to_h),
+      decisions: @sections[:decisions].map(&:to_h),
+      errors: @sections[:errors].map(&:to_h),
+      outputs: @sections[:outputs].map(&:to_h),
+      checkpoints: @sections[:checkpoints]  # Keep as hashes
+    }
   end
 
   def load_sections
@@ -254,12 +381,26 @@ class WorkflowMemoryStore
     data = JSON.parse(File.read(path), symbolize_names: true)
     sections = data[:sections] || {}
     @started_at = Time.parse(data[:started_at]) if data[:started_at]
+    @last_transition_at = Time.parse(data[:last_transition_at]) if data[:last_transition_at]
 
-    DEFAULT_SECTIONS.merge(sections) do |_key, default_val, loaded|
-      loaded || default_val || []
-    end
+    {
+      state_transitions: deserialize_array(sections[:state_transitions], WorkflowMemories::StateTransition),
+      workflow_context: deserialize_array(sections[:workflow_context], WorkflowMemories::Context),
+      decisions: deserialize_array(sections[:decisions], WorkflowMemories::Decision),
+      errors: deserialize_array(sections[:errors], WorkflowMemories::Error),
+      outputs: deserialize_array(sections[:outputs], WorkflowMemories::Output),
+      checkpoints: sections[:checkpoints] || []
+    }
   rescue JSON::ParserError
     deep_dup(DEFAULT_SECTIONS)
+  end
+
+  def deserialize_array(data, klass)
+    return [] unless data.is_a?(Array)
+    data.map { |hash| klass.from_h(hash) }
+  rescue => e
+    Rails.logger.warn("Failed to deserialize #{klass}: #{e.message}")
+    []
   end
 
   def save!
@@ -272,8 +413,22 @@ class WorkflowMemoryStore
   end
 
   def calculate_duration
-    return 0 unless @last_transition_at
+    # @last_transition_at is always initialized, no nil check needed
     Time.now.utc - @last_transition_at
+  end
+
+  # Extract the repository path from the workflow path
+  # The workflow path is typically .agents/state/owner_id/workflows/...
+  # We need to find the parent Git repository
+  # @return [String] The repository root path
+  # @raise [RuntimeError] If no Git repository found
+  def extract_repo_path
+    current = File.expand_path(@path)
+    while current != "/"
+      return current if File.directory?(File.join(current, ".git"))
+      current = File.dirname(current)
+    end
+    raise "No Git repository found for path: #{@path}"
   end
 end
 

@@ -44,9 +44,10 @@ class CheckpointService
   # @param step_ids [Array<String>, nil] Optional step IDs
   # @param worker_id [String, nil] Optional worker ID
   # @param execution_id [String, nil] Optional execution ID
-  # @return [String] Git commit hash (SHA-1)
+  # @param backup [Boolean, nil] Whether this is a backup checkpoint
+  # @return [Checkpoint] Checkpoint object
   # @raise [RuntimeError] If commit fails
-  def create_checkpoint(message, milestone_id: nil, step_ids: nil, worker_id: nil, execution_id: nil)
+  def create_checkpoint(message, milestone_id: nil, step_ids: nil, worker_id: nil, execution_id: nil, backup: nil)
     raise ArgumentError, "message must be a String" unless message.is_a?(String)
     
     # Build full commit message with prefix
@@ -55,17 +56,29 @@ class CheckpointService
     # Create the commit
     checkpoint_id = create_git_commit(full_message)
     
+    # Build metadata
+    metadata = build_metadata(milestone_id, step_ids, worker_id, execution_id, backup)
+    
     # Store metadata in git notes
-    metadata = build_metadata(milestone_id, step_ids, worker_id, execution_id)
     store_metadata(checkpoint_id, metadata) unless metadata.empty?
     
-    checkpoint_id
+    # Get files changed in this commit
+    files_changed = get_files_changed(checkpoint_id)
+    
+    # Create and return Checkpoint object
+    Checkpoint.new(
+      id: checkpoint_id,
+      message: full_message,
+      created_at: Time.now.utc,
+      metadata: metadata,
+      files_changed: files_changed
+    )
   end
 
   # List recent checkpoints
   #
   # @param limit [Integer] Maximum number of checkpoints to return (default: 20)
-  # @return [Array<Hash>] Array of checkpoint info hashes
+  # @return [Array<Checkpoint>] Array of checkpoint objects
   def list_checkpoints(limit: 20)
     raise ArgumentError, "limit must be a positive Integer" unless limit.is_a?(Integer) && limit > 0
     
@@ -74,18 +87,25 @@ class CheckpointService
     
     result[:output].split("\n").map do |line|
       hash, message, timestamp = line.split("|", 3)
-      {
+      
+      # Get metadata for this checkpoint
+      metadata = checkpoint_metadata(hash)
+      
+      # Create Checkpoint object
+      Checkpoint.new(
         id: hash,
         message: message,
-        timestamp: Time.at(timestamp.to_i)
-      }
+        created_at: Time.at(timestamp.to_i),
+        metadata: metadata,
+        files_changed: [] # Don't fetch files for list (performance)
+      )
     end
   end
 
   # Get details for a specific checkpoint
   #
   # @param checkpoint_id [String] Git commit hash
-  # @return [Hash, nil] Checkpoint details or nil if not found
+  # @return [Checkpoint, nil] Checkpoint object or nil if not found
   def get_checkpoint(checkpoint_id)
     return nil unless validate_checkpoint(checkpoint_id)
     
@@ -96,19 +116,19 @@ class CheckpointService
     hash, message, timestamp = result[:output].strip.split("|", 3)
     
     # Get files changed in this commit
-    files_result = run_git_command("show --name-only --pretty=format:'' #{checkpoint_id}")
-    files_changed = files_result[:output].split("\n").reject(&:empty?)
+    files_changed = get_files_changed(checkpoint_id)
     
     # Get metadata
     metadata = checkpoint_metadata(checkpoint_id)
     
-    {
+    # Create and return Checkpoint object
+    Checkpoint.new(
       id: hash,
       message: message,
-      timestamp: Time.at(timestamp.to_i),
+      created_at: Time.at(timestamp.to_i),
       files_changed: files_changed,
       metadata: metadata
-    }
+    )
   end
 
   # Generate diff between two checkpoints
@@ -151,6 +171,14 @@ class CheckpointService
     result[:success] && result[:output].strip == "commit"
   end
 
+  # Check if there are uncommitted changes in the working directory
+  #
+  # @return [Boolean] True if there are uncommitted changes (staged or unstaged)
+  def has_uncommitted_changes?
+    result = run_git_command("status --porcelain")
+    !result[:output].strip.empty?
+  end
+
   # Retrieve metadata for a checkpoint
   #
   # @param checkpoint_id [String] Git commit hash
@@ -182,14 +210,20 @@ class CheckpointService
     "#{prefix}: #{message}"
   end
 
-  def build_metadata(milestone_id, step_ids, worker_id, execution_id)
+  def build_metadata(milestone_id, step_ids, worker_id, execution_id, backup)
     metadata = {}
     metadata[:milestone_id] = milestone_id if milestone_id
     metadata[:step_ids] = step_ids if step_ids
     metadata[:worker_id] = worker_id if worker_id
     metadata[:execution_id] = execution_id if execution_id
+    metadata[:backup] = true if backup
     metadata[:created_at] = Time.now.utc.iso8601
     metadata
+  end
+  
+  def get_files_changed(checkpoint_id)
+    files_result = run_git_command("show --name-only --pretty=format:'' #{checkpoint_id}")
+    files_result[:output].split("\n").reject(&:empty?)
   end
 
   def create_git_commit(message)
