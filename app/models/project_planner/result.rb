@@ -123,7 +123,7 @@ module ProjectPlanner
       planning_result = nil
       if hash[:planning_result] || hash["planning_result"]
         planning_result_hash = hash[:planning_result] || hash["planning_result"]
-        planning_result = Planning::Result.from_h(planning_result_hash)
+        planning_result = Planning::Result.from_h(**planning_result_hash.deep_symbolize_keys)
       end
       
       new(
