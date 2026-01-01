@@ -48,7 +48,7 @@ class CheckpointTracker
           @checkpoints_by_path[path] = checkpoint
           checkpoint.id
         end
-      elif codebase_changed?(service)
+      elsif codebase_changed?(service)
         # Codebase has changed since last checkpoint, create new one
         checkpoint = create_checkpoint(service, message, milestone_id, worker_id)
         @checkpoints_by_path[path] = checkpoint

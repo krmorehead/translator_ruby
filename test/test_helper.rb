@@ -38,6 +38,17 @@ module ActiveSupport
         system("git init", out: File::NULL, err: File::NULL)
         system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
         system("git config user.name 'Test User'", out: File::NULL, err: File::NULL)
+        
+        # Create .gitignore to exclude memory/state files (shadow commit log)
+        File.write(".gitignore", <<~GITIGNORE)
+          # Workflow memory and state files (shadow commit log)
+          *_memory.json
+          sisyphus_memory.json
+          workflow_memory.json
+          research_memory.json
+          **/state/*.json
+        GITIGNORE
+        
         # Create initial commit so we have a valid Git history
         FileUtils.touch("README.md")
         system("git add .", out: File::NULL, err: File::NULL)
