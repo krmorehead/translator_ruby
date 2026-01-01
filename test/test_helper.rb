@@ -65,18 +65,40 @@ module ActiveSupport
 
     
     def cleanup_test_agent_data
+      # Clean up tmp test data
       test_data_path = ENV.fetch("AGENT_DATA_PATH", "tmp/test_agent_data")
       FileUtils.rm_rf(test_data_path) if File.exist?(test_data_path)
+      
+      # Clean up workflow memory files in .agents/state
+      agents_state_path = Rails.root.join(".agents", "state")
+      FileUtils.rm_rf(agents_state_path) if File.exist?(agents_state_path)
+      
+      # Clean up tmp directory (except keep .gitkeep files)
+      Dir.glob(Rails.root.join("tmp", "*")).each do |path|
+        next if File.basename(path) == ".gitkeep"
+        FileUtils.rm_rf(path) if File.exist?(path)
+      end
     end
   end
 end
 
 # Also clean up at the end of the entire test run
 Minitest.after_run do
+  # Clean up tmp test data
   test_data_path = ENV.fetch("AGENT_DATA_PATH", "tmp/test_agent_data")
   FileUtils.rm_rf(test_data_path) if File.exist?(test_data_path)
   
-  # Also clean up any tmp/tool_test directories from older test patterns
+  # Clean up workflow memory files in .agents/state
+  agents_state_path = Rails.root.join(".agents", "state")
+  FileUtils.rm_rf(agents_state_path) if File.exist?(agents_state_path)
+  
+  # Clean up tmp directory (except keep .gitkeep files)
+  Dir.glob(Rails.root.join("tmp", "*")).each do |path|
+    next if File.basename(path) == ".gitkeep"
+    FileUtils.rm_rf(path) if File.exist?(path)
+  end
+  
+  # Also clean up any specific test directories
   FileUtils.rm_rf(Rails.root.join("tmp", "tool_test")) if File.exist?(Rails.root.join("tmp", "tool_test"))
   FileUtils.rm_rf(Rails.root.join("tmp", "dnd_chat_sandbox")) if File.exist?(Rails.root.join("tmp", "dnd_chat_sandbox"))
 end

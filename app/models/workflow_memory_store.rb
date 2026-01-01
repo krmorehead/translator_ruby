@@ -375,9 +375,9 @@ class WorkflowMemoryStore
     return deep_dup(DEFAULT_SECTIONS) unless File.exist?(path)
 
     data = JSON.parse(File.read(path), symbolize_names: true)
-    sections = data[:sections] || {}
-    @started_at = Time.parse(data[:started_at]) if data[:started_at]
-    @last_transition_at = Time.parse(data[:last_transition_at]) if data[:last_transition_at]
+    sections = data[:sections]
+    @started_at = Time.parse(data[:started_at])
+    @last_transition_at = Time.parse(data[:last_transition_at])
 
     {
       state_transitions: deserialize_array(data: sections[:state_transitions], klass: WorkflowMemories::StateTransition),
@@ -385,7 +385,7 @@ class WorkflowMemoryStore
       decisions: deserialize_array(data: sections[:decisions], klass: WorkflowMemories::Decision),
       errors: deserialize_array(data: sections[:errors], klass: WorkflowMemories::Error),
       outputs: deserialize_array(data: sections[:outputs], klass: WorkflowMemories::Output),
-      checkpoints: sections[:checkpoints] || []
+      checkpoints: sections[:checkpoints]
     }
   rescue JSON::ParserError
     deep_dup(DEFAULT_SECTIONS)
