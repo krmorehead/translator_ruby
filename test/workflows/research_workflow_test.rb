@@ -33,7 +33,7 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
   # ============================================================================
   # Unit Tests (no LLM calls)
   # ============================================================================
-  speed_profile :slow
+  speed_profile :fast
   test "initialization with factory defaults" do
     wf = build_workflow
     assert_equal "How does Calculator work?", wf.goal
@@ -41,42 +41,42 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
     assert_equal 1, wf.instance_variable_get(:@max_depth)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "initialization with custom goal" do
     wf = build_workflow(goal: "Custom research goal")
     assert_equal "Custom research goal", wf.goal
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "initialization with output modes" do
     wf = build_workflow(output_modes: [:documentation])
     assert_equal [:documentation], wf.output_modes
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "initialization creates research context" do
     wf = build_workflow
     assert_not_nil wf.instance_variable_get(:@research_context)
     assert_kind_of Contexts::ResearchContext, wf.instance_variable_get(:@research_context)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "initial state is pending" do
     wf = build_workflow
     assert_equal :pending, wf.current_state
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "PARALLEL_PASSES constant is 3" do
     assert_equal 3, ResearchWorkflow::PARALLEL_PASSES
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "MAX_EMPTY_LEAVES constant is 3" do
     assert_equal 3, ResearchWorkflow::MAX_EMPTY_LEAVES
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "VALID_OUTPUT_MODES includes report and documentation" do
     assert_includes ResearchWorkflow::VALID_OUTPUT_MODES, :report
     assert_includes ResearchWorkflow::VALID_OUTPUT_MODES, :documentation

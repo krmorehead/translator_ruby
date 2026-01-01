@@ -19,9 +19,6 @@ module Contexts
     # Maximum entries to include in any single prompt
     MAX_PROMPT_ENTRIES = 5
 
-    # Minimum keyword overlap to consider relevant without LLM
-    KEYWORD_RELEVANCE_THRESHOLD = 2
-
     # Default max entries when condensing
     DEFAULT_CONDENSE_LIMIT = 10
 
@@ -48,6 +45,13 @@ module Contexts
         metadata: metadata || {}
       )
 
+      add_entry(entry)
+    end
+
+    # Add an existing entry object to the context
+    # @param entry [Entries::BaseEntry] The entry to add
+    # @return [Entries::BaseEntry] The added entry
+    def add_entry(entry)
       @entries << entry
 
       # Index by topics for fast lookup
@@ -59,7 +63,7 @@ module Contexts
     end
 
     # Get context entries relevant to a question/topic
-    # Uses keyword matching for relevance
+    # Uses vector similarity for relevance scoring
     # @param question [String] The question to find relevant context for
     # @param limit [Integer] Maximum entries to return
     # @return [Array<Entry>] Relevant entries, sorted by relevance
@@ -69,15 +73,22 @@ module Contexts
       question_keywords = extract_keywords(question)
       return @entries.last(limit) if question_keywords.empty?
 
-      # Score entries by keyword overlap with question
+      # Use vectorization service for similarity scoring
+      vectorization_service = VectorizationService.new
+      query_text = question_keywords.join(" ")
+      query_embedding = vectorization_service.vectorize(text: query_text)
+
+      # Score entries by vector similarity
       scored = candidates_for_relevance.map do |entry|
-        score = calculate_relevance_score(entry, question_keywords)
-        { entry: entry, score: score }
+        entry_keywords = extract_keywords(entry.content)
+        entry_text = entry_keywords.join(" ")
+        entry_embedding = vectorization_service.vectorize(text: entry_text)
+        similarity = query_embedding.similarity_to(entry_embedding)
+        { entry: entry, score: similarity }
       end
 
-      # Take entries with sufficient overlap
-      relevant = scored.select { |s| s[:score] >= KEYWORD_RELEVANCE_THRESHOLD }
-                       .sort_by { |s| -s[:score] }
+      # Return top scoring entries
+      relevant = scored.sort_by { |s| -s[:score] }
                        .first(limit)
                        .map { |s| s[:entry] }
 
@@ -171,12 +182,16 @@ module Contexts
     end
 
     # Load from memory store section data
-    # Data format: Hash with :context_class = serialized context, Array = raw entries
-    def self.from_section_data(data, source:)
-      return new unless data
-
-      klass = resolve_context_class(data[:context_class], nil)
-      return klass.from_h(data)
+    # @param entries [Array<Entries::BaseEntry>] Array of Entry objects  
+    # @param source [String] Where this data came from
+    # @return [BaseContext] New context with entries
+    def self.from_section_data(entries, source:)
+      return new unless entries
+      
+      # Expect Array of Entry objects - no type checking!
+      context = new
+      entries.each { |entry| context.add_entry(entry) }
+      context
     end
 
     # Helper to load entries from serialized data
@@ -366,15 +381,6 @@ module Contexts
         .split
         .reject { |w| stop_words.include?(w) || w.length < 3 }
         .uniq
-    end
-
-    # Subclasses can override for custom relevance scoring
-    def calculate_relevance_score(entry, question_keywords)
-      entry_keywords = extract_keywords(entry.content)
-      topic_keywords = entry.topics.flat_map { |t| extract_keywords(t) }
-      all_entry_keywords = (entry_keywords + topic_keywords).uniq
-
-      (question_keywords & all_entry_keywords).size
     end
 
     # Subclasses can override to change candidate selection

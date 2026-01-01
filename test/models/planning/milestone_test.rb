@@ -275,7 +275,8 @@ module Planning
       assert_equal "User Authentication", hash[:title]
       assert_equal "Implement secure login", hash[:description]
       assert_equal 1, hash[:steps].size
-      assert_equal "1.1", hash[:steps].first[:number]
+      assert_equal 1, hash[:steps].first[:milestone_number]
+      assert_equal 1, hash[:steps].first[:step_number]
     end
 
     speed_profile :fast
@@ -312,7 +313,8 @@ module Planning
         "description" => "Implement secure login",
         "steps" => [
           {
-            "number" => "1.1",
+            "milestone_number" => 1,
+            "step_number" => 1,
             "title" => "Create Model",
             "intent" => "Define entity",
             "details" => ["Add fields"],

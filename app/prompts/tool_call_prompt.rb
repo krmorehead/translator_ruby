@@ -19,12 +19,11 @@ class ToolCallPrompt < BasePrompt
     super()
   end
 
-  # Compact tool serialization for smaller context window
-  # Format: "- name: description (param1*: type, param2: type)"
-  # * indicates required parameters
+  # Serialize tools to hash format
+  # Following OOP patterns: tools should be proper objects with to_h method
   # @return [Array<Hash>] Tool schemas
   def serialize_tools
-    @tools.map(&:schema)
+    @tools.map(&:to_h)
   end
   
   def model

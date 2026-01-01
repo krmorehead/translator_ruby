@@ -3,6 +3,17 @@
 require "test_helper"
 
 class SisyphusIntegrationTest < ActiveSupport::TestCase
+  let(:sisyphus_context) { Contexts::BaseContext.new }
+  let(:autonomous_config) do
+    Configuration::SisyphusConfig.new(
+      approval_mode: :autonomous,
+      max_retries: 3,
+      stream_progress: true,
+      error_mode: :lenient,
+      dry_run: false
+    )
+  end
+
   setup do
     @temp_dir = Dir.mktmpdir("sisyphus_integration")
     
@@ -32,7 +43,8 @@ class SisyphusIntegrationTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @temp_dir,
-      config: { approval_mode: :autonomous, stream_progress: true }
+      context: sisyphus_context,
+      config: autonomous_config
     )
     
     # Execute - should handle errors gracefully
@@ -49,7 +61,8 @@ class SisyphusIntegrationTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @temp_dir,
-      config: { approval_mode: :autonomous, stream_progress: true }
+      context: sisyphus_context,
+      config: autonomous_config
     )
     
     worker.execute
@@ -64,7 +77,8 @@ class SisyphusIntegrationTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @temp_dir,
-      config: { approval_mode: :autonomous }
+      context: sisyphus_context,
+      config: autonomous_config
     )
     
     initial_commits = count_git_commits(@temp_dir)
@@ -83,7 +97,8 @@ class SisyphusIntegrationTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @temp_dir,
-      config: { approval_mode: :autonomous }
+      context: sisyphus_context,
+      config: autonomous_config
     )
     
     assert_equal :pending, worker.current_state
@@ -95,7 +110,8 @@ class SisyphusIntegrationTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @temp_dir,
-      config: { approval_mode: :autonomous }
+      context: sisyphus_context,
+      config: autonomous_config
     )
     
     worker.execute rescue nil # May fail, that's ok
@@ -111,7 +127,8 @@ class SisyphusIntegrationTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @temp_dir,
-      config: { approval_mode: :autonomous }
+      context: sisyphus_context,
+      config: autonomous_config
     )
     
     worker.execute rescue nil # May fail, that's ok
@@ -128,7 +145,8 @@ class SisyphusIntegrationTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: plan,
       path: @temp_dir,
-      config: { approval_mode: :autonomous, error_mode: :lenient }
+      context: sisyphus_context,
+      config: autonomous_config
     )
     
     result = nil
@@ -143,21 +161,25 @@ class SisyphusIntegrationTest < ActiveSupport::TestCase
   # Integration test: configuration options
   speed_profile :fast
   test "respects configuration options" do
+    custom_config = Configuration::SisyphusConfig.new(
+      approval_mode: :autonomous,
+      max_retries: 5,
+      stream_progress: false,
+      error_mode: :lenient,
+      dry_run: false
+    )
+    
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @temp_dir,
-      config: { 
-        approval_mode: :autonomous,
-        max_retries: 5,
-        stream_progress: false,
-        error_mode: :lenient
-      }
+      context: sisyphus_context,
+      config: custom_config
     )
     
-    assert_equal :autonomous, worker.config[:approval_mode]
-    assert_equal 5, worker.config[:max_retries]
-    assert_equal false, worker.config[:stream_progress]
-    assert_equal :lenient, worker.config[:error_mode]
+    assert_equal :autonomous, worker.config.approval_mode
+    assert_equal 5, worker.config.max_retries
+    assert_equal false, worker.config.stream_progress
+    assert_equal :lenient, worker.config.error_mode
   end
 
   private

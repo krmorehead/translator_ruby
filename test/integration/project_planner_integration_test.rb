@@ -17,7 +17,8 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
       goal: "Add logging to Calculator",
       path: FIXTURE_PATH,
       project_name: "calculator_logging",
-      max_research_depth: 1
+      max_research_depth: 1,
+      context: Contexts::BaseContext.new
     )
     result = worker.execute
 

@@ -13,6 +13,8 @@ require "test_helper"
 # 5. State machine transitions
 # 6. Memory persistence
 class DaedalusIntegrationTest < ActiveSupport::TestCase
+  let(:integration_context) { Contexts::BaseContext.new }
+
   setup do
     # Use actual project root for realistic testing
     @project_root = Rails.root.to_s
@@ -32,9 +34,7 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
     worker = DaedalusWorker.new(
       goal: @goal,
       path: @project_root,
-      context: {
-        hint: "Look at existing controller validation patterns"
-      }
+      context: integration_context
     )
 
     # Verify initial state
@@ -150,7 +150,8 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
   test "Daedalus handles analysis workflow with real LLM" do
     worker = DaedalusWorker.new(
       goal: "Refactor the translation service for better performance",
-      path: @project_root
+      path: @project_root,
+      context: integration_context
     )
 
     # Execute and verify analysis phase works
@@ -199,7 +200,8 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
 
     worker = DaedalusWorker.new(
       goal: "Optimize translation caching",
-      path: @project_root
+      path: @project_root,
+      context: integration_context
     )
 
     worker.trigger(:start)
@@ -244,38 +246,38 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
   test "Daedalus validates inputs strictly" do
     # Test nil goal
     error = assert_raises(ArgumentError) do
-      DaedalusWorker.new(goal: nil, path: @project_root)
+      DaedalusWorker.new(goal: nil, path: @project_root, context: integration_context)
     end
     assert_match(/goal/, error.message)
 
     # Test empty goal
     error = assert_raises(ArgumentError) do
-      DaedalusWorker.new(goal: "  ", path: @project_root)
+      DaedalusWorker.new(goal: "  ", path: @project_root, context: integration_context)
     end
     assert_match(/goal cannot be empty/, error.message)
 
     # Test nil path
     error = assert_raises(ArgumentError) do
-      DaedalusWorker.new(goal: "Test goal", path: nil)
+      DaedalusWorker.new(goal: "Test goal", path: nil, context: integration_context)
     end
     assert_match(/path/, error.message)
 
     # Test empty path
     error = assert_raises(ArgumentError) do
-      DaedalusWorker.new(goal: "Test goal", path: "  ")
+      DaedalusWorker.new(goal: "Test goal", path: "  ", context: integration_context)
     end
     assert_match(/path cannot be empty/, error.message)
 
     # Test wrong type for goal
     error = assert_raises(ArgumentError) do
-      DaedalusWorker.new(goal: 123, path: @project_root)
+      DaedalusWorker.new(goal: 123, path: @project_root, context: integration_context)
     end
     assert_match(/goal must be a String/, error.message)
   end
 
   speed_profile :fast
   test "Daedalus state machine enforces valid transitions" do
-    worker = DaedalusWorker.new(goal: "Test", path: @project_root)
+    worker = DaedalusWorker.new(goal: "Test", path: @project_root, context: integration_context)
 
     # Valid transition: pending → running
     assert worker.pending?

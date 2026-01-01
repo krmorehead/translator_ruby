@@ -22,20 +22,6 @@ module Configuration
     end
 
     speed_profile :fast
-    test "validates name must be a Symbol" do
-      error = assert_raises(ArgumentError) do
-        CapabilityConfig.new(
-          name: "general_llm",
-          model_name: "model",
-          port: 8000,
-          max_context: 1000,
-          base_url: "url"
-        )
-      end
-      assert_match(/name must be a Symbol/, error.message)
-    end
-
-    speed_profile :fast
     test "validates name cannot be empty" do
       error = assert_raises(ArgumentError) do
         CapabilityConfig.new(
@@ -47,20 +33,6 @@ module Configuration
         )
       end
       assert_match(/name cannot be empty/, error.message)
-    end
-
-    speed_profile :fast
-    test "validates model_name must be a String" do
-      error = assert_raises(ArgumentError) do
-        CapabilityConfig.new(
-          name: :test,
-          model_name: 123,
-          port: 8000,
-          max_context: 1000,
-          base_url: "url"
-        )
-      end
-      assert_match(/model_name must be a String/, error.message)
     end
 
     speed_profile :fast
@@ -78,20 +50,6 @@ module Configuration
     end
 
     speed_profile :fast
-    test "validates port must be an Integer" do
-      error = assert_raises(ArgumentError) do
-        CapabilityConfig.new(
-          name: :test,
-          model_name: "model",
-          port: "8000",
-          max_context: 1000,
-          base_url: "url"
-        )
-      end
-      assert_match(/port must be an Integer/, error.message)
-    end
-
-    speed_profile :fast
     test "validates port must be in valid range" do
       error = assert_raises(ArgumentError) do
         CapabilityConfig.new(
@@ -106,20 +64,6 @@ module Configuration
     end
 
     speed_profile :fast
-    test "validates max_context must be an Integer" do
-      error = assert_raises(ArgumentError) do
-        CapabilityConfig.new(
-          name: :test,
-          model_name: "model",
-          port: 8000,
-          max_context: "1000",
-          base_url: "url"
-        )
-      end
-      assert_match(/max_context must be an Integer/, error.message)
-    end
-
-    speed_profile :fast
     test "validates max_context must be positive" do
       error = assert_raises(ArgumentError) do
         CapabilityConfig.new(
@@ -131,20 +75,6 @@ module Configuration
         )
       end
       assert_match(/max_context must be positive/, error.message)
-    end
-
-    speed_profile :fast
-    test "validates base_url must be a String" do
-      error = assert_raises(ArgumentError) do
-        CapabilityConfig.new(
-          name: :test,
-          model_name: "model",
-          port: 8000,
-          max_context: 1000,
-          base_url: nil
-        )
-      end
-      assert_match(/base_url must be a String/, error.message)
     end
 
     speed_profile :fast
@@ -190,7 +120,7 @@ module Configuration
         base_url: "TEST_URL"
       }
 
-      config = CapabilityConfig.from_h(hash)
+      config = CapabilityConfig.from_h(**hash)
 
       assert_equal :test_capability, config.name
       assert_equal "test_model", config.model_name
@@ -209,18 +139,10 @@ module Configuration
         "base_url" => "TEST_URL"
       }
 
-      config = CapabilityConfig.from_h(hash)
+      config = CapabilityConfig.from_h(**hash.symbolize_keys)
 
       assert_equal :test_capability, config.name
       assert_equal "test_model", config.model_name
-    end
-
-    speed_profile :fast
-    test "from_h validates hash parameter" do
-      error = assert_raises(ArgumentError) do
-        CapabilityConfig.from_h("not a hash")
-      end
-      assert_match(/hash must be a Hash/, error.message)
     end
 
     speed_profile :fast
@@ -234,7 +156,7 @@ module Configuration
       )
 
       hash = original.to_h
-      restored = CapabilityConfig.from_h(hash)
+      restored = CapabilityConfig.from_h(**hash)
 
       assert_equal original.name, restored.name
       assert_equal original.model_name, restored.model_name

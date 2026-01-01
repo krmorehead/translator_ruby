@@ -352,14 +352,10 @@ class WorkflowMemoryStore
   # Get the current checkpoint ID for the codebase at this path
   # This automatically creates a checkpoint if the codebase has changed
   # @return [String] The checkpoint ID
-  # @raise [RuntimeError] If checkpoint tracking fails
+  # @raise [RuntimeError] If checkpoint tracking fails or no Git repository found
   def current_checkpoint_id
     repo_path = extract_repo_path
     CheckpointTracker.instance.current_id(path: repo_path)
-  rescue => e
-    # In tests or non-git environments, return a test checkpoint
-    Rails.logger.debug("Checkpoint tracking failed: #{e.message}, using test checkpoint")
-    "test_checkpoint_#{SecureRandom.hex(8)}"
   end
 
   private
@@ -395,12 +391,13 @@ class WorkflowMemoryStore
     deep_dup(DEFAULT_SECTIONS)
   end
 
+  # Deserialize array of hashes to objects
+  # @param data [Array<Hash>] Array of serialized objects
+  # @param klass [Class] Class to deserialize to (must have from_h method)
+  # @return [Array] Array of deserialized objects
+  # @raise [TypeError, ArgumentError] If deserialization fails
   def deserialize_array(data, klass)
-    return [] unless data.is_a?(Array)
     data.map { |hash| klass.from_h(hash) }
-  rescue => e
-    Rails.logger.warn("Failed to deserialize #{klass}: #{e.message}")
-    []
   end
 
   def save!

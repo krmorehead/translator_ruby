@@ -12,7 +12,7 @@ module Planning
   #     assumptions: ["Rails environment available"]
   #   )
   class ExecutionPlan
-    attr_reader :goal, :milestones, :created_at, :metadata,
+    attr_reader :id, :goal, :milestones, :created_at, :metadata,
                 :constraints, :assumptions, :risks
 
     # @param goal [String] The goal this plan achieves
@@ -26,7 +26,7 @@ module Planning
                    constraints: nil, assumptions: nil, risks: nil)
       validate_required!(goal, milestones, metadata)
       validate_optional!(constraints, assumptions, risks)
-
+      @id = SecureRandom.uuid
       @goal = goal
       @milestones = Array(milestones)
       @created_at = created_at || Time.now.utc.iso8601

@@ -19,6 +19,7 @@ module ContextLeakTests
 
   included do
     # Tests that verify no context leaks between operations
+    speed_profile :fast
     test "context chain does not accumulate indefinitely during decomposition" do
       initial_chain_size = memory.get_section(:context_chain).size
 
@@ -39,6 +40,7 @@ module ContextLeakTests
         "Context stack should be empty after popping all entries"
     end
 
+    speed_profile :fast
     test "iteration tracking does not leak between research sessions" do
       # Advance iterations
       3.times { memory.next_iteration! }
@@ -55,6 +57,7 @@ module ContextLeakTests
       assert_equal 3, log_size, "Iteration log should have exactly 3 entries"
     end
 
+    speed_profile :fast
     test "sub_questions do not accumulate duplicate entries" do
       # Add same question multiple times (simulating retry scenario)
       3.times do
@@ -73,6 +76,7 @@ module ContextLeakTests
         "Appending adds all entries - caller must dedupe if needed"
     end
 
+    speed_profile :fast
     test "discovered_files section does not grow unboundedly" do
       # Simulate discovering many files
       100.times do |i|
@@ -90,6 +94,7 @@ module ContextLeakTests
       # Caller should implement limits if needed
     end
 
+    speed_profile :fast
     test "findings section entries are independent" do
       # Add findings
       memory.update_section(
@@ -119,6 +124,7 @@ module ContextLeakTests
       assert_equal "Finding 2", reloaded[1][:text]
     end
 
+    speed_profile :fast
     test "parallel workers have isolated context" do
       owner1 = SecureRandom.uuid
       owner2 = SecureRandom.uuid
@@ -149,6 +155,7 @@ module DecompositionContextTests
   extend ActiveSupport::Concern
 
   included do
+    speed_profile :fast
     test "decomposition context does not leak to child questions" do
       ctx = decomposition_context
 
@@ -167,6 +174,7 @@ module DecompositionContextTests
         "Child context should start fresh, not inherit accumulated data"
     end
 
+    speed_profile :fast
     test "previous_questions array does not grow across depth levels" do
       # Simulate what happens at depth 3
       level0_questions = []
@@ -180,6 +188,7 @@ module DecompositionContextTests
         "Questions at each level should be bounded, not accumulative"
     end
 
+    speed_profile :fast
     test "context with seed information does not cause unbounded growth" do
       # Create context with all seed fields populated
       full_context = build(:research_context, :full)

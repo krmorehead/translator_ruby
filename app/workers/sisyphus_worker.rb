@@ -53,32 +53,28 @@ class SisyphusWorker < BaseWorker
   transition from: :streaming_progress, to: :executing, on: :resume
   transition from: :failed, to: :pending, on: :retry
 
-  # Approval modes
-  APPROVAL_MODES = [
-    AUTONOMOUS = :autonomous,    # No approvals required (default)
-    STEP = :step,               # Approve each step
-    MILESTONE = :milestone      # Approve each milestone
-  ].freeze
+  # Default configuration
+  DEFAULT_CONFIG = Configuration::SisyphusConfig.new(
+    approval_mode: :autonomous,
+    max_retries: 3,
+    stream_progress: true,
+    error_mode: :lenient,
+    dry_run: false
+  ).freeze
 
   attr_reader :execution_plan, :config, :memory_store,
               :current_milestone_index, :current_step_index,
-              :execution_record, :progress_stream
+              :execution_record, :progress_stream, :checkpoint_service
 
   # Initialize SisyphusWorker with execution plan and configuration
   #
-  # @param execution_plan [Planning::ExecutionPlan] The plan to execute
+  # @param execution_plan [Planning::Result] The plan to execute
   # @param path [String] The codebase root directory
-  # @param context [Hash] Optional context information
-  # @param config [Hash] Configuration options
-  # @option config [Symbol] :approval_mode (:autonomous, :step, :milestone)
-  # @option config [Integer] :max_retries (3) Maximum retry attempts per step
-  # @option config [Boolean] :stream_progress (true) Enable SSE progress streaming
-  # @option config [Symbol] :error_mode (:lenient) Error handling mode (:strict, :lenient, :interactive)
-  def initialize(execution_plan:, path:, context: {}, config: {})
-    # Validate execution_plan
-    unless execution_plan.is_a?(Planning::Result)
-      raise TypeError, "execution_plan must be a Planning::Result, got #{execution_plan.class}"
-    end
+  # @param context [Contexts::BaseContext] Context object (REQUIRED)
+  # @param config [Configuration::SisyphusConfig] Configuration object
+  def initialize(execution_plan:, path:, context:, config: DEFAULT_CONFIG)
+    raise TypeError, "execution_plan must be a Planning::Result, got #{execution_plan.class}" unless execution_plan.is_a?(Planning::Result)
+    raise TypeError, "config must be a Configuration::SisyphusConfig, got #{config.class}" unless config.is_a?(Configuration::SisyphusConfig)
 
     # Initialize parent with synthesized goal from plan
     super(
@@ -88,15 +84,13 @@ class SisyphusWorker < BaseWorker
     )
 
     @execution_plan = execution_plan
-    @config = build_config(config)
+    @config = config
     @current_milestone_index = 0
     @current_step_index = 0
     @execution_record = nil
     @progress_stream = nil
     @checkpoint_service = nil
     @diff_service = nil
-
-    validate_config!
   end
 
   # Execute the complete execution plan
@@ -163,7 +157,7 @@ class SisyphusWorker < BaseWorker
   # @param event_type [Symbol] Type of progress event
   # @param data [Hash] Event data
   def emit_progress(event_type, data = {})
-    return unless @config[:stream_progress]
+    return unless @config.stream_progress
     return unless @progress_stream
 
     event = {
@@ -181,42 +175,11 @@ class SisyphusWorker < BaseWorker
 
   private
 
-  # Build configuration with defaults
-  def build_config(config)
-    {
-      approval_mode: config.fetch(:approval_mode, AUTONOMOUS),
-      max_retries: config.fetch(:max_retries, 3),
-      stream_progress: config.fetch(:stream_progress, true),
-      error_mode: config.fetch(:error_mode, :lenient)
-    }
-  end
-
-  # Validate configuration parameters
-  def validate_config!
-    unless APPROVAL_MODES.include?(@config[:approval_mode])
-      raise ArgumentError, "Invalid approval_mode: #{@config[:approval_mode]}. " \
-                           "Must be one of: #{APPROVAL_MODES.join(', ')}"
-    end
-
-    unless @config[:max_retries].is_a?(Integer) && @config[:max_retries] > 0
-      raise ArgumentError, "max_retries must be a positive Integer, got #{@config[:max_retries]}"
-    end
-
-    unless [true, false].include?(@config[:stream_progress])
-      raise ArgumentError, "stream_progress must be a Boolean, got #{@config[:stream_progress]}"
-    end
-
-    unless [:strict, :lenient, :interactive].include?(@config[:error_mode])
-      raise ArgumentError, "Invalid error_mode: #{@config[:error_mode]}. " \
-                           "Must be one of: strict, lenient, interactive"
-    end
-  end
-
   # Initialize execution environment
   def initialize_execution
     ensure_state_directory!
     @memory_store = create_memory_store
-    @progress_stream = [] if @config[:stream_progress]
+    @progress_stream = [] if @config.stream_progress
     
     # Initialize services (checkpoint service only if git repo exists)
     @checkpoint_service = initialize_checkpoint_service
@@ -225,7 +188,7 @@ class SisyphusWorker < BaseWorker
     
     # Initialize execution record
     @execution_record = Execution::ExecutionRecord.new(
-      plan_id: @execution_plan.project_name || "execution_#{Time.now.to_i}",
+      plan_id: @execution_plan.id,
       step_results: [],
       started_at: Time.now.utc.iso8601,
       status: :running
@@ -237,7 +200,7 @@ class SisyphusWorker < BaseWorker
       evidence: {
         milestone_count: @execution_plan.milestone_count,
         step_count: @execution_plan.step_count,
-        approval_mode: @config[:approval_mode],
+        approval_mode: @config.approval_mode,
         checkpoint_service_available: @checkpoint_service.present?
       }
     )
@@ -325,7 +288,7 @@ class SisyphusWorker < BaseWorker
   # @return [Execution::StepResult]
   def execute_step(step)
     retries = 0
-    max_retries = @config[:max_retries]
+    max_retries = @config.max_retries
     
     loop do
       begin
@@ -503,7 +466,7 @@ class SisyphusWorker < BaseWorker
   # @param step [Planning::Step]
   # @param step_result [Execution::StepResult]
   def handle_step_failure(step, step_result)
-    case @config[:error_mode]
+    case @config.error_mode
     when :strict
       # Abort on any failure
       raise StandardError, "Step #{step.number} failed: #{step_result.error_message}"
@@ -611,7 +574,8 @@ class SisyphusWorker < BaseWorker
     WorkflowMemoryStore.new(
       owner_id: @owner_id,
       workflow_id: SecureRandom.uuid,
-      workflow_name: self.class.worker_name
+      workflow_name: self.class.worker_name,
+      path: File.join(@path, "sisyphus_memory.json")
     )
   end
 

@@ -29,7 +29,7 @@ module Execution
       PARTIAL = :partial
     ].freeze
 
-    attr_reader :plan_id, :step_results, :started_at, :status, :checkpoint_ids,
+    attr_reader :id, :plan_id, :step_results, :started_at, :status, :checkpoint_ids,
                 :completed_at, :milestones_completed, :error, :metadata, :progress_events
 
     # @param plan_id [String] The execution plan identifier
@@ -47,7 +47,7 @@ module Execution
                    error: nil, metadata: {}, progress_events: [])
       validate_types!(plan_id, step_results, started_at, status, checkpoint_ids,
                       milestones_completed, metadata, progress_events)
-      
+      @id = SecureRandom.uuid
       @plan_id = plan_id
       @step_results = Array(step_results)
       @started_at = started_at

@@ -68,19 +68,22 @@ class MemoryStore
   end
 
   # Get a Context instance for a specific section.
-  # Sections can be:
-  # - Serialized contexts (Hash with :context_class) - restored via from_h
-  # - Raw entries (Array of Hashes with :text) - loaded via add_from_entry
+  # @param section [Symbol] Section name
+  # @return [Contexts::BaseContext] Context for the section
   def context_for(section)
     section_key = section.to_sym
     return @section_contexts[section_key] if @section_contexts.key?(section_key)
 
     section_data = @sections[section_key]
+    return Contexts::BaseContext.new unless section_data
 
     memory_class = Memories::Registry.for(section)
     context_class = memory_class&.context_class || Contexts::BaseContext
 
-    context = context_class.from_section_data(section_data, source: section_key.to_s)
+    # Convert section data to Entry objects
+    entries = normalize_section_data_to_entries(section_data, section_key.to_s)
+    
+    context = context_class.from_section_data(entries, source: section_key.to_s)
     @section_contexts[section_key] = context
   end
 
@@ -128,5 +131,42 @@ class MemoryStore
 
   def deep_dup(obj)
     Marshal.load(Marshal.dump(obj))
+  end
+
+  # Convert section data to Entry objects
+  # @param data [Array, Hash, nil] Section data
+  # @param source [String] Source identifier
+  # @return [Array<Contexts::Entries::BaseEntry>] Array of Entry objects
+  def normalize_section_data_to_entries(data, source)
+    return [] unless data
+
+    if data.is_a?(Array)
+      # Array of items - convert each to Entry
+      data.map do |item|
+        if item.is_a?(Contexts::Entries::BaseEntry)
+          item
+        else
+          # Create Entry from raw data
+          content = item.is_a?(Hash) ? (item[:text] || item.to_s) : item.to_s
+          Contexts::Entries::BaseEntry.new(
+            content: content,
+            topics: [],
+            source: source,
+            metadata: {}
+          )
+        end
+      end
+    elsif data.is_a?(Hash)
+      # Single hash - wrap in Entry
+      content = data[:text] || data.to_s
+      [Contexts::Entries::BaseEntry.new(
+        content: content,
+        topics: [],
+        source: source,
+        metadata: {}
+      )]
+    else
+      []
+    end
   end
 end

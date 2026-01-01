@@ -4,8 +4,7 @@ require "test_helper"
 
 class WorkflowMemoryStoreTest < ActiveSupport::TestCase
   let(:temp_dir) do
-    dir = Rails.root.join("tmp", "workflow_memory_test_#{Process.pid}_#{Thread.current.object_id}").to_s
-    FileUtils.mkdir_p(dir)
+    dir = create_temp_git_repo
     dir
   end
 

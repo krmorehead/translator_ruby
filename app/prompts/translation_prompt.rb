@@ -3,7 +3,7 @@
 # Prompt that performs structured translations while preserving variables and protected terms.
 class TranslationPrompt < BasePrompt
   def initialize(protected_strings:, target_language:, source_language:, formality:, context_path: nil)
-    super(tools: [])
+    super()
     @protected_strings = protected_strings || []
     @target_language = target_language
     @source_language = source_language

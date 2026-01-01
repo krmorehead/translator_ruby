@@ -8,25 +8,28 @@ class BaseWorkerTest < ActiveSupport::TestCase
     dir
   end
 
+  # Shared context for tests
+  let(:worker_context) { Contexts::BaseContext.new }
+
   # Shared context using factory
   let(:seed_context) { build(:research_context, :full) }
 
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
   end
-  speed_profile :slow
+  speed_profile :fast
   test "initializes with valid path" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     assert_equal "test goal", worker.goal
     assert_equal File.expand_path(temp_dir), worker.path
     assert worker.pending?
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "generates unique owner_id on initialization" do
-    worker1 = BaseWorker.new(goal: "goal 1", path: temp_dir)
-    worker2 = BaseWorker.new(goal: "goal 2", path: temp_dir)
+    worker1 = BaseWorker.new(goal: "goal 1", path: temp_dir, context: worker_context)
+    worker2 = BaseWorker.new(goal: "goal 2", path: temp_dir, context: worker_context)
 
     assert_not_nil worker1.owner_id
     assert_not_nil worker2.owner_id
@@ -34,7 +37,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_match(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/, worker1.owner_id)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "workflow registration works" do
     # Create a test workflow class
     workflow_class = Class.new(BaseWorkflow)
@@ -47,9 +50,9 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_includes worker_class.registered_workflows, workflow_class
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "status transitions correctly" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     assert worker.pending?
     refute worker.running?
@@ -65,36 +68,36 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal({ result: "done" }, worker.result)
 
     # Test failed state on a fresh worker
-    worker2 = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker2 = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
     worker2.send(:mark_failed, "something went wrong")
     assert worker2.failed?
     assert_equal "something went wrong", worker2.error
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "execute raises NotImplementedError in base class" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     assert_raises(NotImplementedError) do
       worker.execute
     end
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "creates directory for non-existent paths" do
     # BaseWorker now creates directories for agent data paths
     test_path = File.join(temp_dir, "new_subdir_#{SecureRandom.hex(4)}")
     refute File.exist?(test_path)
 
-    worker = BaseWorker.new(goal: "test goal", path: test_path)
+    worker = BaseWorker.new(goal: "test goal", path: test_path, context: worker_context)
     assert File.exist?(test_path), "Worker should create non-existent directory"
     assert_equal File.expand_path(test_path), worker.path
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "parallel workers have isolated state" do
-    worker1 = BaseWorker.new(goal: "goal 1", path: temp_dir)
-    worker2 = BaseWorker.new(goal: "goal 2", path: temp_dir)
+    worker1 = BaseWorker.new(goal: "goal 1", path: temp_dir, context: worker_context)
+    worker2 = BaseWorker.new(goal: "goal 2", path: temp_dir, context: worker_context)
 
     # Different owner_ids means different state paths
     assert_not_equal worker1.state_path, worker2.state_path
@@ -104,14 +107,14 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_includes worker2.state_path, worker2.owner_id
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "state_path uses AGENT_STATE_PATH env var when set" do
     custom_path = File.join(temp_dir, "custom_state")
 
     original_env = ENV["AGENT_STATE_PATH"]
     ENV["AGENT_STATE_PATH"] = custom_path
 
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     assert worker.state_path.start_with?(custom_path)
     assert_includes worker.state_path, worker.owner_id
@@ -123,14 +126,14 @@ class BaseWorkerTest < ActiveSupport::TestCase
     end
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "output_path uses RESEARCH_OUTPUT_PATH env var when set" do
     custom_path = File.join(temp_dir, "custom_output")
 
     original_env = ENV["RESEARCH_OUTPUT_PATH"]
     ENV["RESEARCH_OUTPUT_PATH"] = custom_path
 
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     assert_equal custom_path, worker.output_path
   ensure
@@ -141,9 +144,9 @@ class BaseWorkerTest < ActiveSupport::TestCase
     end
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "ensure_state_directory creates directory" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     refute File.exist?(worker.state_path)
 
@@ -153,9 +156,9 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert File.directory?(worker.state_path)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "ensure_output_directory creates directory" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     refute File.exist?(worker.output_path)
 
@@ -165,14 +168,14 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert File.directory?(worker.output_path)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "worker_name returns underscored class name" do
     assert_equal "base_worker", BaseWorker.worker_name
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "stores and retrieves workflow results" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     worker.send(:store_workflow_result, "test_workflow", { data: "result" })
 
@@ -180,61 +183,57 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_nil worker.send(:workflow_result, "nonexistent_workflow")
   end
 
-  speed_profile :slow
-  test "accepts context parameter" do
-    # Use factory for context
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: seed_context)
-
-    assert_equal seed_context, worker.context
-    assert_equal seed_context[:known_files], worker.context[:known_files]
-    assert_equal seed_context[:prior_findings], worker.context[:prior_findings]
+  speed_profile :fast
+  test "requires context parameter" do
+    # Context is now required, no default
+    assert_raises(ArgumentError) do
+      BaseWorker.new(goal: "test goal", path: temp_dir)
+    end
   end
 
-  speed_profile :slow
-  test "context defaults to empty hash" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
-
-    assert_equal({}, worker.context)
-  end
-
-  speed_profile :slow
-  test "context with nil value defaults to empty hash" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: nil)
-
-    assert_equal({}, worker.context)
+  speed_profile :fast
+  test "context must be BaseContext type" do
+    # Passing wrong type should fail
+    assert_raises(TypeError) do
+      BaseWorker.new(goal: "test goal", path: temp_dir, context: {})
+    end
+    
+    assert_raises(TypeError) do
+      BaseWorker.new(goal: "test goal", path: temp_dir, context: nil)
+    end
   end
 
   # State machine tests
-  speed_profile :slow
+  speed_profile :fast
   test "starts in pending state" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     assert_equal :pending, worker.current_state
     assert worker.pending?
     assert worker.in_state?(:pending)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "has status method that returns current state" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     assert_equal :pending, worker.status
     worker.send(:mark_running)
     assert_equal :running, worker.status
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "can check available events" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     assert worker.can_trigger?(:start)
     assert worker.can_trigger?(:fail)
     refute worker.can_trigger?(:finish)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "transition to running via mark_running" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     worker.send(:mark_running)
 
@@ -242,9 +241,9 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal :running, worker.current_state
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "transition to failed via mark_failed" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     worker.send(:mark_running)
     worker.send(:mark_failed, "error message")
@@ -253,9 +252,9 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal "error message", worker.error
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "invalid state transitions raise errors" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     # Can't finish from pending
     assert_raises(StateMachine::InvalidTransition) do
@@ -263,9 +262,9 @@ class BaseWorkerTest < ActiveSupport::TestCase
     end
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "state history is tracked" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     worker.send(:mark_running)
     worker.send(:mark_complete, { result: "done" })
@@ -278,9 +277,9 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal :complete, history[1][:to]
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "retry from failed state" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir)
+    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     worker.send(:mark_failed, "error")
     assert worker.failed?
@@ -290,4 +289,3 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_nil worker.error
   end
 end
-

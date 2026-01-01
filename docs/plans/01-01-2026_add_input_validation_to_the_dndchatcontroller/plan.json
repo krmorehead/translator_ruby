@@ -1,0 +1,239 @@
+{
+  "goal": "Add input validation to the DndChatController",
+  "milestones": [
+    {
+      "id": "9b5fb383-8ce2-4029-9f3e-7267a94b7590",
+      "title": "Input Validation Setup",
+      "description": "Prepare the controller for validation",
+      "steps": [
+        {
+          "id": "023b1677-59be-4870-9b1f-5a7a369da6ac",
+          "title": "Add validation methods to DndChatController",
+          "intent": "Create foundation for input validation",
+          "details": [
+            "Create private methods for validation",
+            "Structure validation methods by parameter type",
+            "Include basic validation structure"
+          ],
+          "tests": [
+            "Ensure validation methods exist",
+            "Verify private method visibility",
+            "Test basic validation structure"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        }
+      ],
+      "order_index": 0,
+      "estimated_duration": null,
+      "success_criteria": null
+    },
+    {
+      "id": "5bd115ce-074c-4b1e-876c-09ab298dac34",
+      "title": "Parameter Validation",
+      "description": "Implement validation for specific parameters",
+      "steps": [
+        {
+          "id": "82279f12-3673-4b33-bbe1-613a194ba112",
+          "title": "Validate character name parameter",
+          "intent": "Ensure character names meet requirements",
+          "details": [
+            "Add presence validation",
+            "Add length constraints (2-50 characters)",
+            "Add format validation (only allow letters, spaces, and basic punctuation)",
+            "Handle nil values"
+          ],
+          "tests": [
+            "Test presence validation",
+            "Test minimum length validation",
+            "Test maximum length validation",
+            "Test format validation",
+            "Test nil value handling"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        },
+        {
+          "id": "b8c62793-1a6b-43a6-9507-46d2492d6759",
+          "title": "Validate ability scores parameter",
+          "intent": "Ensure ability scores are valid",
+          "details": [
+            "Validate array format",
+            "Check for exactly 6 numeric values",
+            "Ensure each value is between 1 and 30",
+            "Handle nil values"
+          ],
+          "tests": [
+            "Test array format validation",
+            "Test exact count of 6 values",
+            "Test minimum score validation",
+            "Test maximum score validation",
+            "Test numeric validation",
+            "Test nil value handling"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 1
+        },
+        {
+          "id": "077555c8-a857-4953-a0e6-2d6453f942cb",
+          "title": "Validate equipment list parameter",
+          "intent": "Ensure equipment list is properly formatted",
+          "details": [
+            "Validate array format",
+            "Check for at least one item",
+            "Ensure each item has name and type fields",
+            "Handle nil values"
+          ],
+          "tests": [
+            "Test array format validation",
+            "Test minimum number of items",
+            "Test item structure validation",
+            "Test nil value handling"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 2
+        }
+      ],
+      "order_index": 1,
+      "estimated_duration": null,
+      "success_criteria": null
+    },
+    {
+      "id": "1347a556-00db-431a-8cd3-288bfe8d9cb8",
+      "title": "Error Handling",
+      "description": "Implement error handling and responses",
+      "steps": [
+        {
+          "id": "2ec3e2cf-fb79-484a-9c0f-f5556b8ee68c",
+          "title": "Create validation error response format",
+          "intent": "Standardize error responses",
+          "details": [
+            "Define error response structure",
+            "Include error code, message, and details",
+            "Handle both development and production environments"
+          ],
+          "tests": [
+            "Test error response format",
+            "Verify error details are included",
+            "Test environment-specific handling"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        },
+        {
+          "id": "8e38e3d9-3749-4e14-8a7e-119f6240a4d0",
+          "title": "Implement validation error handling in controller",
+          "intent": "Integrate validation with controller actions",
+          "details": [
+            "Wrap controller actions in validation blocks",
+            "Handle validation errors appropriately",
+            "Return standardized error responses"
+          ],
+          "tests": [
+            "Test validation error handling in create action",
+            "Test validation error handling in update action",
+            "Verify proper response codes"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 1
+        }
+      ],
+      "order_index": 2,
+      "estimated_duration": null,
+      "success_criteria": null
+    },
+    {
+      "id": "353f9893-8d88-4fc5-a8f6-5874b5608f99",
+      "title": "Validation Testing",
+      "description": "Comprehensive testing of validation implementation",
+      "steps": [
+        {
+          "id": "4eb8ab61-4bfa-4d4b-813c-ce3128597c53",
+          "title": "Write test cases for all validation scenarios",
+          "intent": "Ensure complete validation coverage",
+          "details": [
+            "Test all parameter validation rules",
+            "Test edge cases for each validation rule",
+            "Test combinations of validation errors"
+          ],
+          "tests": [
+            "Test character name validation edge cases",
+            "Test ability scores validation edge cases",
+            "Test equipment list validation edge cases",
+            "Test multiple validation errors simultaneously"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 0
+        },
+        {
+          "id": "07fd4cdb-aa2b-46bb-a011-c9e809622dd3",
+          "title": "Test validation in different controller actions",
+          "intent": "Verify validation works across all actions",
+          "details": [
+            "Test create action validation",
+            "Test update action validation",
+            "Test show action validation if needed"
+          ],
+          "tests": [
+            "Test create action with invalid parameters",
+            "Test update action with invalid parameters",
+            "Test validation in show action if applicable"
+          ],
+          "status": "pending",
+          "estimated_duration": null,
+          "dependencies": null,
+          "file_changes": null,
+          "order_index": 1
+        }
+      ],
+      "order_index": 3,
+      "estimated_duration": null,
+      "success_criteria": null
+    }
+  ],
+  "created_at": "2026-01-01T19:32:12Z",
+  "metadata": {
+    "analysis_results": {
+      "relevant_files": [],
+      "patterns": [],
+      "constraints": [],
+      "context": "Analysis failed: undefined method 'lines' for nil"
+    }
+  },
+  "constraints": [
+    "Must maintain existing functionality",
+    "Must follow Rails validation patterns",
+    "All new code must be tested"
+  ],
+  "assumptions": [
+    "DndChatController exists",
+    "Existing code structure follows Rails conventions",
+    "Test suite is in place"
+  ],
+  "risks": [
+    "Existing code might break if validation is too strict",
+    "Edge cases might be missed",
+    "Validation might affect performance"
+  ]
+}

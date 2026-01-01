@@ -133,23 +133,6 @@ class ConfigurationServiceTest < ActiveSupport::TestCase
     assert result[:errors].any?
   end
 
-  speed_profile :fast
-  test "validate_capability returns errors for invalid types" do
-    config_hash = {
-      name: "not_a_symbol",
-      model_name: "model",
-      port: 8000,
-      max_context: 1000,
-      base_url: "url"
-    }
-
-    result = @service.validate_capability(config_hash)
-
-    assert_not result[:valid]
-    assert result[:errors].any?
-    assert result[:errors].first.include?("Symbol")
-  end
-
   # test_connection tests
   speed_profile :medium
   test "test_connection returns success for valid capability" do

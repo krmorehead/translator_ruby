@@ -111,8 +111,9 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
     history = workflow.workflow_memory.state_history
     assert history.any?
+    assert history.all? { |h| h.is_a?(WorkflowMemories::StateTransition) }
     # Should have at least start and finish transitions
-    events = history.map { |h| h[:event] }
+    events = history.map(&:event)
     assert_includes events, :start
     assert_includes events, :finish
   end
@@ -177,7 +178,8 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
     decisions = workflow.workflow_memory.get_section(:decisions)
     assert_equal 1, decisions.size
-    assert_equal "Use parallel processing", decisions.first[:decision]
+    assert_instance_of WorkflowMemories::Decision, decisions.first
+    assert_equal "Use parallel processing", decisions.first.decision
   end
 
   # Memory summary tests
@@ -221,7 +223,8 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
     errors = workflow.workflow_memory.get_section(:errors)
     assert_equal 1, errors.size
-    assert_equal "Something went wrong", errors.first[:error]
+    assert_instance_of WorkflowMemories::Error, errors.first
+    assert_equal "Something went wrong", errors.first.error_message
   end
 end
 

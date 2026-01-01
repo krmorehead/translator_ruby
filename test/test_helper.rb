@@ -30,6 +30,22 @@ module ActiveSupport
     # Include SpeedProfile module for test speed enforcement
     include SpeedProfile unless ENV["SKIP_SPEED_PROFILE_VALIDATION"] == "true"
 
+    # Helper to create a temporary directory initialized as a Git repository
+    # @return [String] Path to the temporary Git repository
+    def create_temp_git_repo
+      dir = Dir.mktmpdir
+      Dir.chdir(dir) do
+        system("git init", out: File::NULL, err: File::NULL)
+        system("git config user.email 'test@example.com'", out: File::NULL, err: File::NULL)
+        system("git config user.name 'Test User'", out: File::NULL, err: File::NULL)
+        # Create initial commit so we have a valid Git history
+        FileUtils.touch("README.md")
+        system("git add .", out: File::NULL, err: File::NULL)
+        system("git commit -m 'Initial commit'", out: File::NULL, err: File::NULL)
+      end
+      dir
+    end
+
     # Clean up test agent data after each test
     teardown do
       cleanup_test_agent_data

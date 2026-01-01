@@ -9,7 +9,7 @@ class LocateDefinitionActionTest < ActiveSupport::TestCase
     @agent = OpenStruct.new(goal: "Test goal", path: @test_path)
     @memory_store = create_mock_memory_store
   end
-  speed_profile :slow
+  speed_profile :fast
   test "locates class definitions" do
     action = create_action
 
@@ -20,7 +20,7 @@ class LocateDefinitionActionTest < ActiveSupport::TestCase
     assert result[:definitions].any? { |d| d[:type] == :class }
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "locates method definitions" do
     action = create_action
 
@@ -31,7 +31,7 @@ class LocateDefinitionActionTest < ActiveSupport::TestCase
     assert result[:definitions].any? { |d| d[:type] == :method }
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "locates any definition type when type is 'any'" do
     action = create_action
 
@@ -41,7 +41,7 @@ class LocateDefinitionActionTest < ActiveSupport::TestCase
     assert result[:definitions].any?
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "returns empty for non-existent symbol" do
     action = create_action
 
@@ -51,7 +51,7 @@ class LocateDefinitionActionTest < ActiveSupport::TestCase
     assert_equal 0, result[:count]
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "fails with empty symbol" do
     action = create_action
 
@@ -61,7 +61,7 @@ class LocateDefinitionActionTest < ActiveSupport::TestCase
     assert result[:error]
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "definitions include file path and line number" do
     action = create_action
 

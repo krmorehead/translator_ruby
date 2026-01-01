@@ -33,7 +33,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   end
 
   # ===== Initialization Tests =====
-  speed_profile :slow
+  speed_profile :fast
   test "initializes with owner_id" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
 
@@ -42,12 +42,13 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     assert workflow.pending?
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "initializes with parent_memory" do
     parent_memory = WorkflowMemoryStore.new(
       owner_id: @owner_id,
       workflow_id: SecureRandom.uuid,
-      workflow_name: "test_parent"
+      workflow_name: "test_parent",
+      path: File.join(@path, "parent_memory.json")
     )
 
     workflow = StepExecutionWorkflow.new(
@@ -58,7 +59,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     assert_equal parent_memory, workflow.parent_memory
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "initializes state variables" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
 
@@ -75,7 +76,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   # ===== Setup Tests =====
 
-  speed_profile :slow
+  speed_profile :fast
   test "setup accepts valid parameters" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
 
@@ -93,7 +94,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     assert_equal "test prompt", workflow.system_prompt
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "setup validates step is a Planning::Step" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
 
@@ -104,7 +105,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     assert_match(/step must be a Planning::Step/, error.message)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "setup validates path is a non-empty string" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
 
@@ -115,7 +116,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     assert_match(/path must be a non-empty String/, error.message)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "setup validates path is an existing directory" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
 
@@ -126,7 +127,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     assert_match(/path must be an existing directory/, error.message)
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "setup initializes workflow memory" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
     workflow.setup(step: @step, path: @path)
@@ -137,7 +138,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   # ===== State Machine Tests =====
 
-  speed_profile :slow
+  speed_profile :fast
   test "starts in pending state" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
 
@@ -145,7 +146,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     assert_equal :pending, workflow.current_state
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "transitions through execution phases" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
     workflow.setup(step: @step, path: @path)
@@ -179,7 +180,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     assert workflow.complete?
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "can transition to failed from any execution phase" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
     workflow.setup(step: @step, path: @path)
@@ -238,9 +239,10 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
     decisions = workflow.workflow_memory.get_section(:decisions)
     assert decisions.any?
+    assert decisions.all? { |d| d.is_a?(WorkflowMemories::Decision) }
 
     # Check for key decision points
-    decision_names = decisions.map { |d| d[:decision] }
+    decision_names = decisions.map(&:decision)
     assert_includes decision_names, "assemble_context"
     assert_includes decision_names, "plan_tool_sequence"
     assert_includes decision_names, "validate_tools"
@@ -423,7 +425,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   # ===== Workflow Name Tests =====
 
-  speed_profile :slow
+  speed_profile :fast
   test "workflow_name returns correct value" do
     assert_equal "step_execution_workflow", StepExecutionWorkflow.workflow_name
   end

@@ -1870,7 +1870,208 @@ results = service.find_similar(query_embedding: embedding, ...)  # Trusts type
 
 ---
 
-### Lesson 24: Speed Profile Categorization
+### Lesson 24: No Defensive Type Checking - Let Errors Fail Loudly
+
+**Problem:** Adding defensive type checks (like `is_a?`) throughout the codebase hides bugs and violates fail-fast principles.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Defensive type checking hides the real problem
+def summarize
+  transitions = @sections[:state_transitions]
+  
+  states_visited = transitions.map do |t|
+    # Don't do this! If t isn't the right type, we should know immediately
+    t.is_a?(StateTransition) ? t.to : (t[:to] || t["to"])
+  end.compact.uniq
+end
+
+# ❌ BAD: Checking for nil everywhere
+def process_user(user)
+  return nil unless user
+  return nil unless user.name
+  return nil unless user.email
+  
+  # ... actual logic
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Expect correct types, fail loudly if wrong
+def summarize
+  transitions = @sections[:state_transitions]
+  
+  # If transitions contains non-StateTransition objects, .to will raise NoMethodError
+  # This is GOOD - it tells us exactly what's wrong and where
+  states_visited = transitions.map(&:to).uniq
+end
+
+# ✅ GOOD: Validate at construction, trust everywhere else
+class UserProcessor
+  def initialize(user:)
+    raise ArgumentError, "user is required" unless user
+    raise TypeError, "user must be a User, got #{user.class}" unless user.is_a?(User)
+    
+    @user = user
+  end
+  
+  def process
+    # No nil checks - we validated in constructor
+    send_email(@user.name, @user.email)
+  end
+end
+```
+
+**Key Principles:**
+1. **Validate once in constructors** - Not at every use site
+2. **Trust your types** - If @sections[:state_transitions] should contain StateTransition objects, it DOES
+3. **Let NoMethodError reveal bugs** - Don't hide them with defensive checks
+4. **Fail fast** - Errors at the call site tell you exactly what's wrong
+5. **No backward compatibility** - Fix the source of bad data, don't work around it
+
+**Why This Matters:**
+- **Bugs surface immediately** - Not hidden by fallback logic
+- **Clear error messages** - NoMethodError on Hash tells you exactly what's wrong
+- **Forces proper fixes** - Can't paper over architectural issues
+- **Simpler code** - No branching for type checks
+- **Better performance** - No runtime type checking overhead
+
+**Migration Strategy:**
+If you find defensive type checks in code:
+1. Remove the type check
+2. Run tests - they will fail with NoMethodError
+3. Fix the ROOT CAUSE that's putting wrong types in
+4. Don't add the type check back
+
+**Example:**
+```ruby
+# Before migration - defensive code hiding bugs
+def calculate_total
+  items = @cart.items
+  items.map { |i| i.is_a?(Item) ? i.price : 0 }.sum  # ❌
+end
+
+# After migration - let it fail
+def calculate_total
+  @cart.items.map(&:price).sum  # ✅
+end
+# If this raises NoMethodError, fix Cart#items to ensure it only contains Item objects
+
+```
+
+**No Rescue Blocks for Test Fallbacks:**
+```ruby
+# ❌ BAD: Catching errors to provide test data
+def current_checkpoint_id
+  CheckpointTracker.instance.current_id(path: extract_repo_path)
+rescue => e
+  Rails.logger.debug("Checkpoint tracking failed: #{e.message}, using test checkpoint")
+  "test_checkpoint_#{SecureRandom.hex(8)}"  # DON'T DO THIS
+end
+
+# ✅ GOOD: Let it fail, fix the root cause
+def current_checkpoint_id
+  CheckpointTracker.instance.current_id(path: extract_repo_path)
+  # If this fails, tests will show the real error
+  # Fix the test setup to provide proper Git repositories
+end
+```
+
+**Tests must use real data and real environments:**
+- Tests should set up proper Git repositories if code needs Git
+- Tests should use real checkpoint IDs, not fake fallbacks
+- If code fails in tests, fix the test environment, don't catch the error
+
+---
+
+### Lesson 26: Test Behavior, Not Configuration
+
+**Problem:** Tests that assert specific configuration values are brittle and fail when configuration changes, even though behavior is correct.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Testing specific configuration value
+test "model comes from general_llm capability" do
+  prompt = NarrativePrompt.new
+  assert_equal "./vllm/models/qwen3_30b_a3b_moe", prompt.model
+end
+
+# ❌ BAD: Testing exact paths
+test "checkpoint path format" do
+  assert_equal "/app/.agents/state/abc123", worker.checkpoint_path
+end
+
+# ❌ BAD: Testing exact error messages
+test "validation error" do
+  error = assert_raises(ValidationError) { create_invalid_user }
+  assert_equal "Email must be valid format", error.message
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Test that model is set and valid
+test "has a configured model" do
+  prompt = NarrativePrompt.new
+  assert_not_nil prompt.model
+  assert_kind_of String, prompt.model
+  assert prompt.model.length > 0
+end
+
+# ✅ GOOD: Test path structure/behavior
+test "checkpoint path is in state directory" do
+  assert_includes worker.checkpoint_path, ".agents/state"
+  assert File.dirname(worker.checkpoint_path)  # Path is valid
+end
+
+# ✅ GOOD: Test error type and key content
+test "validation error mentions email" do
+  error = assert_raises(ValidationError) { create_invalid_user }
+  assert_match(/email/i, error.message)
+end
+```
+
+**Key Principles:**
+1. **Test behavior, not values** - Does it work? Not what exact value it has
+2. **Test contracts, not implementation** - Does it return a model? Not which model
+3. **Make tests resilient to config changes** - Config can change without breaking behavior
+4. **Test types and structure** - Is it a String? Not is it "xyz"
+5. **Use pattern matching for messages** - Does it mention the field? Not exact wording
+
+**Why This Matters:**
+- **Tests remain valid when configuration changes** - Updating models doesn't break tests
+- **Tests focus on correctness** - Is behavior right? Not is config the same
+- **Easier maintenance** - Don't update tests when config changes
+- **Better failure messages** - Failures indicate real problems, not config drift
+
+**What to Test:**
+- ✅ Method returns non-nil value
+- ✅ Return value is correct type
+- ✅ Behavior works as expected
+- ✅ Integration points function
+- ❌ Specific configuration values
+- ❌ Exact file paths or URLs
+- ❌ Exact error message wording
+
+**Migration Strategy:**
+```ruby
+# Before: Brittle test
+test "uses correct model" do
+  assert_equal "gpt-4", service.model
+end
+
+# After: Resilient test
+test "has a valid model configured" do
+  assert_not_nil service.model
+  assert_instance_of String, service.model
+  refute_empty service.model
+end
+```
+
+---
+
+### Lesson 27: Speed Profile Categorization
 
 **Problem:** Tests with incorrect speed profiles either timeout unnecessarily or hide performance issues.
 
@@ -2058,6 +2259,668 @@ rails test                   # Everything
 - Fix configuration issues that caused skips
 - Let tests fail if environment isn't set up correctly
 - Use descriptive error messages if something is missing
+
+---
+
+### Lesson 27: Explicit Parameters in from_h Methods
+
+**Problem:** `from_h` methods that accept a generic hash parameter hide their dependencies and make it unclear what data is required for deserialization.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Generic hash parameter hides requirements
+class AgentConfig
+  def self.from_h(hash)
+    # What keys does hash need? Unclear!
+    capabilities = hash[:capabilities]
+    environment = hash[:environment]
+    
+    new(
+      capabilities: capabilities,
+      environment: environment
+    )
+  end
+end
+
+# Calling code has no idea what's required
+config = AgentConfig.from_h(some_hash)  # What does some_hash need?
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Explicit parameters document requirements
+class AgentConfig
+  def self.from_h(capabilities:, environment:)
+    capabilities_objects = capabilities.transform_keys(&:to_sym).transform_values do |cap_hash|
+      CapabilityConfig.from_h(**cap_hash)
+    end
+    
+    new(
+      capabilities: capabilities_objects,
+      environment: environment
+    )
+  end
+end
+
+# Calling code is explicit
+config = AgentConfig.from_h(
+  capabilities: { general_llm: {...} },
+  environment: { "API_KEY" => "..." }
+)
+```
+
+**Key Principles:**
+1. **Explicit parameters** - Every required field is a named parameter
+2. **No hash unpacking** - Don't accept generic `hash` then extract keys
+3. **Self-documenting** - Method signature shows exactly what's needed
+4. **Fail fast** - Missing parameters raise `ArgumentError` immediately
+5. **Consistent with initialize** - Same parameter names as constructor
+
+**Why This Matters:**
+- **Clear contracts** - Method signature documents dependencies
+- **Better errors** - Ruby raises ArgumentError with parameter name
+- **No silent nils** - Can't accidentally pass wrong hash structure
+- **IDE support** - Autocomplete knows parameter names
+- **Refactoring safety** - Changing requirements breaks at call sites
+
+**Migration Strategy:**
+```ruby
+# Before: Hidden requirements
+def self.from_h(hash)
+  new(name: hash[:name], value: hash[:value])
+end
+
+# After: Explicit requirements  
+def self.from_h(name:, value:)
+  new(name: name, value: value)
+end
+
+# Update call sites from:
+Thing.from_h(hash)
+
+# To:
+Thing.from_h(**hash)  # Splat operator unpacks hash to keyword args
+```
+
+---
+
+### Lesson 28: No Defensive Validation in Constructors
+
+**Problem:** Constructors with defensive type checking create duplicate validation logic and hide architectural issues.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Defensive validation in constructor
+class AgentConfig
+  def initialize(capabilities:, environment:)
+    # Checking types of everything
+    raise ArgumentError, "capabilities must be a Hash" unless capabilities.is_a?(Hash)
+    
+    capabilities.each do |name, config|
+      raise ArgumentError, "keys must be Symbols" unless name.is_a?(Symbol)
+      raise TypeError, "values must be CapabilityConfig" unless config.is_a?(CapabilityConfig)
+    end
+    
+    raise ArgumentError, "environment must be a Hash" unless environment.is_a?(Hash)
+    
+    @capabilities = capabilities
+    @environment = environment
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Trust your types, let it fail naturally
+class AgentConfig
+  def initialize(capabilities:, environment:)
+    @capabilities = capabilities
+    @environment = environment
+  end
+end
+
+# If wrong types are passed, Ruby's NoMethodError tells you immediately:
+# - capabilities.transform_values -> NoMethodError if not a Hash
+# - environment["KEY"] -> NoMethodError if not a Hash
+```
+
+**Key Principles:**
+1. **Required parameters enforce presence** - Keyword args without defaults
+2. **Duck typing** - If it quacks like a hash, use it as a hash
+3. **Fail naturally** - NoMethodError is clear enough
+4. **No redundant checks** - Type checking is waste when callers are correct
+5. **Constructor is lightweight** - Just assign instance variables
+
+**When to Validate in Constructors:**
+- ✅ Business rules (e.g., "age must be >= 18")
+- ✅ Enum values (e.g., "status must be :active, :inactive, or :suspended")
+- ✅ Format requirements (e.g., "email must match pattern")
+- ❌ Type checking (let NoMethodError handle it)
+- ❌ Nil checks (use required parameters)
+- ❌ Collection element types (let iteration fail naturally)
+
+**Why This Matters:**
+- **Simpler code** - 3 lines instead of 15
+- **Better performance** - No runtime type checking
+- **Clear errors** - NoMethodError shows exact problem
+- **Forces proper usage** - Callers can't be lazy
+
+---
+
+### Lesson 29: Delete Tests for Removed Validation
+
+**Problem:** When removing defensive validation from code, tests that verify the validation continue to fail and clutter the test suite.
+
+**Bad Pattern:**
+```ruby
+# Code: Removed defensive validation
+class AgentConfig
+  def initialize(capabilities:, environment:)
+    @capabilities = capabilities  # No type check
+    @environment = environment
+  end
+end
+
+# Test: Still expects the removed validation
+test "validates capabilities must be a Hash" do
+  error = assert_raises(ArgumentError) do
+    AgentConfig.new(capabilities: "not a hash", environment: {})
+  end
+  assert_match(/capabilities must be a Hash/, error.message)
+end
+# TEST FAILS - No ArgumentError is raised anymore!
+```
+
+**Good Pattern:**
+```ruby
+# Code: Trust types
+class AgentConfig
+  def initialize(capabilities:, environment:)
+    @capabilities = capabilities
+    @environment = environment
+  end
+end
+
+# Test: DELETE defensive validation tests entirely
+# (No test needed - if wrong type is passed, NoMethodError will occur naturally)
+
+# Keep tests that verify BEHAVIOR
+test "stores capabilities and environment" do
+  config = AgentConfig.new(
+    capabilities: { llm: cap_object },
+    environment: { "KEY" => "value" }
+  )
+  
+  assert_equal cap_object, config.capability(:llm)
+  assert_equal({ "KEY" => "value" }, config.environment)
+end
+```
+
+**Key Principles:**
+1. **Delete validation tests** - When removing validation, delete its tests
+2. **Test behavior, not validation** - Focus on what the class DOES
+3. **Trust types** - Don't test that wrong types raise errors
+4. **Keep integration tests** - Ensure full workflows work correctly
+5. **Update test counts** - Expect fewer tests after cleanup
+
+**Types of Tests to Delete:**
+- ❌ "validates X must be a Y"
+- ❌ "validates X keys must be Symbols"
+- ❌ "validates X must not be nil"
+- ❌ "raises TypeError for invalid X"
+- ✅ Keep: "serializes correctly"
+- ✅ Keep: "returns correct values"
+- ✅ Keep: "workflow completes successfully"
+
+**Why This Matters:**
+- **Honest test suite** - Tests match actual code behavior
+- **Faster tests** - Fewer unnecessary validation tests
+- **Clear intent** - Tests show what matters, not what doesn't
+- **No false failures** - Tests don't expect removed validation
+
+---
+
+### Lesson 31: No Type Branching - Expect One Type
+
+**Problem:** Methods that accept "anything" and branch on type checks are defensive, complex, and hide contract violations.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Type checking and branching
+def self.from_section_data(data, source:)
+  if data.is_a?(Array)
+    data.each do |entry_data|
+      if entry_data.is_a?(Entry)
+        context.add_entry(entry_data)
+      elsif entry_data.is_a?(Hash)
+        entry = Entry.from_h(entry_data)
+        context.add_entry(entry)
+      else
+        context.add(content: entry_data.to_s, topics: [], source: source)
+      end
+    end
+  elsif data.is_a?(Hash)
+    # Handle hash...
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Expect ONE type, fail if wrong
+def self.from_section_data(entries, source:)
+  # entries is an Array of Entry objects, period
+  context = new
+  entries.each { |entry| context.add_entry(entry) }
+  context
+end
+
+# If caller passes wrong type, they get clear NoMethodError
+```
+
+**Key Principles:**
+1. **One type per parameter** - Method accepts Entry objects, not "data"
+2. **No type checking** - No `is_a?`, `kind_of?`, `respond_to?`
+3. **No fallbacks** - Don't try to "fix" bad input
+4. **Fail loudly** - Let NoMethodError reveal contract violation
+5. **Document expectations** - Method name and parameters show what's expected
+
+**When You're Tempted to Type Check:**
+```ruby
+# ❌ Temptation: "What if they pass a Hash?"
+if data.is_a?(Hash)
+  # handle hash
+end
+
+# ✅ Solution: Don't accept Hash! Fix the caller to pass proper type
+def process_entries(entries)  # Array of Entry objects
+  entries.each { |entry| entry.process }
+end
+```
+
+**Why This Matters:**
+- **Clear contracts** - Method signature documents exactly what's expected
+- **Fail fast** - Errors happen at call site, not deep in method
+- **Simpler code** - No branching, no type checks
+- **Forces proper usage** - Callers must create proper objects
+- **Better errors** - NoMethodError shows exactly what method was called on what type
+
+**Migration Strategy:**
+1. Identify methods with type checking
+2. Determine what type SHOULD be passed
+3. Remove all type checks and branches
+4. Update callers to pass correct type
+5. Let tests fail with NoMethodError
+6. Fix callers, not the method
+
+**Example:**
+```ruby
+# Before: Accepts anything
+def add_items(items)
+  items.each do |item|
+    if item.is_a?(String)
+      add_string_item(item)
+    elsif item.is_a?(Hash)
+      add_hash_item(item)
+    else
+      add_object_item(item)
+    end
+  end
+end
+
+# After: Expects one thing
+def add_items(items)
+  # items is Array<Item>, call methods on them
+  items.each { |item| item.add_to(self) }
+end
+```
+
+---
+
+### Lesson 30: Pass Objects, Not Primitives
+
+**Problem:** Converting objects to strings or primitives to pass between methods loses type information and forces consumers to reconstruct or guess structure.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Converting to string, losing all structure
+def self.from_section_data(data, source:)
+  if data.is_a?(Array)
+    context = new
+    data.each { |entry_data| context.add(content: entry_data.to_s, topics: [], source: source) }
+    return context
+  end
+end
+
+# ❌ BAD: Passing hashes instead of objects
+def process_user(user_hash)
+  name = user_hash[:name]
+  email = user_hash[:email]
+  # Now we have to know the hash structure everywhere
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Pass proper objects, let them handle themselves
+def self.from_section_data(data, source:)
+  if data.is_a?(Array)
+    context = new
+    data.each do |entry|
+      # entry is already an Entry object or can be deserialized to one
+      context.add_entry(entry)
+    end
+    return context
+  end
+end
+
+# ✅ GOOD: Accept objects, call methods on them
+def process_user(user)
+  # user is a User object with methods
+  send_email(user.name, user.email)
+  user.mark_processed!
+end
+```
+
+**Key Principles:**
+1. **Objects carry behavior** - Strings are just data, objects have methods
+2. **Type safety** - Objects enforce their own invariants
+3. **Easier refactoring** - Change object internals without changing callers
+4. **Self-documenting** - Method signatures show what type is expected
+5. **No reconstruction** - Don't serialize just to deserialize again
+
+**When to Convert to Primitives:**
+- ✅ At system boundaries (JSON API responses, database storage)
+- ✅ For display/logging only
+- ✅ When storing in external systems
+- ❌ NOT for passing between internal methods
+- ❌ NOT for temporary convenience
+- ❌ NOT to avoid thinking about types
+
+**Why This Matters:**
+- **Type errors caught early** - NoMethodError reveals contract violations
+- **No data loss** - Objects preserve all information and relationships
+- **Clearer contracts** - Method signature documents expectations
+- **Better encapsulation** - Objects hide implementation details
+
+**Example Flow:**
+```ruby
+# BAD: Converting between types unnecessarily
+entry = Entry.new(content: "text", topics: ["a"], source: "test")
+entry_string = entry.content  # Convert to string
+context.add(content: entry_string, topics: [], source: "unknown")  # Lost topics!
+
+# GOOD: Pass the object
+entry = Entry.new(content: "text", topics: ["a"], source: "test")
+context.add_entry(entry)  # Preserves everything
+```
+
+---
+
+## Lesson 32: Never Default Context to Hash - Always Require Proper Objects
+
+**Problem:** Allowing `context: {}` as a default parameter encourages passing raw hashes instead of proper context objects, violating type safety.
+
+**Solution:** Always require context as a parameter with NO default value. Context must be a proper `Contexts::BaseContext` subclass.
+
+### ❌ BAD: Optional hash context
+
+```ruby
+class BaseWorker
+  def initialize(goal:, path:, context: {})
+    @context = context || {}  # Defensive nil check, allows hash
+  end
+end
+
+# Callers can pass anything or nothing
+worker = BaseWorker.new(goal: "task", path: "/path")  # No context
+worker = BaseWorker.new(goal: "task", path: "/path", context: { foo: "bar" })  # Raw hash
+```
+
+**Problems:**
+- No type safety - accepts hashes, nils, or any object
+- Encourages lazy coding - "just pass an empty hash"
+- Defensive `|| {}` check hides bugs
+- No clear contract for what context should contain
+
+### ✅ GOOD: Required context object
+
+```ruby
+class BaseWorker
+  def initialize(goal:, path:, context:)
+    raise TypeError, "context must be a Contexts::BaseContext, got #{context.class}" unless context.is_a?(Contexts::BaseContext)
+    @context = context
+  end
+end
+
+# Callers MUST create proper context
+context = Contexts::BaseContext.new
+worker = BaseWorker.new(goal: "task", path: "/path", context: context)
+
+# Fails fast if wrong type passed
+worker = BaseWorker.new(goal: "task", path: "/path", context: {})
+# => TypeError: context must be a Contexts::BaseContext, got Hash
+```
+
+### Configuration Objects Over Hash Parameters
+
+**Problem:** Passing configuration as hashes with individual keyword arguments creates ambiguity and allows invalid combinations.
+
+**Solution:** Create a dedicated Config class that validates all parameters together.
+
+#### ❌ BAD: Individual config parameters with defaults
+
+```ruby
+class SisyphusWorker
+  def initialize(execution_plan:, path:, context: {}, approval_mode: :autonomous, max_retries: 3, stream_progress: true, error_mode: :lenient, dry_run: false)
+    @approval_mode = approval_mode
+    @max_retries = max_retries
+    # ... lots of instance variables
+  end
+end
+
+# OR with hash config (also bad)
+def initialize(execution_plan:, path:, context: {}, config: {})
+  @config = build_config(config)  # Merges defaults, filters keys
+end
+```
+
+**Problems:**
+- Too many parameters (7+ is a code smell)
+- Default values hide required configuration
+- Validation scattered or missing
+- Hash configs need defensive merging/filtering
+- Can't freeze configuration
+- No single place to validate parameter combinations
+
+#### ✅ GOOD: Dedicated Config class with explicit parameters
+
+```ruby
+class SisyphusWorker < BaseWorker
+  class Config
+    attr_reader :approval_mode, :max_retries, :stream_progress, :error_mode, :dry_run
+
+    def initialize(approval_mode:, max_retries:, stream_progress:, error_mode:, dry_run:)
+      raise ArgumentError, "approval_mode must be one of #{APPROVAL_MODES}" unless APPROVAL_MODES.include?(approval_mode)
+      raise ArgumentError, "max_retries must be positive" unless max_retries.positive?
+      raise ArgumentError, "error_mode must be :lenient or :strict" unless [:lenient, :strict].include?(error_mode)
+
+      @approval_mode = approval_mode
+      @max_retries = max_retries
+      @stream_progress = stream_progress
+      @error_mode = error_mode
+      @dry_run = dry_run
+      freeze
+    end
+
+    def to_h
+      {
+        approval_mode: @approval_mode,
+        max_retries: @max_retries,
+        stream_progress: @stream_progress,
+        error_mode: @error_mode,
+        dry_run: @dry_run
+      }
+    end
+  end
+
+  DEFAULT_CONFIG = Config.new(
+    approval_mode: :autonomous,
+    max_retries: 3,
+    stream_progress: true,
+    error_mode: :lenient,
+    dry_run: false
+  ).freeze
+
+  def initialize(execution_plan:, path:, context:, config: DEFAULT_CONFIG)
+    raise TypeError, "context must be a Contexts::BaseContext, got #{context.class}" unless context.is_a?(Contexts::BaseContext)
+    raise TypeError, "config must be a SisyphusWorker::Config, got #{config.class}" unless config.is_a?(Config)
+    
+    super(goal: execution_plan.goal, path: path, context: context)
+    @config = config
+  end
+
+  # Use config object properties directly
+  def some_method
+    return unless @config.stream_progress
+    retry_count = @config.max_retries
+  end
+end
+
+# Usage
+config = SisyphusWorker::Config.new(
+  approval_mode: :step,
+  max_retries: 5,
+  stream_progress: true,
+  error_mode: :strict,
+  dry_run: false
+)
+worker = SisyphusWorker.new(
+  execution_plan: plan,
+  path: "/path",
+  context: context,
+  config: config
+)
+
+# Or use default
+worker = SisyphusWorker.new(
+  execution_plan: plan,
+  path: "/path",
+  context: context
+)  # Uses DEFAULT_CONFIG
+```
+
+**Benefits:**
+- **Single validation point** - All config validation in one place
+- **Frozen immutability** - Config can't be accidentally modified
+- **Clear API** - Config class documents all options
+- **Type safety** - Constructor validates types and values together
+- **No defensive code** - No merging, filtering, or nil checks needed
+- **Explicit defaults** - DEFAULT_CONFIG constant is clear and reusable
+- **Clean worker code** - Worker just validates config type, no parameter sprawl
+
+**Key Principles:**
+1. **Never default context to hash or nil** - Always require proper objects
+2. **Type check immediately** - Fail fast in constructor
+3. **No defensive nil checks** - If parameter is required, don't check for nil
+4. **Configuration as objects** - Not hashes, not individual parameters
+5. **Validate in config constructor** - Not in worker code
+6. **Freeze config objects** - Make them immutable
+7. **One DEFAULT_CONFIG constant** - Not scattered default values
+
+**Apply This To:**
+- ✅ ALL Worker classes (BaseWorker, SisyphusWorker, DaedalusWorker, AgentWorker)
+- ✅ ALL Workflow classes
+- ✅ ANY class that accepts context as a parameter
+- ✅ ANY class with 4+ configuration parameters
+
+**Why This Matters:**
+- **Catches bugs at call site** - Missing context fails immediately
+- **Forces proper design** - Callers must think about context needs
+- **No ambiguity** - Clear what type is expected
+- **Fail fast** - TypeError on wrong type, not mysterious bugs later
+- **Self-documenting** - Method signature shows context is required
+- **Configuration as first-class objects** - Not scattered parameters or hashes
+
+---
+
+### Lesson 33: Domain Objects Must Have ID Properties
+
+**Problem:** Using arbitrary attributes (like `project_name`, `goal`, or `created_at`) as identifiers creates ambiguity and makes objects harder to track and reference.
+
+**Solution:** Every domain object should have an explicit `id` property that serves as its unique identifier.
+
+#### ❌ BAD: Using other attributes as identifiers
+
+```ruby
+# ❌ BAD: Using project_name as identifier
+@execution_record = Execution::ExecutionRecord.new(
+  plan_id: @execution_plan.project_name || "execution_#{Time.now.to_i}",
+  step_results: [],
+  started_at: Time.now.utc.iso8601,
+  status: :running
+)
+
+# ❌ BAD: No clear way to reference this record
+log_execution(@execution_record.plan_id)  # Is this the plan's ID or the record's ID?
+```
+
+#### ✅ GOOD: Explicit id property on all domain objects
+
+```ruby
+# ✅ GOOD: Use proper id properties
+class Planning::Result
+  attr_reader :id, :goal, :project_name, :milestones
+  
+  def initialize(goal:, project_name:, milestones:, ...)
+    @id = SecureRandom.uuid  # Every instance has unique ID
+    @goal = goal
+    @project_name = project_name
+    @milestones = milestones
+  end
+end
+
+class Execution::ExecutionRecord
+  attr_reader :id, :plan_id, :step_results
+  
+  def initialize(plan_id:, step_results:, started_at:, status:)
+    @id = SecureRandom.uuid  # Record has its own ID
+    @plan_id = plan_id        # References the plan's ID
+    @step_results = step_results
+  end
+end
+
+# Usage: Clear relationships
+@execution_record = Execution::ExecutionRecord.new(
+  plan_id: @execution_plan.id,  # Use the plan's actual ID
+  step_results: [],
+  started_at: Time.now.utc.iso8601,
+  status: :running
+)
+
+# Clear what we're referencing
+log_execution(record_id: @execution_record.id, plan_id: @execution_plan.id)
+```
+
+**Key Principles:**
+1. **Every domain object gets an ID** - Use `SecureRandom.uuid` in constructor
+2. **ID is immutable** - Set once, never changes
+3. **Use IDs for relationships** - `plan_id` references `Plan.id`, not `plan.project_name`
+4. **Expose via attr_reader** - Make ID accessible but not writable
+5. **Include in serialization** - `to_h` should include `id`, `from_h` should restore it
+
+**Benefits:**
+- **Clear relationships** - Foreign keys point to actual IDs
+- **Easy tracking** - Every object can be uniquely identified in logs
+- **Better debugging** - "ExecutionRecord abc123" is clearer than "ExecutionRecord for calculator_logging"
+- **Database-ready** - IDs match database primary key patterns
+- **No ambiguity** - ID is always the identifier, never something else
+
+**Apply To:**
+- ✅ All model classes (Planning::Result, Planning::Milestone, Planning::Step)
+- ✅ All workflow execution classes (ExecutionRecord, StepResult)
+- ✅ All memory classes (Decision, StateTransition, Error)
+- ✅ Any object that needs to be referenced or tracked
 
 ---
 

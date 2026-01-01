@@ -4,7 +4,8 @@ require "test_helper"
 
 class ActionDetectionPromptTest < ActiveSupport::TestCase
   def setup
-    @tools = [
+    # Convert hash tools to proper Tool objects following OOP patterns
+    tool_hashes = [
       {
         type: "function",
         function: {
@@ -36,6 +37,7 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
         }
       }
     ]
+    @tools = tool_hashes.map { |h| Tool.from_h(h) }
   end
   speed_profile :fast
   test "requires tools" do

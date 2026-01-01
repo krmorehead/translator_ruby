@@ -58,7 +58,7 @@ class AgentWorker < BaseWorker
   attr_reader :memory_store, :iteration_count, :action_count
   attr_reader :goal_context, :action_history_context
 
-  def initialize(goal:, path:, context: {}, **options)
+  def initialize(goal:, path:, context:, **options)
     super
     @max_iterations = options.fetch(:max_iterations, DEFAULT_MAX_ITERATIONS)
     @max_actions = options.fetch(:max_actions, DEFAULT_MAX_ACTIONS)

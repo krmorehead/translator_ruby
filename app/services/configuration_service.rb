@@ -52,19 +52,10 @@ class ConfigurationService
   # @param config_hash [Hash] Capability configuration to validate
   # @return [Hash] Validation result {valid:, errors:}
   def validate_capability(config_hash)
-    errors = []
-
-    # Try to create a CapabilityConfig to validate
-    begin
-      Configuration::CapabilityConfig.from_h(config_hash)
-      { valid: true, errors: [] }
-    rescue ArgumentError => e
-      errors << e.message
-      { valid: false, errors: errors }
-    rescue TypeError => e
-      errors << e.message
-      { valid: false, errors: errors }
-    end
+    Configuration::CapabilityConfig.from_h(**config_hash)
+    { valid: true, errors: [] }
+  rescue ArgumentError, TypeError => e
+    { valid: false, errors: [e.message] }
   end
 
   # Test connection to an LLM endpoint

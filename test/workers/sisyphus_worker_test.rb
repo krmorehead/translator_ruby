@@ -3,8 +3,10 @@
 require "test_helper"
 
 class SisyphusWorkerTest < ActiveSupport::TestCase
+  let(:worker_context) { Contexts::BaseContext.new }
+
   def setup
-    @path = Dir.mktmpdir
+    @path = create_temp_git_repo
     @execution_plan = create_test_plan
   end
 
@@ -46,16 +48,17 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "initializes with valid execution plan" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     assert_equal @execution_plan, worker.execution_plan
     assert_equal @path, worker.path
     assert_equal "Test Goal", worker.goal
-    assert_equal :autonomous, worker.config[:approval_mode]
-    assert_equal 3, worker.config[:max_retries]
-    assert worker.config[:stream_progress]
-    assert_equal :lenient, worker.config[:error_mode]
+    assert_equal :autonomous, worker.config.approval_mode
+    assert_equal 3, worker.config.max_retries
+    assert worker.config.stream_progress
+    assert_equal :lenient, worker.config.error_mode
   end
 
   speed_profile :fast
@@ -63,7 +66,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     error = assert_raises(TypeError) do
       SisyphusWorker.new(
         execution_plan: "not a plan",
-        path: @path
+        path: @path,
+        context: worker_context
       )
     end
 
@@ -72,75 +76,70 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "accepts custom configuration" do
+    config = Configuration::SisyphusConfig.new(
+      approval_mode: :step,
+      max_retries: 5,
+      stream_progress: false,
+      error_mode: :strict,
+      dry_run: false
+    )
+
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @path,
-      config: {
-        approval_mode: :step,
-        max_retries: 5,
-        stream_progress: false,
-        error_mode: :strict
-      }
+      context: worker_context,
+      config: config
     )
 
-    assert_equal :step, worker.config[:approval_mode]
-    assert_equal 5, worker.config[:max_retries]
-    refute worker.config[:stream_progress]
-    assert_equal :strict, worker.config[:error_mode]
+    assert_equal :step, worker.config.approval_mode
+    assert_equal 5, worker.config.max_retries
+    refute worker.config.stream_progress
+    assert_equal :strict, worker.config.error_mode
   end
 
   speed_profile :fast
   test "validates approval_mode is valid" do
     error = assert_raises(ArgumentError) do
-      SisyphusWorker.new(
-        execution_plan: @execution_plan,
-        path: @path,
-        config: { approval_mode: :invalid }
+      Configuration::SisyphusConfig.new(
+        approval_mode: :invalid,
+        max_retries: 3,
+        stream_progress: true,
+        error_mode: :lenient,
+        dry_run: false
       )
     end
 
-    assert_match(/Invalid approval_mode/, error.message)
-    assert_match(/autonomous, step, milestone/, error.message)
+    assert_match(/approval_mode must be one of/, error.message)
   end
 
   speed_profile :fast
   test "validates max_retries is positive integer" do
     error = assert_raises(ArgumentError) do
-      SisyphusWorker.new(
-        execution_plan: @execution_plan,
-        path: @path,
-        config: { max_retries: -1 }
+      Configuration::SisyphusConfig.new(
+        approval_mode: :autonomous,
+        max_retries: -1,
+        stream_progress: true,
+        error_mode: :lenient,
+        dry_run: false
       )
     end
 
-    assert_match(/max_retries must be a positive Integer/, error.message)
-  end
-
-  speed_profile :fast
-  test "validates stream_progress is boolean" do
-    error = assert_raises(ArgumentError) do
-      SisyphusWorker.new(
-        execution_plan: @execution_plan,
-        path: @path,
-        config: { stream_progress: "yes" }
-      )
-    end
-
-    assert_match(/stream_progress must be a Boolean/, error.message)
+    assert_match(/max_retries must be positive/, error.message)
   end
 
   speed_profile :fast
   test "validates error_mode is valid" do
     error = assert_raises(ArgumentError) do
-      SisyphusWorker.new(
-        execution_plan: @execution_plan,
-        path: @path,
-        config: { error_mode: :invalid }
+      Configuration::SisyphusConfig.new(
+        approval_mode: :autonomous,
+        max_retries: 3,
+        stream_progress: true,
+        error_mode: :invalid,
+        dry_run: false
       )
     end
 
-    assert_match(/Invalid error_mode/, error.message)
-    assert_match(/strict, lenient, interactive/, error.message)
+    assert_match(/error_mode must be/, error.message)
   end
 
   # ===== State Machine Tests =====
@@ -149,7 +148,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "initializes in pending state" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     assert worker.pending?
@@ -160,7 +160,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "transitions through execution lifecycle states" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     # pending → running
@@ -188,7 +189,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "transitions to error_recovery on error" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     worker.trigger(:start)
@@ -202,7 +204,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "transitions from error_recovery to executing on recovered" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     worker.trigger(:start)
@@ -218,7 +221,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "transitions from error_recovery to failed on fail" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     worker.trigger(:start)
@@ -233,7 +237,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "supports streaming_progress state" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     worker.trigger(:start)
@@ -252,7 +257,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "current_milestone returns first milestone initially" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     assert_equal "Test Milestone", worker.current_milestone.title
@@ -263,7 +269,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "current_step returns first step initially" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     assert_equal "Test Step", worker.current_step.title
@@ -274,7 +281,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "current_milestone returns nil when past last milestone" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     worker.instance_variable_set(:@current_milestone_index, 999)
@@ -286,7 +294,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "current_step returns nil when past last step in milestone" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     worker.instance_variable_set(:@current_step_index, 999)
@@ -300,7 +309,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "progress_percentage starts at 0" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     assert_equal 0.0, worker.progress_percentage
@@ -310,7 +320,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "progress_percentage calculates correctly for single step plan" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     # Move to step 1
@@ -353,7 +364,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
       project_plan_content: "# Plan"
     )
 
-    worker = SisyphusWorker.new(execution_plan: plan, path: @path)
+    worker = SisyphusWorker.new(execution_plan: plan, path: @path, context: worker_context)
 
     # At start: 0/4 = 0%
     assert_equal 0.0, worker.progress_percentage
@@ -376,10 +387,19 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "emit_progress adds event to stream when enabled" do
+    config = Configuration::SisyphusConfig.new(
+      approval_mode: :autonomous,
+      max_retries: 3,
+      stream_progress: true,
+      error_mode: :lenient,
+      dry_run: false
+    )
+
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @path,
-      config: { stream_progress: true }
+      context: worker_context,
+      config: config
     )
 
     # Initialize to create progress stream
@@ -401,10 +421,19 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "emit_progress does nothing when streaming disabled" do
+    config = Configuration::SisyphusConfig.new(
+      approval_mode: :autonomous,
+      max_retries: 3,
+      stream_progress: false,
+      error_mode: :lenient,
+      dry_run: false
+    )
+
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
       path: @path,
-      config: { stream_progress: false }
+      context: worker_context,
+      config: config
     )
 
     worker.trigger(:start)
@@ -421,7 +450,8 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   test "creates memory store on initialization" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     worker.trigger(:start)
@@ -434,28 +464,38 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   # ===== Context and Options Tests =====
 
   speed_profile :fast
-  test "accepts optional context parameter" do
-    context = { known_files: ["app/models/user.rb"] }
+  test "requires context parameter" do
+    assert_raises(ArgumentError) do
+      SisyphusWorker.new(
+        execution_plan: @execution_plan,
+        path: @path
+      )
+    end
+  end
 
-    worker = SisyphusWorker.new(
-      execution_plan: @execution_plan,
-      path: @path,
-      context: context
-    )
-
-    assert_equal context, worker.context
+  speed_profile :fast
+  test "context must be BaseContext type" do
+    assert_raises(TypeError) do
+      SisyphusWorker.new(
+        execution_plan: @execution_plan,
+        path: @path,
+        context: { known_files: ["app/models/user.rb"] }
+      )
+    end
   end
 
   speed_profile :fast
   test "generates unique owner_id" do
     worker1 = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     worker2 = SisyphusWorker.new(
       execution_plan: @execution_plan,
-      path: @path
+      path: @path,
+      context: worker_context
     )
 
     assert_not_equal worker1.owner_id, worker2.owner_id
@@ -468,4 +508,3 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_equal "sisyphus_worker", SisyphusWorker.worker_name
   end
 end
-

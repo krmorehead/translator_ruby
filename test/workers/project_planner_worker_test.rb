@@ -5,6 +5,8 @@ require "test_helper"
 class ProjectPlannerWorkerTest < ActiveSupport::TestCase
   include ResearchTestFactory
 
+  let(:planner_context) { Contexts::BaseContext.new }
+
   # Shared execution result - runs once per test process
   class << self
     attr_accessor :shared_result, :shared_worker, :shared_computed
@@ -17,7 +19,8 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
       goal: "Add logging to Calculator",
       path: FIXTURE_PATH,
       project_name: "calculator_logging",
-      max_research_depth: 1
+      max_research_depth: 1,
+      context: Contexts::BaseContext.new
     )
     result = worker.execute
 
@@ -47,12 +50,13 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
   # ============================================================================
   # Unit Tests - No LLM calls
   # ============================================================================
-  speed_profile :slow
+  speed_profile :fast
   test "initialization with goal, path, and project_name" do
     worker = ProjectPlannerWorker.new(
       goal: "Add user authentication",
       path: temp_dir,
-      project_name: "user_auth"
+      project_name: "user_auth",
+      context: planner_context
     )
 
     assert_equal "Add user authentication", worker.goal
@@ -62,12 +66,12 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "inherits from BaseWorker" do
     assert ProjectPlannerWorker < BaseWorker
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "registers ProjectPlanningWorkflow" do
     workflows = ProjectPlannerWorker.registered_workflows
     assert_includes workflows, ProjectPlanningWorkflow
@@ -100,7 +104,8 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     worker = ProjectPlannerWorker.new(
       goal: "Test planning",
       path: temp_dir,
-      project_name: "test_project"
+      project_name: "test_project",
+      context: planner_context
     )
 
     assert_equal :pending, worker.current_state
@@ -137,7 +142,8 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     worker = ProjectPlannerWorker.new(
       goal: "Default depth",
       path: temp_dir,
-      project_name: "default_project"
+      project_name: "default_project",
+      context: planner_context
     )
 
     assert_equal 2, worker.instance_variable_get(:@max_research_depth)
@@ -236,7 +242,8 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     worker = ProjectPlannerWorker.new(
       goal: "Test error handling",
       path: temp_dir,
-      project_name: "error_test"
+      project_name: "error_test",
+      context: planner_context
     )
 
     # Mock the create_memory_store to raise an error

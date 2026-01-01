@@ -3,6 +3,8 @@
 require "test_helper"
 
 class DaedalusWorkerTest < ActiveSupport::TestCase
+  let(:daedalus_context) { Contexts::BaseContext.new }
+
   setup do
     @temp_path = Dir.mktmpdir
     @goal = "Create a new authentication system"
@@ -16,7 +18,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
   test "initialization with required parameters" do
     worker = DaedalusWorker.new(
       goal: @goal,
-      path: @temp_path
+      path: @temp_path,
+      context: daedalus_context
     )
 
     assert_not_nil worker
@@ -31,7 +34,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
     error = assert_raises(ArgumentError) do
       DaedalusWorker.new(
         goal: nil,
-        path: @temp_path
+        path: @temp_path,
+        context: daedalus_context
       )
     end
     assert_includes error.message, "goal"
@@ -42,7 +46,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
     error = assert_raises(ArgumentError) do
       DaedalusWorker.new(
         goal: @goal,
-        path: nil
+        path: nil,
+        context: daedalus_context
       )
     end
     assert_includes error.message, "path"
@@ -50,15 +55,13 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "initializes with optional context" do
-    context = { hint: "Look at existing workers" }
-    
     worker = DaedalusWorker.new(
       goal: @goal,
       path: @temp_path,
-      context: context
+      context: daedalus_context
     )
 
-    assert_equal context, worker.context
+    assert_equal daedalus_context, worker.context
   end
 
   speed_profile :slow
@@ -69,7 +72,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
 
     worker = DaedalusWorker.new(
       goal: @goal,
-      path: @temp_path
+      path: @temp_path,
+      context: daedalus_context
     )
 
     result = worker.execute
@@ -87,7 +91,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
 
     worker = DaedalusWorker.new(
       goal: @goal,
-      path: @temp_path
+      path: @temp_path,
+      context: daedalus_context
     )
 
     result = worker.execute
@@ -109,7 +114,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
 
     worker = DaedalusWorker.new(
       goal: @goal,
-      path: @temp_path
+      path: @temp_path,
+      context: daedalus_context
     )
 
     result = worker.execute
@@ -125,7 +131,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
   test "has registered workflows" do
     worker = DaedalusWorker.new(
       goal: @goal,
-      path: @temp_path
+      path: @temp_path,
+      context: daedalus_context
     )
 
     workflows = DaedalusWorker.registered_workflows
@@ -138,7 +145,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
   test "initializes memory store" do
     worker = DaedalusWorker.new(
       goal: @goal,
-      path: @temp_path
+      path: @temp_path,
+      context: daedalus_context
     )
 
     # Before execute, memory may not be initialized
@@ -151,7 +159,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
   test "state query methods work correctly" do
     worker = DaedalusWorker.new(
       goal: @goal,
-      path: @temp_path
+      path: @temp_path,
+      context: daedalus_context
     )
 
     assert worker.pending?
@@ -164,7 +173,8 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
   test "can transition to running state" do
     worker = DaedalusWorker.new(
       goal: @goal,
-      path: @temp_path
+      path: @temp_path,
+      context: daedalus_context
     )
 
     worker.trigger(:start)

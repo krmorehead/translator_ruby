@@ -3,6 +3,26 @@
 require "test_helper"
 
 class SisyphusDryRunTest < ActiveSupport::TestCase
+  let(:sisyphus_context) { Contexts::BaseContext.new }
+  let(:dry_run_config) do
+    Configuration::SisyphusConfig.new(
+      approval_mode: :autonomous,
+      max_retries: 3,
+      stream_progress: true,
+      error_mode: :lenient,
+      dry_run: true
+    )
+  end
+  let(:normal_config) do
+    Configuration::SisyphusConfig.new(
+      approval_mode: :autonomous,
+      max_retries: 3,
+      stream_progress: true,
+      error_mode: :lenient,
+      dry_run: false
+    )
+  end
+
   setup do
     @test_dir = Dir.mktmpdir("sisyphus_dry_run_test")
     @git_repo = File.join(@test_dir, "test_repo")
@@ -56,7 +76,8 @@ class SisyphusDryRunTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: plan,
       path: @git_repo,
-      config: { dry_run: true }
+      context: sisyphus_context,
+      config: dry_run_config
     )
 
     # Record files before execution
@@ -108,7 +129,8 @@ class SisyphusDryRunTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: plan,
       path: @git_repo,
-      config: { dry_run: true }
+      context: sisyphus_context,
+      config: dry_run_config
     )
 
     result = worker.execute
@@ -151,7 +173,8 @@ class SisyphusDryRunTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: plan,
       path: @git_repo,
-      config: { dry_run: true }
+      context: sisyphus_context,
+      config: dry_run_config
     )
 
     # Count commits before
@@ -201,7 +224,8 @@ class SisyphusDryRunTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: plan,
       path: @git_repo,
-      config: { dry_run: true }
+      context: sisyphus_context,
+      config: dry_run_config
     )
 
     result = worker.execute
@@ -241,24 +265,27 @@ class SisyphusDryRunTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: plan,
       path: @git_repo,
-      config: { dry_run: true }
+      context: sisyphus_context,
+      config: dry_run_config
     )
-    assert_equal true, worker.config[:dry_run]
+    assert_equal true, worker.config.dry_run
 
     worker2 = SisyphusWorker.new(
       execution_plan: plan,
       path: @git_repo,
-      config: { dry_run: false }
+      context: sisyphus_context,
+      config: normal_config
     )
-    assert_equal false, worker2.config[:dry_run]
+    assert_equal false, worker2.config.dry_run
 
     # Test default is false
     worker3 = SisyphusWorker.new(
       execution_plan: plan,
       path: @git_repo,
-      config: {}
+      context: sisyphus_context,
+      config: normal_config
     )
-    assert_equal false, worker3.config[:dry_run]
+    assert_equal false, worker3.config.dry_run
   end
 
   speed_profile :slow
@@ -291,7 +318,8 @@ class SisyphusDryRunTest < ActiveSupport::TestCase
     worker = SisyphusWorker.new(
       execution_plan: plan,
       path: @git_repo,
-      config: { dry_run: true }
+      context: sisyphus_context,
+      config: dry_run_config
     )
 
     result = worker.execute

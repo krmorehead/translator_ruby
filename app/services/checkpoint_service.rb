@@ -179,6 +179,15 @@ class CheckpointService
     !result[:output].strip.empty?
   end
 
+  # Get the current commit ID (HEAD)
+  #
+  # @return [String] The current commit hash
+  def current_commit_id
+    result = run_git_command("rev-parse HEAD")
+    raise RuntimeError, "Failed to get current commit: #{result[:output]}" unless result[:success]
+    result[:output].strip
+  end
+
   # Retrieve metadata for a checkpoint
   #
   # @param checkpoint_id [String] Git commit hash
@@ -227,6 +236,13 @@ class CheckpointService
   end
 
   def create_git_commit(message)
+    # Stage all changes
+    stage_result = run_git_command("add -A")
+    unless stage_result[:success]
+      raise RuntimeError, "Failed to stage changes: #{stage_result[:output]}"
+    end
+    
+    # Commit staged changes
     result = run_git_command("commit -m '#{escape_single_quotes(message)}'")
     
     unless result[:success]

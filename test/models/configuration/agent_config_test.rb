@@ -45,7 +45,10 @@ module Configuration
 
     speed_profile :fast
     test "initializes with empty environment by default" do
-      config = AgentConfig.new(capabilities: @capabilities)
+      config = AgentConfig.new(
+        capabilities: @capabilities,
+        environment: {}
+      )
 
       assert_equal @capabilities, config.capabilities
       assert_equal({}, config.environment)
@@ -53,7 +56,10 @@ module Configuration
 
     speed_profile :fast
     test "capability returns capability by name" do
-      config = AgentConfig.new(capabilities: @capabilities)
+      config = AgentConfig.new(
+        capabilities: @capabilities,
+        environment: {}
+      )
 
       assert_equal @cap1, config.capability(:general_llm)
       assert_equal @cap2, config.capability(:tool_calling)
@@ -61,14 +67,20 @@ module Configuration
 
     speed_profile :fast
     test "capability returns nil for unknown name" do
-      config = AgentConfig.new(capabilities: @capabilities)
+      config = AgentConfig.new(
+        capabilities: @capabilities,
+        environment: {}
+      )
 
       assert_nil config.capability(:unknown)
     end
 
     speed_profile :fast
     test "capability_names returns all capability names" do
-      config = AgentConfig.new(capabilities: @capabilities)
+      config = AgentConfig.new(
+        capabilities: @capabilities,
+        environment: {}
+      )
 
       names = config.capability_names
 
@@ -79,50 +91,14 @@ module Configuration
 
     speed_profile :fast
     test "capability? checks if capability exists" do
-      config = AgentConfig.new(capabilities: @capabilities)
+      config = AgentConfig.new(
+        capabilities: @capabilities,
+        environment: {}
+      )
 
       assert config.capability?(:general_llm)
       assert config.capability?(:tool_calling)
       assert_not config.capability?(:unknown)
-    end
-
-    speed_profile :fast
-    test "validates capabilities must be a Hash" do
-      error = assert_raises(ArgumentError) do
-        AgentConfig.new(capabilities: "not a hash")
-      end
-      assert_match(/capabilities must be a Hash/, error.message)
-    end
-
-    speed_profile :fast
-    test "validates capability keys must be Symbols" do
-      error = assert_raises(ArgumentError) do
-        AgentConfig.new(
-          capabilities: { "string_key" => @cap1 }
-        )
-      end
-      assert_match(/capability keys must be Symbols/, error.message)
-    end
-
-    speed_profile :fast
-    test "validates capability values must be CapabilityConfig instances" do
-      error = assert_raises(TypeError) do
-        AgentConfig.new(
-          capabilities: { test: "not a config" }
-        )
-      end
-      assert_match(/capability values must be CapabilityConfig instances/, error.message)
-    end
-
-    speed_profile :fast
-    test "validates environment must be a Hash" do
-      error = assert_raises(ArgumentError) do
-        AgentConfig.new(
-          capabilities: @capabilities,
-          environment: "not a hash"
-        )
-      end
-      assert_match(/environment must be a Hash/, error.message)
     end
 
     speed_profile :fast
@@ -156,7 +132,7 @@ module Configuration
         environment: @environment
       }
 
-      config = AgentConfig.from_h(hash)
+      config = AgentConfig.from_h(**hash)
 
       assert config.capability?(:general_llm)
       assert_equal @environment, config.environment
@@ -177,17 +153,9 @@ module Configuration
         "environment" => @environment
       }
 
-      config = AgentConfig.from_h(hash)
+      config = AgentConfig.from_h(**hash.deep_symbolize_keys)
 
       assert config.capability?(:general_llm)
-    end
-
-    speed_profile :fast
-    test "from_h validates hash parameter" do
-      error = assert_raises(ArgumentError) do
-        AgentConfig.from_h("not a hash")
-      end
-      assert_match(/hash must be a Hash/, error.message)
     end
 
     speed_profile :fast
@@ -198,7 +166,7 @@ module Configuration
       )
 
       hash = original.to_h
-      restored = AgentConfig.from_h(hash)
+      restored = AgentConfig.from_h(**hash)
 
       assert_equal original.capability_names.sort, restored.capability_names.sort
       assert_equal original.environment, restored.environment

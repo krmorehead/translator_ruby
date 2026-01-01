@@ -15,12 +15,13 @@ class ActionDetectionPrompt < ToolCallPrompt
       Return an array of actions. If the message is purely conversational, return an empty array.
       If ambiguous, pick the single most likely action. For multi-part input, return actions in order.
       Available tools (name, description, parameters):
-      #{serialize_tools(tools)}
+      #{serialize_tools}
     PROMPT
   end
 
   def response_schema
-    tool_names = tools.map { |t| t.dig(:function, :name) }.compact
+    # Extract tool names from Tool objects
+    tool_names = tools.map(&:name)
 
     {
       type: "array",
@@ -45,8 +46,8 @@ class ActionDetectionPrompt < ToolCallPrompt
     context.format_for_prompt(question || "", format: :action_detection)
   end
 
-  def execute(prompt:, context:, model_override: nil)
-    result = super
+  def execute(prompt:, context:)
+    result = super(prompt: prompt, context: context)
     content = result[:content]
     
     return { content: [], thoughts: result[:thoughts] } if content.nil?

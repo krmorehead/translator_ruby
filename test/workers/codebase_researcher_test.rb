@@ -5,6 +5,8 @@ require "test_helper"
 class CodebaseResearcherTest < ActiveSupport::TestCase
   include ResearchTestFactory
 
+  let(:researcher_context) { Contexts::BaseContext.new }
+
   # Shared execution result - runs once per test process, used by many tests
   # Uses FIXTURE_PATH to share fixtures across test files
   class << self
@@ -17,7 +19,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     worker = CodebaseResearcher.new(
       goal: "How does the calculator work?",
       path: FIXTURE_PATH,
-      max_depth: 1
+      max_depth: 1,
+      context: Contexts::BaseContext.new
     )
     result = worker.execute
 
@@ -57,11 +60,12 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   # ============================================================================
   # Unit Tests - No LLM calls
   # ============================================================================
-  speed_profile :slow
+  speed_profile :fast
   test "initialization with goal and path" do
     worker = CodebaseResearcher.new(
       goal: "How does authentication work?",
-      path: temp_dir
+      path: temp_dir,
+      context: researcher_context
     )
 
     assert_equal "How does authentication work?", worker.goal
@@ -70,19 +74,19 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "inherits from BaseWorker" do
     assert CodebaseResearcher < BaseWorker
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "registers GoalDecompositionWorkflow and ResearchWorkflow" do
     workflows = CodebaseResearcher.registered_workflows
     assert_includes workflows, GoalDecompositionWorkflow
     assert_includes workflows, ResearchWorkflow
   end
 
-  speed_profile :slow
+  speed_profile :fast
   test "has researcher states defined" do
     states = CodebaseResearcher.states
 
@@ -109,7 +113,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   test "starts in pending state" do
     worker = CodebaseResearcher.new(
       goal: "Test research",
-      path: temp_dir
+      path: temp_dir,
+      context: researcher_context
     )
 
     assert_equal :pending, worker.current_state
@@ -120,7 +125,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   test "current_phase method returns phase for current state" do
     worker = CodebaseResearcher.new(
       goal: "Test research",
-      path: temp_dir
+      path: temp_dir,
+      context: researcher_context
     )
 
     assert_nil worker.current_phase  # pending has no phase
@@ -147,7 +153,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   test "context defaults to empty hash" do
     worker = CodebaseResearcher.new(
       goal: "Research something",
-      path: temp_dir
+      path: temp_dir,
+      context: researcher_context
     )
 
     assert_equal({}, worker.context)
@@ -158,7 +165,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     worker = CodebaseResearcher.new(
       goal: "Deep research",
       path: temp_dir,
-      max_depth: 6
+      max_depth: 6,
+      context: researcher_context
     )
 
     assert_equal 6, worker.instance_variable_get(:@max_depth)
@@ -168,7 +176,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   test "output_modes defaults to report and documentation" do
     worker = CodebaseResearcher.new(
       goal: "Test research",
-      path: temp_dir
+      path: temp_dir,
+      context: researcher_context
     )
 
     assert_includes worker.output_modes, :report
@@ -180,7 +189,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     worker = CodebaseResearcher.new(
       goal: "Test research",
       path: temp_dir,
-      output_modes: [:report]
+      output_modes: [:report],
+      context: researcher_context
     )
 
     assert_equal [:report], worker.output_modes
@@ -296,7 +306,8 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   test "handles errors gracefully" do
     worker = CodebaseResearcher.new(
       goal: "Research something",
-      path: temp_dir
+      path: temp_dir,
+      context: researcher_context
     )
 
     # Mock the create_memory_store to raise an error

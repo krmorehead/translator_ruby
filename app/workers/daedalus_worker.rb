@@ -49,7 +49,7 @@ class DaedalusWorker < BaseWorker
   # @param goal [String] What to accomplish
   # @param path [String] Codebase root
   # @param context [Hash] Optional hints/context
-  def initialize(goal:, path:, context: {}, **options)
+  def initialize(goal:, path:, context:, **options)
     validate_init_params!(goal, path)
     super(goal: goal, path: path, context: context, **options)
 

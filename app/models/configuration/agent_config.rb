@@ -11,9 +11,7 @@ module Configuration
     # Initialize an AgentConfig
     # @param capabilities [Hash] Hash of capability_name => CapabilityConfig
     # @param environment [Hash] Hash of environment variables (secrets masked)
-    def initialize(capabilities:, environment: {})
-      validate_params!(capabilities, environment)
-
+    def initialize(capabilities:, environment:)
       @capabilities = capabilities
       @environment = environment
     end
@@ -48,42 +46,18 @@ module Configuration
     end
 
     # Deserialize from hash
-    # @param hash [Hash] Serialized agent configuration
+    # @param capabilities [Hash] Hash of capability_name => capability_hash
+    # @param environment [Hash] Hash of environment variables
     # @return [AgentConfig] New instance
-    def self.from_h(hash)
-      raise ArgumentError, "hash must be a Hash" unless hash.is_a?(Hash)
-
-      symbolized = hash.deep_symbolize_keys
-
-      capabilities_hash = symbolized[:capabilities] || {}
-      capabilities = capabilities_hash.transform_values do |cap_hash|
-        CapabilityConfig.from_h(cap_hash)
+    def self.from_h(capabilities:, environment:)
+      capabilities_objects = capabilities.transform_keys(&:to_sym).transform_values do |cap_hash|
+        CapabilityConfig.from_h(**cap_hash)
       end
 
       new(
-        capabilities: capabilities,
-        environment: symbolized[:environment] || {}
+        capabilities: capabilities_objects,
+        environment: environment
       )
-    end
-
-    private
-
-    def validate_params!(capabilities, environment)
-      # Validate capabilities
-      raise ArgumentError, "capabilities must be a Hash" unless capabilities.is_a?(Hash)
-
-      capabilities.each do |name, config|
-        unless name.is_a?(Symbol)
-          raise ArgumentError, "capability keys must be Symbols, got #{name.class}"
-        end
-
-        unless config.is_a?(CapabilityConfig)
-          raise TypeError, "capability values must be CapabilityConfig instances, got #{config.class}"
-        end
-      end
-
-      # Validate environment
-      raise ArgumentError, "environment must be a Hash" unless environment.is_a?(Hash)
     end
   end
 end
