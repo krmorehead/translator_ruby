@@ -14,14 +14,15 @@ class DndChatWorkflowTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(SANDBOX)
   end
-
+  speed_profile :fast
   test "inherits base workflow and exposes workflow_name" do
     workflow = DndChatWorkflow.new
     assert_kind_of BaseWorkflow, workflow
     assert_equal "dnd_chat", DndChatWorkflow.workflow_name
   end
 
-  test "executes end-to-end when LLM configured" do
+  speed_profile :medium
+  test " configured" do
     workflow = DndChatWorkflow.new
     conversation = Conversation.new(messages: [ Message.new(source: "user", target: "assistant", message: "Start the adventure") ])
 

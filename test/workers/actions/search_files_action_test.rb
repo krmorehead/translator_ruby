@@ -9,7 +9,7 @@ class SearchFilesActionTest < ActiveSupport::TestCase
     @agent = OpenStruct.new(goal: "Test goal", path: @test_path)
     @memory_store = create_mock_memory_store
   end
-
+  speed_profile :slow
   test "searches by filename pattern" do
     action = create_action
 
@@ -20,6 +20,7 @@ class SearchFilesActionTest < ActiveSupport::TestCase
     assert result[:files].any? { |f| f[:path].include?("calculator") }
   end
 
+  speed_profile :slow
   test "searches by content" do
     action = create_action
 
@@ -30,6 +31,7 @@ class SearchFilesActionTest < ActiveSupport::TestCase
     assert result[:files].any? { |f| f[:matches]&.any? { |m| m[:content].include?("def add") } }
   end
 
+  speed_profile :slow
   test "respects file type filter" do
     action = create_action
 
@@ -41,6 +43,7 @@ class SearchFilesActionTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "respects limit" do
     action = create_action
 
@@ -50,6 +53,7 @@ class SearchFilesActionTest < ActiveSupport::TestCase
     assert result[:files].size <= 3
   end
 
+  speed_profile :slow
   test "returns empty for no matches" do
     action = create_action
 
@@ -59,6 +63,7 @@ class SearchFilesActionTest < ActiveSupport::TestCase
     assert_equal 0, result[:count]
   end
 
+  speed_profile :slow
   test "fails with empty pattern" do
     action = create_action
 

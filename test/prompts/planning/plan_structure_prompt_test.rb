@@ -65,16 +65,18 @@ class PlanningPromptsTest < ActiveSupport::TestCase
   # ============================================================================
   # MilestoneConsensusPrompt Tests
   # ============================================================================
-
+  speed_profile :fast
   test "MilestoneConsensusPrompt inherits from BasePlanningPrompt" do
     assert Planning::MilestoneConsensusPrompt < Planning::BasePlanningPrompt
   end
 
+  speed_profile :fast
   test "MilestoneConsensusPrompt has system_prompt" do
     prompt = Planning::MilestoneConsensusPrompt.new
     assert prompt.system_prompt.present?
   end
 
+  speed_profile :medium
   test "MilestoneConsensusPrompt returns milestones" do
     result = shared_milestone_execution
     content = get_val(result, :content)
@@ -86,6 +88,7 @@ class PlanningPromptsTest < ActiveSupport::TestCase
     assert milestones.any?, "Should have at least one milestone"
   end
 
+  speed_profile :medium
   test "MilestoneConsensusPrompt milestones have title and description" do
     result = shared_milestone_execution
     content = get_val(result, :content)
@@ -101,10 +104,12 @@ class PlanningPromptsTest < ActiveSupport::TestCase
   # StepBreakdownPrompt Tests
   # ============================================================================
 
+  speed_profile :fast
   test "StepBreakdownPrompt inherits from BasePlanningPrompt" do
     assert Planning::StepBreakdownPrompt < Planning::BasePlanningPrompt
   end
 
+  speed_profile :medium
   test "StepBreakdownPrompt returns steps" do
     result = shared_step_execution
     content = get_val(result, :content)
@@ -115,6 +120,7 @@ class PlanningPromptsTest < ActiveSupport::TestCase
     assert_kind_of Array, steps
   end
 
+  speed_profile :medium
   test "StepBreakdownPrompt steps have title and intent" do
     result = shared_step_execution
     content = get_val(result, :content)
@@ -130,10 +136,12 @@ class PlanningPromptsTest < ActiveSupport::TestCase
   # StepDetailPrompt Tests
   # ============================================================================
 
+  speed_profile :fast
   test "StepDetailPrompt inherits from BasePlanningPrompt" do
     assert Planning::StepDetailPrompt < Planning::BasePlanningPrompt
   end
 
+  speed_profile :medium
   test "StepDetailPrompt returns details and tests" do
     result = shared_detail_execution
     content = get_val(result, :content)

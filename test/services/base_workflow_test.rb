@@ -16,11 +16,12 @@ class BaseWorkflowTest < ActiveSupport::TestCase
       mark_failed("boom")
     end
   end
-
+  speed_profile :fast
   test "execute is abstract on base class" do
     assert_raises(NotImplementedError) { BaseWorkflow.new.execute }
   end
 
+  speed_profile :fast
   test "setup stores prompt and conversation" do
     workflow = SampleWorkflow.new
     conversation = Object.new
@@ -31,10 +32,12 @@ class BaseWorkflowTest < ActiveSupport::TestCase
     assert_equal conversation, workflow.conversation
   end
 
+  speed_profile :fast
   test "workflow_name returns underscored class name" do
     assert_equal "sample_workflow", SampleWorkflow.workflow_name
   end
 
+  speed_profile :fast
   test "marks complete with result" do
     workflow = SampleWorkflow.new
     workflow.setup(prompt: "hi", conversation: nil)
@@ -46,6 +49,7 @@ class BaseWorkflowTest < ActiveSupport::TestCase
     assert_nil workflow.error
   end
 
+  speed_profile :fast
   test "marks failed with error" do
     workflow = FailingWorkflow.new
     workflow.setup(prompt: "oops", conversation: nil)

@@ -10,7 +10,7 @@ class InventoryToolTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@test_path) if File.exist?(@test_path)
   end
-
+  speed_profile :medium
   test "schema includes operations" do
     schema = InventoryTool.schema
     ops = schema[:function][:parameters][:properties][:operation][:enum]
@@ -18,6 +18,7 @@ class InventoryToolTest < ActiveSupport::TestCase
     assert_includes ops, InventoryTool::OP_LIST
   end
 
+  speed_profile :medium
   test "add item creates inventory file" do
     result = @tool.execute(operation: InventoryTool::OP_ADD_ITEM, path: File.join(@test_path, "inventory.json"), name: "Torch", weight: 1, description: "Light", property_type: "gear", quantity: 2)
 
@@ -30,6 +31,7 @@ class InventoryToolTest < ActiveSupport::TestCase
     assert_equal 2, data.first["quantity"]
   end
 
+  speed_profile :medium
   test "update quantity" do
     inv_path = File.join(@test_path, "inventory.json")
     @tool.execute(operation: InventoryTool::OP_ADD_ITEM, path: inv_path, name: "Arrow", weight: 0.1, description: "Ammo", property_type: "ammo", quantity: 5)
@@ -39,6 +41,7 @@ class InventoryToolTest < ActiveSupport::TestCase
     assert_equal 10, result[:result][:quantity]
   end
 
+  speed_profile :medium
   test "remove item" do
     inv_path = File.join(@test_path, "inventory.json")
     @tool.execute(operation: InventoryTool::OP_ADD_ITEM, path: inv_path, name: "Potion", weight: 0.5, description: "Healing", property_type: "consumable", quantity: 1)
@@ -49,6 +52,7 @@ class InventoryToolTest < ActiveSupport::TestCase
     assert_equal [], list[:result]
   end
 
+  speed_profile :medium
   test "get item returns error when missing" do
     result = @tool.execute(operation: InventoryTool::OP_GET, path: File.join(@test_path, "inventory.json"), name: "Missing")
 
@@ -56,6 +60,7 @@ class InventoryToolTest < ActiveSupport::TestCase
     assert_includes result[:error], "Item not found"
   end
 
+  speed_profile :medium
   test "list inventory returns items" do
     inv_path = File.join(@test_path, "inventory.json")
     @tool.execute(operation: InventoryTool::OP_ADD_ITEM, path: inv_path, name: "Rope", weight: 10, description: "50ft", property_type: "gear", quantity: 1)
@@ -66,6 +71,7 @@ class InventoryToolTest < ActiveSupport::TestCase
     assert_equal "Rope", result[:result].first[:name] || result[:result].first["name"]
   end
 
+  speed_profile :medium
   test "requires name for update operations" do
     result = @tool.execute(operation: InventoryTool::OP_UPDATE_QUANTITY, path: File.join(@test_path, "inventory.json"), quantity: 1)
 

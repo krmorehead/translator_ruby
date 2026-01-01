@@ -19,17 +19,19 @@ class ToolCallPromptTest < ActiveSupport::TestCase
       }
     ]
   end
-
+  speed_profile :fast
   test "inherits from BasePrompt" do
     assert ToolCallPrompt < BasePrompt
   end
 
+  speed_profile :fast
   test "uses tool_calling capability model by default" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
     expected = GenericLlmClient::CAPABILITIES[:tool_calling][:model_name]
     assert_equal expected, prompt.model
   end
 
+  speed_profile :fast
   test "default_client uses tool_calling capability" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
     client = prompt.send(:default_client)
@@ -39,6 +41,7 @@ class ToolCallPromptTest < ActiveSupport::TestCase
     assert_same expected, client
   end
 
+  speed_profile :medium
   test "execute with model_override uses specified capability" do
     assert llm_configured?, "LLM must be configured for this test"
     
@@ -57,6 +60,7 @@ class ToolCallPromptTest < ActiveSupport::TestCase
     assert result.key?(:thoughts)
   end
 
+  speed_profile :fast
   test "subclasses inherit tool_calling capability" do
     # ActionDetectionPrompt should use tool_calling
     action_prompt = ActionDetectionPrompt.new(tools: @tools)
@@ -65,6 +69,7 @@ class ToolCallPromptTest < ActiveSupport::TestCase
     assert_equal expected, action_prompt.model
   end
 
+  speed_profile :fast
   test "max_safe_context reads from capability config" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
     expected = GenericLlmClient::CAPABILITIES[:tool_calling][:max_context]

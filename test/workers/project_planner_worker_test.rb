@@ -47,7 +47,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
   # ============================================================================
   # Unit Tests - No LLM calls
   # ============================================================================
-
+  speed_profile :slow
   test "initialization with goal, path, and project_name" do
     worker = ProjectPlannerWorker.new(
       goal: "Add user authentication",
@@ -62,15 +62,18 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
+  speed_profile :slow
   test "inherits from BaseWorker" do
     assert ProjectPlannerWorker < BaseWorker
   end
 
+  speed_profile :slow
   test "registers ProjectPlanningWorkflow" do
     workflows = ProjectPlannerWorker.registered_workflows
     assert_includes workflows, ProjectPlanningWorkflow
   end
 
+  speed_profile :slow
   test "has planner states defined" do
     states = ProjectPlannerWorker.states
 
@@ -83,6 +86,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert_includes states, :failed
   end
 
+  speed_profile :slow
   test "states have phase metadata" do
     assert_nil ProjectPlannerWorker._states[:pending][:phase]
     assert_equal :setup, ProjectPlannerWorker._states[:running][:phase]
@@ -91,6 +95,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert_equal :output, ProjectPlannerWorker._states[:writing][:phase]
   end
 
+  speed_profile :slow
   test "starts in pending state" do
     worker = ProjectPlannerWorker.new(
       goal: "Test planning",
@@ -102,6 +107,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
+  speed_profile :slow
   test "accepts context parameter" do
     context = { known_files: ["lib/calculator.rb"], constraints: "Must be fast" }
     worker = ProjectPlannerWorker.new(
@@ -114,6 +120,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert_equal context, worker.context
   end
 
+  speed_profile :slow
   test "max_research_depth option can be set" do
     worker = ProjectPlannerWorker.new(
       goal: "Deep research",
@@ -125,6 +132,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert_equal 5, worker.instance_variable_get(:@max_research_depth)
   end
 
+  speed_profile :slow
   test "max_research_depth defaults to 2" do
     worker = ProjectPlannerWorker.new(
       goal: "Default depth",
@@ -139,6 +147,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
   # Shared Execution Tests - All use same LLM call
   # ============================================================================
 
+  speed_profile :slow
   test "shared: creates memory store during execution" do
     worker, result = shared_execution
     assert result.success?, "Planning should succeed: #{result.error}"
@@ -148,6 +157,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert_equal worker.owner_id, worker.memory_store.owner_id
   end
 
+  speed_profile :slow
   test "shared: execute returns structured result" do
     _worker, result = shared_execution
     assert result.success?, "Planning should succeed: #{result.error}"
@@ -159,6 +169,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert_not_nil result.project_name
   end
 
+  speed_profile :slow
   test "shared: result includes file paths" do
     _worker, result = shared_execution
     assert result.success?, "Planning should succeed: #{result.error}"
@@ -168,6 +179,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert_not_nil result.project_plan_path
   end
 
+  speed_profile :slow
   test "shared: result includes milestones" do
     _worker, result = shared_execution
     assert result.success?, "Planning should succeed: #{result.error}"
@@ -177,6 +189,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert_kind_of Array, result.planning_result.milestones
   end
 
+  speed_profile :slow
   test "shared: result includes existing and planned files" do
     _worker, result = shared_execution
     assert result.success?, "Planning should succeed: #{result.error}"
@@ -187,6 +200,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert_kind_of Array, result.planning_result.planned_files
   end
 
+  speed_profile :slow
   test "shared: final state is complete" do
     worker, result = shared_execution
     assert result.success?, "Planning should succeed: #{result.error}"
@@ -195,6 +209,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert worker.complete?
   end
 
+  speed_profile :slow
   test "shared: creates state directory" do
     worker, result = shared_execution
     assert result.success?, "Planning should succeed: #{result.error}"
@@ -203,6 +218,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     assert File.directory?(worker.state_path)
   end
 
+  speed_profile :slow
   test "shared: output files are created" do
     _worker, result = shared_execution
     assert result.success?, "Planning should succeed: #{result.error}"
@@ -215,6 +231,7 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
   # Error Handling Tests
   # ============================================================================
 
+  speed_profile :slow
   test "handles errors gracefully" do
     worker = ProjectPlannerWorker.new(
       goal: "Test error handling",

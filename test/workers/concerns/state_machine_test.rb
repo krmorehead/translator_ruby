@@ -109,11 +109,13 @@ class StateMachineTest < ActiveSupport::TestCase
   end
 
   # Basic state machine tests
+  speed_profile :fast
   test "initializes with initial state" do
     machine = TestMachine.new
     assert_equal :idle, machine.current_state
   end
 
+  speed_profile :fast
   test "valid transitions work" do
     machine = TestMachine.new
 
@@ -135,6 +137,7 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_equal :stopped, machine.current_state
   end
 
+  speed_profile :fast
   test "invalid transitions raise InvalidTransition" do
     machine = TestMachine.new
 
@@ -147,6 +150,7 @@ class StateMachineTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "unknown events raise UnknownEvent" do
     machine = TestMachine.new
 
@@ -155,6 +159,7 @@ class StateMachineTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "transitions from multiple source states work" do
     machine = TestMachine.new
 
@@ -173,6 +178,7 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_equal :stopped, machine2.current_state
   end
 
+  speed_profile :fast
   test "state history is tracked" do
     machine = TestMachine.new
     machine.trigger(:start)
@@ -193,6 +199,7 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_equal :paused, history[2][:to]
   end
 
+  speed_profile :fast
   test "in_state? checks current state" do
     machine = TestMachine.new
 
@@ -204,6 +211,7 @@ class StateMachineTest < ActiveSupport::TestCase
     refute machine.in_state?(:idle)
   end
 
+  speed_profile :fast
   test "can_trigger? checks if event is valid" do
     machine = TestMachine.new
 
@@ -212,6 +220,7 @@ class StateMachineTest < ActiveSupport::TestCase
     refute machine.can_trigger?(:stop)
   end
 
+  speed_profile :fast
   test "available_events returns triggerable events" do
     machine = TestMachine.new
 
@@ -228,6 +237,7 @@ class StateMachineTest < ActiveSupport::TestCase
   end
 
   # Guard tests
+  speed_profile :fast
   test "guards block transitions when returning false" do
     machine = GuardedMachine.new
     machine.ready = false
@@ -246,6 +256,7 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_equal :processing, machine.current_state
   end
 
+  speed_profile :fast
   test "guards receive payload" do
     machine = GuardedMachine.new
     machine.ready = true
@@ -261,6 +272,7 @@ class StateMachineTest < ActiveSupport::TestCase
   end
 
   # Hook tests
+  speed_profile :fast
   test "on_enter hooks are called" do
     machine = HookedMachine.new
 
@@ -270,6 +282,7 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_equal ["entered second"], machine.enter_log
   end
 
+  speed_profile :fast
   test "on_exit hooks are called" do
     machine = HookedMachine.new
 
@@ -280,6 +293,7 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_equal ["exited second"], machine.exit_log
   end
 
+  speed_profile :fast
   test "on_transition hooks are called for every transition" do
     machine = HookedMachine.new
 
@@ -296,6 +310,7 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_equal :third, machine.transition_log[1][:to]
   end
 
+  speed_profile :fast
   test "hooks receive correct order - exit, transition, enter" do
     execution_order = []
 
@@ -334,6 +349,7 @@ class StateMachineTest < ActiveSupport::TestCase
   end
 
   # Phase tests
+  speed_profile :fast
   test "current_phase returns state phase" do
     machine = PhasedMachine.new
 
@@ -353,6 +369,7 @@ class StateMachineTest < ActiveSupport::TestCase
   end
 
   # Class method tests
+  speed_profile :fast
   test "states returns all defined states" do
     states = TestMachine.states
     assert_includes states, :idle
@@ -361,6 +378,7 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_equal 6, states.size
   end
 
+  speed_profile :fast
   test "events returns all defined events" do
     events = TestMachine.events
     assert_includes events, :start
@@ -368,18 +386,21 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_includes events, :error
   end
 
+  speed_profile :fast
   test "state? checks if state is defined" do
     assert TestMachine.state?(:idle)
     assert TestMachine.state?(:running)
     refute TestMachine.state?(:nonexistent)
   end
 
+  speed_profile :fast
   test "event? checks if event is defined" do
     assert TestMachine.event?(:start)
     assert TestMachine.event?(:stop)
     refute TestMachine.event?(:nonexistent)
   end
 
+  speed_profile :fast
   test "transitions_from returns valid transitions" do
     transitions = TestMachine.transitions_from(:running)
 
@@ -390,6 +411,7 @@ class StateMachineTest < ActiveSupport::TestCase
   end
 
   # Force state tests
+  speed_profile :fast
   test "force_state! sets state without validation" do
     machine = TestMachine.new
 
@@ -399,6 +421,7 @@ class StateMachineTest < ActiveSupport::TestCase
     assert_empty machine.state_history
   end
 
+  speed_profile :fast
   test "force_state! raises for unknown state" do
     machine = TestMachine.new
 
@@ -408,6 +431,7 @@ class StateMachineTest < ActiveSupport::TestCase
   end
 
   # State info tests
+  speed_profile :fast
   test "current_state_info returns state metadata" do
     machine = TestMachine.new
 
@@ -417,6 +441,7 @@ class StateMachineTest < ActiveSupport::TestCase
   end
 
   # Inheritance tests
+  speed_profile :fast
   test "subclasses can override states" do
     parent = Class.new do
       include StateMachine

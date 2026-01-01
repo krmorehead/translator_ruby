@@ -5,6 +5,7 @@ require "test_helper"
 module Contexts
   module Goals
     class PrimaryGoalTest < ActiveSupport::TestCase
+      speed_profile :fast
       test "creates a valid primary goal" do
         goal = PrimaryGoal.new(
           goal_text: "Main objective",
@@ -18,6 +19,7 @@ module Contexts
         assert_empty goal.sub_goal_map
       end
 
+      speed_profile :fast
       test "add_sub_goal creates and tracks sub-goal" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
         
@@ -36,6 +38,7 @@ module Contexts
         assert_equal sub_goal, primary.sub_goal_map[sub_goal.id]
       end
 
+      speed_profile :fast
       test "add_sub_goal validates parameters" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
 
@@ -50,6 +53,7 @@ module Contexts
         assert_match(/priority must be an Integer/, error.message)
       end
 
+      speed_profile :fast
       test "sub_goal_progress calculates completion percentage" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
         
@@ -69,11 +73,13 @@ module Contexts
         assert_equal 50.0, primary.sub_goal_progress
       end
 
+      speed_profile :fast
       test "sub_goal_progress returns 0 when no sub-goals" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
         assert_equal 0, primary.sub_goal_progress
       end
 
+      speed_profile :fast
       test "sub_goals_sorted returns sub-goals sorted by priority" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
         
@@ -86,11 +92,13 @@ module Contexts
         assert_equal ["High priority", "Medium priority", "Low priority"], sorted.map(&:goal_text)
       end
 
+      speed_profile :fast
       test "find_goal returns self when matching id" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
         assert_equal primary, primary.find_goal(primary.id)
       end
 
+      speed_profile :fast
       test "find_goal returns sub-goal when matching sub-goal id" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
         sub_goal = primary.add_sub_goal(goal_text: "Sub", entry_id: "e1", priority: 1)
@@ -99,11 +107,13 @@ module Contexts
         assert_equal sub_goal, found
       end
 
+      speed_profile :fast
       test "find_goal returns nil for unknown id" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
         assert_nil primary.find_goal("unknown-id")
       end
 
+      speed_profile :fast
       test "to_h includes sub-goals" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
         sub1 = primary.add_sub_goal(goal_text: "Sub 1", entry_id: "e1", priority: 1)
@@ -117,6 +127,7 @@ module Contexts
         assert_equal "Sub 2", hash[:sub_goals][1][:goal_text]
       end
 
+      speed_profile :fast
       test "from_h reconstructs primary goal with sub-goals" do
         primary = PrimaryGoal.new(goal_text: "Main", entry_id: "entry-1")
         sub1 = primary.add_sub_goal(goal_text: "Sub 1", entry_id: "e1", priority: 1)
@@ -133,6 +144,7 @@ module Contexts
         assert_equal reconstructed, reconstructed.sub_goals[0].parent
       end
 
+      speed_profile :fast
       test "from_h validates required keys" do
         error = assert_raises(ArgumentError) do
           PrimaryGoal.from_h({ id: "123" })

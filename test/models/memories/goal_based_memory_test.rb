@@ -40,7 +40,7 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
 
     store
   end
-
+  speed_profile :fast
   test "goal entry structure includes status" do
     entry = @test_memory_class.create_goal_entry(content: "Test goal")
 
@@ -52,6 +52,7 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
     assert_not_nil entry[:timestamp]
   end
 
+  speed_profile :fast
   test "active_goals filters correctly" do
     store = create_store
 
@@ -68,6 +69,7 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
     assert active.all? { |g| g[:status] == "active" }
   end
 
+  speed_profile :fast
   test "pending_goals filters correctly" do
     store = create_store
 
@@ -83,6 +85,7 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
     assert pending.all? { |g| g[:status] == "pending" }
   end
 
+  speed_profile :fast
   test "complete_goal updates status by id" do
     store = create_store
 
@@ -102,6 +105,7 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
     assert_equal "complete", updated[:status]
   end
 
+  speed_profile :fast
   test "complete_goal updates status by index" do
     store = create_store
 
@@ -117,6 +121,7 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
     assert_equal "complete", result[:status]
   end
 
+  speed_profile :fast
   test "complete_goal returns nil for non-existent goal" do
     store = create_store
     @sections[:test_goals] = []
@@ -126,6 +131,7 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
     assert_nil result
   end
 
+  speed_profile :fast
   test "activate_goal changes pending to active" do
     store = create_store
 
@@ -140,10 +146,12 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
     assert_not_nil result[:activated_at]
   end
 
+  speed_profile :fast
   test "default weight is 0.9" do
     assert_equal 0.9, @test_memory_class.weight
   end
 
+  speed_profile :fast
   test "summarize groups goals by status" do
     store = create_store
 
@@ -165,6 +173,7 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
     assert_includes summary[:summary], "Pending 1"
   end
 
+  speed_profile :fast
   test "create_goal_entry with hash content" do
     entry = @test_memory_class.create_goal_entry(
       content: { text: "Hash goal", extra: "data" },
@@ -177,6 +186,7 @@ class GoalBasedMemoryTest < ActiveSupport::TestCase
     assert_equal "active", entry[:status]
   end
 
+  speed_profile :fast
   test "inherits from BaseMemory" do
     assert Memories::GoalBasedMemory < Memories::BaseMemory
   end

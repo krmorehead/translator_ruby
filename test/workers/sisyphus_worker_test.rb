@@ -21,7 +21,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     )
 
     step = Planning::Step.new(
-      number: "1.1",
+      milestone_number: 1, step_number: 1,
       title: "Test Step",
       intent: "Test the worker",
       details: ["Do something"],
@@ -42,7 +42,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
   end
 
   # ===== Initialization Tests =====
-
+  speed_profile :fast
   test "initializes with valid execution plan" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -58,6 +58,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_equal :lenient, worker.config[:error_mode]
   end
 
+  speed_profile :fast
   test "validates execution_plan is a Planning::Result" do
     error = assert_raises(TypeError) do
       SisyphusWorker.new(
@@ -69,6 +70,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_match(/execution_plan must be a Planning::Result/, error.message)
   end
 
+  speed_profile :fast
   test "accepts custom configuration" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -87,6 +89,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_equal :strict, worker.config[:error_mode]
   end
 
+  speed_profile :fast
   test "validates approval_mode is valid" do
     error = assert_raises(ArgumentError) do
       SisyphusWorker.new(
@@ -100,6 +103,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_match(/autonomous, step, milestone/, error.message)
   end
 
+  speed_profile :fast
   test "validates max_retries is positive integer" do
     error = assert_raises(ArgumentError) do
       SisyphusWorker.new(
@@ -112,6 +116,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_match(/max_retries must be a positive Integer/, error.message)
   end
 
+  speed_profile :fast
   test "validates stream_progress is boolean" do
     error = assert_raises(ArgumentError) do
       SisyphusWorker.new(
@@ -124,6 +129,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_match(/stream_progress must be a Boolean/, error.message)
   end
 
+  speed_profile :fast
   test "validates error_mode is valid" do
     error = assert_raises(ArgumentError) do
       SisyphusWorker.new(
@@ -139,6 +145,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   # ===== State Machine Tests =====
 
+  speed_profile :fast
   test "initializes in pending state" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -149,6 +156,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_equal :pending, worker.current_state
   end
 
+  speed_profile :fast
   test "transitions through execution lifecycle states" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -176,6 +184,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert worker.complete?
   end
 
+  speed_profile :fast
   test "transitions to error_recovery on error" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -189,6 +198,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert worker.in_state?(:error_recovery)
   end
 
+  speed_profile :fast
   test "transitions from error_recovery to executing on recovered" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -204,6 +214,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert worker.in_state?(:executing)
   end
 
+  speed_profile :fast
   test "transitions from error_recovery to failed on fail" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -218,6 +229,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert worker.failed?
   end
 
+  speed_profile :fast
   test "supports streaming_progress state" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -236,6 +248,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   # ===== Milestone and Step Navigation Tests =====
 
+  speed_profile :fast
   test "current_milestone returns first milestone initially" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -246,6 +259,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_equal 1, worker.current_milestone.number
   end
 
+  speed_profile :fast
   test "current_step returns first step initially" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -256,6 +270,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_equal "1.1", worker.current_step.number
   end
 
+  speed_profile :fast
   test "current_milestone returns nil when past last milestone" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -267,6 +282,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_nil worker.current_milestone
   end
 
+  speed_profile :fast
   test "current_step returns nil when past last step in milestone" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -280,6 +296,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   # ===== Progress Calculation Tests =====
 
+  speed_profile :fast
   test "progress_percentage starts at 0" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -289,6 +306,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_equal 0.0, worker.progress_percentage
   end
 
+  speed_profile :fast
   test "progress_percentage calculates correctly for single step plan" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -302,25 +320,26 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_equal 100.0, worker.progress_percentage
   end
 
+  speed_profile :fast
   test "progress_percentage calculates correctly for multi-milestone plan" do
     # Create plan with 2 milestones, 2 steps each
     milestone1 = Planning::Milestone.new(number: 1, title: "M1", description: "First")
     milestone1.add_step(Planning::Step.new(
-      number: "1.1", title: "S1", intent: "First step",
+      milestone_number: 1, step_number: 1, title: "S1", intent: "First step",
       details: ["Do thing"], tests: ["Test thing"]
     ))
     milestone1.add_step(Planning::Step.new(
-      number: "1.2", title: "S2", intent: "Second step",
+      milestone_number: 1, step_number: 2, title: "S2", intent: "Second step",
       details: ["Do thing"], tests: ["Test thing"]
     ))
 
     milestone2 = Planning::Milestone.new(number: 2, title: "M2", description: "Second")
     milestone2.add_step(Planning::Step.new(
-      number: "2.1", title: "S3", intent: "Third step",
+      milestone_number: 2, step_number: 1, title: "S3", intent: "Third step",
       details: ["Do thing"], tests: ["Test thing"]
     ))
     milestone2.add_step(Planning::Step.new(
-      number: "2.2", title: "S4", intent: "Fourth step",
+      milestone_number: 2, step_number: 2, title: "S4", intent: "Fourth step",
       details: ["Do thing"], tests: ["Test thing"]
     ))
 
@@ -355,6 +374,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   # ===== Progress Streaming Tests =====
 
+  speed_profile :fast
   test "emit_progress adds event to stream when enabled" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -379,6 +399,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert event[:timestamp]
   end
 
+  speed_profile :fast
   test "emit_progress does nothing when streaming disabled" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -396,6 +417,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   # ===== Memory Store Tests =====
 
+  speed_profile :fast
   test "creates memory store on initialization" do
     worker = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -411,6 +433,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   # ===== Context and Options Tests =====
 
+  speed_profile :fast
   test "accepts optional context parameter" do
     context = { known_files: ["app/models/user.rb"] }
 
@@ -423,6 +446,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     assert_equal context, worker.context
   end
 
+  speed_profile :fast
   test "generates unique owner_id" do
     worker1 = SisyphusWorker.new(
       execution_plan: @execution_plan,
@@ -439,6 +463,7 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
 
   # ===== Worker Name Tests =====
 
+  speed_profile :fast
   test "worker_name returns correct value" do
     assert_equal "sisyphus_worker", SisyphusWorker.worker_name
   end

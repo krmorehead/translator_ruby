@@ -3,6 +3,7 @@
 require "test_helper"
 
 class ActionRecordTest < ActiveSupport::TestCase
+  speed_profile :fast
   test "initializes with required attributes and defaults" do
     record = ActionRecord.new(prompt_reference: "open door", tool_name: "open", arguments: { target: "door" })
 
@@ -17,11 +18,13 @@ class ActionRecordTest < ActiveSupport::TestCase
     assert_kind_of Time, record.timestamp
   end
 
+  speed_profile :fast
   test "requires tool_name and arguments" do
     assert_raises(ArgumentError) { ActionRecord.new(prompt_reference: "x", tool_name: nil, arguments: {}) }
     assert_raises(ArgumentError) { ActionRecord.new(prompt_reference: "x", tool_name: "t", arguments: "bad") }
   end
 
+  speed_profile :fast
   test "with returns new instance and keeps immutability" do
     record = ActionRecord.new(prompt_reference: "inspect", tool_name: "inspect_room", arguments: { target: "table" })
     updated = record.with(status: :executed, result: { success: true })
@@ -32,6 +35,7 @@ class ActionRecordTest < ActiveSupport::TestCase
     refute_equal record.object_id, updated.object_id
   end
 
+  speed_profile :fast
   test "to_h serializes all attributes" do
     timestamp = Time.now
     record = ActionRecord.new(

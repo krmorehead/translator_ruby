@@ -6,7 +6,7 @@ class BaseContextTest < ActiveSupport::TestCase
   def context
     @context ||= Contexts::BaseContext.new
   end
-
+  speed_profile :fast
   test "can add entries with topics" do
     entry = context.add(
       content: "Calculator performs arithmetic",
@@ -19,6 +19,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert_includes entry.topics, "calculator"
   end
 
+  speed_profile :fast
   test "normalizes topics to lowercase" do
     entry = context.add(
       content: "Test content",
@@ -31,6 +32,7 @@ class BaseContextTest < ActiveSupport::TestCase
     refute_includes entry.topics, "Calculator"
   end
 
+  speed_profile :fast
   test "indexes entries by topic for fast lookup" do
     context.add(content: "Entry about math", topics: ["math"], source: "a")
     context.add(content: "Entry about calculator", topics: ["calculator"], source: "b")
@@ -43,6 +45,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert_equal 2, calc_entries.size
   end
 
+  speed_profile :fast
   test "relevant_to returns entries matching question keywords" do
     context.add(content: "Calculator has add method", topics: ["calculator"], source: "a")
     context.add(content: "Logger writes to stdout", topics: ["logger"], source: "b")
@@ -53,6 +56,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert relevant.any? { |e| e.content.include?("Calculator") }
   end
 
+  speed_profile :fast
   test "relevant_to respects limit parameter" do
     10.times do |i|
       context.add(content: "Calculator entry #{i}", topics: ["calculator"], source: "file#{i}")
@@ -62,6 +66,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert_equal 3, relevant.size
   end
 
+  speed_profile :fast
   test "format_for_prompt returns brief format by default" do
     context.add(content: "First finding", topics: ["test"], source: "a")
     context.add(content: "Second finding", topics: ["test"], source: "b")
@@ -71,6 +76,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert formatted.include?("- First finding") || formatted.include?("- Second finding")
   end
 
+  speed_profile :fast
   test "format_for_prompt detailed includes source" do
     context.add(content: "Finding content", topics: ["test"], source: "source.rb")
 
@@ -79,6 +85,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert formatted.include?("Source: source.rb")
   end
 
+  speed_profile :fast
   test "compressed_summary groups by topic" do
     context.add(content: "Math entry 1", topics: ["math"], source: "a")
     context.add(content: "Math entry 2", topics: ["math"], source: "b")
@@ -90,6 +97,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert summary.include?("calculator:")
   end
 
+  speed_profile :fast
   test "serializes to hash and back" do
     context.add(content: "Test entry", topics: ["test"], source: "source.rb", metadata: { key: "value" })
 
@@ -101,6 +109,7 @@ class BaseContextTest < ActiveSupport::TestCase
   end
 
   # Sub-context tests
+  speed_profile :fast
   test "can add and retrieve sub-contexts" do
     sub = Contexts::BaseContext.new
     sub.add(content: "Sub content", topics: ["sub"], source: "test")
@@ -111,12 +120,14 @@ class BaseContextTest < ActiveSupport::TestCase
     assert_equal sub, context.get_sub_context(:child)
   end
 
+  speed_profile :fast
   test "add_sub_context raises for non-context" do
     assert_raises(ArgumentError) do
       context.add_sub_context(:bad, "not a context")
     end
   end
 
+  speed_profile :fast
   test "sub_contexts are included in serialization" do
     sub = Contexts::BaseContext.new
     sub.add(content: "Sub entry", topics: ["sub"], source: "child")
@@ -133,6 +144,7 @@ class BaseContextTest < ActiveSupport::TestCase
   end
 
   # Condense tests
+  speed_profile :fast
   test "condense creates a new context with limited entries" do
     20.times do |i|
       context.add(content: "Entry #{i}", topics: ["topic#{i % 3}"], source: "file#{i}")
@@ -144,6 +156,7 @@ class BaseContextTest < ActiveSupport::TestCase
     refute_equal context.object_id, condensed.object_id  # New instance
   end
 
+  speed_profile :fast
   test "condense preserves entries from different topics" do
     context.add(content: "Math 1", topics: ["math"], source: "a")
     context.add(content: "Math 2", topics: ["math"], source: "b")
@@ -156,6 +169,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert condensed.size <= 2
   end
 
+  speed_profile :fast
   test "condense handles sub-contexts" do
     sub = Contexts::BaseContext.new
     5.times { |i| sub.add(content: "Sub #{i}", topics: ["sub"], source: "test") }
@@ -169,6 +183,7 @@ class BaseContextTest < ActiveSupport::TestCase
   end
 
   # Merge tests
+  speed_profile :fast
   test "merge combines entries from two contexts" do
     other = Contexts::BaseContext.new
     other.add(content: "Other entry", topics: ["other"], source: "other")
@@ -180,6 +195,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert context.entries.any? { |e| e.content == "Other entry" }
   end
 
+  speed_profile :fast
   test "merge deduplicates by content" do
     other = Contexts::BaseContext.new
     other.add(content: "Same content", topics: ["other"], source: "other")
@@ -190,6 +206,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert_equal 1, context.size
   end
 
+  speed_profile :fast
   test "merge combines sub-contexts" do
     sub1 = Contexts::BaseContext.new
     sub1.add(content: "Sub1 entry", topics: ["s1"], source: "s1")
@@ -208,6 +225,7 @@ class BaseContextTest < ActiveSupport::TestCase
   end
 
   # All entries tests
+  speed_profile :fast
   test "all_entries includes entries from sub-contexts" do
     sub = Contexts::BaseContext.new
     sub.add(content: "Sub entry", topics: ["sub"], source: "sub")
@@ -219,6 +237,7 @@ class BaseContextTest < ActiveSupport::TestCase
     assert_equal 2, all.size
   end
 
+  speed_profile :fast
   test "all_entries respects depth limit" do
     deep_sub = Contexts::BaseContext.new
     deep_sub.add(content: "Deep entry", topics: ["deep"], source: "deep")

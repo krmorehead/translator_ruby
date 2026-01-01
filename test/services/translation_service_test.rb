@@ -6,12 +6,14 @@ class TranslationServiceTest < ActiveSupport::TestCase
   end
 
   # Basic functionality tests (no LLM calls - safe for parallel execution)
+  speed_profile :fast
   test "should parse JSON document correctly" do
     json_doc = '{"greeting": "Hola Mundo"}'
     parsed_doc = @service.parse_document(json_doc, "application/json")
     assert_equal "Hola Mundo", parsed_doc["greeting"]
   end
 
+  speed_profile :fast
   test "should parse YAML document correctly" do
     yaml_doc = "greeting: Hola Mundo\nfarewell: Adiós"
     parsed_doc = @service.parse_document(yaml_doc, "application/x-yaml")
@@ -19,30 +21,35 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_equal "Adiós", parsed_doc["farewell"]
   end
 
+  speed_profile :fast
   test "should convert to YAML format correctly" do
     data = { "greeting" => "Hello" }
     yaml_data = @service.convert_to_yaml(data)
     assert_equal data, yaml_data
   end
 
+  speed_profile :fast
   test "should handle string input conversion" do
     text = "Hello World"
     result = @service.convert_to_yaml(text)
     assert_equal "Hello World", result
   end
 
+  speed_profile :fast
   test "should auto-detect JSON format when no hint provided" do
     json_doc = '{"test": "value"}'
     parsed_doc = @service.parse_document(json_doc, nil)
     assert_equal "value", parsed_doc["test"]
   end
 
+  speed_profile :fast
   test "should fall back to YAML when JSON parsing fails" do
     yaml_doc = "test: value"
     parsed_doc = @service.parse_document(yaml_doc, nil)
     assert_equal "value", parsed_doc["test"]
   end
 
+  speed_profile :fast
   test "should convert to JSON export format" do
     data = { "greeting" => "Hello" }
     result = @service.convert_to_export_format(data, "JSON")
@@ -50,6 +57,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_equal "Hello", parsed_result["greeting"]
   end
 
+  speed_profile :fast
   test "should convert to YAML export format" do
     data = { "greeting" => "Hello" }
     result = @service.convert_to_export_format(data, "YAML")
@@ -58,6 +66,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_equal "Hello", parsed_result["greeting"]
   end
 
+  speed_profile :fast
   test "should validate export format" do
     assert_raises(ArgumentError) do
       @service.translate_document(
@@ -68,18 +77,21 @@ class TranslationServiceTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "should propagate JSON parsing errors" do
     assert_raises(JSON::ParserError) do
       @service.parse_document("invalid json", "application/json")
     end
   end
 
+  speed_profile :fast
   test "should propagate YAML parsing errors" do
     assert_raises(Psych::SyntaxError) do
       @service.parse_document("invalid: yaml: content:", "application/x-yaml")
     end
   end
 
+  speed_profile :fast
   test "should initialize with custom LLM URL and timeout" do
     custom_service = TranslationService.new(
       llm_url: "http://custom-llm:8080",
@@ -89,6 +101,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_not_nil custom_service
   end
 
+  speed_profile :fast
   test "should handle empty string in translate_text method" do
     context = TranslationContext.new(text: "")
     result = @service.translate_text(context)
@@ -100,6 +113,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
   end
 
   # Language code conversion tests (no LLM calls)
+  speed_profile :fast
   test "should convert language codes to names" do
     service_es = TranslationService.new(target_language: "es")
     service_en = TranslationService.new(target_language: "en")
@@ -111,17 +125,20 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_equal "French", service_fr.instance_variable_get(:@target_language)
   end
 
+  speed_profile :fast
   test "should default to Spanish for unknown language codes" do
     service = TranslationService.new(target_language: "xyz")
     assert_equal "Spanish", service.instance_variable_get(:@target_language)
   end
 
+  speed_profile :fast
   test "should handle language names as input" do
     service = TranslationService.new(target_language: "German")
     assert_equal "German", service.instance_variable_get(:@target_language)
   end
 
   # Integration tests with real LLM (well-written, naturally isolated)
+  speed_profile :fast
   test "should translate English to Spanish by default" do
     json_doc = '{"message": "Good morning everyone"}'
 
@@ -139,6 +156,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_match(/buenos|días|mañana|todos/i, parsed_result["message"])
   end
 
+  speed_profile :fast
   test "should translate English to French when specified" do
     json_doc = '{"greeting": "Good evening"}'
 
@@ -156,6 +174,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_match(/bonsoir|soir/i, parsed_result["greeting"])
   end
 
+  speed_profile :fast
   test "should preserve simple injection variables" do
     json_doc = '{"message": "Hello {user_name}, welcome back"}'
 
@@ -173,6 +192,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_not_equal "Hello {user_name}, welcome back", parsed_result["message"]
   end
 
+  speed_profile :fast
   test "should preserve multiple injection variables" do
     json_doc = '{"notification": "Your {student_name} completed {assignment_title}"}'
 
@@ -189,6 +209,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_not_equal "Your {student_name} completed {assignment_title}", parsed_result["notification"]
   end
 
+  speed_profile :fast
   test "should preserve Brightwheel by default" do
     json_doc = '{"text": "Welcome to Brightwheel platform"}'
 
@@ -206,6 +227,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_not_equal "Welcome to Brightwheel platform", parsed_result["text"]
   end
 
+  speed_profile :fast
   test "should preserve custom protected strings" do
     protected_service = TranslationService.new(
       timeout: 60,
@@ -227,6 +249,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_not_equal "Using CustomApp with SpecialTool for learning", parsed_result["text"]
   end
 
+  speed_profile :fast
   test "should handle injection variables and protected strings together" do
     protected_service = TranslationService.new(
       timeout: 60,
@@ -248,6 +271,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_not_equal "Hello {user_name}, welcome to MyApp", parsed_result["message"]
   end
 
+  speed_profile :fast
   test "should handle YAML documents" do
     yaml_doc = <<~YAML
       greeting: Good afternoon
@@ -269,6 +293,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_not_equal "Have a great day", parsed_result["nested"]["message"]
   end
 
+  speed_profile :fast
   test "should handle complex injection variables with underscores and numbers" do
     json_doc = '{"message": "Student {student_id_123} finished {assignment_v2} in {subject_area}"}'
 
@@ -285,6 +310,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_includes parsed_result["message"], "{subject_area}"
   end
 
+  speed_profile :fast
   test "should translate Spanish to English" do
     english_service = TranslationService.new(timeout: 60, target_language: "en")
 
@@ -301,6 +327,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_match(/good|morning|day/i, parsed_result["greeting"])
   end
 
+  speed_profile :fast
   test "should translate French to English" do
     english_service = TranslationService.new(timeout: 60, target_language: "en")
 
@@ -317,6 +344,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_match(/how|are|you/i, parsed_result["message"])
   end
 
+  speed_profile :fast
   test "should handle language codes es, en, fr correctly" do
     test_cases = [
       { code: "es", input: "Hello world", should_change: true },
@@ -343,6 +371,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
   end
 
   # Pluralization tests with real LLM integration
+  speed_profile :fast
   test "should handle i18n pluralization with nested structure" do
     json_doc = <<~JSON
       {
@@ -375,6 +404,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_match(/onzas/i, parsed_result["food"]["amount_other"])
   end
 
+  speed_profile :fast
   test "should handle i18n pluralization at root level" do
     json_doc = <<~JSON
       {
@@ -405,6 +435,7 @@ class TranslationServiceTest < ActiveSupport::TestCase
     assert_match(/estudiantes/i, parsed_result["student_count_other"])
   end
 
+  speed_profile :fast
   test "should handle multiple pluralization patterns in same document" do
     json_doc = <<~JSON
       {

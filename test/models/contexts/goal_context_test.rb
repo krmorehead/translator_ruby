@@ -4,6 +4,7 @@ require "test_helper"
 
 module Contexts
   class GoalContextTest < ActiveSupport::TestCase
+    speed_profile :fast
     test "creates goal context with primary goal" do
       context = GoalContext.new(goal_text: "Complete the project")
 
@@ -12,6 +13,7 @@ module Contexts
       assert context.primary_goal.is_a?(Goals::PrimaryGoal)
     end
 
+    speed_profile :fast
     test "add_sub_goal creates and tracks sub-goal" do
       context = GoalContext.new(goal_text: "Main goal")
       
@@ -23,6 +25,7 @@ module Contexts
       assert_equal 1, context.sub_goals.size
     end
 
+    speed_profile :fast
     test "sub_goals returns sorted sub-goals" do
       context = GoalContext.new(goal_text: "Main")
       
@@ -34,6 +37,7 @@ module Contexts
       assert_equal [1, 2, 3], sorted.map(&:priority)
     end
 
+    speed_profile :fast
     test "mark_progress updates goal status" do
       context = GoalContext.new(goal_text: "Main")
       sub_goal = context.add_sub_goal("Task 1", priority: 1)
@@ -44,6 +48,7 @@ module Contexts
       assert_equal 50, sub_goal.progress
     end
 
+    speed_profile :fast
     test "mark_progress validates goal exists" do
       context = GoalContext.new(goal_text: "Main")
 
@@ -53,6 +58,7 @@ module Contexts
       assert_match(/Goal not found/, error.message)
     end
 
+    speed_profile :fast
     test "pending_sub_goals returns not started goals" do
       context = GoalContext.new(goal_text: "Main")
       
@@ -68,6 +74,7 @@ module Contexts
       assert_includes pending.map(&:id), sg3.id
     end
 
+    speed_profile :fast
     test "completed_sub_goals returns completed goals" do
       context = GoalContext.new(goal_text: "Main")
       
@@ -81,6 +88,7 @@ module Contexts
       assert_equal sg1.id, completed.first.id
     end
 
+    speed_profile :fast
     test "overall_progress calculates completion percentage" do
       context = GoalContext.new(goal_text: "Main")
       
@@ -97,6 +105,7 @@ module Contexts
       assert_equal 50.0, context.overall_progress
     end
 
+    speed_profile :fast
     test "goal_achieved? returns true when primary goal is complete" do
       context = GoalContext.new(goal_text: "Main")
       
@@ -107,6 +116,7 @@ module Contexts
       assert context.goal_achieved?
     end
 
+    speed_profile :fast
     test "format_for_prompt displays goal hierarchy" do
       context = GoalContext.new(goal_text: "Complete project")
       context.add_sub_goal("Design system", priority: 1)
@@ -119,6 +129,7 @@ module Contexts
       assert formatted.include?("Implement features")
     end
 
+    speed_profile :fast
     test "to_h serializes goal context" do
       context = GoalContext.new(goal_text: "Main goal")
       context.add_sub_goal("Sub 1", priority: 1)
@@ -131,6 +142,7 @@ module Contexts
       assert hash[:overall_progress].is_a?(Numeric)
     end
 
+    speed_profile :fast
     test "from_h reconstructs goal context" do
       original = GoalContext.new(goal_text: "Original")
       original.add_sub_goal("Sub 1", priority: 1)

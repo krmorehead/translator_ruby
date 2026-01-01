@@ -5,6 +5,7 @@ require "test_helper"
 module Contexts
   module Goals
     class BaseGoalTest < ActiveSupport::TestCase
+      speed_profile :fast
       test "creates a valid base goal" do
         goal = BaseGoal.new(
           goal_text: "Complete the quest",
@@ -23,6 +24,7 @@ module Contexts
         assert_not_nil goal.updated_at
       end
 
+      speed_profile :fast
       test "validates goal_text is a String" do
         error = assert_raises(ArgumentError) do
           BaseGoal.new(goal_text: 123, entry_id: "entry-123")
@@ -30,6 +32,7 @@ module Contexts
         assert_match(/goal_text must be a String/, error.message)
       end
 
+      speed_profile :fast
       test "validates entry_id is a String" do
         error = assert_raises(ArgumentError) do
           BaseGoal.new(goal_text: "Test", entry_id: 123)
@@ -37,6 +40,7 @@ module Contexts
         assert_match(/entry_id must be a String/, error.message)
       end
 
+      speed_profile :fast
       test "validates status is valid" do
         error = assert_raises(ArgumentError) do
           BaseGoal.new(goal_text: "Test", entry_id: "entry-123", status: :invalid)
@@ -44,6 +48,7 @@ module Contexts
         assert_match(/Invalid status/, error.message)
       end
 
+      speed_profile :fast
       test "update_status changes status and adds entry" do
         goal = BaseGoal.new(goal_text: "Test", entry_id: "entry-1")
         
@@ -55,6 +60,7 @@ module Contexts
         assert_includes goal.entries, "entry-2"
       end
 
+      speed_profile :fast
       test "completed? returns true when status is complete" do
         goal = BaseGoal.new(goal_text: "Test", entry_id: "entry-1", status: BaseGoal::COMPLETE)
         assert goal.completed?
@@ -63,6 +69,7 @@ module Contexts
         assert_not goal2.completed?
       end
 
+      speed_profile :fast
       test "to_h serializes goal properly" do
         goal = BaseGoal.new(
           goal_text: "Test goal",
@@ -83,6 +90,7 @@ module Contexts
         assert_not_nil hash[:updated_at]
       end
 
+      speed_profile :fast
       test "from_h reconstructs goal from hash" do
         original = BaseGoal.new(
           goal_text: "Test goal",
@@ -102,6 +110,7 @@ module Contexts
         assert_equal original.metadata, reconstructed.metadata
       end
 
+      speed_profile :fast
       test "from_h validates hash structure" do
         error = assert_raises(TypeError) do
           BaseGoal.from_h("not a hash")

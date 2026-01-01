@@ -3,6 +3,7 @@
 require "test_helper"
 
 class ConversationTest < ActiveSupport::TestCase
+  speed_profile :fast
   test "initializes with array of hashes and messages" do
     hash_message = { source: "user", target: "assistant", message: "Hello" }
     obj_message = Message.new(source: "assistant", target: "user", message: "Hi")
@@ -13,6 +14,7 @@ class ConversationTest < ActiveSupport::TestCase
     assert conv.messages.all? { |m| m.is_a?(Message) }
   end
 
+  speed_profile :fast
   test "adds message via add_message and shovel" do
     conv = Conversation.new
     conv.add_message(source: "user", target: "assistant", message: "Hello")
@@ -22,6 +24,7 @@ class ConversationTest < ActiveSupport::TestCase
     assert_equal %w[user assistant], conv.messages.map(&:source)
   end
 
+  speed_profile :fast
   test "to_h returns serializable hash" do
     conv = Conversation.new(messages: [ { source: "user", target: "assistant", message: "Hello" } ])
 

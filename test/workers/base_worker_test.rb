@@ -14,7 +14,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
   end
-
+  speed_profile :slow
   test "initializes with valid path" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -23,6 +23,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
+  speed_profile :slow
   test "generates unique owner_id on initialization" do
     worker1 = BaseWorker.new(goal: "goal 1", path: temp_dir)
     worker2 = BaseWorker.new(goal: "goal 2", path: temp_dir)
@@ -33,6 +34,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_match(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/, worker1.owner_id)
   end
 
+  speed_profile :slow
   test "workflow registration works" do
     # Create a test workflow class
     workflow_class = Class.new(BaseWorkflow)
@@ -45,6 +47,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_includes worker_class.registered_workflows, workflow_class
   end
 
+  speed_profile :slow
   test "status transitions correctly" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -68,6 +71,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal "something went wrong", worker2.error
   end
 
+  speed_profile :slow
   test "execute raises NotImplementedError in base class" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -76,6 +80,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "creates directory for non-existent paths" do
     # BaseWorker now creates directories for agent data paths
     test_path = File.join(temp_dir, "new_subdir_#{SecureRandom.hex(4)}")
@@ -86,6 +91,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal File.expand_path(test_path), worker.path
   end
 
+  speed_profile :slow
   test "parallel workers have isolated state" do
     worker1 = BaseWorker.new(goal: "goal 1", path: temp_dir)
     worker2 = BaseWorker.new(goal: "goal 2", path: temp_dir)
@@ -98,6 +104,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_includes worker2.state_path, worker2.owner_id
   end
 
+  speed_profile :slow
   test "state_path uses AGENT_STATE_PATH env var when set" do
     custom_path = File.join(temp_dir, "custom_state")
 
@@ -116,6 +123,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "output_path uses RESEARCH_OUTPUT_PATH env var when set" do
     custom_path = File.join(temp_dir, "custom_output")
 
@@ -133,6 +141,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "ensure_state_directory creates directory" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -144,6 +153,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert File.directory?(worker.state_path)
   end
 
+  speed_profile :slow
   test "ensure_output_directory creates directory" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -155,10 +165,12 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert File.directory?(worker.output_path)
   end
 
+  speed_profile :slow
   test "worker_name returns underscored class name" do
     assert_equal "base_worker", BaseWorker.worker_name
   end
 
+  speed_profile :slow
   test "stores and retrieves workflow results" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -168,6 +180,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_nil worker.send(:workflow_result, "nonexistent_workflow")
   end
 
+  speed_profile :slow
   test "accepts context parameter" do
     # Use factory for context
     worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: seed_context)
@@ -177,12 +190,14 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal seed_context[:prior_findings], worker.context[:prior_findings]
   end
 
+  speed_profile :slow
   test "context defaults to empty hash" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
     assert_equal({}, worker.context)
   end
 
+  speed_profile :slow
   test "context with nil value defaults to empty hash" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: nil)
 
@@ -190,6 +205,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
   end
 
   # State machine tests
+  speed_profile :slow
   test "starts in pending state" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -198,6 +214,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert worker.in_state?(:pending)
   end
 
+  speed_profile :slow
   test "has status method that returns current state" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -206,6 +223,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal :running, worker.status
   end
 
+  speed_profile :slow
   test "can check available events" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -214,6 +232,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     refute worker.can_trigger?(:finish)
   end
 
+  speed_profile :slow
   test "transition to running via mark_running" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -223,6 +242,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal :running, worker.current_state
   end
 
+  speed_profile :slow
   test "transition to failed via mark_failed" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -233,6 +253,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal "error message", worker.error
   end
 
+  speed_profile :slow
   test "invalid state transitions raise errors" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -242,6 +263,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "state history is tracked" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 
@@ -256,6 +278,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
     assert_equal :complete, history[1][:to]
   end
 
+  speed_profile :slow
   test "retry from failed state" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir)
 

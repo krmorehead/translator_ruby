@@ -8,7 +8,7 @@ module Contexts
       setup do
         @parent = PrimaryGoal.new(goal_text: "Parent goal", entry_id: "entry-1")
       end
-
+      speed_profile :fast
       test "creates a valid sub-goal" do
         sub_goal = SubGoal.new(
           goal_text: "Sub task",
@@ -25,6 +25,7 @@ module Contexts
         assert_equal({ type: "implementation" }, sub_goal.metadata)
       end
 
+      speed_profile :fast
       test "validates parent is a PrimaryGoal" do
         error = assert_raises(TypeError) do
           SubGoal.new(
@@ -37,6 +38,7 @@ module Contexts
         assert_match(/parent must be a PrimaryGoal/, error.message)
       end
 
+      speed_profile :fast
       test "validates priority is an Integer" do
         error = assert_raises(ArgumentError) do
           SubGoal.new(
@@ -49,6 +51,7 @@ module Contexts
         assert_match(/priority must be an Integer/, error.message)
       end
 
+      speed_profile :fast
       test "validates priority is in valid range" do
         error = assert_raises(ArgumentError) do
           SubGoal.new(
@@ -61,6 +64,7 @@ module Contexts
         assert_match(/priority must be between 1 and 4/, error.message)
       end
 
+      speed_profile :fast
       test "allows all valid priority values" do
         [1, 2, 3, 4].each do |priority|
           sub_goal = SubGoal.new(
@@ -73,6 +77,7 @@ module Contexts
         end
       end
 
+      speed_profile :fast
       test "to_h includes priority and parent_id" do
         sub_goal = SubGoal.new(
           goal_text: "Test",
@@ -88,6 +93,7 @@ module Contexts
         assert_equal @parent.id, hash[:parent_id]
       end
 
+      speed_profile :fast
       test "from_h reconstructs sub-goal with parent" do
         sub_goal = SubGoal.new(
           goal_text: "Original",
@@ -105,6 +111,7 @@ module Contexts
         assert_equal @parent, reconstructed.parent
       end
 
+      speed_profile :fast
       test "from_h validates parent parameter" do
         hash = {
           id: "123",
@@ -124,6 +131,7 @@ module Contexts
         assert_match(/parent must be a PrimaryGoal/, error.message)
       end
 
+      speed_profile :fast
       test "from_h validates required keys" do
         error = assert_raises(ArgumentError) do
           SubGoal.from_h({ id: "123" }, parent: @parent)

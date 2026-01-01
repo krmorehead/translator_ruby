@@ -11,7 +11,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
       protected_strings: ["Brightwheel"]
     )
   end
-
+  speed_profile :fast
   test "initializes with translation settings" do
     assert_equal "Spanish", context.target_language
     assert_equal "en", context.source_language
@@ -19,6 +19,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert_includes context.protected_strings, "Brightwheel"
   end
 
+  speed_profile :fast
   test "add_protected_term adds to protected_strings and creates entry" do
     entry = context.add_protected_term(term: "CompanyName", reason: "Brand name")
 
@@ -29,6 +30,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert_equal 1, context.size
   end
 
+  speed_profile :fast
   test "add_glossary_entry creates searchable glossary" do
     entry = context.add_glossary_entry(
       source_term: "child",
@@ -44,6 +46,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert_equal 1, context.glossary_entries.size
   end
 
+  speed_profile :fast
   test "add_translation records translation history" do
     entry = context.add_translation(
       source_text: "Hello",
@@ -57,6 +60,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert_equal 1, context.translation_history.size
   end
 
+  speed_profile :fast
   test "add_style_guideline creates style entry" do
     entry = context.add_style_guideline(
       guideline: "Use formal 'usted' form",
@@ -69,6 +73,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert_equal 1, context.style_guidelines.size
   end
 
+  speed_profile :fast
   test "glossary_for finds relevant glossary entries" do
     context.add_glossary_entry(source_term: "child", target_term: "niño")
     context.add_glossary_entry(source_term: "parent", target_term: "padre")
@@ -78,6 +83,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert results.first.content.include?("child")
   end
 
+  speed_profile :fast
   test "all_protected_terms returns copy of protected strings" do
     terms = context.all_protected_terms
     assert_includes terms, "Brightwheel"
@@ -87,6 +93,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     refute_includes context.protected_strings, "NewTerm"
   end
 
+  speed_profile :fast
   test "format_for_translation includes language and protected terms" do
     formatted = context.format_for_translation("Hello world")
 
@@ -95,6 +102,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert formatted.include?("Brightwheel")
   end
 
+  speed_profile :fast
   test "format_for_translation includes relevant glossary" do
     context.add_glossary_entry(source_term: "hello", target_term: "hola")
 
@@ -104,6 +112,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert formatted.include?("hello → hola")
   end
 
+  speed_profile :fast
   test "format_for_prompt with :translation format" do
     formatted = context.format_for_prompt("translate this", format: :translation)
 
@@ -111,6 +120,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert formatted.include?("formal")
   end
 
+  speed_profile :fast
   test "to_prompt_hash returns settings hash" do
     hash = context.to_prompt_hash
 
@@ -119,6 +129,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert_equal "formal", hash[:formality]
   end
 
+  speed_profile :fast
   test "serializes with translation settings" do
     context.add_glossary_entry(source_term: "test", target_term: "prueba")
 
@@ -127,6 +138,7 @@ class Contexts::TranslationContextTest < ActiveSupport::TestCase
     assert_includes hash[:protected_strings], "Brightwheel"
   end
 
+  speed_profile :fast
   test "deserializes with translation settings" do
     context.add_glossary_entry(source_term: "demo", target_term: "demostración")
 

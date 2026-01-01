@@ -134,9 +134,38 @@ class StepEvaluationWorkflow < BaseWorkflow
       }
     )
 
-    # TODO: Implement in Milestone 3 with StepEvaluationPrompt
-    # For now, perform basic evaluation based on execution success
-    basic_evaluation
+    # Use StepEvaluationPrompt for LLM-based evaluation
+    prompt = Execution::StepEvaluationPrompt.new(
+      step: @step,
+      step_result: @step_result,
+      context: {}
+    )
+
+    user_message = <<~MSG
+      I executed this step:
+
+      **Step**: #{@step.title}
+      **Intent**: #{@step.intent}
+
+      **Expected Details**:
+      #{@step.details.map { |d| "- #{d}" }.join("\n")}
+
+      **Test Requirements**:
+      #{@step.tests.map { |t| "- #{t}" }.join("\n")}
+
+      **Execution Results**:
+      - Success: #{@step_result[:success]}
+      - Actions Taken: #{@step_result[:actions_taken]&.size || 0}
+      - Files Changed: #{@step_result[:files_changed]&.size || 0}
+      #{@step_result[:error_message] ? "- Error: #{@step_result[:error_message]}" : ""}
+
+      Did this step successfully accomplish its objectives?
+    MSG
+
+    result = prompt.execute(prompt: user_message, context: nil)
+
+    # Return the evaluation from LLM
+    result[:content]
   end
 
   # Basic evaluation without LLM (placeholder)

@@ -29,7 +29,7 @@ module Planning
         created_in_step: "2.1"
       )
     end
-
+    speed_profile :fast
     test "initialization validates input types" do
       formatter = FileReferencesFormatter.new(
         existing_files: [@existing_file1],
@@ -40,6 +40,7 @@ module Planning
       assert_equal 1, formatter.planned_files.size
     end
 
+    speed_profile :fast
     test "validates existing_files must be Array" do
       error = assert_raises(ArgumentError) do
         FileReferencesFormatter.new(
@@ -50,6 +51,7 @@ module Planning
       assert_match(/existing_files must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates planned_files must be Array" do
       error = assert_raises(ArgumentError) do
         FileReferencesFormatter.new(
@@ -60,6 +62,7 @@ module Planning
       assert_match(/planned_files must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates all existing_files must be FileReference objects" do
       error = assert_raises(TypeError) do
         FileReferencesFormatter.new(
@@ -70,6 +73,7 @@ module Planning
       assert_match(/all existing_files must be Planning::FileReference/, error.message)
     end
 
+    speed_profile :fast
     test "validates all planned_files must be FileReference objects" do
       error = assert_raises(TypeError) do
         FileReferencesFormatter.new(
@@ -80,6 +84,7 @@ module Planning
       assert_match(/all planned_files must be Planning::FileReference/, error.message)
     end
 
+    speed_profile :fast
     test "generate with existing files produces correct markdown" do
       formatter = FileReferencesFormatter.new(
         existing_files: [@existing_file1, @existing_file2],
@@ -97,6 +102,7 @@ module Planning
       assert_includes markdown, "_No new files planned._"
     end
 
+    speed_profile :fast
     test "generate with planned files produces correct markdown" do
       formatter = FileReferencesFormatter.new(
         existing_files: [],
@@ -114,6 +120,7 @@ module Planning
       assert_includes markdown, "_No existing files identified._"
     end
 
+    speed_profile :fast
     test "generate with both types produces complete markdown" do
       formatter = FileReferencesFormatter.new(
         existing_files: [@existing_file1],
@@ -131,6 +138,7 @@ module Planning
       refute_includes markdown, "_No new files"
     end
 
+    speed_profile :fast
     test "generate with empty inputs produces sensible output" do
       formatter = FileReferencesFormatter.new(
         existing_files: [],
@@ -146,6 +154,7 @@ module Planning
       assert_includes markdown, "_No new files planned._"
     end
 
+    speed_profile :fast
     test "markdown format matches expected structure" do
       formatter = FileReferencesFormatter.new(
         existing_files: [@existing_file1],
@@ -163,6 +172,7 @@ module Planning
       assert_equal "|-----------|-------------|-----------|", lines[5]
     end
 
+    speed_profile :fast
     test "handles FileReference objects not hashes" do
       # Create formatter with domain objects
       formatter = FileReferencesFormatter.new(
@@ -179,6 +189,7 @@ module Planning
       assert_includes markdown, @planned_file1.path
     end
 
+    speed_profile :fast
     test "existing files table includes all required columns" do
       formatter = FileReferencesFormatter.new(
         existing_files: [@existing_file1],
@@ -197,6 +208,7 @@ module Planning
       assert_includes markdown, @existing_file1.relevance
     end
 
+    speed_profile :fast
     test "planned files table includes all required columns" do
       formatter = FileReferencesFormatter.new(
         existing_files: [],
@@ -215,6 +227,7 @@ module Planning
       assert_includes markdown, @planned_file1.created_in_step
     end
 
+    speed_profile :fast
     test "generates valid markdown that can be parsed" do
       formatter = FileReferencesFormatter.new(
         existing_files: [@existing_file1, @existing_file2],

@@ -3,12 +3,14 @@
 require "test_helper"
 
 class NarrativePromptTest < ActiveSupport::TestCase
+  speed_profile :fast
   test "model comes from general_llm capability via BasePrompt" do
     prompt = NarrativePrompt.new
     # Model should come from general_llm capability via BasePrompt, not a per-prompt override
     assert_equal "./vllm/models/qwen3_30b_a3b_moe", prompt.model
   end
 
+  speed_profile :fast
   test "system prompt sets DM voice" do
     prompt = NarrativePrompt.new
     text = prompt.system_prompt
@@ -16,11 +18,13 @@ class NarrativePromptTest < ActiveSupport::TestCase
     assert_includes text.downcase, "narrative"
   end
 
+  speed_profile :fast
   test "response schema is nil" do
     prompt = NarrativePrompt.new
     assert_nil prompt.response_schema
   end
 
+  speed_profile :fast
   test "format_context includes actions and history" do
     prompt = NarrativePrompt.new
     context = Contexts::DndChatContext.new
@@ -33,6 +37,7 @@ class NarrativePromptTest < ActiveSupport::TestCase
     assert_includes formatted, "map"
   end
 
+  speed_profile :medium
   test "execute returns narrative string" do
     prompt = NarrativePrompt.new
     context = Contexts::DndChatContext.new

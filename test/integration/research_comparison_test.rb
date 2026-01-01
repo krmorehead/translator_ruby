@@ -86,7 +86,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
   # ============================================================================
   # Baseline Verification Tests (no LLM calls needed)
   # ============================================================================
-
+  speed_profile :slow
   test "cursor baseline expected_output structure exists" do
     EXPECTED_FILES.each do |file|
       path = EXPECTED_OUTPUT_PATH.join(file)
@@ -94,6 +94,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "cursor baseline files have content" do
     EXPECTED_FILES.each do |file|
       path = EXPECTED_OUTPUT_PATH.join(file)
@@ -106,39 +107,46 @@ class ResearchComparisonTest < ActiveSupport::TestCase
   # Shared Result Tests - all use the same worker run
   # ============================================================================
 
+  speed_profile :slow
   test "shared: worker produces successful result" do
     result = shared_research_result
     assert result, "Worker should produce a result"
     assert result[:success], "Worker should succeed"
   end
 
+  speed_profile :slow
   test "shared: worker produces synthesis" do
     result = shared_research_result
     assert result[:synthesis], "Worker should produce synthesis"
   end
 
+  speed_profile :slow
   test "shared: worker generates file analyses" do
     result = shared_research_result
     assert result[:file_analyses], "Worker should produce file analyses"
     assert result[:file_analyses].any?, "Should have at least one file analysis"
   end
 
+  speed_profile :slow
   test "shared: worker generates findings" do
     result = shared_research_result
     assert result[:findings], "Worker should have findings"
   end
 
+  speed_profile :slow
   test "shared: both output modes reported" do
     result = shared_research_result
     assert_includes result[:output_modes], :report
     assert_includes result[:output_modes], :documentation
   end
 
+  speed_profile :slow
   test "shared: relevant_files array present" do
     result = shared_research_result
     assert result[:relevant_files], "Should have relevant_files array"
   end
 
+  speed_profile :slow
   test "shared: relevant_files_tree present" do
     result = shared_research_result
     assert result[:relevant_files_tree], "Should have relevant_files_tree"
@@ -148,6 +156,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
   # Relevance Filtering Tests (using shared result)
   # ============================================================================
 
+  speed_profile :slow
   test "shared: relevant_files excludes unrelated files" do
     result = shared_research_result
 
@@ -160,6 +169,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "shared: relevant_files includes math-related files" do
     result = shared_research_result
 
@@ -173,6 +183,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
     assert has_relevant, "Should include calculator, formatter, or math_service (found: #{relevant_basenames.join(', ')})"
   end
 
+  speed_profile :slow
   test "shared: relevant files have relevance scores" do
     result = shared_research_result
 
@@ -186,6 +197,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "shared: relevant files include sub_question context" do
     result = shared_research_result
 
@@ -201,6 +213,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
   # Coverage Comparison Tests (using shared result)
   # ============================================================================
 
+  speed_profile :slow
   test "shared: worker covers key terms" do
     result = shared_research_result
     cursor_output = File.read(BASELINE_PATH.join("cursor_output.md"))
@@ -223,6 +236,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "shared: worker identifies same classes as cursor baseline" do
     result = shared_research_result
     cursor_base_refs = File.read(EXPECTED_OUTPUT_PATH.join("base_references.md"))
@@ -246,6 +260,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
   # Documentation Structure Tests (using shared result)
   # ============================================================================
 
+  speed_profile :slow
   test "shared: file analyses have required structure" do
     result = shared_research_result
 
@@ -260,6 +275,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
   # Comparison Report Generation (separate worker run for full comparison)
   # ============================================================================
 
+  speed_profile :slow
   test "comparison report can be generated" do
     result = shared_research_result
     cursor_output = File.read(BASELINE_PATH.join("cursor_output.md"))

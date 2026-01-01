@@ -12,6 +12,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   end
 
   # Test simple string leaves
+  speed_profile :fast
   test "should handle simple string leaf" do
     input = "hello"
     result = @service.traverse(input, @translate_callback)
@@ -19,6 +20,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     assert_equal "HELLO", result
   end
 
+  speed_profile :fast
   test "should handle string leaf with context path" do
     input = "world"
     result = @service.traverse(input, @translate_callback, [ "greeting", "message" ])
@@ -27,6 +29,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   end
 
   # Test hash traversal
+  speed_profile :fast
   test "should traverse hash with string leaves" do
     input = {
       greeting: "hello",
@@ -39,6 +42,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     assert_equal "GOODBYE", result[:farewell]
   end
 
+  speed_profile :fast
   test "should traverse nested hash structure" do
     input = {
       messages: {
@@ -54,6 +58,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   end
 
   # Test array traversal
+  speed_profile :fast
   test "should traverse arrays" do
     input = [ "first", "second", "third" ]
 
@@ -62,6 +67,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     assert_equal [ "FIRST", "SECOND", "THIRD" ], result
   end
 
+  speed_profile :fast
   test "should traverse array of hashes" do
     input = [
       { text: "hello" },
@@ -75,6 +81,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   end
 
   # Test hash with translation_hash marker
+  speed_profile :fast
   test "should handle hash with translation_hash marker" do
     input = {
       translation_hash: true,
@@ -94,6 +101,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     assert_equal "HELLO WORLD", result
   end
 
+  speed_profile :fast
   test "should handle translation_hash with custom properties" do
     input = {
       translation_hash: true,
@@ -115,6 +123,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     assert_equal "BONJOUR", result
   end
 
+  speed_profile :fast
   test "should raise error if translation_hash node missing text" do
     input = {
       translation_hash: true,
@@ -127,6 +136,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   end
 
   # Test context path building
+  speed_profile :fast
   test "should build context path for nested structures" do
     input = {
       notifications: {
@@ -146,6 +156,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     @service.traverse(input, callback)
   end
 
+  speed_profile :fast
   test "should build context path with array indices" do
     input = {
       items: [ "first", "second" ]
@@ -164,6 +175,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   end
 
   # Test pluralization patterns
+  speed_profile :fast
   test "should handle i18n pluralization with nested hash" do
     input = {
       food: {
@@ -178,6 +190,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     assert_equal "{{COUNT}} OUNCES", result[:food][:amount_other]
   end
 
+  speed_profile :fast
   test "should handle i18n pluralization at root level" do
     input = {
       student_count_one: "{{count}} student",
@@ -191,6 +204,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   end
 
   # Test error handling
+  speed_profile :fast
   test "should raise error for unexpected types" do
     input = 12345
 
@@ -199,6 +213,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "should raise error for nil" do
     input = nil
 
@@ -208,6 +223,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   end
 
   # Test mixed structures
+  speed_profile :fast
   test "should handle complex mixed structure" do
     input = {
       simple: "text",
@@ -231,6 +247,7 @@ class TranslationTreeServiceTest < ActiveSupport::TestCase
   end
 
   # Test that string keys are automatically symbolized
+  speed_profile :fast
   test "should symbolize string keys from input" do
     input = {
       "greeting" => "hello",

@@ -2,48 +2,44 @@
 
 module Planning
   # Represents a single step within a milestone in a project plan.
-  # Steps are numbered using a format like "1.1", "2.3", etc.
+  # Steps are numbered using milestone_number and step_number integers.
+  # The full number serializes as "milestone.step" (e.g., "1.1", "2.3").
   #
   # @example Creating a step
   #   step = Planning::Step.new(
-  #     number: "1.1",
+  #     milestone_number: 1,
+  #     step_number: 1,
   #     title: "Create User Model",
   #     intent: "Define the core user entity with authentication",
   #     details: ["Add email and password fields", "Include validation"],
   #     tests: ["Test user creation", "Test validations"]
   #   )
   class Step
-    attr_reader :number, :title, :intent, :details, :tests
+    attr_reader :id, :milestone_number, :step_number, :title, :intent, :details, :tests
 
-    # Step number pattern: digit.digit (e.g., "1.1", "2.3")
-    STEP_NUMBER_PATTERN = /^\d+\.\d+$/
-
-    # @param number [String] Step number in format "milestone.step" (e.g., "1.1")
+    # @param milestone_number [Integer] Milestone number (1, 2, 3, etc.)
+    # @param step_number [Integer] Step number within milestone (1, 2, 3, etc.)
     # @param title [String] Step title
     # @param intent [String] Description of what this step accomplishes and why
     # @param details [Array<String>] List of specific implementation details
     # @param tests [Array<String>] List of test requirements
-    def initialize(number:, title:, intent:, details:, tests:)
-      validate_types!(number, title, intent, details, tests)
-      validate_number_format!(number)
+    # @param id [String, nil] Optional UUID for the step (generated if not provided)
+    def initialize(milestone_number:, step_number:, title:, intent:, details:, tests:, id: nil)
+      validate_types!(milestone_number, step_number, title, intent, details, tests, id)
       
-      @number = number
+      @id = id || SecureRandom.uuid
+      @milestone_number = milestone_number
+      @step_number = step_number
       @title = title
       @intent = intent
       @details = Array(details)
       @tests = Array(tests)
     end
 
-    # Extract the milestone number from the step number
-    # @return [Integer] The milestone number (e.g., 1 from "1.1")
-    def milestone_number
-      @number.split(".").first.to_i
-    end
-
-    # Extract the step index within the milestone
-    # @return [Integer] The step index (e.g., 1 from "1.1")
-    def step_index
-      @number.split(".").last.to_i
+    # Get the full step number in format "milestone.step"
+    # @return [String] The full step number (e.g., "1.1", "2.3")
+    def number
+      "#{@milestone_number}.#{@step_number}"
     end
 
     # Check if the step has all required components
@@ -59,7 +55,9 @@ module Planning
     # @return [Hash] Hash representation of the step
     def to_h
       {
-        number: @number,
+        id: @id,
+        milestone_number: @milestone_number,
+        step_number: @step_number,
         title: @title,
         intent: @intent,
         details: @details,
@@ -73,8 +71,22 @@ module Planning
     def self.from_h(hash)
       raise ArgumentError, "hash must be a Hash, got #{hash.class}" unless hash.is_a?(Hash)
       
+      milestone_number = hash[:milestone_number] || hash["milestone_number"]
+      step_number = hash[:step_number] || hash["step_number"]
+      
+      # Validate required fields are present
+      if milestone_number.nil?
+        raise ArgumentError, "hash must contain :milestone_number (Integer). Got keys: #{hash.keys.inspect}"
+      end
+      
+      if step_number.nil?
+        raise ArgumentError, "hash must contain :step_number (Integer). Got keys: #{hash.keys.inspect}"
+      end
+      
       new(
-        number: hash[:number] || hash["number"],
+        id: hash[:id] || hash["id"],
+        milestone_number: milestone_number,
+        step_number: step_number,
         title: hash[:title] || hash["title"],
         intent: hash[:intent] || hash["intent"],
         details: hash[:details] || hash["details"] || [],
@@ -84,28 +96,44 @@ module Planning
 
     private
 
-    def validate_types!(number, title, intent, details, tests)
-      raise ArgumentError, "number must be a String, got #{number.class}" unless number.is_a?(String)
+    def validate_types!(milestone_number, step_number, title, intent, details, tests, id)
+      # Validate milestone_number
+      unless milestone_number.is_a?(Integer)
+        raise ArgumentError, "milestone_number must be an Integer, got #{milestone_number.class}. " \
+                             "Example: milestone_number: 1"
+      end
+      raise ArgumentError, "milestone_number must be positive, got #{milestone_number}" unless milestone_number > 0
+      
+      # Validate step_number
+      unless step_number.is_a?(Integer)
+        raise ArgumentError, "step_number must be an Integer, got #{step_number.class}. " \
+                             "Example: step_number: 1"
+      end
+      raise ArgumentError, "step_number must be positive, got #{step_number}" unless step_number > 0
+      
+      # Validate id if provided
+      if id && !id.is_a?(String)
+        raise ArgumentError, "id must be a String, got #{id.class}"
+      end
+      
+      # Validate title
       raise ArgumentError, "title must be a String, got #{title.class}" unless title.is_a?(String)
       raise ArgumentError, "title cannot be empty" if title.strip.empty?
+      
+      # Validate intent
       raise ArgumentError, "intent must be a String, got #{intent.class}" unless intent.is_a?(String)
       raise ArgumentError, "intent cannot be empty" if intent.strip.empty?
-      raise ArgumentError, "details must be an Array, got #{details.class}" unless details.is_a?(Array)
-      raise ArgumentError, "tests must be an Array, got #{tests.class}" unless tests.is_a?(Array)
       
-      # Validate array elements are strings
+      # Validate details
+      raise ArgumentError, "details must be an Array, got #{details.class}" unless details.is_a?(Array)
       if details.any? { |d| !d.is_a?(String) }
         raise ArgumentError, "all details must be Strings"
       end
       
+      # Validate tests
+      raise ArgumentError, "tests must be an Array, got #{tests.class}" unless tests.is_a?(Array)
       if tests.any? { |t| !t.is_a?(String) }
         raise ArgumentError, "all tests must be Strings"
-      end
-    end
-
-    def validate_number_format!(number)
-      unless number.match?(STEP_NUMBER_PATTERN)
-        raise ArgumentError, "number must match pattern 'milestone.step' (e.g., '1.1'), got '#{number}'"
       end
     end
   end

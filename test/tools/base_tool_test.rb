@@ -25,7 +25,7 @@ class BaseToolTest < ActiveSupport::TestCase
       success_result("Executed with: #{test_param}")
     end
   end
-
+  speed_profile :medium
   test "schema returns hash with required OpenAI function structure" do
     schema = TestTool.schema
 
@@ -36,11 +36,13 @@ class BaseToolTest < ActiveSupport::TestCase
     assert schema[:function][:parameters].is_a?(Hash)
   end
 
+  speed_profile :medium
   test "name_identifier returns a string" do
     assert_equal "test_tool", TestTool.name_identifier
     assert TestTool.name_identifier.is_a?(String)
   end
 
+  speed_profile :medium
   test "execute raises NotImplementedError on base class" do
     tool = BaseTool.new
 
@@ -49,24 +51,28 @@ class BaseToolTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :medium
   test "base class raises NotImplementedError for name_identifier" do
     assert_raises(NotImplementedError) do
       BaseTool.name_identifier
     end
   end
 
+  speed_profile :medium
   test "base class raises NotImplementedError for description" do
     assert_raises(NotImplementedError) do
       BaseTool.description
     end
   end
 
+  speed_profile :medium
   test "base class raises NotImplementedError for parameters_schema" do
     assert_raises(NotImplementedError) do
       BaseTool.parameters_schema
     end
   end
 
+  speed_profile :medium
   test "result structure includes success, result, and error keys" do
     tool = TestTool.new
     result = tool.execute(test_param: "hello")
@@ -76,6 +82,7 @@ class BaseToolTest < ActiveSupport::TestCase
     assert result.key?(:error)
   end
 
+  speed_profile :medium
   test "success_result returns correct structure" do
     tool = TestTool.new
     result = tool.execute(test_param: "test")
@@ -85,6 +92,7 @@ class BaseToolTest < ActiveSupport::TestCase
     assert_nil result[:error]
   end
 
+  speed_profile :medium
   test "tool can be instantiated without arguments" do
     tool = TestTool.new
     assert_not_nil tool

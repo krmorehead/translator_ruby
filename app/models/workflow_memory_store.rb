@@ -89,11 +89,12 @@ class WorkflowMemoryStore
   # @param to [Symbol] Target state
   # @param event [Symbol] Event that triggered transition
   # @param payload [Hash] Additional data
-  def record_state_transition(from:, to:, event:, payload: {})
+  def record_state_transition(from:, to:, event:, source: nil, payload: {})
     entry = {
       from: from,
       to: to,
       event: event,
+      source: source,
       payload: payload,
       timestamp: Time.now.utc.iso8601,
       duration_in_state: calculate_duration

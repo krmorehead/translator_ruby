@@ -28,7 +28,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
   # ============================================================================
   # Validation Tests - No LLM calls
   # ============================================================================
-
+  speed_profile :fast
   test "create returns 422 with missing goal" do
     post "/project_planning/create", params: {
       path: FIXTURE_PATH,
@@ -41,6 +41,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
     assert_includes json["error"], "goal"
   end
 
+  speed_profile :fast
   test "create returns 422 with missing path" do
     post "/project_planning/create", params: {
       goal: "Test goal",
@@ -53,6 +54,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
     assert_includes json["error"], "path"
   end
 
+  speed_profile :fast
   test "create returns 422 with missing project_name" do
     post "/project_planning/create", params: {
       goal: "Test goal",
@@ -65,6 +67,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
     assert_includes json["error"], "project_name"
   end
 
+  speed_profile :fast
   test "create returns 422 with invalid path" do
     post "/project_planning/create", params: {
       goal: "Test goal",
@@ -82,18 +85,21 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
   # Shared Execution Tests - All use same LLM call
   # ============================================================================
 
+  speed_profile :medium
   test "shared: create returns 200 with valid params" do
     resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
     assert_equal 200, resp.status
   end
 
+  speed_profile :medium
   test "shared: response includes success boolean" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
     assert json.key?("success")
   end
 
+  speed_profile :medium
   test "shared: response includes file paths" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
@@ -103,6 +109,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
     assert json.key?("project_plan_path")
   end
 
+  speed_profile :medium
   test "shared: response includes milestones" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
@@ -111,6 +118,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
     assert_kind_of Array, json["milestones"]
   end
 
+  speed_profile :medium
   test "shared: response includes research_summary" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
@@ -118,6 +126,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
     assert json.key?("research_summary")
   end
 
+  speed_profile :medium
   test "shared: response includes existing and planned files" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"

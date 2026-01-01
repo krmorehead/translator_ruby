@@ -91,20 +91,67 @@ rvm use 3.4.4 && PORT=52020 HOST=0.0.0.0 ruby lib/server.rb
 
 ## 🧪 Testing
 
-The project uses Rails' default TestUnit framework with FactoryBot for advanced test data generation.
+The project uses Rails' default TestUnit framework with FactoryBot for advanced test data generation. Tests are organized with **per-test speed profiling** for efficient development iteration.
+
+### Speed-Profiled Testing
+
+The project uses a speed profiling system that categorizes tests by execution time:
+
+- **Fast** (< 10 seconds): Unit tests, validations, pure logic
+- **Medium** (< 60 seconds): Tests with LLM calls, tool execution, file I/O
+- **Slow** (< 120 seconds): Workers, workflows, integration tests
 
 ### Running Tests
 
 ```bash
-# Run all tests using custom test runner (loads .env)
-rvm use 3.4.4 && ruby lib/test_runner.rb
+# Fast tests only (recommended for development) - runs in ~5 seconds
+rvm use 3.4.4 && ruby lib/test_runner.rb --speed fast
 
-# Run specific test files
-rvm use 3.4.4 && ruby lib/test_runner.rb test/controllers/api/v1/hello_controller_test.rb
+# Fast + medium tests (for feature development) - runs in ~69 seconds
+rvm use 3.4.4 && ruby lib/test_runner.rb --speed medium
 
-# Run tests with explicit environment variables
-rvm use 3.4.4 && DB_USERNAME=postgres DB_PASSWORD=postgres rails test
+# All tests (before PR/merge) - runs in ~7 minutes
+rvm use 3.4.4 && ruby lib/test_runner.rb --speed all
+
+# Run specific test file
+rvm use 3.4.4 && ruby lib/test_runner.rb --speed fast test/controllers/api/v1/hello_controller_test.rb
+
+# Run specific directory
+rvm use 3.4.4 && ruby lib/test_runner.rb --speed fast test/models
 ```
+
+### Writing Tests with Speed Profiles
+
+**Every test MUST declare a speed profile before the test definition:**
+
+```ruby
+class MyTest < ActiveSupport::TestCase
+  speed_profile :fast
+  test "quick validation" do
+    assert_equal 2, 1 + 1
+  end
+  
+  speed_profile :medium
+  test "with LLM call" do
+    result = service.call_llm
+    assert result.present?
+  end
+  
+  speed_profile :fast
+  test "another quick test" do
+    assert true
+  end
+end
+```
+
+**Speed Profile Guidelines:**
+- `:fast` - No external calls, pure logic, <10s
+- `:medium` - LLM calls, file operations, <60s
+- `:slow` - Complex workflows, integrations, <120s
+
+Tests that exceed their SLA will be forcefully terminated and fail.
+
+See [Test Speed Profiling Quick Reference](docs/test_speed_profiling_quick_reference.md) for more details.
 
 ### Test Structure
 
@@ -122,18 +169,26 @@ test/
 
 ### Test Coverage
 
-- **16 comprehensive controller tests** covering:
-  - HTTP response validation
-  - JSON structure verification
-  - Timestamp format validation
-  - Error handling
-  - Performance testing
-  - Security (HTTP method restrictions)
+- **1214 comprehensive tests** across the entire codebase:
+  - ~834 fast tests (<10s each)
+  - ~175 medium tests (<60s each)
+  - ~205 slow tests (<120s each)
 
-- **3 factory tests** covering:
-  - Data generation validation
-  - Format compliance
-  - Uniqueness verification
+Tests cover:
+- Controllers and API endpoints
+- Services and workflows
+- Models and validations
+- Prompts and LLM interactions
+- Tools and utilities
+- Workers and background jobs
+- Integration scenarios
+
+**Testing Philosophy:**
+- No mocking or stubbing - real implementations only
+- Per-test speed profiling for efficient iteration
+- Comprehensive coverage with meaningful assertions
+- Real data using FactoryBot
+- Timeout enforcement at SLA boundaries
 
 ## 📁 Project Structure
 
@@ -188,19 +243,38 @@ RAILS_ENV=development
 
 ## 🚦 Development Workflow
 
+### Testing Loop
+
+1. **During development**: Run fast tests for rapid iteration
+   ```bash
+   ruby lib/test_runner.rb --speed fast  # ~5 seconds
+   ```
+
+2. **Testing new features**: Run fast + medium tests
+   ```bash
+   ruby lib/test_runner.rb --speed medium  # ~69 seconds
+   ```
+
+3. **Before PR/merge**: Run complete test suite
+   ```bash
+   ruby lib/test_runner.rb --speed all  # ~7 minutes
+   ```
+
 ### Adding New Endpoints
 
 1. Create controller in `app/controllers/api/v1/`
 2. Add routes in `config/routes.rb`
-3. Write comprehensive tests in `test/controllers/api/v1/`
+3. Write comprehensive tests with speed profiles in `test/controllers/api/v1/`
 4. Create factories if complex data structures needed
+5. Run tests: `ruby lib/test_runner.rb --speed fast test/controllers/api/v1/your_controller_test.rb`
 
 ### Adding Models
 
 1. Generate model: `rails generate model ModelName`
 2. Create corresponding factory in `test/factories/`
-3. Write model tests in `test/models/`
+3. Write model tests with speed profiles in `test/models/`
 4. Update database with `rails db:migrate`
+5. Run tests: `ruby lib/test_runner.rb --speed fast test/models/your_model_test.rb`
 
 ### Testing Philosophy
 
@@ -227,9 +301,12 @@ RAILS_ENV=development
 
 1. Follow Rails conventions and project structure
 2. Write comprehensive tests for all new features
-3. Use FactoryBot for complex test data scenarios
-4. Ensure all tests pass before submitting PRs
-5. Follow the existing code style and patterns
+3. **IMPORTANT**: Every test must declare `speed_profile :fast`, `:medium`, or `:slow`
+4. Use FactoryBot for complex test data scenarios
+5. Run `ruby lib/test_runner.rb --speed fast` during development
+6. Run `ruby lib/test_runner.rb --speed all` before submitting PRs
+7. Follow the existing code style and patterns
+8. No mocking or stubbing - use real implementations
 
 ## 📚 Additional Resources
 
@@ -237,7 +314,9 @@ RAILS_ENV=development
 - [Rails API Documentation](https://api.rubyonrails.org/)
 - [FactoryBot Documentation](https://thoughtbot.github.io/factory_bot/)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Test Speed Profiling Guide](docs/test_speed_profiling_quick_reference.md)
+- [Test Speed Profiling Verification](docs/test_speed_profiling_verification.md)
 
 ---
 
-**Current Status**: ✅ Basic setup complete with hello world endpoint and comprehensive test suite
+**Current Status**: ✅ Production-ready with comprehensive test suite and speed profiling system

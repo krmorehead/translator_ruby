@@ -50,7 +50,7 @@ class PerFileDocPromptTest < ActiveSupport::TestCase
   # ============================================================================
   # Unit Tests - No LLM calls
   # ============================================================================
-
+  speed_profile :fast
   test "has correct system prompt" do
     assert_includes prompt.system_prompt, "code documentation expert"
     assert_includes prompt.system_prompt, "Summary"
@@ -58,6 +58,7 @@ class PerFileDocPromptTest < ActiveSupport::TestCase
     assert_includes prompt.system_prompt, "Methods"
   end
 
+  speed_profile :fast
   test "has valid response schema" do
     schema = prompt.response_schema
 
@@ -71,31 +72,37 @@ class PerFileDocPromptTest < ActiveSupport::TestCase
   # Shared Analysis Tests - Use one LLM call
   # ============================================================================
 
+  speed_profile :medium
   test "shared: produces content" do
     result = shared_analysis
     assert result[:content].present?
   end
 
+  speed_profile :medium
   test "shared: has summary" do
     result = shared_analysis
     assert result[:content][:summary].present?
   end
 
+  speed_profile :medium
   test "shared: has external_references array" do
     result = shared_analysis
     assert result[:content][:external_references].is_a?(Array)
   end
 
+  speed_profile :medium
   test "shared: has methods array" do
     result = shared_analysis
     assert result[:content][:methods].is_a?(Array)
   end
 
+  speed_profile :medium
   test "shared: includes file_path" do
     result = shared_analysis
     assert_equal "lib/calculator.rb", result[:content][:file_path]
   end
 
+  speed_profile :medium
   test "shared: extracts method names" do
     result = shared_analysis
     methods = result[:content][:methods]
@@ -105,6 +112,7 @@ class PerFileDocPromptTest < ActiveSupport::TestCase
     assert(method_names.any? { |name| %w[add subtract multiply divide].include?(name) })
   end
 
+  speed_profile :medium
   test "shared: identifies relevant sub-questions" do
     result = shared_analysis
     relevant = result[:content][:relevant_sub_questions]
@@ -115,6 +123,7 @@ class PerFileDocPromptTest < ActiveSupport::TestCase
   # Edge Case Test - Separate LLM call
   # ============================================================================
 
+  speed_profile :fast
   test "handles file with no methods" do
     config_code = <<~RUBY
       # Configuration constants

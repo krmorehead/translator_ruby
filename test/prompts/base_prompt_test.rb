@@ -5,38 +5,44 @@ class BasePromptTest < ActiveSupport::TestCase
   def setup
     @tools = [ { type: "function", function: { name: "demo_tool", description: "demo", parameters: { type: "object", properties: {}, required: [] } } } ]
   end
-
+  speed_profile :fast
   test "response_schema remains abstract" do
     prompt = BasePrompt.new
     assert_raises(NotImplementedError) { prompt.response_schema }
   end
 
+  speed_profile :fast
   test "base system prompt is chat-friendly" do
     prompt = BasePrompt.new
     assert_includes prompt.system_prompt, "helpful assistant"
   end
 
+  speed_profile :fast
   test "base system prompt matches constant" do
     prompt = BasePrompt.new
     assert_equal BasePrompt::BASE_SYSTEM_PROMPT, prompt.system_prompt
   end
 
+  speed_profile :fast
   test "model defaults to general_llm capability" do
     prompt = OutcomePrompt.new
     assert_equal "./vllm/models/qwen3_30b_a3b_moe", prompt.model
   end
 
+  speed_profile :fast
   test "tools accessor returns passed tools" do
     prompt = OutcomePrompt.new(tools: @tools)
     assert_equal @tools, prompt.tools
   end
 
+  speed_profile :fast
   test "serialize_tools renders tool names" do
     prompt = OutcomePrompt.new(tools: @tools)
     serialized = prompt.serialize_tools(@tools)
     assert_includes serialized, "demo_tool"
   end
 
+  speed_profile :fast
   test "format_context renders context output" do
     prompt = OutcomePrompt.new
     context = Contexts::DndChatContext.new
@@ -50,6 +56,7 @@ class BasePromptTest < ActiveSupport::TestCase
     assert_includes formatted, "Forest"  # Compressed summary uses location name
   end
 
+  speed_profile :fast
   test "execute returns structured json when schema provided" do
     prompt = OutcomePrompt.new
     context = Contexts::DndChatContext.new
@@ -69,6 +76,7 @@ class BasePromptTest < ActiveSupport::TestCase
     assert result[:content][:consequence].is_a?(String)
   end
 
+  speed_profile :fast
   test "execute returns freeform text when no schema" do
     prompt = NarrativePrompt.new
     context = Contexts::DndChatContext.new
@@ -84,6 +92,7 @@ class BasePromptTest < ActiveSupport::TestCase
     refute_includes result[:content].downcase, "tool"
   end
 
+  speed_profile :fast
   test "execute includes thoughts field" do
     prompt = OutcomePrompt.new
     context = Contexts::DndChatContext.new

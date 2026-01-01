@@ -44,11 +44,13 @@ class BasePrompt
 
   # Convert a context into a string payload for the LLM.
   # Context objects format themselves completely via format_for_prompt.
-  # @param context [Contexts::BaseContext] The context (required)
+  # @param context [Contexts::BaseContext, nil] The context (optional)
   # @param question [String, nil] Optional question for relevance filtering
-  # @return [String] Formatted context string
+  # @return [String, nil] Formatted context string or nil
   def format_context(context, question: '')
-
+    return nil if context.nil?
+    return nil unless context.respond_to?(:format_for_prompt)
+    
     context.format_for_prompt(question)
   end
   # Execute the prompt against the LLM and parse the response.
@@ -113,13 +115,15 @@ class BasePrompt
   end
 
   def parse_response(response)
-    message = response.dig("choices", 0, "message") || {}
-    content = message["content"]
-    thoughts = response["thoughts"]
-    finish_reason = response.dig("choices", 0, "finish_reason")
+    # Response from GenericLlmClient now has symbolized keys
+    message = response.dig(:choices, 0, :message) || {}
+    content = message[:content]
+    thoughts = response[:thoughts]
+    finish_reason = response.dig(:choices, 0, :finish_reason)
 
     parsed_content = if response_schema
       raise "LLM response missing content" unless content
+      # Content is JSON string, parse with symbolized keys
       JSON.parse(content, symbolize_names: true)
     else
       content.to_s

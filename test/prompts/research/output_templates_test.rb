@@ -3,21 +3,25 @@
 require "test_helper"
 
 class OutputTemplatesTest < ActiveSupport::TestCase
+  speed_profile :fast
   test "BaseOutputTemplate raises NotImplementedError for template_name" do
     template = Research::OutputTemplates::BaseOutputTemplate.new
     assert_raises(NotImplementedError) { template.template_name }
   end
 
+  speed_profile :fast
   test "BaseOutputTemplate raises NotImplementedError for render" do
     template = Research::OutputTemplates::BaseOutputTemplate.new
     assert_raises(NotImplementedError) { template.render({}) }
   end
 
+  speed_profile :fast
   test "FileDocTemplate template_name returns file_doc" do
     template = Research::OutputTemplates::FileDocTemplate.new
     assert_equal "file_doc", template.template_name
   end
 
+  speed_profile :fast
   test "FileDocTemplate renders basic file documentation" do
     data = {
       file_path: "lib/calculator.rb",
@@ -61,6 +65,7 @@ class OutputTemplatesTest < ActiveSupport::TestCase
     assert_includes result, "### subtract"
   end
 
+  speed_profile :fast
   test "FileDocTemplate handles file with no external references" do
     data = {
       file_path: "standalone.rb",
@@ -75,6 +80,7 @@ class OutputTemplatesTest < ActiveSupport::TestCase
     assert_includes result, "*No external file references detected.*"
   end
 
+  speed_profile :fast
   test "FileDocTemplate handles file with no methods" do
     data = {
       file_path: "config.rb",
@@ -89,11 +95,13 @@ class OutputTemplatesTest < ActiveSupport::TestCase
     assert_includes result, "*No methods documented.*"
   end
 
+  speed_profile :fast
   test "BaseReferencesTemplate template_name returns base_references" do
     template = Research::OutputTemplates::BaseReferencesTemplate.new
     assert_equal "base_references", template.template_name
   end
 
+  speed_profile :fast
   test "BaseReferencesTemplate renders directory tree" do
     data = {
       directory_path: "lib",
@@ -118,6 +126,7 @@ class OutputTemplatesTest < ActiveSupport::TestCase
     assert_includes result, "[helpers/](helpers/base_references.md)"
   end
 
+  speed_profile :fast
   test "BaseReferencesTemplate renders root directory" do
     data = {
       directory_path: ".",
@@ -131,11 +140,13 @@ class OutputTemplatesTest < ActiveSupport::TestCase
     assert_includes result, "# Research References"
   end
 
+  speed_profile :fast
   test "SynthesisSummaryTemplate template_name returns synthesis_summary" do
     template = Research::OutputTemplates::SynthesisSummaryTemplate.new
     assert_equal "synthesis_summary", template.template_name
   end
 
+  speed_profile :fast
   test "SynthesisSummaryTemplate renders synthesis summary" do
     data = {
       research_goal: "How does the calculator work?",
@@ -167,11 +178,13 @@ class OutputTemplatesTest < ActiveSupport::TestCase
     assert_includes result, "division by zero"
   end
 
+  speed_profile :fast
   test "ReportTemplate template_name returns report" do
     template = Research::OutputTemplates::ReportTemplate.new
     assert_equal "report", template.template_name
   end
 
+  speed_profile :fast
   test "ReportTemplate renders research report" do
     data = {
       research_topic: "How authentication works",

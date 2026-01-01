@@ -5,7 +5,7 @@ class DiceRollToolTest < ActiveSupport::TestCase
     @rng = Random.new(1234)
     @tool = DiceRollTool.new(rng: @rng)
   end
-
+  speed_profile :medium
   test "schema returns valid OpenAI function format" do
     schema = DiceRollTool.schema
 
@@ -14,6 +14,7 @@ class DiceRollToolTest < ActiveSupport::TestCase
     assert_includes %w[normal advantage disadvantage], schema[:function][:parameters][:properties][:mode][:enum].first
   end
 
+  speed_profile :medium
   test "roll single die" do
     result = @tool.execute(dice: "d6")
 
@@ -23,6 +24,7 @@ class DiceRollToolTest < ActiveSupport::TestCase
     assert result[:result][:total] >= 1
   end
 
+  speed_profile :medium
   test "roll multiple dice with modifier" do
     result = @tool.execute(dice: "2d6", modifier: 3)
 
@@ -31,6 +33,7 @@ class DiceRollToolTest < ActiveSupport::TestCase
     assert_equal result[:result][:rolls].sum + 3, result[:result][:total]
   end
 
+  speed_profile :medium
   test "advantage uses highest of two d20 rolls" do
     result = @tool.execute(dice: "d20", mode: "advantage", modifier: 2)
 
@@ -41,6 +44,7 @@ class DiceRollToolTest < ActiveSupport::TestCase
     assert_equal rolls.max, result[:result][:kept]
   end
 
+  speed_profile :medium
   test "disadvantage uses lowest of two d20 rolls" do
     result = @tool.execute(dice: "1d20", mode: "disadvantage")
 
@@ -49,6 +53,7 @@ class DiceRollToolTest < ActiveSupport::TestCase
     assert_equal rolls.min, result[:result][:kept]
   end
 
+  speed_profile :medium
   test "rejects invalid dice string" do
     result = @tool.execute(dice: "abc")
 
@@ -56,6 +61,7 @@ class DiceRollToolTest < ActiveSupport::TestCase
     assert_includes result[:error], "Invalid dice format"
   end
 
+  speed_profile :medium
   test "rejects excessive dice count" do
     result = @tool.execute(dice: "50d6")
 
@@ -63,6 +69,7 @@ class DiceRollToolTest < ActiveSupport::TestCase
     assert_includes result[:error], "between 1 and"
   end
 
+  speed_profile :medium
   test "rejects advantage for non d20" do
     result = @tool.execute(dice: "2d6", mode: "advantage")
 

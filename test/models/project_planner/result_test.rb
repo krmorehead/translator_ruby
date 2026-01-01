@@ -12,7 +12,7 @@ module ProjectPlanner
       )
       
       @milestone.add_step(Planning::Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Create Database",
         intent: "Setup data storage",
         details: ["Configure PostgreSQL"],
@@ -29,7 +29,7 @@ module ProjectPlanner
         project_plan_content: "# Project Plan"
       )
     end
-
+    speed_profile :fast
     test "initialization with success result" do
       result = Result.new(
         success: true,
@@ -56,6 +56,7 @@ module ProjectPlanner
       assert_nil result.error
     end
 
+    speed_profile :fast
     test "initialization with failure result" do
       result = Result.new(
         success: false,
@@ -74,6 +75,7 @@ module ProjectPlanner
       assert_nil result.project_path
     end
 
+    speed_profile :fast
     test "validates success must be Boolean" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -87,6 +89,7 @@ module ProjectPlanner
       assert_match(/success must be a Boolean/, error.message)
     end
 
+    speed_profile :fast
     test "validates goal must be String" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -100,6 +103,7 @@ module ProjectPlanner
       assert_match(/goal must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates goal cannot be empty" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -113,6 +117,7 @@ module ProjectPlanner
       assert_match(/goal cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates path must be String" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -126,6 +131,7 @@ module ProjectPlanner
       assert_match(/path must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates path cannot be empty" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -139,6 +145,7 @@ module ProjectPlanner
       assert_match(/path cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates project_name must be String" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -152,6 +159,7 @@ module ProjectPlanner
       assert_match(/project_name must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates project_name cannot be empty" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -165,6 +173,7 @@ module ProjectPlanner
       assert_match(/project_name cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates owner_id must be String" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -178,6 +187,7 @@ module ProjectPlanner
       assert_match(/owner_id must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates owner_id cannot be empty" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -191,6 +201,7 @@ module ProjectPlanner
       assert_match(/owner_id cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates planning_result must be Planning::Result or nil" do
       error = assert_raises(TypeError) do
         Result.new(
@@ -205,6 +216,7 @@ module ProjectPlanner
       assert_match(/planning_result must be a Planning::Result or nil/, error.message)
     end
 
+    speed_profile :fast
     test "validates error must be String or nil" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -219,6 +231,7 @@ module ProjectPlanner
       assert_match(/error must be a String or nil/, error.message)
     end
 
+    speed_profile :fast
     test "validates metadata must be Hash" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -233,6 +246,7 @@ module ProjectPlanner
       assert_match(/metadata must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "validates cannot have both success=true and error present" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -248,6 +262,7 @@ module ProjectPlanner
       assert_match(/Cannot have both success=true and error present/, error.message)
     end
 
+    speed_profile :fast
     test "validates success=true requires planning_result" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -261,6 +276,7 @@ module ProjectPlanner
       assert_match(/success=true requires planning_result/, error.message)
     end
 
+    speed_profile :fast
     test "validates success=false should not have planning_result" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -275,6 +291,7 @@ module ProjectPlanner
       assert_match(/success=false should not have planning_result/, error.message)
     end
 
+    speed_profile :fast
     test "success? returns true for successful result" do
       result = Result.new(
         success: true,
@@ -288,6 +305,7 @@ module ProjectPlanner
       assert result.success?
     end
 
+    speed_profile :fast
     test "failed? returns true for failed result" do
       result = Result.new(
         success: false,
@@ -301,6 +319,7 @@ module ProjectPlanner
       assert result.failed?
     end
 
+    speed_profile :fast
     test "to_h produces correct hash structure for success" do
       result = Result.new(
         success: true,
@@ -329,6 +348,7 @@ module ProjectPlanner
       assert_nil hash[:error]
     end
 
+    speed_profile :fast
     test "to_h produces correct hash structure for failure" do
       result = Result.new(
         success: false,
@@ -349,6 +369,7 @@ module ProjectPlanner
       assert_equal [], hash[:planned_files]
     end
 
+    speed_profile :fast
     test "from_h reconstructs success result correctly with symbol keys" do
       original = Result.new(
         success: true,
@@ -382,6 +403,7 @@ module ProjectPlanner
       assert_instance_of Planning::Result, reconstructed.planning_result
     end
 
+    speed_profile :fast
     test "from_h reconstructs failure result correctly with string keys" do
       hash = {
         "success" => false,
@@ -401,6 +423,7 @@ module ProjectPlanner
       assert_nil reconstructed.planning_result
     end
 
+    speed_profile :fast
     test "from_h validates input must be Hash" do
       error = assert_raises(ArgumentError) do
         Result.from_h("not a hash")
@@ -408,6 +431,7 @@ module ProjectPlanner
       assert_match(/hash must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "handles nil planning_result for failures" do
       result = Result.new(
         success: false,
@@ -423,6 +447,7 @@ module ProjectPlanner
       assert_equal "Failed", result.error
     end
 
+    speed_profile :fast
     test "serialization includes planning data when present" do
       result = Result.new(
         success: true,
@@ -439,6 +464,7 @@ module ProjectPlanner
       assert_equal 1, hash[:milestones].size
     end
 
+    speed_profile :fast
     test "serialization includes empty arrays when planning_result nil" do
       result = Result.new(
         success: false,

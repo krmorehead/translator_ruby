@@ -39,7 +39,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
       ENV.delete("RESEARCH_OUTPUT_PATH")
     end
   end
-
+  speed_profile :fast
   test "creates output directory" do
     new_path = File.join(@output_path, "new_subdir")
     service = ResearchOutputService.new(
@@ -52,6 +52,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     assert_equal @output_path, service.output_path
   end
 
+  speed_profile :fast
   test "generates appropriate filename" do
     service = ResearchOutputService.new(
       research_topic: "How Does Authentication Work?",
@@ -66,6 +67,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     assert filename.end_with?(".md")
   end
 
+  speed_profile :fast
   test "writes content to file" do
     service = ResearchOutputService.new(
       research_topic: "Calculator Analysis",
@@ -82,6 +84,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     assert_includes content, "How does Calculator work?"
   end
 
+  speed_profile :fast
   test "creates index for multi-file output" do
     service = ResearchOutputService.new(
       research_topic: "Multi File Test",
@@ -100,6 +103,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     assert_includes index_content, "Multi File Test"
   end
 
+  speed_profile :fast
   test "includes metadata in output" do
     service = ResearchOutputService.new(
       research_topic: "Metadata Test",
@@ -113,6 +117,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     assert_includes content, "Generated:"
   end
 
+  speed_profile :fast
   test "handles synthesis with symbol keys" do
     synthesis_with_symbols = {
       summary: "Symbol key summary",
@@ -137,6 +142,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
   end
 
   # Documentation mode tests
+  speed_profile :fast
   test "documentation mode creates mirrored directory structure" do
     # Create a temp source directory
     source_dir = File.join(@output_path, "source")
@@ -180,6 +186,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     assert files.any? { |f| f.include?("synthesis_summary.md") }
   end
 
+  speed_profile :fast
   test "documentation mode generates per-file markdown" do
     source_dir = File.join(@output_path, "source2")
     FileUtils.mkdir_p(source_dir)
@@ -213,6 +220,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     assert_includes content, "helper.rb"
   end
 
+  speed_profile :fast
   test "documentation mode generates synthesis_summary" do
     source_dir = File.join(@output_path, "source3")
     FileUtils.mkdir_p(source_dir)
@@ -234,6 +242,7 @@ class ResearchOutputServiceTest < ActiveSupport::TestCase
     assert_includes content, "test summary"
   end
 
+  speed_profile :fast
   test "both output_modes generates report and documentation" do
     source_dir = File.join(@output_path, "source_both")
     FileUtils.mkdir_p(source_dir)

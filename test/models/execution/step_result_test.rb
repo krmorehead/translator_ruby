@@ -5,7 +5,7 @@ require "test_helper"
 module Execution
   class StepResultTest < ActiveSupport::TestCase
     # ===== Initialization Tests =====
-
+    speed_profile :fast
     test "initializes with required parameters" do
       result = StepResult.new(
         step_id: "1.1",
@@ -22,6 +22,7 @@ module Execution
       assert_equal({ "app/models/user.rb" => "+class User\n+end" }, result.diffs)
     end
 
+    speed_profile :fast
     test "initializes with optional parameters" do
       evaluation = { passed: true, confidence: 0.95 }
       
@@ -47,6 +48,7 @@ module Execution
       assert_equal ["Warning 1"], result.validation_warnings
     end
 
+    speed_profile :fast
     test "sets executed_at to current time if not provided" do
       result = StepResult.new(
         step_id: "1.1",
@@ -62,6 +64,7 @@ module Execution
 
     # ===== Validation Tests =====
 
+    speed_profile :fast
     test "validates step_id is a String" do
       error = assert_raises(ArgumentError) do
         StepResult.new(
@@ -76,6 +79,7 @@ module Execution
       assert_match(/step_id must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates step_id is not empty" do
       error = assert_raises(ArgumentError) do
         StepResult.new(
@@ -90,6 +94,7 @@ module Execution
       assert_match(/step_id cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates success is a Boolean" do
       error = assert_raises(ArgumentError) do
         StepResult.new(
@@ -104,6 +109,7 @@ module Execution
       assert_match(/success must be a Boolean/, error.message)
     end
 
+    speed_profile :fast
     test "validates actions_taken is an Array" do
       error = assert_raises(ArgumentError) do
         StepResult.new(
@@ -118,6 +124,7 @@ module Execution
       assert_match(/actions_taken must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates files_changed is an Array" do
       error = assert_raises(ArgumentError) do
         StepResult.new(
@@ -132,6 +139,7 @@ module Execution
       assert_match(/files_changed must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates files_changed contains only Strings" do
       error = assert_raises(TypeError) do
         StepResult.new(
@@ -146,6 +154,7 @@ module Execution
       assert_match(/all files_changed must be Strings/, error.message)
     end
 
+    speed_profile :fast
     test "validates diffs is a Hash" do
       error = assert_raises(ArgumentError) do
         StepResult.new(
@@ -160,6 +169,7 @@ module Execution
       assert_match(/diffs must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "validates diffs keys are Strings" do
       error = assert_raises(TypeError) do
         StepResult.new(
@@ -174,6 +184,7 @@ module Execution
       assert_match(/all diff keys must be Strings/, error.message)
     end
 
+    speed_profile :fast
     test "validates diffs values are Strings" do
       error = assert_raises(TypeError) do
         StepResult.new(
@@ -188,6 +199,7 @@ module Execution
       assert_match(/all diff values must be Strings/, error.message)
     end
 
+    speed_profile :fast
     test "validates tool_outputs is a Hash" do
       error = assert_raises(ArgumentError) do
         StepResult.new(
@@ -203,6 +215,7 @@ module Execution
       assert_match(/tool_outputs must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "validates validation_warnings is an Array" do
       error = assert_raises(ArgumentError) do
         StepResult.new(
@@ -220,6 +233,7 @@ module Execution
 
     # ===== Query Methods Tests =====
 
+    speed_profile :fast
     test "successful? returns true when success is true" do
       result = StepResult.new(
         step_id: "1.1",
@@ -232,6 +246,7 @@ module Execution
       assert result.successful?
     end
 
+    speed_profile :fast
     test "successful? returns false when success is false" do
       result = StepResult.new(
         step_id: "1.1",
@@ -244,6 +259,7 @@ module Execution
       refute result.successful?
     end
 
+    speed_profile :fast
     test "failed? returns true when success is false" do
       result = StepResult.new(
         step_id: "1.1",
@@ -256,6 +272,7 @@ module Execution
       assert result.failed?
     end
 
+    speed_profile :fast
     test "failed? returns false when success is true" do
       result = StepResult.new(
         step_id: "1.1",
@@ -268,6 +285,7 @@ module Execution
       refute result.failed?
     end
 
+    speed_profile :fast
     test "file_count returns number of files changed" do
       result = StepResult.new(
         step_id: "1.1",
@@ -280,6 +298,7 @@ module Execution
       assert_equal 3, result.file_count
     end
 
+    speed_profile :fast
     test "action_count returns number of actions taken" do
       actions = [
         { tool: "write_file", params: {} },
@@ -297,6 +316,7 @@ module Execution
       assert_equal 2, result.action_count
     end
 
+    speed_profile :fast
     test "has_diffs? returns true when diffs present" do
       result = StepResult.new(
         step_id: "1.1",
@@ -309,6 +329,7 @@ module Execution
       assert result.has_diffs?
     end
 
+    speed_profile :fast
     test "has_diffs? returns false when no diffs" do
       result = StepResult.new(
         step_id: "1.1",
@@ -321,6 +342,7 @@ module Execution
       refute result.has_diffs?
     end
 
+    speed_profile :fast
     test "diff_for returns diff for specific file" do
       diffs = {
         "file1.rb" => "+content1",
@@ -339,6 +361,7 @@ module Execution
       assert_equal "+content2", result.diff_for("file2.rb")
     end
 
+    speed_profile :fast
     test "diff_for returns nil for non-existent file" do
       result = StepResult.new(
         step_id: "1.1",
@@ -353,6 +376,7 @@ module Execution
 
     # ===== Formatted Summary Tests =====
 
+    speed_profile :fast
     test "formatted_summary shows success status" do
       result = StepResult.new(
         step_id: "1.1",
@@ -371,6 +395,7 @@ module Execution
       assert_includes summary, "Duration: 1.5s"
     end
 
+    speed_profile :fast
     test "formatted_summary shows failure status" do
       result = StepResult.new(
         step_id: "1.1",
@@ -387,6 +412,7 @@ module Execution
       assert_includes summary, "Error: File write failed"
     end
 
+    speed_profile :fast
     test "formatted_summary includes evaluation result" do
       result = StepResult.new(
         step_id: "1.1",
@@ -403,6 +429,7 @@ module Execution
       assert_includes summary, "Confidence: 0.95"
     end
 
+    speed_profile :fast
     test "formatted_summary includes validation warnings" do
       result = StepResult.new(
         step_id: "1.1",
@@ -420,6 +447,7 @@ module Execution
 
     # ===== Serialization Tests =====
 
+    speed_profile :fast
     test "to_h serializes all attributes" do
       actions = [{ tool: "write_file", params: {} }]
       evaluation = { passed: true, confidence: 0.95 }
@@ -453,6 +481,7 @@ module Execution
       assert_equal ["Warning"], hash[:validation_warnings]
     end
 
+    speed_profile :fast
     test "from_h reconstructs StepResult from hash" do
       hash = {
         step_id: "1.1",
@@ -483,6 +512,7 @@ module Execution
       assert_equal ["Warning"], result.validation_warnings
     end
 
+    speed_profile :fast
     test "from_h handles string keys" do
       hash = {
         "step_id" => "1.1",
@@ -498,6 +528,7 @@ module Execution
       assert result.success
     end
 
+    speed_profile :fast
     test "from_h validates hash parameter" do
       error = assert_raises(ArgumentError) do
         StepResult.from_h("not a hash")
@@ -506,6 +537,7 @@ module Execution
       assert_match(/hash must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "serialization round-trip preserves data" do
       original = StepResult.new(
         step_id: "1.1",

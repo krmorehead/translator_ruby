@@ -14,7 +14,7 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
   def teardown
     FileUtils.rm_rf(DATA_PATH) if File.exist?(DATA_PATH)
   end
-
+  speed_profile :slow
   test "simple prompt completes the full workflow" do
     body = post_message("I search the room carefully.")
 
@@ -24,6 +24,7 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
     assert_actions_recorded(require_entries: false)
   end
 
+  speed_profile :slow
   test "multi-action prompt processes sequential actions" do
     body = post_message("Use the memory tool to record that we accepted the quest to rescue the merchant's son, then summarize our quests.")
 
@@ -33,6 +34,7 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
     assert_actions_recorded(require_entries: false)
   end
 
+  speed_profile :slow
   test "conversation continuity across multiple messages" do
     post_message("I light a torch.")
     body = post_message("I explore the corridor ahead.")

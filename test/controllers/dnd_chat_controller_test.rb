@@ -8,19 +8,21 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
   setup do
     FileUtils.rm_rf(SANDBOX)
   end
-
+  speed_profile :fast
   test "messages contract returns yaml" do
     get "/dnd_chat/messages/contract"
     assert_response :success
     assert_includes response.media_type, "yaml"
   end
 
+  speed_profile :fast
   test "agent contract returns yaml" do
     get "/dnd_chat/agent/contract"
     assert_response :success
     assert_includes response.media_type, "yaml"
   end
 
+  speed_profile :fast
   test "get messages returns empty conversation initially" do
     get "/dnd_chat/messages"
     assert_response :success
@@ -28,6 +30,7 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
     assert_equal [], body["messages"]
   end
 
+  speed_profile :medium
   test "post messages validates presence" do
     post "/dnd_chat/messages", params: { message: "" }
     assert_response :bad_request
@@ -36,6 +39,7 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
     assert_match(/message required/i, body["error"])
   end
 
+  speed_profile :medium
   test "post messages flows through LLM and tools when configured" do
     post "/dnd_chat/messages", params: { message: "Describe the scenario" }
     assert_response :success
@@ -49,6 +53,7 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
     refute body.key?("arguments")
   end
 
+  speed_profile :fast
   test "agent endpoint returns state and version" do
     get "/dnd_chat/agent"
     assert_response :success
@@ -60,6 +65,7 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
     assert body["state"].key?("inventory")
   end
 
+  speed_profile :fast
   test "agent version endpoint returns version" do
     get "/dnd_chat/agent/version"
     assert_response :success

@@ -16,12 +16,13 @@ class ResearchContextTest < ActiveSupport::TestCase
       with_sub_questions: true
     )
   end
-
+  speed_profile :fast
   test "initializes with research goal" do
     ctx = Contexts::ResearchContext.new(research_goal: "How does Calculator work?")
     assert_equal "How does Calculator work?", ctx.research_goal
   end
 
+  speed_profile :fast
   test "add_finding creates entry with proper topics" do
     entry = context.add_finding(
       finding: "Calculator has add method",
@@ -39,6 +40,7 @@ class ResearchContextTest < ActiveSupport::TestCase
     assert_equal 1, context.findings.size
   end
 
+  speed_profile :fast
   test "add_sub_question creates entry with question topic" do
     entry = context.add_sub_question(
       question: "What methods does Calculator expose?",
@@ -52,6 +54,7 @@ class ResearchContextTest < ActiveSupport::TestCase
     assert_equal 1, context.sub_questions.size
   end
 
+  speed_profile :fast
   test "add_file_summary creates entry with method topics" do
     entry = context.add_file_summary(
       file_path: "lib/calculator.rb",
@@ -65,6 +68,7 @@ class ResearchContextTest < ActiveSupport::TestCase
     assert_equal 1, context.file_summaries.size
   end
 
+  speed_profile :fast
   test "for_sub_question returns entries tagged with that question" do
     context.add_sub_question(question: "What methods?", priority: 1)
     context.add_finding(
@@ -86,6 +90,7 @@ class ResearchContextTest < ActiveSupport::TestCase
     assert relevant.size <= 5
   end
 
+  speed_profile :fast
   test "for_file returns entries about specific file" do
     context.add_file_summary(
       file_path: "lib/calculator.rb",
@@ -103,6 +108,7 @@ class ResearchContextTest < ActiveSupport::TestCase
     assert calc_entries.any? { |e| e.content.include?("Arithmetic") }
   end
 
+  speed_profile :fast
   test "format_for_analysis returns relevant prior findings" do
     context.add_finding(
       finding: "Calculator uses integer division",
@@ -116,6 +122,7 @@ class ResearchContextTest < ActiveSupport::TestCase
     assert formatted.include?("Previous relevant findings:") || formatted.empty?
   end
 
+  speed_profile :fast
   test "format_for_synthesis groups by sub_question" do
     context.add_finding(
       finding: "Add method found",
@@ -135,6 +142,7 @@ class ResearchContextTest < ActiveSupport::TestCase
     assert formatted.include?("What methods?") || formatted.include?("How are they related?") || formatted.empty?
   end
 
+  speed_profile :fast
   test "boosts relevance for goal-related keywords" do
     ctx = Contexts::ResearchContext.new(research_goal: "How does Calculator work?")
 
@@ -148,6 +156,7 @@ class ResearchContextTest < ActiveSupport::TestCase
     assert calc_entry, "Calculator entry should be in relevant results"
   end
 
+  speed_profile :fast
   test "factory creates context with sample data" do
     ctx = context_with_data
 

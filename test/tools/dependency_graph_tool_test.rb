@@ -52,7 +52,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
   end
-
+  speed_profile :medium
   test "extracts Ruby require/require_relative dependencies" do
     file_path = File.join(@sandbox_path, "lib", "formatter.rb")
     result = @tool.execute(path: file_path)
@@ -65,6 +65,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert_equal "import", require_edge[:type]
   end
 
+  speed_profile :medium
   test "extracts Ruby include/extend dependencies" do
     file_path = File.join(@sandbox_path, "lib", "formatter.rb")
     result = @tool.execute(path: file_path)
@@ -77,6 +78,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert_equal "mixin", include_edge[:type]
   end
 
+  speed_profile :medium
   test "extracts class inheritance" do
     file_path = File.join(@sandbox_path, "app", "services", "math_service.rb")
     result = @tool.execute(path: file_path)
@@ -89,6 +91,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert_equal "inheritance", inheritance_edge[:type]
   end
 
+  speed_profile :medium
   test "creates nodes for analyzed files" do
     result = @tool.execute(path: @sandbox_path)
 
@@ -102,6 +105,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert node_paths.any? { |p| p.include?("math_service.rb") }
   end
 
+  speed_profile :medium
   test "nodes include language detection" do
     result = @tool.execute(path: @sandbox_path)
 
@@ -113,6 +117,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert_equal "ruby", ruby_node[:language]
   end
 
+  speed_profile :medium
   test "respects depth limit" do
     # With depth 1, should only analyze top-level file
     file_path = File.join(@sandbox_path, "app", "services", "math_service.rb")
@@ -123,6 +128,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert result[:result][:edges].any?
   end
 
+  speed_profile :medium
   test "handles circular dependencies" do
     # Create circular dependency
     File.write(File.join(@sandbox_path, "lib", "a.rb"), 'require_relative "b"')
@@ -134,6 +140,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert result[:success]
   end
 
+  speed_profile :medium
   test "file with no imports returns empty edges" do
     file_path = File.join(@sandbox_path, "lib", "calculator.rb")
     result = @tool.execute(path: file_path)
@@ -144,6 +151,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     # Edges should be minimal or empty for this file specifically
   end
 
+  speed_profile :medium
   test "handles non-existent path" do
     result = @tool.execute(path: File.join(@sandbox_path, "nonexistent.rb"))
 
@@ -151,6 +159,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert_includes result[:error], "not found"
   end
 
+  speed_profile :medium
   test "schema returns valid OpenAI function format" do
     schema = DependencyGraphTool.schema
 
@@ -160,6 +169,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert_includes schema[:function][:parameters][:required], "path"
   end
 
+  speed_profile :medium
   test "tool is registered with ToolCallService" do
     tools = ToolCallService.available_tools
     dep_tool = tools.find { |t| t[:function][:name] == "dependency_graph" }
@@ -168,6 +178,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
   end
 
   # Tests for other languages
+  speed_profile :medium
   test "extracts Python import dependencies" do
     py_file = File.join(@sandbox_path, "module.py")
     File.write(py_file, <<~PYTHON)
@@ -188,6 +199,7 @@ class DependencyGraphToolTest < ActiveSupport::TestCase
     assert_includes targets, "mypackage"
   end
 
+  speed_profile :medium
   test "extracts JavaScript import dependencies" do
     js_file = File.join(@sandbox_path, "app.js")
     File.write(js_file, <<~JAVASCRIPT)

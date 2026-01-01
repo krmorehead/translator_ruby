@@ -37,12 +37,13 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
       }
     ]
   end
-
+  speed_profile :fast
   test "requires tools" do
     assert_raises(ArgumentError) { ActionDetectionPrompt.new(tools: nil) }
     assert_raises(ArgumentError) { ActionDetectionPrompt.new(tools: []) }
   end
 
+  speed_profile :fast
   test "system prompt mentions tools" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
     text = prompt.system_prompt
@@ -50,12 +51,14 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
     assert_includes text, "pickup_item"
   end
 
+  speed_profile :fast
   test "response schema limits tool names" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
     enum = prompt.response_schema.dig(:items, :properties, :tool_name, :enum)
     assert_equal [ "inspect_room", "pickup_item" ], enum
   end
 
+  speed_profile :fast
   test "format_context includes scene (tools are in system_prompt)" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
     context = Contexts::DndChatContext.new
@@ -71,6 +74,7 @@ class ActionDetectionPromptTest < ActiveSupport::TestCase
     assert_includes prompt.system_prompt, "inspect_room"
   end
 
+  speed_profile :fast
   test "execute returns array of actions" do
     prompt = ActionDetectionPrompt.new(tools: @tools)
     context = Contexts::DndChatContext.new

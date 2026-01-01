@@ -11,7 +11,7 @@ class BashToolTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@sandbox_path) if @sandbox_path && File.exist?(@sandbox_path)
   end
-
+  speed_profile :medium
   test "schema returns valid OpenAI function format with command parameter" do
     schema = BashTool.schema
 
@@ -26,6 +26,7 @@ class BashToolTest < ActiveSupport::TestCase
     assert_includes params[:required], "command"
   end
 
+  speed_profile :medium
   test "execute runs command and returns stdout" do
     result = @tool.execute(command: "echo 'Hello, World!'")
 
@@ -33,6 +34,7 @@ class BashToolTest < ActiveSupport::TestCase
     assert_equal "Hello, World!\n", result[:result]
   end
 
+  speed_profile :medium
   test "execute captures stderr on failure" do
     result = @tool.execute(command: "ls /nonexistent_directory_12345")
 
@@ -40,18 +42,21 @@ class BashToolTest < ActiveSupport::TestCase
     assert_includes result[:error], "No such file or directory"
   end
 
+  speed_profile :medium
   test "execute includes exit status on success" do
     result = @tool.execute(command: "true")
 
     assert_equal 0, result[:exit_status]
   end
 
+  speed_profile :medium
   test "execute includes exit status on failure" do
     result = @tool.execute(command: "exit 42")
 
     assert_equal 42, result[:exit_status]
   end
 
+  speed_profile :medium
   test "ls command on test/tool_test directory" do
     # Create some test files
     File.write(File.join(@sandbox_path, "file1.txt"), "content1")
@@ -64,6 +69,7 @@ class BashToolTest < ActiveSupport::TestCase
     assert_includes result[:result], "file2.txt"
   end
 
+  speed_profile :medium
   test "tool is registered with ToolCallService" do
     tools = ToolCallService.available_tools
     bash_tool = tools.find { |t| t[:function][:name] == "bash" }
@@ -71,6 +77,7 @@ class BashToolTest < ActiveSupport::TestCase
     assert_not_nil bash_tool
   end
 
+  speed_profile :medium
   test "handles commands with pipes" do
     result = @tool.execute(command: "echo 'line1\nline2\nline3' | wc -l")
 
@@ -78,6 +85,7 @@ class BashToolTest < ActiveSupport::TestCase
     assert_match(/3/, result[:result])
   end
 
+  speed_profile :medium
   test "handles commands with environment variables" do
     result = @tool.execute(command: "echo $HOME")
 
@@ -86,6 +94,7 @@ class BashToolTest < ActiveSupport::TestCase
   end
 
   # LLM Integration Test via prompt
+  speed_profile :medium
   test "LLM can request bash tool to list files" do
     File.write(File.join(@sandbox_path, "llm_test_file.txt"), "LLM test content")
 

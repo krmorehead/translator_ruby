@@ -21,7 +21,7 @@ module Execution
     end
 
     # ===== Initialization Tests =====
-
+    speed_profile :fast
     test "initializes with required parameters" do
       record = ExecutionRecord.new(
         plan_id: "test_plan",
@@ -36,6 +36,7 @@ module Execution
       assert_equal :running, record.status
     end
 
+    speed_profile :fast
     test "initializes with optional parameters" do
       record = ExecutionRecord.new(
         plan_id: "test_plan",
@@ -60,6 +61,7 @@ module Execution
 
     # ===== Validation Tests =====
 
+    speed_profile :fast
     test "validates plan_id is a String" do
       error = assert_raises(ArgumentError) do
         ExecutionRecord.new(
@@ -73,6 +75,7 @@ module Execution
       assert_match(/plan_id must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates plan_id is not empty" do
       error = assert_raises(ArgumentError) do
         ExecutionRecord.new(
@@ -86,6 +89,7 @@ module Execution
       assert_match(/plan_id cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates step_results is an Array" do
       error = assert_raises(ArgumentError) do
         ExecutionRecord.new(
@@ -99,6 +103,7 @@ module Execution
       assert_match(/step_results must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates step_results contains only StepResult instances" do
       error = assert_raises(TypeError) do
         ExecutionRecord.new(
@@ -112,6 +117,7 @@ module Execution
       assert_match(/all step_results must be Execution::StepResult instances/, error.message)
     end
 
+    speed_profile :fast
     test "validates started_at is a String" do
       error = assert_raises(ArgumentError) do
         ExecutionRecord.new(
@@ -125,6 +131,7 @@ module Execution
       assert_match(/started_at must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates status is valid" do
       error = assert_raises(ArgumentError) do
         ExecutionRecord.new(
@@ -139,6 +146,7 @@ module Execution
       assert_match(/running, complete, failed, partial/, error.message)
     end
 
+    speed_profile :fast
     test "validates checkpoint_ids is an Array" do
       error = assert_raises(ArgumentError) do
         ExecutionRecord.new(
@@ -153,6 +161,7 @@ module Execution
       assert_match(/checkpoint_ids must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates checkpoint_ids contains only Strings" do
       error = assert_raises(TypeError) do
         ExecutionRecord.new(
@@ -167,6 +176,7 @@ module Execution
       assert_match(/all checkpoint_ids must be Strings/, error.message)
     end
 
+    speed_profile :fast
     test "validates milestones_completed contains only Strings" do
       error = assert_raises(TypeError) do
         ExecutionRecord.new(
@@ -181,6 +191,7 @@ module Execution
       assert_match(/all milestones_completed must be Strings/, error.message)
     end
 
+    speed_profile :fast
     test "validates metadata is a Hash" do
       error = assert_raises(ArgumentError) do
         ExecutionRecord.new(
@@ -195,6 +206,7 @@ module Execution
       assert_match(/metadata must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "validates progress_events is an Array" do
       error = assert_raises(ArgumentError) do
         ExecutionRecord.new(
@@ -211,6 +223,7 @@ module Execution
 
     # ===== Mutation Methods Tests =====
 
+    speed_profile :fast
     test "add_step_result adds a step result" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -226,6 +239,7 @@ module Execution
       assert_includes record.step_results, @step_result1
     end
 
+    speed_profile :fast
     test "add_step_result validates type" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -241,6 +255,7 @@ module Execution
       assert_match(/step_result must be an Execution::StepResult/, error.message)
     end
 
+    speed_profile :fast
     test "add_checkpoint adds a checkpoint ID" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -255,6 +270,7 @@ module Execution
       assert_includes record.checkpoint_ids, "abc123"
     end
 
+    speed_profile :fast
     test "add_checkpoint validates type" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -270,6 +286,7 @@ module Execution
       assert_match(/checkpoint_id must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "add_progress_event adds an event" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -285,6 +302,7 @@ module Execution
       assert_includes record.progress_events, event
     end
 
+    speed_profile :fast
     test "mark_milestone_completed marks milestone" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -299,6 +317,7 @@ module Execution
       assert_includes record.milestones_completed, "milestone_1"
     end
 
+    speed_profile :fast
     test "mark_milestone_completed does not duplicate" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -313,6 +332,7 @@ module Execution
       assert_equal 1, record.milestones_completed.count("milestone_1")
     end
 
+    speed_profile :fast
     test "update_status updates status" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -327,6 +347,7 @@ module Execution
       assert_equal "2025-01-01T01:00:00Z", record.completed_at
     end
 
+    speed_profile :fast
     test "update_status validates status" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -344,6 +365,7 @@ module Execution
 
     # ===== Query Methods Tests =====
 
+    speed_profile :fast
     test "total_steps returns count of step results" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -355,6 +377,7 @@ module Execution
       assert_equal 3, record.total_steps
     end
 
+    speed_profile :fast
     test "completed_steps returns count of successful steps" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -366,6 +389,7 @@ module Execution
       assert_equal 2, record.completed_steps
     end
 
+    speed_profile :fast
     test "failed_steps returns count of failed steps" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -377,6 +401,7 @@ module Execution
       assert_equal 1, record.failed_steps
     end
 
+    speed_profile :fast
     test "progress_percentage calculates correctly" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -389,6 +414,7 @@ module Execution
       assert_equal 66.67, record.progress_percentage
     end
 
+    speed_profile :fast
     test "progress_percentage returns 0 for no steps" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -400,6 +426,7 @@ module Execution
       assert_equal 0.0, record.progress_percentage
     end
 
+    speed_profile :fast
     test "milestone_progress returns completed milestones" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -415,6 +442,7 @@ module Execution
       assert_equal :completed, progress["m2"]
     end
 
+    speed_profile :fast
     test "total_files_changed counts unique files" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -427,6 +455,7 @@ module Execution
       assert_equal 2, record.total_files_changed
     end
 
+    speed_profile :fast
     test "all_diffs aggregates diffs from all steps" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -443,6 +472,7 @@ module Execution
       assert_equal ["+content"], diffs["file_1.1.rb"]
     end
 
+    speed_profile :fast
     test "duration calculates execution time" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -456,6 +486,7 @@ module Execution
       assert_equal 5400.0, record.duration
     end
 
+    speed_profile :fast
     test "duration returns nil if not completed" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -469,6 +500,7 @@ module Execution
 
     # ===== Status Query Methods Tests =====
 
+    speed_profile :fast
     test "running? returns true when status is running" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -480,6 +512,7 @@ module Execution
       assert record.running?
     end
 
+    speed_profile :fast
     test "complete? returns true when status is complete" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -491,6 +524,7 @@ module Execution
       assert record.complete?
     end
 
+    speed_profile :fast
     test "failed? returns true when status is failed" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -502,6 +536,7 @@ module Execution
       assert record.failed?
     end
 
+    speed_profile :fast
     test "partial? returns true when status is partial" do
       record = ExecutionRecord.new(
         plan_id: "test",
@@ -515,6 +550,7 @@ module Execution
 
     # ===== Serialization Tests =====
 
+    speed_profile :fast
     test "to_h serializes all attributes" do
       record = ExecutionRecord.new(
         plan_id: "test_plan",
@@ -543,6 +579,7 @@ module Execution
       assert_equal [{ event: "started" }], hash[:progress_events]
     end
 
+    speed_profile :fast
     test "from_h reconstructs ExecutionRecord" do
       hash = {
         plan_id: "test_plan",
@@ -567,6 +604,7 @@ module Execution
       assert_equal ["abc123"], record.checkpoint_ids
     end
 
+    speed_profile :fast
     test "from_h handles string keys" do
       hash = {
         "plan_id" => "test_plan",
@@ -581,6 +619,7 @@ module Execution
       assert_equal :running, record.status
     end
 
+    speed_profile :fast
     test "serialization round-trip preserves data" do
       original = ExecutionRecord.new(
         plan_id: "test_plan",

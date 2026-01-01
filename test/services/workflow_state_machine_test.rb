@@ -51,6 +51,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   end
 
   # Basic state machine inheritance tests
+  speed_profile :fast
   test "workflow inherits base states from BaseWorkflow" do
     workflow = TestWorkflow.new
     assert workflow.pending?
@@ -58,6 +59,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     refute workflow.complete?
   end
 
+  speed_profile :fast
   test "workflow can transition through states" do
     workflow = TestWorkflow.new
     workflow.setup()
@@ -68,6 +70,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   end
 
   # Custom workflow with overridden states
+  speed_profile :fast
   test "custom workflow overrides parent transitions" do
     workflow = CustomStateWorkflow.new
     workflow.setup()
@@ -77,6 +80,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     assert_equal({ validated: true }, workflow.result)
   end
 
+  speed_profile :fast
   test "custom workflow has correct phases" do
     workflow = CustomStateWorkflow.new
 
@@ -90,6 +94,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   end
 
   # Workflow memory tests
+  speed_profile :fast
   test "workflow creates workflow_memory when setup is called with owner_id" do
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
     workflow.setup()
@@ -98,6 +103,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     assert_instance_of WorkflowMemoryStore, workflow.workflow_memory
   end
 
+  speed_profile :fast
   test "workflow memory records state transitions" do
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
     workflow.setup()
@@ -126,6 +132,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "workflow can query parent memory" do
     parent = MockParentMemory.new(
       research_goal: [{ text: "Main Goal" }],
@@ -143,6 +150,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     assert_equal [{ text: "Finding 1" }], result[:findings]
   end
 
+  speed_profile :fast
   test "workflow can get parent context summary" do
     parent = MockParentMemory.new
     workflow = TestWorkflow.new(
@@ -156,6 +164,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   end
 
   # Decision recording tests
+  speed_profile :fast
   test "workflow can record decisions to memory" do
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
     workflow.setup()
@@ -172,6 +181,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   end
 
   # Memory summary tests
+  speed_profile :fast
   test "memory_summary returns workflow metadata" do
     workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
     workflow.setup()
@@ -193,6 +203,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "failing workflow transitions to failed state" do
     workflow = FailingWorkflow.new(owner_id: SecureRandom.uuid)
     workflow.setup()
@@ -202,6 +213,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     assert_equal "Something went wrong", workflow.error
   end
 
+  speed_profile :fast
   test "failing workflow records error to memory" do
     workflow = FailingWorkflow.new(owner_id: SecureRandom.uuid)
     workflow.setup()

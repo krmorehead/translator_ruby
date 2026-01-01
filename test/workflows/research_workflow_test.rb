@@ -33,7 +33,7 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
   # ============================================================================
   # Unit Tests (no LLM calls)
   # ============================================================================
-
+  speed_profile :slow
   test "initialization with factory defaults" do
     wf = build_workflow
     assert_equal "How does Calculator work?", wf.goal
@@ -41,35 +41,42 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
     assert_equal 1, wf.instance_variable_get(:@max_depth)
   end
 
+  speed_profile :slow
   test "initialization with custom goal" do
     wf = build_workflow(goal: "Custom research goal")
     assert_equal "Custom research goal", wf.goal
   end
 
+  speed_profile :slow
   test "initialization with output modes" do
     wf = build_workflow(output_modes: [:documentation])
     assert_equal [:documentation], wf.output_modes
   end
 
+  speed_profile :slow
   test "initialization creates research context" do
     wf = build_workflow
     assert_not_nil wf.instance_variable_get(:@research_context)
     assert_kind_of Contexts::ResearchContext, wf.instance_variable_get(:@research_context)
   end
 
+  speed_profile :slow
   test "initial state is pending" do
     wf = build_workflow
     assert_equal :pending, wf.current_state
   end
 
+  speed_profile :slow
   test "PARALLEL_PASSES constant is 3" do
     assert_equal 3, ResearchWorkflow::PARALLEL_PASSES
   end
 
+  speed_profile :slow
   test "MAX_EMPTY_LEAVES constant is 3" do
     assert_equal 3, ResearchWorkflow::MAX_EMPTY_LEAVES
   end
 
+  speed_profile :slow
   test "VALID_OUTPUT_MODES includes report and documentation" do
     assert_includes ResearchWorkflow::VALID_OUTPUT_MODES, :report
     assert_includes ResearchWorkflow::VALID_OUTPUT_MODES, :documentation
@@ -108,17 +115,20 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
     self.class.shared_workflow_result
   end
 
+  speed_profile :slow
   test "shared: workflow completes successfully" do
     data = shared_execution_result
     assert data[:complete], "Workflow should complete"
     refute data[:failed], "Workflow should not fail"
   end
 
+  speed_profile :slow
   test "shared: workflow produces goal tree" do
     data = shared_execution_result
     assert data[:result][:goal_tree], "Should have goal tree"
   end
 
+  speed_profile :slow
   test "shared: workflow creates research memory" do
     data = shared_execution_result
     wf = data[:workflow]
@@ -126,16 +136,19 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
     assert_kind_of ResearchMemoryStore, wf.research_memory
   end
 
+  speed_profile :slow
   test "shared: workflow produces findings" do
     data = shared_execution_result
     assert data[:result][:findings], "Should have findings"
   end
 
+  speed_profile :slow
   test "shared: workflow produces sub_questions" do
     data = shared_execution_result
     assert data[:result][:sub_questions], "Should have sub_questions"
   end
 
+  speed_profile :slow
   test "shared: workflow produces synthesis" do
     data = shared_execution_result
     assert data[:result][:synthesis], "Should have synthesis"
@@ -145,6 +158,7 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
   # Edge Case Tests
   # ============================================================================
 
+  speed_profile :slow
   test "handles empty codebase gracefully" do
     empty_dir = Rails.root.join("tmp", "empty_research_#{Process.pid}").to_s
     FileUtils.mkdir_p(empty_dir)

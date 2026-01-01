@@ -3,12 +3,14 @@
 require "test_helper"
 
 class OutcomePromptTest < ActiveSupport::TestCase
+  speed_profile :fast
   test "model comes from general_llm capability via BasePrompt" do
     prompt = OutcomePrompt.new
     # Model should come from general_llm capability via BasePrompt, not a per-prompt override
     assert_equal "./vllm/models/qwen3_30b_a3b_moe", prompt.model
   end
 
+  speed_profile :fast
   test "response schema expects consequence" do
     prompt = OutcomePrompt.new
     schema = prompt.response_schema
@@ -16,6 +18,7 @@ class OutcomePromptTest < ActiveSupport::TestCase
     assert_includes schema[:required], "consequence"
   end
 
+  speed_profile :fast
   test "format_context includes action and result" do
     prompt = OutcomePrompt.new
     context = Contexts::DndChatContext.new
@@ -35,6 +38,7 @@ class OutcomePromptTest < ActiveSupport::TestCase
     assert_includes formatted, "Library"
   end
 
+  speed_profile :medium
   test "execute returns consequence hash" do
     prompt = OutcomePrompt.new
     context = Contexts::DndChatContext.new

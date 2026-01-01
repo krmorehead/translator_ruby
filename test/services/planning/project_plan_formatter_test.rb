@@ -12,7 +12,7 @@ module Planning
       )
       
       @step1_1 = Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Create User Model",
         intent: "Define the core user entity with authentication fields",
         details: ["Add email and password fields", "Include validation for email uniqueness"],
@@ -20,7 +20,7 @@ module Planning
       )
       
       @step1_2 = Step.new(
-        number: "1.2",
+        milestone_number: 1, step_number: 2,
         title: "Add Password Encryption",
         intent: "Secure user passwords using bcrypt",
         details: ["Add bcrypt gem", "Implement password hashing"],
@@ -37,7 +37,7 @@ module Planning
       )
       
       @step2_1 = Step.new(
-        number: "2.1",
+        milestone_number: 2, step_number: 1,
         title: "Create Sessions Controller",
         intent: "Handle login/logout requests",
         details: ["Add sessions controller", "Implement login action"],
@@ -46,7 +46,7 @@ module Planning
       
       @milestone2.add_step(@step2_1)
     end
-
+    speed_profile :fast
     test "initialization validates input types" do
       formatter = ProjectPlanFormatter.new(
         goal: "Add authentication",
@@ -57,6 +57,7 @@ module Planning
       assert_equal 1, formatter.milestones.size
     end
 
+    speed_profile :fast
     test "validates goal must be String" do
       error = assert_raises(ArgumentError) do
         ProjectPlanFormatter.new(
@@ -67,6 +68,7 @@ module Planning
       assert_match(/goal must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates goal cannot be empty" do
       error = assert_raises(ArgumentError) do
         ProjectPlanFormatter.new(
@@ -77,6 +79,7 @@ module Planning
       assert_match(/goal cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates milestones must be Array" do
       error = assert_raises(ArgumentError) do
         ProjectPlanFormatter.new(
@@ -87,6 +90,7 @@ module Planning
       assert_match(/milestones must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates all milestones must be Milestone objects" do
       error = assert_raises(TypeError) do
         ProjectPlanFormatter.new(
@@ -97,6 +101,7 @@ module Planning
       assert_match(/all milestones must be Planning::Milestone/, error.message)
     end
 
+    speed_profile :fast
     test "generate with single milestone produces correct structure" do
       formatter = ProjectPlanFormatter.new(
         goal: "Add authentication",
@@ -117,6 +122,7 @@ module Planning
       assert_includes markdown, "- Test user creation with valid data"
     end
 
+    speed_profile :fast
     test "generate with multiple milestones produces correct structure" do
       formatter = ProjectPlanFormatter.new(
         goal: "Add authentication system",
@@ -132,6 +138,7 @@ module Planning
       assert_includes markdown, "### Step 2.1:"
     end
 
+    speed_profile :fast
     test "step formatting includes all sections" do
       formatter = ProjectPlanFormatter.new(
         goal: "Test",
@@ -150,6 +157,7 @@ module Planning
       assert_includes markdown, "- Test email validation"
     end
 
+    speed_profile :fast
     test "numbering is correct for multiple milestones and steps" do
       formatter = ProjectPlanFormatter.new(
         goal: "Test",
@@ -168,6 +176,7 @@ module Planning
       assert_includes markdown, "### Step 2.1:"
     end
 
+    speed_profile :fast
     test "horizontal rules appear between steps" do
       formatter = ProjectPlanFormatter.new(
         goal: "Test",
@@ -183,6 +192,7 @@ module Planning
       assert_equal 1, markdown.scan(/^---$/).count
     end
 
+    speed_profile :fast
     test "no horizontal rule after last step in milestone" do
       formatter = ProjectPlanFormatter.new(
         goal: "Test",
@@ -203,6 +213,7 @@ module Planning
       assert_equal 1, markdown.scan(/^---$/).count
     end
 
+    speed_profile :fast
     test "markdown renders correctly with proper formatting" do
       formatter = ProjectPlanFormatter.new(
         goal: "Add user authentication",
@@ -221,6 +232,7 @@ module Planning
       assert markdown.include?("**Tests**:"), "Should have tests marker"
     end
 
+    speed_profile :fast
     test "handles Milestone objects with Step objects not hashes" do
       # Verify we're using domain objects
       formatter = ProjectPlanFormatter.new(
@@ -237,6 +249,7 @@ module Planning
       assert markdown.length > 0
     end
 
+    speed_profile :fast
     test "empty milestone produces valid markdown" do
       empty_milestone = Milestone.new(
         number: 1,
@@ -257,9 +270,10 @@ module Planning
       refute_includes markdown, "### Step"
     end
 
+    speed_profile :fast
     test "step with empty details shows placeholder" do
       empty_step = Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Empty Step",
         intent: "Test step",
         details: [],
@@ -284,9 +298,10 @@ module Planning
       assert_includes markdown, "- _No details provided_"
     end
 
+    speed_profile :fast
     test "step with empty tests shows placeholder" do
       empty_step = Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Empty Step",
         intent: "Test step",
         details: ["Some detail"],
@@ -311,6 +326,7 @@ module Planning
       assert_includes markdown, "- _No tests provided_"
     end
 
+    speed_profile :fast
     test "generates valid markdown structure for complex plan" do
       formatter = ProjectPlanFormatter.new(
         goal: "Build complete authentication system",

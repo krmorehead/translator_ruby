@@ -29,7 +29,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
   # ============================================================================
   # Broad Topic Tests - Share one LLM call
   # ============================================================================
-
+  speed_profile :medium
   test "broad: produces valid JSON response" do
     result = broad_decomposition
 
@@ -38,6 +38,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
     assert_kind_of Array, result[:content][:questions]
   end
 
+  speed_profile :medium
   test "broad: questions include is_leaf flag" do
     result = broad_decomposition
 
@@ -45,6 +46,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
     assert questions.all? { |q| q.key?(:is_leaf) }
   end
 
+  speed_profile :medium
   test "broad: generates multiple sub-questions" do
     result = broad_decomposition
 
@@ -52,6 +54,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
     assert questions.size >= 2, "Broad topic should generate multiple questions"
   end
 
+  speed_profile :medium
   test "broad: includes rationale for each question" do
     result = broad_decomposition
 
@@ -62,6 +65,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :medium
   test "broad: includes topic summary" do
     result = broad_decomposition
 
@@ -73,6 +77,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
   # Specific Topic Tests - Share one LLM call
   # ============================================================================
 
+  speed_profile :medium
   test "specific: produces questions for specific topic" do
     result = specific_decomposition
 
@@ -80,6 +85,7 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
     assert result[:content][:questions].any?, "Should have at least one question"
   end
 
+  speed_profile :medium
   test "specific: may mark questions as leaf" do
     result = specific_decomposition
 

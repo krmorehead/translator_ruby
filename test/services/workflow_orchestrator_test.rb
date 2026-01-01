@@ -26,12 +26,13 @@ class WorkflowOrchestratorTest < ActiveSupport::TestCase
   class InvalidWorkflow
     def setup; end
   end
-
+  speed_profile :fast
   test "raises when workflow missing required methods" do
     WorkflowOrchestrator # trigger autoload to define WorkflowError
     assert_raises(WorkflowError) { WorkflowOrchestrator.new(InvalidWorkflow.new) }
   end
 
+  speed_profile :fast
   test "process calls setup then execute and returns workflow" do
     workflow = ValidWorkflow.new
     orchestrator = WorkflowOrchestrator.new(workflow)

@@ -9,7 +9,7 @@ class BaseActionTest < ActiveSupport::TestCase
     @agent = OpenStruct.new(goal: "Test goal", path: @test_path)
     @memory_store = create_mock_memory_store
   end
-
+  speed_profile :fast
   test "success_result returns proper structure" do
     action = create_action
 
@@ -21,6 +21,7 @@ class BaseActionTest < ActiveSupport::TestCase
     assert result[:timestamp]
   end
 
+  speed_profile :fast
   test "failure_result returns proper structure" do
     action = create_action
 
@@ -31,6 +32,7 @@ class BaseActionTest < ActiveSupport::TestCase
     assert_equal "testing", result[:context]
   end
 
+  speed_profile :fast
   test "read_file reads existing files" do
     action = create_action
 
@@ -40,6 +42,7 @@ class BaseActionTest < ActiveSupport::TestCase
     assert_includes content, "class Calculator"
   end
 
+  speed_profile :fast
   test "read_file returns nil for non-existent files" do
     action = create_action
 
@@ -48,6 +51,7 @@ class BaseActionTest < ActiveSupport::TestCase
     assert_nil content
   end
 
+  speed_profile :fast
   test "list_files returns files in directory" do
     action = create_action
 
@@ -57,6 +61,7 @@ class BaseActionTest < ActiveSupport::TestCase
     assert files.any? { |f| f.include?("calculator.rb") }
   end
 
+  speed_profile :fast
   test "grep_files finds pattern matches" do
     action = create_action
 

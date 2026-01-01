@@ -12,7 +12,8 @@ module Planning
   #   )
   #   
   #   step = Planning::Step.new(
-  #     number: "1.1",
+  #     milestone_number: 1,
+  #     step_number: 1,
   #     title: "Create User Model",
   #     intent: "Define user entity",
   #     details: ["Add email field"],
@@ -21,14 +22,16 @@ module Planning
   #   
   #   milestone.add_step(step)
   class Milestone
-    attr_reader :number, :title, :description, :steps
+    attr_reader :id, :number, :title, :description, :steps
 
     # @param number [Integer] Milestone number (1, 2, 3, etc.)
     # @param title [String] Milestone title
     # @param description [String] Milestone description
-    def initialize(number:, title:, description:)
-      validate_types!(number, title, description)
+    # @param id [String, nil] Optional UUID for the milestone (generated if not provided)
+    def initialize(number:, title:, description:, id: nil)
+      validate_types!(number, title, description, id)
       
+      @id = id || SecureRandom.uuid
       @number = number
       @title = title
       @description = description
@@ -69,6 +72,7 @@ module Planning
     # @return [Hash] Hash representation of the milestone
     def to_h
       {
+        id: @id,
         number: @number,
         title: @title,
         description: @description,
@@ -83,6 +87,7 @@ module Planning
       raise ArgumentError, "hash must be a Hash, got #{hash.class}" unless hash.is_a?(Hash)
       
       milestone = new(
+        id: hash[:id] || hash["id"],
         number: hash[:number] || hash["number"],
         title: hash[:title] || hash["title"],
         description: hash[:description] || hash["description"]
@@ -100,9 +105,14 @@ module Planning
 
     private
 
-    def validate_types!(number, title, description)
+    def validate_types!(number, title, description, id)
       raise ArgumentError, "number must be an Integer, got #{number.class}" unless number.is_a?(Integer)
       raise ArgumentError, "number must be positive" unless number > 0
+      
+      if id && !id.is_a?(String)
+        raise ArgumentError, "id must be a String, got #{id.class}"
+      end
+      
       raise ArgumentError, "title must be a String, got #{title.class}" unless title.is_a?(String)
       raise ArgumentError, "title cannot be empty" if title.strip.empty?
       raise ArgumentError, "description must be a String, got #{description.class}" unless description.is_a?(String)

@@ -217,6 +217,19 @@ class SisyphusWorker < BaseWorker
     ensure_state_directory!
     @memory_store = create_memory_store
     @progress_stream = [] if @config[:stream_progress]
+    
+    # Initialize services (checkpoint service only if git repo exists)
+    @checkpoint_service = initialize_checkpoint_service
+    @diff_service = DiffGenerationService.new
+    @output_service = ExecutionOutputService.new
+    
+    # Initialize execution record
+    @execution_record = Execution::ExecutionRecord.new(
+      plan_id: @execution_plan.project_name || "execution_#{Time.now.to_i}",
+      step_results: [],
+      started_at: Time.now.utc.iso8601,
+      status: :running
+    )
 
     record_decision(
       decision: "initialize_execution",
@@ -224,7 +237,8 @@ class SisyphusWorker < BaseWorker
       evidence: {
         milestone_count: @execution_plan.milestone_count,
         step_count: @execution_plan.step_count,
-        approval_mode: @config[:approval_mode]
+        approval_mode: @config[:approval_mode],
+        checkpoint_service_available: @checkpoint_service.present?
       }
     )
 
@@ -233,6 +247,19 @@ class SisyphusWorker < BaseWorker
       milestone_count: @execution_plan.milestone_count,
       step_count: @execution_plan.step_count
     })
+    
+    # Create initial checkpoint if available
+    create_initial_checkpoint
+  end
+  
+  # Initialize checkpoint service if git repository exists
+  def initialize_checkpoint_service
+    return nil unless File.directory?(File.join(@path, ".git"))
+    
+    CheckpointService.new(path: @path)
+  rescue ArgumentError => e
+    Rails.logger.warn "[SisyphusWorker] Checkpoint service unavailable: #{e.message}"
+    nil
   end
 
   # Execute all milestones in sequence
@@ -257,13 +284,309 @@ class SisyphusWorker < BaseWorker
   # Execute a single milestone
   # @param milestone [Planning::Milestone]
   def execute_milestone(milestone)
-    # TODO: Implement in Milestone 5
-    # This will iterate through steps and execute each one
     record_decision(
       decision: "execute_milestone",
       reasoning: "Executing milestone: #{milestone.title}",
       evidence: { milestone_number: milestone.number, step_count: milestone.step_count }
     )
+    
+    # Execute each step in the milestone
+    milestone.steps.each_with_index do |step, step_index|
+      @current_step_index = step_index
+      
+      emit_progress(:step_started, {
+        step_number: step.number,
+        step_title: step.title
+      })
+      
+      # Execute step with full pipeline
+      step_result = execute_step(step)
+      @execution_record.add_step_result(step_result)
+      
+      emit_progress(:step_completed, {
+        step_number: step.number,
+        success: step_result.successful?,
+        files_changed: step_result.files_changed.size
+      })
+      
+      # Handle step failure based on error mode
+      handle_step_failure(step, step_result) if step_result.failed?
+    end
+    
+    # Create checkpoint at milestone boundary
+    create_milestone_checkpoint(milestone)
+    
+    # Mark milestone as completed in execution record
+    @execution_record.mark_milestone_completed(milestone.number.to_s)
+  end
+  
+  # Execute a single step with full 5-phase pipeline
+  # @param step [Planning::Step]
+  # @return [Execution::StepResult]
+  def execute_step(step)
+    retries = 0
+    max_retries = @config[:max_retries]
+    
+    loop do
+      begin
+        trigger(:executing)
+        
+        # Create and setup execution workflow
+        execution_workflow = StepExecutionWorkflow.new(
+          owner_id: @owner_id,
+          parent_memory: @memory_store
+        )
+        
+        execution_workflow.setup(
+          step: step,
+          path: @path,
+          context: @context,
+          system_prompt: nil # TODO: Add SisyphusSystemPrompt in future iteration
+        )
+        
+        # Execute with full pipeline
+        execution_result = execution_workflow.execute
+        
+        # Build StepResult from execution
+        step_result = build_step_result(step, execution_workflow, execution_result)
+        
+        # Evaluate step completion
+        trigger(:evaluating)
+        evaluation_result = evaluate_step(step, step_result)
+        
+        # Update step result with evaluation
+        step_result = step_result.class.new(
+          **step_result.to_h.merge(evaluation_result: evaluation_result)
+        )
+        
+        # If evaluation passed or max retries reached, return result
+        if evaluation_result[:passed] || retries >= max_retries
+          return step_result
+        end
+        
+        # Retry if evaluation failed and retries available
+        retries += 1
+        record_decision(
+          decision: "retry_step",
+          reasoning: "Step evaluation failed, retrying (attempt #{retries}/#{max_retries})",
+          evidence: { step_number: step.number, evaluation: evaluation_result }
+        )
+        
+      rescue StandardError => e
+        # Handle execution error
+        Rails.logger.error "[SisyphusWorker] Step execution error: #{e.message}"
+        
+        return build_error_step_result(step, e)
+      end
+    end
+  end
+  
+  # Build StepResult from execution workflow
+  # @param step [Planning::Step]
+  # @param workflow [StepExecutionWorkflow]
+  # @param execution_result [Hash]
+  # @return [Execution::StepResult]
+  def build_step_result(step, workflow, execution_result)
+    # Generate diffs for changed files
+    files_changed = workflow.tool_executions
+      .select { |exec| exec[:tool] == "write_file" && exec[:success] }
+      .map { |exec| exec[:params][:path] }
+    
+    diffs = generate_diffs_for_changes(files_changed)
+    
+    Execution::StepResult.new(
+      step_id: step.number,
+      success: execution_result[:success],
+      actions_taken: workflow.tool_executions.map { |e| build_action_record(e) },
+      files_changed: files_changed,
+      diffs: diffs,
+      tool_outputs: { execution_result: execution_result },
+      duration: execution_result[:duration] || 0.0
+    )
+  end
+  
+  # Build ActionRecord from tool execution
+  # @param execution [Hash]
+  # @return [ActionRecord]
+  def build_action_record(execution)
+    ActionRecord.new(
+      id: SecureRandom.uuid,
+      action_type: execution[:tool],
+      timestamp: Time.now.utc.iso8601,
+      action_input: execution[:params],
+      result: execution[:result],
+      success: execution[:success]
+    )
+  end
+  
+  # Build error StepResult
+  # @param step [Planning::Step]
+  # @param error [StandardError]
+  # @return [Execution::StepResult]
+  def build_error_step_result(step, error)
+    Execution::StepResult.new(
+      step_id: step.number,
+      success: false,
+      actions_taken: [],
+      files_changed: [],
+      diffs: {},
+      error_message: "#{error.class}: #{error.message}",
+      duration: 0.0
+    )
+  end
+  
+  # Evaluate step completion
+  # @param step [Planning::Step]
+  # @param step_result [Execution::StepResult]
+  # @return [Hash] Evaluation result
+  def evaluate_step(step, step_result)
+    evaluation_workflow = StepEvaluationWorkflow.new(
+      owner_id: @owner_id,
+      parent_memory: @memory_store
+    )
+    
+    evaluation_workflow.setup(
+      step: step,
+      step_result: step_result,
+      path: @path,
+      system_prompt: nil
+    )
+    
+    evaluation_workflow.execute
+  rescue StandardError => e
+    Rails.logger.error "[SisyphusWorker] Step evaluation error: #{e.message}"
+    
+    # Default to failed evaluation
+    {
+      passed: false,
+      confidence: 0.0,
+      feedback: "Evaluation failed: #{e.message}",
+      missing_requirements: [],
+      concerns: ["Evaluation error occurred"],
+      should_retry: false
+    }
+  end
+  
+  # Generate diffs for changed files
+  # @param file_paths [Array<String>]
+  # @return [Hash] Diffs keyed by file path
+  def generate_diffs_for_changes(file_paths)
+    diffs = {}
+    
+    file_paths.each do |file_path|
+      full_path = File.join(@path, file_path)
+      
+      # Read current content
+      new_content = File.exist?(full_path) ? File.read(full_path) : nil
+      
+      # For now, we don't have old content stored
+      # In a real implementation, we'd get this from git or cached state
+      old_content = ""
+      
+      # Generate diff
+      diff = @diff_service.generate_diff(
+        file_path: file_path,
+        old_content: old_content,
+        new_content: new_content
+      )
+      
+      diffs[file_path] = diff
+    rescue StandardError => e
+      Rails.logger.warn "[SisyphusWorker] Failed to generate diff for #{file_path}: #{e.message}"
+    end
+    
+    diffs
+  end
+  
+  # Handle step failure based on error mode
+  # @param step [Planning::Step]
+  # @param step_result [Execution::StepResult]
+  def handle_step_failure(step, step_result)
+    case @config[:error_mode]
+    when :strict
+      # Abort on any failure
+      raise StandardError, "Step #{step.number} failed: #{step_result.error_message}"
+    when :lenient
+      # Log and continue
+      Rails.logger.warn "[SisyphusWorker] Step #{step.number} failed but continuing (lenient mode)"
+      record_decision(
+        decision: "continue_after_failure",
+        reasoning: "Continuing execution despite step failure (lenient mode)",
+        evidence: { step_number: step.number, error: step_result.error_message }
+      )
+    when :interactive
+      # Would request user input in a real implementation
+      Rails.logger.warn "[SisyphusWorker] Step #{step.number} failed (interactive mode not yet implemented)"
+    end
+  end
+  
+  # Create initial checkpoint before execution starts
+  def create_initial_checkpoint
+    return unless checkpoint_service_available?
+    
+    checkpoint_id = @checkpoint_service.create_checkpoint(
+      "Execution start: #{@execution_plan.goal}",
+      execution_id: @owner_id,
+      milestone_id: "initial"
+    )
+    
+    @execution_record.add_checkpoint(checkpoint_id)
+    
+    record_decision(
+      decision: "initial_checkpoint_created",
+      reasoning: "Created initial checkpoint before execution",
+      evidence: { checkpoint_id: checkpoint_id }
+    )
+  rescue StandardError => e
+    Rails.logger.warn "[SisyphusWorker] Failed to create initial checkpoint: #{e.message}"
+    # Non-fatal - continue execution
+  end
+  
+  # Create checkpoint at milestone boundary
+  # @param milestone [Planning::Milestone]
+  def create_milestone_checkpoint(milestone)
+    return unless checkpoint_service_available?
+    
+    trigger(:checkpoint)
+    
+    checkpoint_id = @checkpoint_service.create_checkpoint(
+      "#{milestone.title} - Complete",
+      milestone_id: milestone.number.to_s,
+      execution_id: @owner_id,
+      step_ids: milestone.steps.map(&:number)
+    )
+    
+    @execution_record.add_checkpoint(checkpoint_id)
+    
+    emit_progress(:checkpoint_created, {
+      milestone_number: milestone.number,
+      checkpoint_id: checkpoint_id
+    })
+    
+    record_decision(
+      decision: "milestone_checkpoint_created",
+      reasoning: "Created checkpoint for milestone: #{milestone.title}",
+      evidence: { 
+        milestone_number: milestone.number,
+        checkpoint_id: checkpoint_id,
+        steps_completed: milestone.step_count
+      }
+    )
+    
+    trigger(:next_milestone)
+  rescue StandardError => e
+    Rails.logger.error "[SisyphusWorker] Failed to create milestone checkpoint: #{e.message}"
+    # Non-fatal - record error but continue
+    record_decision(
+      decision: "checkpoint_failed",
+      reasoning: "Failed to create checkpoint: #{e.message}",
+      evidence: { milestone_number: milestone.number, error: e.message }
+    )
+  end
+  
+  # Check if checkpoint service is available
+  def checkpoint_service_available?
+    @checkpoint_service.present?
   end
 
   # Create memory store for this execution
@@ -288,16 +611,39 @@ class SisyphusWorker < BaseWorker
 
   # Build final execution result
   def build_result
+    # Update execution record status
+    if @execution_record
+      @execution_record.update_status(:complete)
+      
+      # Write execution output
+      begin
+        output_result = @output_service.write_execution_output(
+          @execution_record,
+          plan_name: @execution_plan.project_name || "sisyphus_execution"
+        )
+        
+        emit_progress(:output_written, {
+          output_dir: output_result[:output_dir]
+        })
+      rescue StandardError => e
+        Rails.logger.error "[SisyphusWorker] Failed to write execution output: #{e.message}"
+      end
+    end
+    
     {
       success: true,
+      execution_record: @execution_record,
       execution_plan_goal: @execution_plan.goal,
       execution_plan_name: @execution_plan.project_name,
-      milestones_completed: @current_milestone_index,
+      milestones_completed: @current_milestone_index + 1,
       progress: progress_percentage,
+      checkpoint_ids: @execution_record&.checkpoint_ids || [],
       metadata: {
         worker_id: @owner_id,
         config: @config,
-        started_at: Time.now.utc.iso8601
+        started_at: @execution_record&.started_at || Time.now.utc.iso8601,
+        completed_at: Time.now.utc.iso8601,
+        final_state: nil # Will be set after state transition
       }
     }
   end
@@ -313,7 +659,18 @@ class SisyphusWorker < BaseWorker
       evidence: { error_class: error.class.name, backtrace: error.backtrace.first(5) }
     )
 
-    mark_failed(error.message)
+    # Safely transition to failed state
+    begin
+      # Try to transition through error_recovery if in a state that supports it
+      if [:executing, :evaluating].include?(current_state)
+        trigger(:error)
+      end
+      mark_failed(error.message)
+    rescue StateMachine::InvalidTransition => e
+      # If we can't transition, just log it and set failed state manually
+      Rails.logger.warn "[SisyphusWorker] Could not transition to failed state: #{e.message}"
+      @state = :failed
+    end
 
     {
       success: false,

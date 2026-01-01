@@ -5,6 +5,7 @@ require "test_helper"
 module Contexts
   module Actions
     class BaseActionTest < ActiveSupport::TestCase
+      speed_profile :fast
       test "creates a valid base action" do
         action = BaseAction.new(
           name: :search_files,
@@ -24,6 +25,7 @@ module Contexts
         assert_not_nil action.timestamp
       end
 
+      speed_profile :fast
       test "successful? returns correct value" do
         success_action = BaseAction.new(
           name: :test,
@@ -42,6 +44,7 @@ module Contexts
         assert_not failed_action.successful?
       end
 
+      speed_profile :fast
       test "failed? returns opposite of successful?" do
         action = BaseAction.new(
           name: :test,
@@ -60,6 +63,7 @@ module Contexts
         assert failed.failed?
       end
 
+      speed_profile :fast
       test "extracts result summary from error" do
         action = BaseAction.new(
           name: :test,
@@ -70,6 +74,7 @@ module Contexts
         assert_equal "Not found", action.result_summary
       end
 
+      speed_profile :fast
       test "extracts result summary from summary" do
         action = BaseAction.new(
           name: :test,
@@ -80,6 +85,7 @@ module Contexts
         assert_equal "All done", action.result_summary
       end
 
+      speed_profile :fast
       test "extracts result summary from count" do
         action = BaseAction.new(
           name: :test,
@@ -90,6 +96,7 @@ module Contexts
         assert_equal "Found 10 items", action.result_summary
       end
 
+      speed_profile :fast
       test "to_h serializes action properly" do
         action = BaseAction.new(
           name: :test_action,
@@ -111,6 +118,7 @@ module Contexts
         assert_equal action.timestamp, hash[:timestamp]
       end
 
+      speed_profile :fast
       test "from_h reconstructs action from hash" do
         original = BaseAction.new(
           name: :original,
@@ -132,6 +140,7 @@ module Contexts
         assert_equal original.cached, reconstructed.cached
       end
 
+      speed_profile :fast
       test "validates parameters" do
         error = assert_raises(ArgumentError) do
           BaseAction.new(name: 123, arguments: {}, result: { success: true }, iteration: 1)

@@ -1,6 +1,7 @@
 require "test_helper"
 
 class InventoryItemTest < ActiveSupport::TestCase
+  speed_profile :fast
   test "attributes and bracket access" do
     item = InventoryItem.new(
       name: "Torch",
@@ -22,6 +23,7 @@ class InventoryItemTest < ActiveSupport::TestCase
     assert_equal 2, attrs[:quantity]
   end
 
+  speed_profile :fast
   test "to_json uses attributes" do
     item = InventoryItem.new(
       name: "Rope",

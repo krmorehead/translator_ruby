@@ -5,7 +5,12 @@ alwaysApply: true
 
 [ENV][!VENVS] Load the proper venv before you start working; ensure the venv is always loaded when running commands.
 
-[TEST][!ALWAYS-TEST] Always write and run unit tests for each code change.
+[TEST][!ALWAYS-TEST] Always write and run unit tests for each code change. Use speed profiles for efficient iteration:
+  - During development: run fast tests only (ruby lib/test_runner.rb --speed fast)
+  - For new features: run fast tests plus tests for modified files
+  - Before final milestone: run all tests (ruby lib/test_runner.rb --speed all)
+  - All new tests MUST declare speed_profile (:fast, :medium, or :slow)
+  - Tests MUST NOT exceed their speed profile SLA (fast: 10s, medium: 60s, slow: 120s)
 
 [DOC][!NO-PHASES] Never mention phases or milestones in coding or documentation. Always use informative names while staying DRY.
 

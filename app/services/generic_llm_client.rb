@@ -216,12 +216,13 @@ module GenericLlmClient
 
     # Processes response to extract and filter think tags.
     # Returns modified response with filtered content and added thoughts field.
+    # ALL keys are symbolized at this boundary between LLM and application.
     def process_response(response)
       # Deep copy response to avoid mutating original
-      processed = deep_copy(response)
+      processed = deep_copy_with_symbols(response)
       
       # Extract content from response
-      content = processed.dig("choices", 0, "message", "content")
+      content = processed.dig(:choices, 0, :message, :content)
       return processed unless content
 
       # Extract and filter think tags
@@ -235,16 +236,17 @@ module GenericLlmClient
       end
 
       # Update content with filtered version
-      processed["choices"][0]["message"]["content"] = result[:content]
+      processed[:choices][0][:message][:content] = result[:content]
 
       # Add thoughts field to top level of response
-      processed["thoughts"] = result[:thoughts]
+      processed[:thoughts] = result[:thoughts]
 
       processed
     end
 
-    def deep_copy(obj)
-      JSON.parse(JSON.generate(obj))
+    # Deep copy with symbolized keys - handles the boundary between LLM (strings) and app (symbols)
+    def deep_copy_with_symbols(obj)
+      JSON.parse(JSON.generate(obj), symbolize_names: true)
     end
   end
 end

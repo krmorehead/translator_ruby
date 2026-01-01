@@ -5,7 +5,7 @@ require "test_helper"
 module Execution
   class SisyphusSystemPromptTest < ActiveSupport::TestCase
     # ===== Initialization Tests =====
-
+    speed_profile :fast
     test "initializes with default empty parameters" do
       prompt = SisyphusSystemPrompt.new
 
@@ -14,6 +14,7 @@ module Execution
       assert_equal({}, prompt.execution_context)
     end
 
+    speed_profile :fast
     test "initializes with capabilities" do
       capabilities = ["file_modification", "command_execution"]
       
@@ -22,6 +23,7 @@ module Execution
       assert_equal capabilities, prompt.capabilities
     end
 
+    speed_profile :fast
     test "initializes with available_tools" do
       tools = [
         { name: "write_file", description: "Write content to a file" },
@@ -33,6 +35,7 @@ module Execution
       assert_equal tools, prompt.available_tools
     end
 
+    speed_profile :fast
     test "initializes with execution_context" do
       context = {
         codebase_path: "/path/to/code",
@@ -48,6 +51,7 @@ module Execution
 
     # ===== Validation Tests =====
 
+    speed_profile :fast
     test "validates capabilities is an Array" do
       error = assert_raises(ArgumentError) do
         SisyphusSystemPrompt.new(capabilities: "not an array")
@@ -56,6 +60,7 @@ module Execution
       assert_match(/capabilities must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates available_tools is an Array" do
       error = assert_raises(ArgumentError) do
         SisyphusSystemPrompt.new(available_tools: "not an array")
@@ -64,6 +69,7 @@ module Execution
       assert_match(/available_tools must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates execution_context is a Hash" do
       error = assert_raises(ArgumentError) do
         SisyphusSystemPrompt.new(execution_context: [])
@@ -74,6 +80,7 @@ module Execution
 
     # ===== System Prompt Generation Tests =====
 
+    speed_profile :fast
     test "system_prompt includes agent identity" do
       prompt = SisyphusSystemPrompt.new
 
@@ -83,6 +90,7 @@ module Execution
       assert_includes system_message, "autonomous code execution agent"
     end
 
+    speed_profile :fast
     test "system_prompt includes capabilities section" do
       prompt = SisyphusSystemPrompt.new
 
@@ -91,6 +99,7 @@ module Execution
       assert_includes system_message, "## Your Capabilities"
     end
 
+    speed_profile :fast
     test "system_prompt formats capabilities list" do
       capabilities = ["file_modification", "command_execution", "testing"]
       prompt = SisyphusSystemPrompt.new(capabilities: capabilities)
@@ -102,6 +111,7 @@ module Execution
       assert_includes system_message, "Testing"
     end
 
+    speed_profile :fast
     test "system_prompt includes available tools section" do
       prompt = SisyphusSystemPrompt.new
 
@@ -110,6 +120,7 @@ module Execution
       assert_includes system_message, "## Available Tools"
     end
 
+    speed_profile :fast
     test "system_prompt formats tools list" do
       tools = [
         { name: "write_file", description: "Write content to a file" },
@@ -125,6 +136,7 @@ module Execution
       assert_includes system_message, "Execute bash command"
     end
 
+    speed_profile :fast
     test "system_prompt includes execution guidelines" do
       prompt = SisyphusSystemPrompt.new
 
@@ -136,6 +148,7 @@ module Execution
       assert_includes system_message, "Best Practices"
     end
 
+    speed_profile :fast
     test "system_prompt includes current execution context" do
       prompt = SisyphusSystemPrompt.new
 
@@ -144,6 +157,7 @@ module Execution
       assert_includes system_message, "## Current Execution Context"
     end
 
+    speed_profile :fast
     test "system_prompt formats execution context" do
       context = {
         codebase_path: "/path/to/code",
@@ -161,6 +175,7 @@ module Execution
       assert_includes system_message, "Create User Model"
     end
 
+    speed_profile :fast
     test "system_prompt includes anti-patterns section" do
       prompt = SisyphusSystemPrompt.new
 
@@ -170,6 +185,7 @@ module Execution
       assert_includes system_message, "Don't"
     end
 
+    speed_profile :fast
     test "system_prompt includes examples" do
       prompt = SisyphusSystemPrompt.new
 
@@ -181,6 +197,7 @@ module Execution
       assert_includes system_message, "Example 3"
     end
 
+    speed_profile :fast
     test "system_prompt handles empty capabilities gracefully" do
       prompt = SisyphusSystemPrompt.new(capabilities: [])
 
@@ -189,6 +206,7 @@ module Execution
       assert_includes system_message, "Standard code execution capabilities"
     end
 
+    speed_profile :fast
     test "system_prompt handles empty tools gracefully" do
       prompt = SisyphusSystemPrompt.new(available_tools: [])
 
@@ -197,6 +215,7 @@ module Execution
       assert_includes system_message, "No tools currently available"
     end
 
+    speed_profile :fast
     test "system_prompt handles empty context gracefully" do
       prompt = SisyphusSystemPrompt.new(execution_context: {})
 
@@ -207,6 +226,7 @@ module Execution
 
     # ===== Response Schema Tests =====
 
+    speed_profile :fast
     test "response_schema returns nil for freeform text" do
       prompt = SisyphusSystemPrompt.new
 
@@ -215,6 +235,7 @@ module Execution
 
     # ===== Integration Tests =====
 
+    speed_profile :fast
     test "generates complete system prompt with all sections" do
       capabilities = ["file_modification", "testing"]
       tools = [{ name: "write_file", description: "Write files" }]
@@ -249,6 +270,7 @@ module Execution
       assert_includes system_message, "Test goal"
     end
 
+    speed_profile :fast
     test "system prompt is a non-empty string" do
       prompt = SisyphusSystemPrompt.new
 
@@ -258,6 +280,7 @@ module Execution
       assert system_message.length > 100
     end
 
+    speed_profile :fast
     test "system prompt contains actionable guidance" do
       prompt = SisyphusSystemPrompt.new
 

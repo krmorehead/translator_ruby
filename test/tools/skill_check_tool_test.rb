@@ -8,7 +8,7 @@ class SkillCheckToolTest < ActiveSupport::TestCase
   def new_tool
     SkillCheckTool.new(rng: Random.new(@rng_seed))
   end
-
+  speed_profile :medium
   test "performs skill check with dc and proficiency" do
     ability = 2
     proficiency = 3
@@ -33,6 +33,7 @@ class SkillCheckToolTest < ActiveSupport::TestCase
     assert_equal "Perception", payload[:skill]
   end
 
+  speed_profile :medium
   test "advantage path uses highest roll" do
     ability = 1
     proficiency = 0
@@ -54,6 +55,7 @@ class SkillCheckToolTest < ActiveSupport::TestCase
     assert_equal "advantage", payload[:mode]
   end
 
+  speed_profile :medium
   test "disadvantage path uses lowest roll" do
     rng = Random.new(@rng_seed)
     roll1 = rng.random_number(20) + 1
@@ -69,6 +71,7 @@ class SkillCheckToolTest < ActiveSupport::TestCase
     assert_equal "disadvantage", payload[:mode]
   end
 
+  speed_profile :medium
   test "handles missing dc (success nil)" do
     tool = new_tool
     result = tool.execute(skill: "History", ability_modifier: 0, proficiency_bonus: 0)
@@ -79,6 +82,7 @@ class SkillCheckToolTest < ActiveSupport::TestCase
     assert_nil payload[:dc]
   end
 
+  speed_profile :medium
   test "propagates error from dice tool" do
     tool = SkillCheckTool.new(rng: Random.new(@rng_seed))
 

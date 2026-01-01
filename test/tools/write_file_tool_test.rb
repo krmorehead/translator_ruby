@@ -11,7 +11,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@test_path) if @test_path && File.exist?(@test_path)
   end
-
+  speed_profile :medium
   test "schema returns valid OpenAI function format with path and content parameters" do
     schema = WriteFileTool.schema
 
@@ -29,6 +29,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert_includes params[:required], "content"
   end
 
+  speed_profile :medium
   test "execute creates file with correct content" do
     test_file = File.join(@test_path, "test_write.txt")
     content = "Hello, World!"
@@ -40,6 +41,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert_equal content, File.read(test_file)
   end
 
+  speed_profile :medium
   test "execute creates nested directories as needed" do
     nested_file = File.join(@test_path, "nested", "deep", "file.txt")
     content = "Nested content"
@@ -51,6 +53,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert_equal content, File.read(nested_file)
   end
 
+  speed_profile :medium
   test "file content is correctly written and readable" do
     test_file = File.join(@test_path, "verify.txt")
     content = "Line 1\nLine 2\nSpecial chars: áéíóú"
@@ -60,6 +63,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert_equal content, File.read(test_file)
   end
 
+  speed_profile :medium
   test "overwrites existing file" do
     test_file = File.join(@test_path, "overwrite.txt")
     File.write(test_file, "Original content")
@@ -70,6 +74,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert_equal "New content", File.read(test_file)
   end
 
+  speed_profile :medium
   test "result includes byte count" do
     test_file = File.join(@test_path, "bytes.txt")
     content = "12345"
@@ -79,6 +84,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
     assert_includes result[:result], "5 bytes"
   end
 
+  speed_profile :medium
   test "tool is registered with ToolCallService" do
     tools = ToolCallService.available_tools
     write_file_tool = tools.find { |t| t[:function][:name] == "write_file" }
@@ -87,6 +93,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
   end
 
   # LLM Integration Test via prompt
+  speed_profile :medium
   test "LLM can request write_file tool to write a file" do
     test_file = File.join(@test_path, "llm_write_test.txt")
     expected_content = "Hello from the LLM!"

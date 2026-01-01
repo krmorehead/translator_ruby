@@ -5,35 +5,40 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     # Store the time before making the request for timestamp validation
     @request_time = Time.current
   end
-
+  speed_profile :fast
   test "should get index" do
     get "/api/v1/hello/index"
     assert_response :success
   end
 
+  speed_profile :fast
   test "should return JSON response" do
     get "/api/v1/hello/index"
     assert_equal "application/json; charset=utf-8", response.content_type
   end
 
+  speed_profile :fast
   test "should return correct message" do
     get "/api/v1/hello/index"
     json_response = JSON.parse(response.body)
     assert_equal "Hello World!", json_response["message"]
   end
 
+  speed_profile :fast
   test "should return success status" do
     get "/api/v1/hello/index"
     json_response = JSON.parse(response.body)
     assert_equal "success", json_response["status"]
   end
 
+  speed_profile :fast
   test "should return correct version" do
     get "/api/v1/hello/index"
     json_response = JSON.parse(response.body)
     assert_equal "1.0.0", json_response["version"]
   end
 
+  speed_profile :fast
   test "should return current timestamp" do
     get "/api/v1/hello/index"
     json_response = JSON.parse(response.body)
@@ -46,6 +51,7 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     assert time_difference < 5, "Timestamp should be within 5 seconds of request time"
   end
 
+  speed_profile :fast
   test "should return all required fields" do
     get "/api/v1/hello/index"
     json_response = JSON.parse(response.body)
@@ -56,6 +62,7 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  speed_profile :fast
   test "should return only expected fields" do
     get "/api/v1/hello/index"
     json_response = JSON.parse(response.body)
@@ -64,6 +71,7 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     assert_equal expected_fields.sort, json_response.keys.sort
   end
 
+  speed_profile :fast
   test "should have consistent response structure across multiple requests" do
     3.times do
       get "/api/v1/hello/index"
@@ -77,6 +85,7 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  speed_profile :fast
   test "should return valid ISO 8601 timestamp format" do
     get "/api/v1/hello/index"
     json_response = JSON.parse(response.body)
@@ -93,6 +102,7 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     assert_match iso8601_pattern, timestamp, "Timestamp should be in ISO 8601 format"
   end
 
+  speed_profile :fast
   test "timestamp should be unique across requests" do
     get "/api/v1/hello/index"
     first_response = JSON.parse(response.body)
@@ -108,6 +118,7 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal first_timestamp, second_timestamp, "Timestamps should be unique across requests"
   end
 
+  speed_profile :fast
   test "should handle GET request method only" do
     # Test that GET works
     get "/api/v1/hello/index"
@@ -127,6 +138,7 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  speed_profile :fast
   test "should return consistent response time" do
     response_times = []
 
@@ -145,6 +157,7 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  speed_profile :fast
   test "should return valid JSON that can be parsed" do
     get "/api/v1/hello/index"
 
@@ -153,10 +166,12 @@ class Api::V1::HelloControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  speed_profile :fast
   test "should inherit from ApplicationController" do
     assert Api::V1::HelloController.ancestors.include?(ApplicationController)
   end
 
+  speed_profile :fast
   test "should inherit from ActionController API" do
     assert ApplicationController.ancestors.include?(ActionController::API)
   end

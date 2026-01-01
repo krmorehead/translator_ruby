@@ -1,6 +1,7 @@
 require "test_helper"
 
 class TranslationContextTest < ActiveSupport::TestCase
+  speed_profile :fast
   test "should initialize with just text" do
     context = TranslationContext.new(text: "Hello world")
 
@@ -12,6 +13,7 @@ class TranslationContextTest < ActiveSupport::TestCase
     assert_nil context.context
   end
 
+  speed_profile :fast
   test "should initialize with custom properties" do
     context = TranslationContext.new(
       text: "Bonjour",
@@ -29,6 +31,7 @@ class TranslationContextTest < ActiveSupport::TestCase
     assert_nil context.model_type
   end
 
+  speed_profile :fast
   test "should have default values" do
     context = TranslationContext.new
 
@@ -40,6 +43,7 @@ class TranslationContextTest < ActiveSupport::TestCase
     assert_nil context.context
   end
 
+  speed_profile :fast
   test "should allow setting properties after initialization" do
     context = TranslationContext.new(text: "Original")
 
@@ -52,6 +56,7 @@ class TranslationContextTest < ActiveSupport::TestCase
     assert_equal "messages.welcome", context.context
   end
 
+  speed_profile :fast
   test "should handle all formality options" do
     formality_options = [ "default", "more", "less", "prefer_more", "prefer_less", "formal" ]
 
@@ -61,6 +66,7 @@ class TranslationContextTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "should handle model_type as no-op for now" do
     context = TranslationContext.new(text: "Test", model_type: "custom_model")
 

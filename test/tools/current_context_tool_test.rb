@@ -15,7 +15,7 @@ class CurrentContextToolTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@sandbox)
   end
-
+  speed_profile :medium
   test "returns current context sections" do
     tool = CurrentContextTool.new()
     result = tool.execute(path: @memory_path)

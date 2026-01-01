@@ -8,7 +8,7 @@ class FactoriesTest < ActiveSupport::TestCase
   #   assert_equal "user@example.com", user_data.email
   #   assert_equal "Test User", user_data.name
   # end
-
+  speed_profile :fast
   test "hello_response factory should generate valid response structure" do
     response_data = build(:hello_response)
 
@@ -21,6 +21,7 @@ class FactoriesTest < ActiveSupport::TestCase
     assert_nothing_raised { Time.parse(response_data["timestamp"]) }
   end
 
+  speed_profile :fast
   test "hello_response factory should generate valid timestamp format" do
     response_data = build(:hello_response)
     timestamp = response_data["timestamp"]
@@ -30,6 +31,7 @@ class FactoriesTest < ActiveSupport::TestCase
     assert_match iso8601_pattern, timestamp, "Timestamp should be in ISO 8601 format"
   end
 
+  speed_profile :fast
   test "factories should generate unique data across calls" do
     first_response = build(:hello_response)
     sleep(0.001) # Ensure timestamp difference

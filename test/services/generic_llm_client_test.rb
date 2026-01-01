@@ -16,30 +16,34 @@ class GenericLlmClientTest < ActiveSupport::TestCase
     ENV.replace(@original_env)
     GenericLlmClient.instance_variable_set(:@clients, nil)
   end
-
+  speed_profile :medium
   test "client_for returns client for valid capability" do
     client = GenericLlmClient.client_for(:general_llm)
     assert_instance_of GenericLlmClient::ClientRetryWrapper, client
   end
 
+  speed_profile :medium
   test "client_for raises for invalid capability" do
     assert_raises(ArgumentError) do
       GenericLlmClient.build_client_for_capability(:invalid_capability)
     end
   end
 
+  speed_profile :medium
   test "client_for caches clients per capability" do
     client1 = GenericLlmClient.client_for(:general_llm)
     client2 = GenericLlmClient.client_for(:general_llm)
     assert_same client1, client2
   end
 
+  speed_profile :medium
   test "different capabilities get different clients" do
     general = GenericLlmClient.client_for(:general_llm)
     tool = GenericLlmClient.client_for(:tool_calling)
     refute_same general, tool
   end
 
+  speed_profile :medium
   test "build_url_for_capability extracts host and updates port" do
     # Use the configured base_url from the capability config
     config = GenericLlmClient::CAPABILITIES[:tool_calling]
@@ -53,6 +57,7 @@ class GenericLlmClientTest < ActiveSupport::TestCase
     assert_equal URI.parse(base_url).host, uri.host
   end
 
+  speed_profile :medium
   test "model_for returns correct model for capability" do
     # Both capabilities return valid model names from the config
     general_model = GenericLlmClient.model_for(:general_llm)
@@ -66,12 +71,14 @@ class GenericLlmClientTest < ActiveSupport::TestCase
     assert_equal GenericLlmClient::CAPABILITIES[:tool_calling][:model_name], tool_model
   end
 
+  speed_profile :medium
   test "instance returns general_llm client for backward compatibility" do
     instance = GenericLlmClient.instance
     general = GenericLlmClient.client_for(:general_llm)
     assert_same instance, general
   end
 
+  speed_profile :medium
   test "wrap_with_retry always wraps client" do
     ENV["LLM_RETRY"] = "0"
     
@@ -81,6 +88,7 @@ class GenericLlmClientTest < ActiveSupport::TestCase
     assert_instance_of GenericLlmClient::ClientRetryWrapper, wrapped
   end
 
+  speed_profile :medium
   test "retry_attempts defaults to 1" do
     ENV["LLM_RETRY_AT"] = "0"
     assert_equal 0, GenericLlmClient.retry_attempts
@@ -90,6 +98,7 @@ class GenericLlmClientTest < ActiveSupport::TestCase
     assert_equal 1, GenericLlmClient.retry_attempts
   end
 
+  speed_profile :medium
   test "ClientRetryWrapper process_response filters think tags" do
     client = Object.new
     wrapper = GenericLlmClient::ClientRetryWrapper.new(client: client, attempts: 1, delay: 0)
@@ -110,6 +119,7 @@ class GenericLlmClientTest < ActiveSupport::TestCase
     assert_equal "This is reasoning", processed["thoughts"]
   end
 
+  speed_profile :medium
   test "ClientRetryWrapper process_response handles no think tags" do
     client = Object.new
     wrapper = GenericLlmClient::ClientRetryWrapper.new(client: client, attempts: 1, delay: 0)
@@ -130,6 +140,7 @@ class GenericLlmClientTest < ActiveSupport::TestCase
     assert_nil processed["thoughts"]
   end
 
+  speed_profile :medium
   test "ClientRetryWrapper process_response preserves structure" do
     client = Object.new
     wrapper = GenericLlmClient::ClientRetryWrapper.new(client: client, attempts: 1, delay: 0)

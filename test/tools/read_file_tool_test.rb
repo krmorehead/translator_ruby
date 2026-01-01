@@ -11,7 +11,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@test_path) if @test_path && File.exist?(@test_path)
   end
-
+  speed_profile :medium
   test "schema returns valid OpenAI function format with path parameter" do
     schema = ReadFileTool.schema
 
@@ -26,6 +26,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
     assert_includes params[:required], "path"
   end
 
+  speed_profile :medium
   test "execute reads file content successfully" do
     test_file = File.join(@test_path, "test_read.txt")
     File.write(test_file, "Hello, World!")
@@ -37,6 +38,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
     assert_nil result[:error]
   end
 
+  speed_profile :medium
   test "execute returns error for non-existent file" do
     result = @tool.execute(path: File.join(@test_path, "nonexistent.txt"))
 
@@ -45,6 +47,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
     assert_includes result[:error], "File not found"
   end
 
+  speed_profile :medium
   test "reads files with various content types" do
     test_file = File.join(@test_path, "multiline.txt")
     content = "Line 1\nLine 2\nLine 3"
@@ -56,6 +59,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
     assert_equal content, result[:result]
   end
 
+  speed_profile :medium
   test "tool is registered with ToolCallService" do
     tools = ToolCallService.available_tools
     read_file_tool = tools.find { |t| t[:function][:name] == "read_file" }
@@ -63,6 +67,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
     assert_not_nil read_file_tool
   end
 
+  speed_profile :medium
   test "can read any accessible file" do
     # Read a file we know exists
     gemfile_path = Rails.root.join("Gemfile").to_s
@@ -74,6 +79,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
   end
 
   # LLM Integration Test via prompt
+  speed_profile :medium
   test "LLM can request read_file tool to read a file" do
     test_file = File.join(@test_path, "llm_read_test.txt")
     test_content = "This is secret content that only the LLM should read."

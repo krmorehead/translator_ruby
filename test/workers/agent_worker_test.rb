@@ -11,7 +11,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
   # ==========================================================================
   # Test Action Registration
   # ==========================================================================
-
+  speed_profile :slow
   test "registers actions via class method" do
     # Create a test subclass using the ActionRegistry DSL
     test_class = Class.new(AgentWorker) do
@@ -26,6 +26,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
     assert_equal "A test action", test_class._registered_actions[:test_action][:description]
   end
 
+  speed_profile :slow
   test "action_definitions returns formatted definitions" do
     test_class = Class.new(AgentWorker) do
       include ActionRegistry
@@ -43,6 +44,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
   # Test Action Cache
   # ==========================================================================
 
+  speed_profile :slow
   test "action cache stores results" do
     worker = create_minimal_agent
 
@@ -54,6 +56,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
     assert worker.action_cached?(:test_action, { foo: "bar" }, "context123")
   end
 
+  speed_profile :slow
   test "action cache returns cached results on subsequent calls" do
     worker = create_minimal_agent
     call_count = 0
@@ -74,6 +77,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
     assert_equal "first", result[:data]
   end
 
+  speed_profile :slow
   test "action cache tracks hit/miss stats" do
     worker = create_minimal_agent
 
@@ -92,6 +96,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
     assert_equal 2, stats[:size]
   end
 
+  speed_profile :slow
   test "clear_action_cache! clears all cached results" do
     worker = create_minimal_agent
 
@@ -108,11 +113,13 @@ class AgentWorkerTest < ActiveSupport::TestCase
   # Test State Machine
   # ==========================================================================
 
+  speed_profile :slow
   test "starts in pending state" do
     worker = create_minimal_agent
     assert_equal :pending, worker.current_state
   end
 
+  speed_profile :slow
   test "transitions through expected states" do
     worker = create_minimal_agent
 
@@ -129,6 +136,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
   # Test Resource Limits
   # ==========================================================================
 
+  speed_profile :slow
   test "resources_exhausted? respects max_iterations" do
     worker = create_minimal_agent(max_iterations: 5)
 
@@ -139,6 +147,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
     assert worker.resources_exhausted?
   end
 
+  speed_profile :slow
   test "resources_exhausted? respects max_actions" do
     worker = create_minimal_agent(max_actions: 10)
 
@@ -153,6 +162,7 @@ class AgentWorkerTest < ActiveSupport::TestCase
   # Test Available Actions
   # ==========================================================================
 
+  speed_profile :slow
   test "available_actions returns registered action definitions" do
     # Create an AgentWorker subclass with registered actions for testing
     test_class = Class.new(AgentWorker) do

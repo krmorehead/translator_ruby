@@ -59,7 +59,7 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
   # ============================================================================
   # Shared Execution Tests - All use same LLM call
   # ============================================================================
-
+  speed_profile :slow
   test "shared: research succeeds on fixture codebase" do
     _worker, result = shared_execution
 
@@ -67,12 +67,14 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
     assert_not_nil result[:owner_id]
   end
 
+  speed_profile :slow
   test "shared: returns findings array" do
     _worker, result = shared_execution
 
     assert result[:findings].is_a?(Array)
   end
 
+  speed_profile :slow
   test "shared: synthesis has summary" do
     _worker, result = shared_execution
 
@@ -83,6 +85,7 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
     assert summary.present?, "Should have a summary"
   end
 
+  speed_profile :slow
   test "shared: memory contains research goal" do
     _worker, result = shared_execution
 
@@ -91,6 +94,7 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
     assert memory[:research_goal] || memory["research_goal"], "Should have research goal"
   end
 
+  speed_profile :slow
   test "shared: discovered files are unique" do
     _worker, result = shared_execution
 
@@ -102,6 +106,7 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
                  "Each file should only be recorded once in discovered_files"
   end
 
+  speed_profile :slow
   test "shared: can write output files from synthesis" do
     _worker, result = shared_execution
 
@@ -127,6 +132,7 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
   # Separate Execution Tests - These need their own runs
   # ============================================================================
 
+  speed_profile :slow
   test "multiple parallel research sessions have unique owner_ids" do
     workers = 2.times.map do |i|
       CodebaseResearcher.new(
@@ -146,6 +152,7 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "handles empty codebase gracefully" do
     empty_dir = Rails.root.join("tmp", "empty_codebase_#{Process.pid}").to_s
     FileUtils.mkdir_p(empty_dir)
@@ -165,6 +172,7 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "terminates gracefully when no relevant files found" do
     worker = CodebaseResearcher.new(
       goal: "How does the quantum flux capacitor integrate with the warp drive?",

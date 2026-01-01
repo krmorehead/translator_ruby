@@ -3,6 +3,7 @@
 require "test_helper"
 
 class WorkflowStateTest < ActiveSupport::TestCase
+  speed_profile :fast
   test "initializes with defaults" do
     state = WorkflowState.new
 
@@ -16,6 +17,7 @@ class WorkflowStateTest < ActiveSupport::TestCase
     refute_predicate state, :failed?
   end
 
+  speed_profile :fast
   test "initializes with provided values" do
     data = { actions: 2 }
     state = WorkflowState.new(status: :running, prompt: "hi", data: data, error: "none")
@@ -26,6 +28,7 @@ class WorkflowStateTest < ActiveSupport::TestCase
     assert_equal "none", state.error
   end
 
+  speed_profile :fast
   test "with returns new instance and keeps immutability" do
     original = WorkflowState.new(status: :pending, prompt: "start")
     updated = original.with(status: :complete, data: { done: true })
@@ -36,6 +39,7 @@ class WorkflowStateTest < ActiveSupport::TestCase
     refute_equal original.object_id, updated.object_id
   end
 
+  speed_profile :fast
   test "predicates work for all statuses" do
     assert_predicate WorkflowState.new(status: :complete), :complete?
     assert_predicate WorkflowState.new(status: :failed), :failed?
@@ -43,6 +47,7 @@ class WorkflowStateTest < ActiveSupport::TestCase
     assert_predicate WorkflowState.new(status: :running), :running?
   end
 
+  speed_profile :fast
   test "to_h serializes state" do
     state = WorkflowState.new(status: :failed, prompt: "oops", data: { step: 3 }, error: "boom")
     hash = state.to_h

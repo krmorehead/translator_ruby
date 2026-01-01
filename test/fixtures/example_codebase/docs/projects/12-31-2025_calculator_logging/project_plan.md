@@ -4,183 +4,182 @@
 
 ## Milestone 1: Design Logging System
 
-Create logging architecture
+Define logging requirements and structure
 
-### Step 1.1: Add log file
+### Step 1.1: Define log levels
 
-**Intent**: Create storage for logs
+**Intent**: Establish severity categories for log messages
 
 **Details**:
-- Create log directory in /var/log/app
-- Use rotating file handler for log files
-- Set log file size limit to 10MB
+- Create levels: debug, info, warning, error
+- Assign numeric values 1-4 for severity
+- Define JSON schema for log records
 
 **Tests**:
-- Verify log directory is created on startup
-- Test log rotation when file exceeds 10MB
+- Verify level enums match schema
+- Test severity ordering in output
 
 ---
 
-### Step 1.2: Create logger interface
+### Step 1.2: Create log format
+
+**Intent**: Standardize log message structure
+
+**Details**:
+- Use JSON format
+- Include timestamp, log level, message
+- Add context fields for metadata
+
+**Tests**:
+- Validate JSON schema compliance
+- Check required fields presence
+
+---
+
+### Step 1.3: Determine output destinations
+
+**Intent**: Specify where logs will be written
+
+**Details**:
+- Logs will be written to stdout
+- Logs will be written to a file when --log-file flag is provided
+- Log file path will be determined by --log-file argument
+
+**Tests**:
+- Verify logs are printed to console when no log file is specified
+- Check log file is created and written to when --log-file is provided
+
+---
+
+### Step 1.4: Plan log rotation
+
+**Intent**: Implement log file management strategy
+
+**Details**:
+- Set max file size of 10MB
+- Keep 5 most recent log files
+
+**Tests**:
+- Verify log rotation triggers after 10MB
+- Confirm old logs are deleted after 5 files are kept
+
+## Milestone 2: Implement Logging
+
+Add logging to core components
+
+### Step 2.1: Add Log Interface
 
 **Intent**: Define logging contract
 
 **Details**:
-- Specify log levels (debug, info, error)
-- Define write method signature
+- Create interface with log methods (info, error, debug)
+- Include severity levels and message formatting requirements
+- Specify method signatures for consistency across implementations
 
 **Tests**:
-- Verify interface compiles
-- Ensure all required methods exist
+- Verify interface has all required methods
+- Test implementation against interface contract
 
 ---
 
-### Step 1.3: Implement file logger
+### Step 2.2: Create File Logger
 
-**Intent**: Write logs to file
+**Intent**: Implement file-based logging
 
 **Details**:
 - Create log directory if not exists
-- Format log messages with timestamp
-- Write logs to file with rotation
+- Format log entries with timestamp and level
+- Append logs to file with rotation
 
 **Tests**:
-- Verify log file creation and content
-- Test log rotation when file size exceeds limit
+- Verify log file created in correct directory
+- Check log entry format matches specification
 
 ---
 
-### Step 1.4: Add log levels
+### Step 2.3: Add Logging To Add
 
-**Intent**: Support different severities
-
-**Details**:
-- Add debug, info, warn, error levels
-- Map levels to numeric values (DEBUG=1 to ERROR=4)
-- Ensure level determines message handling
-
-**Tests**:
-- Verify level conversion from string to number
-- Test message routing based on level
-
-## Milestone 2: Implement Logging
-
-Add logging to calculator
-
-### Step 2.1: Add Log File
-
-**Intent**: Create log storage
+**Intent**: Track add operations
 
 **Details**:
-- Create log directory in system temp folder
-- Implement log rotation to keep 5 most recent files
-- Format log entries with timestamp and severity level
+- Log input values before operation
+- Log result after operation
+- Use console.log for visibility
 
 **Tests**:
-- Verify log file is created with correct permissions
-- Test log rotation keeps only 5 files after 6th log is generated
+- Verify inputs are logged correctly
+- Check result is logged after operation
 
 ---
 
-### Step 2.2: Log Errors
+### Step 2.4: Add Logging To Subtract
 
-**Intent**: Capture error events
-
-**Details**:
-- Create error logging system
-- Log error details to file
-- Include timestamp and error message
-
-**Tests**:
-- Verify error is written to log file
-- Check log file contains correct timestamp
-
----
-
-### Step 2.3: Log Inputs
-
-**Intent**: Track user actions
+**Intent**: Track subtract operations
 
 **Details**:
-- Record timestamp
-- Capture input method (keyboard/touch)
-- Store in database
+- Log operation type, operands, and result
+- Add log file rotation with 5MB size limit
+- Use JSON format for structured logs
 
 **Tests**:
-- Verify timestamps are unique
-- Check input method validation
-
----
-
-### Step 2.4: Log Results
-
-**Intent**: Record calculation outcomes
-
-**Details**:
-- Create log entry with timestamp
-- Store input values and result
-- Format as JSON for readability
-
-**Tests**:
-- Verify log file contains correct timestamp
-- Check JSON structure validity
+- Verify log file grows with each subtraction
+- Check log rotation creates new file when size limit reached
 
 ## Milestone 3: Test Logging
 
-Verify logging functionality
+Validate logging functionality
 
-### Step 3.1: Create logger interface
+### Step 3.1: Add log method
 
-**Intent**: Define logging contract for implementation
+**Intent**: Create logging interface
 
 **Details**:
-- Define methods: log(level, message), setLevel(level)
-- Support levels: debug, info, warning, error
-- Ensure thread-safe method access
+- Define Log interface with write method
+- Support multiple log levels (info, error, debug)
 
 **Tests**:
-- Verify all level constants are available
-- Test method throws on invalid level input
+- Verify log method writes to file
+- Test different log levels are handled correctly
 
 ---
 
-### Step 3.2: Implement console logger
+### Step 3.2: Mock logger
 
-**Intent**: Provide basic logging output to console
+**Intent**: Enable test verification
 
 **Details**:
-- Create logging module with debug/info/warn/error levels
-- Format messages with timestamp and level prefix
-- Enable log level filtering via configuration
+- Create interface for logging functions
+- Implement mock logger that captures log messages
 
 **Tests**:
-- Verify message appears in console with correct format
-- Confirm only messages above configured level are shown
+- Verify log messages are captured correctly
+- Check that logger interface is properly implemented
 
 ---
 
-### Step 3.3: Add logging to calculator
+### Step 3.3: Log operations
 
-**Intent**: Instrument calculator operations with logs
+**Intent**: Track calculation events
 
 **Details**:
-- Log input values and operation type before calculation
-- Record result and execution time after calculation
+- Add operation logging to calculator service
+- Include timestamp and operation type in log entries
+- Store logs in memory for 24 hours
 
 **Tests**:
-- Verify log entries contain operation type and values
-- Confirm timestamp and duration are logged for each calculation
+- Verify log contains correct operation type and timestamp
+- Confirm logs expire after 24 hours
 
 ---
 
-### Step 3.4: Verify log output
+### Step 3.4: Verify logs
 
-**Intent**: Confirm logging works with test cases
+**Intent**: Confirm logging behavior
 
 **Details**:
-- Check log file format matches schema
-- Validate log entries contain timestamps
+- Check log level configuration in config file
+- Validate log output format matches schema
 
 **Tests**:
-- Test empty log file returns no entries
-- Test log rotation preserves oldest entries
+- Test debug logs are written when level is set to debug
+- Verify error logs include stack trace for exceptions

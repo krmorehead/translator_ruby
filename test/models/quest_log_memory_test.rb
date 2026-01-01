@@ -13,7 +13,7 @@ class QuestLogMemoryTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@sandbox_path) if File.exist?(@sandbox_path)
   end
-
+  speed_profile :fast
   test "adds quests to quest_log" do
     Memories::QuestLogMemory.add(@store, text: "Find the dragon")
     entries = Memories::QuestLogMemory.entries(@store)
@@ -21,6 +21,7 @@ class QuestLogMemoryTest < ActiveSupport::TestCase
     assert_equal "Find the dragon", entries.first[:text] || entries.first["text"]
   end
 
+  speed_profile :fast
   test "sets main and current flags" do
     Memories::QuestLogMemory.add(@store, text: "Rescue the prince")
     Memories::QuestLogMemory.add(@store, text: "Explore the ruins")
@@ -38,12 +39,14 @@ class QuestLogMemoryTest < ActiveSupport::TestCase
     assert_nil ruins[:main] || ruins["main"]
   end
 
+  speed_profile :fast
   test "raises when quest not found" do
     assert_raises(ArgumentError) do
       Memories::QuestLogMemory.set_main(@store, text: "Missing quest")
     end
   end
 
+  speed_profile :fast
   test "requires text or index" do
     assert_raises(ArgumentError) do
       Memories::QuestLogMemory.set_main(@store)

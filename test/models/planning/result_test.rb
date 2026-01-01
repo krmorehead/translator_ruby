@@ -12,7 +12,7 @@ module Planning
       )
       
       @milestone.add_step(Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Create Database",
         intent: "Setup data storage",
         details: ["Configure PostgreSQL"],
@@ -31,7 +31,7 @@ module Planning
         created_in_step: "1.1"
       )
     end
-
+    speed_profile :fast
     test "initialization with all required attributes" do
       result = Result.new(
         goal: "Add authentication",
@@ -52,6 +52,7 @@ module Planning
       assert_equal "# Project Plan", result.project_plan_content
     end
 
+    speed_profile :fast
     test "validates goal must be a String" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -67,6 +68,7 @@ module Planning
       assert_match(/goal must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates goal cannot be empty" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -82,6 +84,7 @@ module Planning
       assert_match(/goal cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates project_name must be a String" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -97,6 +100,7 @@ module Planning
       assert_match(/project_name must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates project_name cannot be empty" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -112,6 +116,7 @@ module Planning
       assert_match(/project_name cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates milestones must be an Array" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -127,6 +132,7 @@ module Planning
       assert_match(/milestones must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates all milestones must be Milestone objects" do
       error = assert_raises(TypeError) do
         Result.new(
@@ -142,6 +148,7 @@ module Planning
       assert_match(/all milestones must be Planning::Milestone/, error.message)
     end
 
+    speed_profile :fast
     test "validates existing_files must be an Array" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -157,6 +164,7 @@ module Planning
       assert_match(/existing_files must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates all existing_files must be FileReference objects" do
       error = assert_raises(TypeError) do
         Result.new(
@@ -172,6 +180,7 @@ module Planning
       assert_match(/all existing_files must be Planning::FileReference/, error.message)
     end
 
+    speed_profile :fast
     test "validates planned_files must be an Array" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -187,6 +196,7 @@ module Planning
       assert_match(/planned_files must be an Array/, error.message)
     end
 
+    speed_profile :fast
     test "validates all planned_files must be FileReference objects" do
       error = assert_raises(TypeError) do
         Result.new(
@@ -202,6 +212,7 @@ module Planning
       assert_match(/all planned_files must be Planning::FileReference/, error.message)
     end
 
+    speed_profile :fast
     test "validates file_references_content must be a String" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -217,6 +228,7 @@ module Planning
       assert_match(/file_references_content must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates project_plan_content must be a String" do
       error = assert_raises(ArgumentError) do
         Result.new(
@@ -232,6 +244,7 @@ module Planning
       assert_match(/project_plan_content must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "milestone_count returns correct value" do
       result = Result.new(
         goal: "Test goal",
@@ -246,6 +259,7 @@ module Planning
       assert_equal 1, result.milestone_count
     end
 
+    speed_profile :fast
     test "step_count returns total across all milestones" do
       milestone2 = Milestone.new(
         number: 2,
@@ -254,7 +268,7 @@ module Planning
       )
       
       milestone2.add_step(Step.new(
-        number: "2.1",
+        milestone_number: 2, step_number: 1,
         title: "Step 2.1",
         intent: "Do something",
         details: ["Detail"],
@@ -262,7 +276,7 @@ module Planning
       ))
       
       milestone2.add_step(Step.new(
-        number: "2.2",
+        milestone_number: 2, step_number: 2,
         title: "Step 2.2",
         intent: "Do more",
         details: ["Detail"],
@@ -282,6 +296,7 @@ module Planning
       assert_equal 3, result.step_count  # 1 from milestone + 2 from milestone2
     end
 
+    speed_profile :fast
     test "file_count returns sum of existing and planned files" do
       existing_file2 = FileReference.new(
         path: "app/models/post.rb",
@@ -302,6 +317,7 @@ module Planning
       assert_equal 3, result.file_count
     end
 
+    speed_profile :fast
     test "success? returns true when has milestones and content" do
       result = Result.new(
         goal: "Test goal",
@@ -316,6 +332,7 @@ module Planning
       assert result.success?
     end
 
+    speed_profile :fast
     test "success? returns false when no milestones" do
       result = Result.new(
         goal: "Test goal",
@@ -330,6 +347,7 @@ module Planning
       refute result.success?
     end
 
+    speed_profile :fast
     test "success? returns false when missing file_references_content" do
       result = Result.new(
         goal: "Test goal",
@@ -344,6 +362,7 @@ module Planning
       refute result.success?
     end
 
+    speed_profile :fast
     test "success? returns false when missing project_plan_content" do
       result = Result.new(
         goal: "Test goal",
@@ -358,6 +377,7 @@ module Planning
       refute result.success?
     end
 
+    speed_profile :fast
     test "to_h produces correct hash structure" do
       result = Result.new(
         goal: "Test goal",
@@ -381,6 +401,7 @@ module Planning
       assert_equal "# Project Plan", hash[:project_plan_content]
     end
 
+    speed_profile :fast
     test "from_h reconstructs nested objects correctly with symbol keys" do
       original = Result.new(
         goal: "Test goal",
@@ -403,6 +424,7 @@ module Planning
       assert_instance_of FileReference, reconstructed.planned_files.first
     end
 
+    speed_profile :fast
     test "from_h reconstructs nested objects correctly with string keys" do
       hash = {
         "goal" => "Test goal",
@@ -435,6 +457,7 @@ module Planning
       assert_instance_of FileReference, reconstructed.existing_files.first
     end
 
+    speed_profile :fast
     test "from_h validates input must be Hash" do
       error = assert_raises(ArgumentError) do
         Result.from_h("not a hash")
@@ -442,6 +465,7 @@ module Planning
       assert_match(/hash must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "handles empty collections gracefully" do
       result = Result.new(
         goal: "Test goal",
@@ -459,6 +483,7 @@ module Planning
       refute result.success?
     end
 
+    speed_profile :fast
     test "serialization round-trip preserves nested domain objects" do
       original = Result.new(
         goal: "Add payment processing",

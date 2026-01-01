@@ -4,6 +4,7 @@ require "test_helper"
 
 module Planning
   class MilestoneTest < ActiveSupport::TestCase
+    speed_profile :fast
     test "initialization with number, title, and description" do
       milestone = Milestone.new(
         number: 1,
@@ -17,6 +18,7 @@ module Planning
       assert_empty milestone.steps
     end
 
+    speed_profile :fast
     test "validates number must be an Integer" do
       error = assert_raises(ArgumentError) do
         Milestone.new(
@@ -28,6 +30,7 @@ module Planning
       assert_match(/number must be an Integer/, error.message)
     end
 
+    speed_profile :fast
     test "validates number must be positive" do
       error = assert_raises(ArgumentError) do
         Milestone.new(
@@ -39,6 +42,7 @@ module Planning
       assert_match(/number must be positive/, error.message)
     end
 
+    speed_profile :fast
     test "validates title must be a String" do
       error = assert_raises(ArgumentError) do
         Milestone.new(
@@ -50,6 +54,7 @@ module Planning
       assert_match(/title must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates title cannot be empty" do
       error = assert_raises(ArgumentError) do
         Milestone.new(
@@ -61,6 +66,7 @@ module Planning
       assert_match(/title cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates description must be a String" do
       error = assert_raises(ArgumentError) do
         Milestone.new(
@@ -72,6 +78,7 @@ module Planning
       assert_match(/description must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates description cannot be empty" do
       error = assert_raises(ArgumentError) do
         Milestone.new(
@@ -83,6 +90,7 @@ module Planning
       assert_match(/description cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "add_step accepts Planning::Step objects" do
       milestone = Milestone.new(
         number: 1,
@@ -91,7 +99,7 @@ module Planning
       )
 
       step = Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Create Model",
         intent: "Define entity",
         details: ["Add fields"],
@@ -105,6 +113,7 @@ module Planning
       assert_equal step, milestone.steps.first
     end
 
+    speed_profile :fast
     test "add_step rejects invalid types" do
       milestone = Milestone.new(
         number: 1,
@@ -118,6 +127,7 @@ module Planning
       assert_match(/step must be a Planning::Step/, error.message)
     end
 
+    speed_profile :fast
     test "add_step validates step number matches milestone" do
       milestone = Milestone.new(
         number: 1,
@@ -126,7 +136,7 @@ module Planning
       )
 
       step = Step.new(
-        number: "2.1",  # Wrong milestone number
+        milestone_number: 2, step_number: 1,  # Wrong milestone number
         title: "Create Model",
         intent: "Define entity",
         details: ["Add fields"],
@@ -139,6 +149,7 @@ module Planning
       assert_match(/step number 2.1 does not match milestone 1/, error.message)
     end
 
+    speed_profile :fast
     test "steps_complete? returns true when all steps complete" do
       milestone = Milestone.new(
         number: 1,
@@ -147,7 +158,7 @@ module Planning
       )
 
       step1 = Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Step 1",
         intent: "First step",
         details: ["Detail 1"],
@@ -155,7 +166,7 @@ module Planning
       )
 
       step2 = Step.new(
-        number: "1.2",
+        milestone_number: 1, step_number: 2,
         title: "Step 2",
         intent: "Second step",
         details: ["Detail 2"],
@@ -168,6 +179,7 @@ module Planning
       assert milestone.steps_complete?
     end
 
+    speed_profile :fast
     test "steps_complete? returns false when any step incomplete" do
       milestone = Milestone.new(
         number: 1,
@@ -176,7 +188,7 @@ module Planning
       )
 
       complete_step = Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Step 1",
         intent: "First step",
         details: ["Detail 1"],
@@ -184,7 +196,7 @@ module Planning
       )
 
       incomplete_step = Step.new(
-        number: "1.2",
+        milestone_number: 1, step_number: 2,
         title: "Step 2",
         intent: "Second step",
         details: [],  # No details
@@ -197,6 +209,7 @@ module Planning
       refute milestone.steps_complete?
     end
 
+    speed_profile :fast
     test "steps_complete? returns false when no steps" do
       milestone = Milestone.new(
         number: 1,
@@ -207,6 +220,7 @@ module Planning
       refute milestone.steps_complete?
     end
 
+    speed_profile :fast
     test "step_count returns correct count" do
       milestone = Milestone.new(
         number: 1,
@@ -217,7 +231,7 @@ module Planning
       assert_equal 0, milestone.step_count
 
       milestone.add_step(Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Step 1",
         intent: "First step",
         details: ["Detail"],
@@ -227,7 +241,7 @@ module Planning
       assert_equal 1, milestone.step_count
 
       milestone.add_step(Step.new(
-        number: "1.2",
+        milestone_number: 1, step_number: 2,
         title: "Step 2",
         intent: "Second step",
         details: ["Detail"],
@@ -237,6 +251,7 @@ module Planning
       assert_equal 2, milestone.step_count
     end
 
+    speed_profile :fast
     test "to_h produces correct hash structure" do
       milestone = Milestone.new(
         number: 1,
@@ -245,7 +260,7 @@ module Planning
       )
 
       step = Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Create Model",
         intent: "Define entity",
         details: ["Add fields"],
@@ -263,6 +278,7 @@ module Planning
       assert_equal "1.1", hash[:steps].first[:number]
     end
 
+    speed_profile :fast
     test "from_h reconstructs object correctly with symbol keys" do
       original = Milestone.new(
         number: 1,
@@ -271,7 +287,7 @@ module Planning
       )
 
       original.add_step(Step.new(
-        number: "1.1",
+        milestone_number: 1, step_number: 1,
         title: "Create Model",
         intent: "Define entity",
         details: ["Add fields"],
@@ -288,6 +304,7 @@ module Planning
       assert_equal original.steps.first.number, reconstructed.steps.first.number
     end
 
+    speed_profile :fast
     test "from_h reconstructs object correctly with string keys" do
       hash = {
         "number" => 1,
@@ -313,6 +330,7 @@ module Planning
       assert_instance_of Step, reconstructed.steps.first
     end
 
+    speed_profile :fast
     test "from_h validates input must be Hash" do
       error = assert_raises(ArgumentError) do
         Milestone.from_h("not a hash")
@@ -320,6 +338,7 @@ module Planning
       assert_match(/hash must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "serialization round-trip preserves step objects" do
       original = Milestone.new(
         number: 2,
@@ -328,7 +347,7 @@ module Planning
       )
 
       original.add_step(Step.new(
-        number: "2.1",
+        milestone_number: 2, step_number: 1,
         title: "Setup Stripe",
         intent: "Configure payment gateway",
         details: ["Add API keys", "Configure webhooks"],
@@ -336,7 +355,7 @@ module Planning
       ))
 
       original.add_step(Step.new(
-        number: "2.2",
+        milestone_number: 2, step_number: 2,
         title: "Process Payments",
         intent: "Handle payment flow",
         details: ["Create charge API", "Handle success/failure"],
@@ -359,6 +378,7 @@ module Planning
       assert_equal original.steps.last.title, reconstructed.steps.last.title
     end
 
+    speed_profile :fast
     test "deserialization reconstructs step objects not hashes" do
       hash = {
         number: 1,
@@ -366,7 +386,7 @@ module Planning
         description: "Test description",
         steps: [
           {
-            number: "1.1",
+            milestone_number: 1, step_number: 1,
             title: "Test Step",
             intent: "Test intent",
             details: ["Detail"],

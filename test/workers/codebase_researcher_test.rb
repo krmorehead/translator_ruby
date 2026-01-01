@@ -57,7 +57,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   # ============================================================================
   # Unit Tests - No LLM calls
   # ============================================================================
-
+  speed_profile :slow
   test "initialization with goal and path" do
     worker = CodebaseResearcher.new(
       goal: "How does authentication work?",
@@ -70,16 +70,19 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
+  speed_profile :slow
   test "inherits from BaseWorker" do
     assert CodebaseResearcher < BaseWorker
   end
 
+  speed_profile :slow
   test "registers GoalDecompositionWorkflow and ResearchWorkflow" do
     workflows = CodebaseResearcher.registered_workflows
     assert_includes workflows, GoalDecompositionWorkflow
     assert_includes workflows, ResearchWorkflow
   end
 
+  speed_profile :slow
   test "has researcher states defined" do
     states = CodebaseResearcher.states
 
@@ -93,6 +96,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_includes states, :failed
   end
 
+  speed_profile :slow
   test "states have phase metadata" do
     assert_nil CodebaseResearcher._states[:pending][:phase]
     assert_equal :setup, CodebaseResearcher._states[:running][:phase]
@@ -101,6 +105,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_equal :output, CodebaseResearcher._states[:synthesizing][:phase]
   end
 
+  speed_profile :slow
   test "starts in pending state" do
     worker = CodebaseResearcher.new(
       goal: "Test research",
@@ -111,6 +116,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert worker.pending?
   end
 
+  speed_profile :slow
   test "current_phase method returns phase for current state" do
     worker = CodebaseResearcher.new(
       goal: "Test research",
@@ -124,6 +130,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_equal :setup, worker.current_phase
   end
 
+  speed_profile :slow
   test "accepts context parameter using factory" do
     worker = CodebaseResearcher.new(
       goal: "How does payment work?",
@@ -136,6 +143,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_equal seed_context[:prior_findings], worker.context[:prior_findings]
   end
 
+  speed_profile :slow
   test "context defaults to empty hash" do
     worker = CodebaseResearcher.new(
       goal: "Research something",
@@ -145,6 +153,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_equal({}, worker.context)
   end
 
+  speed_profile :slow
   test "max_depth option can be set" do
     worker = CodebaseResearcher.new(
       goal: "Deep research",
@@ -155,6 +164,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_equal 6, worker.instance_variable_get(:@max_depth)
   end
 
+  speed_profile :slow
   test "output_modes defaults to report and documentation" do
     worker = CodebaseResearcher.new(
       goal: "Test research",
@@ -165,6 +175,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_includes worker.output_modes, :documentation
   end
 
+  speed_profile :slow
   test "output_modes can be customized" do
     worker = CodebaseResearcher.new(
       goal: "Test research",
@@ -179,6 +190,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   # Shared Execution Tests - All use same LLM call
   # ============================================================================
 
+  speed_profile :slow
   test "shared: creates memory store during execution" do
     worker, _result = shared_execution
 
@@ -187,6 +199,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_equal worker.owner_id, worker.memory_store.owner_id
   end
 
+  speed_profile :slow
   test "shared: execute returns structured result" do
     _worker, result = shared_execution
 
@@ -195,6 +208,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_kind_of Hash, result[:metadata]
   end
 
+  speed_profile :slow
   test "shared: stores research goal in memory" do
     worker, _result = shared_execution
 
@@ -203,6 +217,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert_equal "active", goal_section.first[:status]
   end
 
+  speed_profile :slow
   test "shared: worker creates state directory" do
     worker, _result = shared_execution
 
@@ -210,6 +225,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert File.directory?(worker.state_path)
   end
 
+  speed_profile :slow
   test "shared: memory store is persisted to state path" do
     worker, _result = shared_execution
 
@@ -220,6 +236,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert data["research_goal"].first["text"].present?
   end
 
+  speed_profile :slow
   test "shared: action history is tracked" do
     _worker, result = shared_execution
 
@@ -227,18 +244,21 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert result[:action_history].is_a?(Array)
   end
 
+  speed_profile :slow
   test "shared: final state is included in metadata" do
     _worker, result = shared_execution
 
     assert_equal :complete, result[:metadata][:final_state]
   end
 
+  speed_profile :slow
   test "shared: context is included in result metadata" do
     _worker, result = shared_execution
 
     assert result[:metadata].key?(:context)
   end
 
+  speed_profile :slow
   test "shared: has goal_tree from decomposition" do
     worker, result = shared_execution
 
@@ -247,18 +267,21 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     assert worker.goal_tree[:text].present? || worker.goal_tree[:goal].present?
   end
 
+  speed_profile :slow
   test "shared: has findings from research" do
     _worker, result = shared_execution
 
     assert result[:findings].is_a?(Array)
   end
 
+  speed_profile :slow
   test "shared: has sub_questions from decomposition" do
     _worker, result = shared_execution
 
     assert result[:sub_questions].is_a?(Array)
   end
 
+  speed_profile :slow
   test "shared: workflow results are stored" do
     _worker, result = shared_execution
 
@@ -269,6 +292,7 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
   # Error Handling Tests
   # ============================================================================
 
+  speed_profile :slow
   test "handles errors gracefully" do
     worker = CodebaseResearcher.new(
       goal: "Research something",

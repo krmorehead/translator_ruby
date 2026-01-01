@@ -71,7 +71,7 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
   # ============================================================================
   # Validation Tests - No LLM calls
   # ============================================================================
-
+  speed_profile :medium
   test "validation error when goal is missing" do
     post "/api/v1/research", params: { path: FIXTURE_PATH }, as: :json
 
@@ -80,6 +80,7 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
     assert_includes json["error"], "goal"
   end
 
+  speed_profile :medium
   test "validation error when path is missing" do
     post "/api/v1/research", params: { goal: "Test research" }, as: :json
 
@@ -88,6 +89,7 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
     assert_includes json["error"], "path"
   end
 
+  speed_profile :medium
   test "invalid path rejection" do
     post "/api/v1/research", params: {
       goal: "Test research",
@@ -99,6 +101,7 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
     assert_includes json["error"], "not readable"
   end
 
+  speed_profile :medium
   test "invalid output_modes rejection" do
     post "/api/v1/research", params: {
       goal: "Test research",
@@ -115,11 +118,13 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
   # Default Mode Tests - Share one LLM call
   # ============================================================================
 
+  speed_profile :medium
   test "default: returns success status" do
     resp = default_mode_response
     assert_equal 200, resp[:status]
   end
 
+  speed_profile :medium
   test "default: has expected keys in response" do
     resp = default_mode_response
     json = resp[:body]
@@ -130,22 +135,26 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
     assert json.key?("errors")
   end
 
+  speed_profile :medium
   test "default: findings is array" do
     resp = default_mode_response
     assert_kind_of Array, resp[:body]["findings"]
   end
 
+  speed_profile :medium
   test "default: output_files is array" do
     resp = default_mode_response
     assert_kind_of Array, resp[:body]["output_files"]
   end
 
+  speed_profile :medium
   test "default: returns owner_id" do
     resp = default_mode_response
     assert resp[:body].key?("owner_id")
     assert_match(/\A[0-9a-f-]+\z/, resp[:body]["owner_id"])
   end
 
+  speed_profile :medium
   test "default: includes both output_modes" do
     resp = default_mode_response
     assert_includes resp[:body]["output_modes"], "report"
@@ -156,6 +165,7 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
   # Both Modes Tests - Share one LLM call
   # ============================================================================
 
+  speed_profile :medium
   test "both_modes: generates synthesis_summary.md" do
     resp = both_modes_response
     output_files = resp[:body]["output_files"] || []
@@ -164,6 +174,7 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
            "Should generate synthesis_summary.md"
   end
 
+  speed_profile :medium
   test "both_modes: generates base_references.md" do
     resp = both_modes_response
     output_files = resp[:body]["output_files"] || []
@@ -172,6 +183,7 @@ class Api::V1::ResearchControllerTest < ActionDispatch::IntegrationTest
            "Should generate base_references.md"
   end
 
+  speed_profile :medium
   test "both_modes: includes both modes in response" do
     resp = both_modes_response
 

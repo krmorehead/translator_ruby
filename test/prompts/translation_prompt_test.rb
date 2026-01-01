@@ -1,6 +1,7 @@
 require "test_helper"
 
 class TranslationPromptTest < ActiveSupport::TestCase
+  speed_profile :fast
   test "includes protected strings in system prompt" do
     prompt = TranslationPrompt.new(
       protected_strings: [ "Brightwheel", "CustomApp" ],
@@ -16,6 +17,7 @@ class TranslationPromptTest < ActiveSupport::TestCase
     assert_includes system_prompt, "Spanish"
   end
 
+  speed_profile :fast
   test "response schema requires translation" do
     schema = TranslationPrompt.new(
       protected_strings: [],
@@ -29,6 +31,7 @@ class TranslationPromptTest < ActiveSupport::TestCase
     assert_equal "string", schema[:properties][:translation][:type]
   end
 
+  speed_profile :fast
   test "model comes from general_llm capability" do
     prompt = TranslationPrompt.new(
       protected_strings: [],
@@ -40,6 +43,7 @@ class TranslationPromptTest < ActiveSupport::TestCase
     assert_equal "./vllm/models/qwen3_30b_a3b_moe", prompt.model
   end
 
+  speed_profile :fast
   test "format_context includes provided metadata" do
     prompt = TranslationPrompt.new(
       protected_strings: [ "Brightwheel" ],

@@ -1,10 +1,34 @@
 ---
-globs: tests/**/*.py
-alwaysApply: false
+globs: test/**/*_test.rb
+alwaysApply: true
 ---
 
+[LANG][!RUBY] This is a Ruby on Rails project. All tests use Minitest with ActiveSupport::TestCase.
 
-[TEST][!TIGHT] Write unit tests that are tight, isolated, and follow best practices in Python development.
+[TEST][!TIGHT] Write unit tests that are tight, isolated, and follow best practices in Ruby development.
+
+[SPEED][!PROFILE] EVERY test MUST declare a speed_profile before the test definition:
+  - speed_profile :fast (< 10 seconds) - Unit tests, validations, pure logic
+  - speed_profile :medium (< 60 seconds) - LLM calls, tool execution, file I/O
+  - speed_profile :slow (< 120 seconds) - Workers, workflows, integration tests
+  
+[SPEED][!ENFORCE] Tests will FAIL if they exceed their speed profile SLA. Choose appropriately.
+
+[SPEED][!PER-TEST] Speed profiles are declared PER TEST, not per file:
+  ```ruby
+  class MyTest < ActiveSupport::TestCase
+    speed_profile :fast
+    test "quick validation" do
+      assert true
+    end
+    
+    speed_profile :medium
+    test "with LLM call" do
+      result = service.call_llm
+      assert result.present?
+    end
+  end
+  ```
 
 [NAMING][!NO-PHASES] Never name tests after phases or milestones. Test names should be informative.
 
@@ -12,38 +36,23 @@ alwaysApply: false
 
 [SCOPE][!FOCUSED] Keep tests tight and focused. Each test should validate a single behavior or responsibility. Do not combine multiple concerns in a single test.
 
-[ISOLATION][!FAST] Ensure test isolation but maintain performance. Test suites must not depend on shared state. Each test suite should set up and tear down its own context cleanly and independently and quickly. A test should never take more than 2 seconds to execute.
+[ISOLATION][!CLEAN] Ensure test isolation. Test suites must not depend on shared state. Each test should set up and tear down its own context cleanly and independently.
 
-[PYTHON][!IDIOMATIC] Use standard Python testing practices. Follow idiomatic patterns using pytest or unittest. Prefer pytest for conciseness and fixture support where applicable.
+[RUBY][!IDIOMATIC] Use standard Ruby testing practices with Minitest. Follow Rails conventions and use FactoryBot for test data.
 
 [QUALITY][!READABLE] Write clear, readable code. Maintain high code quality within tests, just as in production code. Use descriptive names, consistent formatting, and minimal duplication.
 
 [ASSERT][!MEANINGFUL] Aim for meaningful assertions. Tests should fail only when the behavior under test is incorrect, and the failure message should clearly indicate what went wrong.
 
-[PERF][!NO-SLEEPS] Avoid read sleeps where possible.
+[PERF][!NO-SLEEPS] Avoid sleeps where possible. Use real timing only when testing actual performance.
 
-[INTEGRATION][!WHEN-READY] At the end of a feature set create integration tests where they make sense. Make sure that they are well designed and scalable and that they pass.
+[INTEGRATION][!WHEN-READY] At the end of a feature set create integration tests where they make sense. Mark them as :slow and ensure they pass.
 
-reference bounty_hunting/docs/testing_strategy.md
+[WORKFLOW][!TEST-LOOP] Follow the testing workflow:
+  - During development: ruby lib/test_runner.rb --speed fast (runs in ~5 seconds)
+  - Testing new features: Run fast tests + tests for modified files
+  - Before PR/merge: ruby lib/test_runner.rb --speed all (runs full suite)
 
-for tests that require a fake website reference
-docs/guides/testing_quick_reference.md
+[DATA][!REAL-DATA] Use real data and factories. Create tests with actual data, not mocks or stubs.
 
-[NO-MOCK][!REAL] do not mock
-[NO-MOCK][!REAL] never mock anything inside the app or outside the app
-[NO-MOCK][!REAL] do not mock if we can avoid it
-[NO-MOCK][!REAL] avoid mocking
-[DATA][!REAL-DATA] use real data
-[NO-MOCK][!REAL] try not to mock
-[NO-MOCK][!REAL] do not stub
-[NO-MOCK][!REAL] no stubs
-[NO-MOCK][!REAL] no mocks
-[NO-MOCK][!REAL] no mocking
-[NO-MOCK][!REAL] no stubs
-[DATA][!REAL-DATA] use real data
-[NO-MOCK][!REAL] do not mock
-[NO-MOCK][!REAL] avoid making stubs
-[DATA][!REAL-DATA] use real data and factories
-[DATA][!REAL-DATA] create tests with actual data
-[NO-MOCK][!REAL] do not stub anything
-[NO-MOCK][!REAL] avoid mocking
+Reference: docs/test_speed_profiling_quick_reference.md

@@ -8,7 +8,7 @@ class ProjectPlanningWorkflowTest < ActiveSupport::TestCase
   # ============================================================================
   # Unit Tests - No LLM calls
   # ============================================================================
-
+  speed_profile :fast
   test "initialization with required parameters" do
     workflow = ProjectPlanningWorkflow.new(
       goal: "Add feature X",
@@ -22,10 +22,12 @@ class ProjectPlanningWorkflowTest < ActiveSupport::TestCase
     assert_equal "test-owner-123", workflow.owner_id
   end
 
+  speed_profile :fast
   test "inherits from BaseWorkflow" do
     assert ProjectPlanningWorkflow < BaseWorkflow
   end
 
+  speed_profile :fast
   test "has planning states defined" do
     states = ProjectPlanningWorkflow.states
 
@@ -40,6 +42,7 @@ class ProjectPlanningWorkflowTest < ActiveSupport::TestCase
     assert_includes states, :failed
   end
 
+  speed_profile :fast
   test "states have phase metadata" do
     assert_nil ProjectPlanningWorkflow._states[:pending][:phase]
     assert_equal :setup, ProjectPlanningWorkflow._states[:running][:phase]
@@ -50,6 +53,7 @@ class ProjectPlanningWorkflowTest < ActiveSupport::TestCase
     assert_equal :output, ProjectPlanningWorkflow._states[:synthesizing][:phase]
   end
 
+  speed_profile :fast
   test "starts in pending state" do
     workflow = ProjectPlanningWorkflow.new(
       goal: "Test goal",
@@ -62,6 +66,7 @@ class ProjectPlanningWorkflowTest < ActiveSupport::TestCase
     assert workflow.pending?
   end
 
+  speed_profile :fast
   test "accepts parent_memory parameter" do
     parent_memory = build_memory_store
     workflow = ProjectPlanningWorkflow.new(
@@ -75,6 +80,7 @@ class ProjectPlanningWorkflowTest < ActiveSupport::TestCase
     assert_not_nil workflow.parent_memory
   end
 
+  speed_profile :fast
   test "handles empty research results gracefully" do
     workflow = ProjectPlanningWorkflow.new(
       goal: "Test goal",

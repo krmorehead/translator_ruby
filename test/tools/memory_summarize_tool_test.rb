@@ -18,13 +18,14 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@sandbox_path) if File.exist?(@sandbox_path)
   end
-
+  speed_profile :medium
   test "schema requires target" do
     schema = MemorySummarizeTool.schema
     props = schema[:function][:parameters][:properties]
     assert props.key?(:target)
   end
 
+  speed_profile :medium
   test "summarizes a person" do
     tool = MemorySummarizeTool.new()
     result = tool.execute(target: "person", name: "Aria", path: @path)
@@ -35,6 +36,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
     assert_includes payload[:summary], "Aria the ranger"
   end
 
+  speed_profile :medium
   test "summarizes a location" do
     @store.update_section(name: :current_scene, content: "A quiet forest", append: false)
     tool = MemorySummarizeTool.new()
@@ -46,6 +48,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
     assert payload[:summary].is_a?(String)
   end
 
+  speed_profile :medium
   test "summarizes quest log" do
     tool = MemorySummarizeTool.new()
     result = tool.execute(target: "quest_log", path: @path)

@@ -4,6 +4,7 @@ require "test_helper"
 
 module Planning
   class FileReferenceTest < ActiveSupport::TestCase
+    speed_profile :fast
     test "initialization with existing file parameters" do
       ref = FileReference.new(
         path: "app/models/user.rb",
@@ -17,6 +18,7 @@ module Planning
       assert_nil ref.created_in_step
     end
 
+    speed_profile :fast
     test "initialization with planned file parameters" do
       ref = FileReference.new(
         path: "app/services/payment_service.rb",
@@ -30,6 +32,7 @@ module Planning
       assert_equal "2.3", ref.created_in_step
     end
 
+    speed_profile :fast
     test "validates path must be a String" do
       error = assert_raises(ArgumentError) do
         FileReference.new(
@@ -41,6 +44,7 @@ module Planning
       assert_match(/path must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates path cannot be empty" do
       error = assert_raises(ArgumentError) do
         FileReference.new(
@@ -52,6 +56,7 @@ module Planning
       assert_match(/path cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates description must be a String" do
       error = assert_raises(ArgumentError) do
         FileReference.new(
@@ -63,6 +68,7 @@ module Planning
       assert_match(/description must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates description cannot be empty" do
       error = assert_raises(ArgumentError) do
         FileReference.new(
@@ -74,6 +80,7 @@ module Planning
       assert_match(/description cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates relevance must be String or nil" do
       error = assert_raises(ArgumentError) do
         FileReference.new(
@@ -85,6 +92,7 @@ module Planning
       assert_match(/relevance must be a String or nil/, error.message)
     end
 
+    speed_profile :fast
     test "validates created_in_step must be String or nil" do
       error = assert_raises(ArgumentError) do
         FileReference.new(
@@ -96,6 +104,7 @@ module Planning
       assert_match(/created_in_step must be a String or nil/, error.message)
     end
 
+    speed_profile :fast
     test "validates either relevance or created_in_step must be provided" do
       error = assert_raises(ArgumentError) do
         FileReference.new(
@@ -106,6 +115,7 @@ module Planning
       assert_match(/Either relevance.*or created_in_step.*must be provided/, error.message)
     end
 
+    speed_profile :fast
     test "to_h produces correct hash structure for existing file" do
       ref = FileReference.new(
         path: "app/models/user.rb",
@@ -121,6 +131,7 @@ module Planning
       assert_nil hash[:created_in_step]
     end
 
+    speed_profile :fast
     test "to_h produces correct hash structure for planned file" do
       ref = FileReference.new(
         path: "app/services/payment_service.rb",
@@ -136,6 +147,7 @@ module Planning
       assert_nil hash[:relevance]
     end
 
+    speed_profile :fast
     test "from_h reconstructs object correctly with symbol keys" do
       original = FileReference.new(
         path: "app/models/user.rb",
@@ -152,6 +164,7 @@ module Planning
       assert_equal original.created_in_step, reconstructed.created_in_step
     end
 
+    speed_profile :fast
     test "from_h reconstructs object correctly with string keys" do
       hash = {
         "path" => "app/models/user.rb",
@@ -166,6 +179,7 @@ module Planning
       assert_equal "Auth logic", reconstructed.relevance
     end
 
+    speed_profile :fast
     test "from_h validates input must be Hash" do
       error = assert_raises(ArgumentError) do
         FileReference.from_h("not a hash")
@@ -173,6 +187,7 @@ module Planning
       assert_match(/hash must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "existing? returns true for existing files" do
       ref = FileReference.new(
         path: "app/models/user.rb",
@@ -184,6 +199,7 @@ module Planning
       refute ref.planned?
     end
 
+    speed_profile :fast
     test "planned? returns true for planned files" do
       ref = FileReference.new(
         path: "app/services/payment_service.rb",
@@ -195,6 +211,7 @@ module Planning
       refute ref.existing?
     end
 
+    speed_profile :fast
     test "normalizes path by removing leading ./" do
       ref = FileReference.new(
         path: "./app/models/user.rb",
@@ -205,6 +222,7 @@ module Planning
       assert_equal "app/models/user.rb", ref.path
     end
 
+    speed_profile :fast
     test "normalizes path by trimming whitespace" do
       ref = FileReference.new(
         path: "  app/models/user.rb  ",
@@ -215,6 +233,7 @@ module Planning
       assert_equal "app/models/user.rb", ref.path
     end
 
+    speed_profile :fast
     test "serialization round-trip preserves data" do
       original = FileReference.new(
         path: "app/models/user.rb",

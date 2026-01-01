@@ -14,7 +14,7 @@ class ContextCompressionToolTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@sandbox)
   end
-
+  speed_profile :medium
   test "returns weighted summaries for all sections" do
     tool = ContextCompressionTool.new()
     result = tool.execute(path: @memory_path)

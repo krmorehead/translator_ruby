@@ -62,14 +62,49 @@ module Execution
 
         #{format_tools}
 
+        ## Example Tool Calls
+
+        ```json
+        {
+          "tool_sequence": [
+            {
+              "tool": "write_file",
+              "params": {
+                "path": "hello.rb",
+                "content": "#!/usr/bin/env ruby\\nputs 'Hello, World!'"
+              },
+              "rationale": "Create the hello.rb file with Ruby code to print Hello World"
+            },
+            {
+              "tool": "bash",
+              "params": {
+                "command": "chmod +x hello.rb"
+              },
+              "rationale": "Make the file executable"
+            },
+            {
+              "tool": "bash",
+              "params": {
+                "command": "ruby hello.rb"
+              },
+              "rationale": "Test that the script works and prints Hello World"
+            }
+          ],
+          "expected_outcome": "Created a working Ruby script that prints 'Hello, World!' when executed"
+        }
+        ```
+
         ## Response Format
 
         Return a JSON object with:
         - `tool_sequence`: Array of planned tool calls, each with:
-          - `tool`: Tool name
-          - `params`: Parameters for the tool (as an object)
-          - `rationale`: Why this tool call is needed
-        - `expected_outcome`: What you expect to achieve with this sequence
+          - `tool`: Tool name (string)
+          - `params`: Parameters object with the exact keys the tool expects
+          - `rationale`: Why this tool call is needed (string)
+        - `expected_outcome`: What you expect to achieve with this sequence (string)
+
+        **Important**: The `params` object must contain the exact parameter names each tool expects.
+        For example, write_file expects `path` and `content`, bash expects `command`.
       PROMPT
     end
 
@@ -127,7 +162,7 @@ module Execution
       message << ""
       message << "## Assembled Context"
       message << ""
-      message << format_context
+      message << format_assembled_context
       
       message << ""
       message << "## Your Task"
@@ -164,7 +199,7 @@ module Execution
       end
     end
 
-    def format_context
+    def format_assembled_context
       return "No context assembled." if @assembled_context.empty?
 
       parts = []

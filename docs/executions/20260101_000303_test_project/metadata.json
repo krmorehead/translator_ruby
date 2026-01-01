@@ -1,0 +1,12 @@
+{
+  "plan_id": "test_project",
+  "started_at": "2026-01-01T00:03:03Z",
+  "completed_at": null,
+  "duration": null,
+  "status": "complete",
+  "checkpoint_ids": [],
+  "total_steps": 1,
+  "completed_steps": 0,
+  "failed_steps": 1,
+  "total_files_changed": 0
+}

@@ -51,7 +51,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   # ============================================================================
   # Full Pipeline Tests - All use same LLM call
   # ============================================================================
-
+  speed_profile :slow
   test "shared: full planning flow produces valid output" do
     _worker, result = shared_execution
 
@@ -61,6 +61,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert_not_nil result[:project_plan_path]
   end
 
+  speed_profile :slow
   test "shared: output files are created" do
     _worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"
@@ -70,6 +71,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert File.exist?(result[:project_plan_path])
   end
 
+  speed_profile :slow
   test "shared: file_references.md has expected structure" do
     _worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"
@@ -82,6 +84,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert_includes content, "## Planned Files"
   end
 
+  speed_profile :slow
   test "shared: project_plan.md has correct milestone structure" do
     _worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"
@@ -93,6 +96,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert_match(/## Milestone \d+/, content)
   end
 
+  speed_profile :slow
   test "shared: milestones have steps" do
     _worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"
@@ -105,6 +109,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert steps.any?, "Milestone should have steps"
   end
 
+  speed_profile :slow
   test "shared: steps have required fields" do
     _worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"
@@ -126,6 +131,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert tests.any?, "Step should have tests"
   end
 
+  speed_profile :slow
   test "shared: existing_files are detected" do
     _worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"
@@ -139,6 +145,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert has_calculator, "Should include calculator.rb"
   end
 
+  speed_profile :slow
   test "shared: project directory follows naming convention" do
     _worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"
@@ -148,6 +155,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert_match(/\d{2}-\d{2}-\d{4}_calculator_logging/, project_dir)
   end
 
+  speed_profile :slow
   test "shared: metadata includes workflow results" do
     _worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"
@@ -156,6 +164,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert_equal :complete, result[:metadata][:final_state]
   end
 
+  speed_profile :slow
   test "shared: worker ends in complete state" do
     worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"
@@ -164,6 +173,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
     assert_equal :complete, worker.current_state
   end
 
+  speed_profile :slow
   test "shared: research summary is populated" do
     _worker, result = shared_execution
     assert result[:success], "Planning should succeed: #{result[:error]}"

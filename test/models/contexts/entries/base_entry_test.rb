@@ -5,6 +5,7 @@ require "test_helper"
 module Contexts
   module Entries
     class BaseEntryTest < ActiveSupport::TestCase
+      speed_profile :fast
       test "creates a valid base entry" do
         entry = BaseEntry.new(
           content: "Test content",
@@ -21,6 +22,7 @@ module Contexts
         assert_not_nil entry.timestamp
       end
 
+      speed_profile :fast
       test "normalizes topics to lowercase and strips whitespace" do
         entry = BaseEntry.new(
           content: "Test",
@@ -31,6 +33,7 @@ module Contexts
         assert_equal ["test", "example", "uppercase"], entry.topics
       end
 
+      speed_profile :fast
       test "removes empty topics" do
         entry = BaseEntry.new(
           content: "Test",
@@ -41,6 +44,7 @@ module Contexts
         assert_equal ["valid", "another"], entry.topics
       end
 
+      speed_profile :fast
       test "removes duplicate topics" do
         entry = BaseEntry.new(
           content: "Test",
@@ -51,6 +55,7 @@ module Contexts
         assert_equal ["test", "example"], entry.topics
       end
 
+      speed_profile :fast
       test "validates content is a String" do
         error = assert_raises(ArgumentError) do
           BaseEntry.new(content: 123, topics: [], source: "test")
@@ -58,6 +63,7 @@ module Contexts
         assert_match(/content must be a String/, error.message)
       end
 
+      speed_profile :fast
       test "validates topics is an Array" do
         error = assert_raises(ArgumentError) do
           BaseEntry.new(content: "Test", topics: "not-array", source: "test")
@@ -65,6 +71,7 @@ module Contexts
         assert_match(/topics must be an Array/, error.message)
       end
 
+      speed_profile :fast
       test "validates source is a String" do
         error = assert_raises(ArgumentError) do
           BaseEntry.new(content: "Test", topics: [], source: 123)
@@ -72,6 +79,7 @@ module Contexts
         assert_match(/source must be a String/, error.message)
       end
 
+      speed_profile :fast
       test "validates metadata is a Hash" do
         error = assert_raises(TypeError) do
           BaseEntry.new(content: "Test", topics: [], source: "test", metadata: "not-hash")
@@ -79,6 +87,7 @@ module Contexts
         assert_match(/metadata must be a Hash/, error.message)
       end
 
+      speed_profile :fast
       test "to_h serializes entry properly" do
         entry = BaseEntry.new(
           content: "Test content",
@@ -97,6 +106,7 @@ module Contexts
         assert_equal({ key: "value" }, hash[:metadata])
       end
 
+      speed_profile :fast
       test "from_h reconstructs entry from hash" do
         original = BaseEntry.new(
           content: "Original content",
@@ -116,6 +126,7 @@ module Contexts
         assert_equal original.metadata, reconstructed.metadata
       end
 
+      speed_profile :fast
       test "from_h validates hash structure" do
         error = assert_raises(TypeError) do
           BaseEntry.from_h("not a hash")

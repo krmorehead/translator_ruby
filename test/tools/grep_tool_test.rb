@@ -37,7 +37,7 @@ class GrepToolTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@test_path) if @test_path && File.exist?(@test_path)
   end
-
+  speed_profile :medium
   test "finds pattern in files" do
     result = @tool.execute(pattern: "Calculator", path: @test_path)
 
@@ -46,6 +46,7 @@ class GrepToolTest < ActiveSupport::TestCase
     assert result[:result][:files_matched] >= 2
   end
 
+  speed_profile :medium
   test "returns line numbers" do
     result = @tool.execute(pattern: "def add", path: @test_path)
 
@@ -55,6 +56,7 @@ class GrepToolTest < ActiveSupport::TestCase
     assert_equal 2, match[:line_number]
   end
 
+  speed_profile :medium
   test "respects max_results" do
     result = @tool.execute(pattern: "def", path: @test_path, max_results: 1)
 
@@ -63,6 +65,7 @@ class GrepToolTest < ActiveSupport::TestCase
     assert result[:result][:truncated]
   end
 
+  speed_profile :medium
   test "handles regex patterns" do
     result = @tool.execute(pattern: "def \\w+\\(", path: @test_path)
 
@@ -70,6 +73,7 @@ class GrepToolTest < ActiveSupport::TestCase
     assert result[:result][:match_count] >= 2
   end
 
+  speed_profile :medium
   test "case_insensitive option works" do
     result = @tool.execute(pattern: "CALCULATOR", path: @test_path, case_insensitive: true)
 
@@ -82,6 +86,7 @@ class GrepToolTest < ActiveSupport::TestCase
     assert_equal 0, result2[:result][:match_count]
   end
 
+  speed_profile :medium
   test "whole_word option works" do
     result = @tool.execute(pattern: "add", path: @test_path, whole_word: true)
 
@@ -89,6 +94,7 @@ class GrepToolTest < ActiveSupport::TestCase
     # Should match "def add" but not if "add" appears in other words
   end
 
+  speed_profile :medium
   test "filters by extension" do
     result = @tool.execute(pattern: "Calculator", path: @test_path, extensions: ["rb"])
 
@@ -99,6 +105,7 @@ class GrepToolTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :medium
   test "handles non-existent path" do
     result = @tool.execute(pattern: "test", path: File.join(@test_path, "nonexistent"))
 
@@ -106,6 +113,7 @@ class GrepToolTest < ActiveSupport::TestCase
     assert_includes result[:error], "not found"
   end
 
+  speed_profile :medium
   test "handles invalid regex" do
     result = @tool.execute(pattern: "[invalid", path: @test_path)
 
@@ -113,6 +121,7 @@ class GrepToolTest < ActiveSupport::TestCase
     assert_includes result[:error], "Invalid regex"
   end
 
+  speed_profile :medium
   test "includes context lines when requested" do
     result = @tool.execute(pattern: "def add", path: @test_path, context_lines: 2)
 
@@ -122,6 +131,7 @@ class GrepToolTest < ActiveSupport::TestCase
     assert_not_nil match[:context_after]
   end
 
+  speed_profile :medium
   test "schema returns valid OpenAI function format" do
     schema = GrepTool.schema
 
@@ -131,6 +141,7 @@ class GrepToolTest < ActiveSupport::TestCase
     assert schema[:function][:parameters][:properties].key?(:path)
   end
 
+  speed_profile :medium
   test "tool is registered with ToolCallService" do
     tools = ToolCallService.available_tools
     grep_tool = tools.find { |t| t[:function][:name] == "grep" }

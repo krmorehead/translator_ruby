@@ -143,14 +143,50 @@ class StepExecutionWorkflow < BaseWorkflow
       context: { step_number: @step.number }
     )
 
-    # TODO: Implement in Milestone 3 with ContextAssemblyPrompt
-    # For now, just record that we're in this phase
+    # Use ContextAssemblyPrompt to determine needed context
+    prompt = Execution::ContextAssemblyPrompt.new(
+      step: @step,
+      codebase_root: @path,
+      file_tree_summary: generate_file_tree_summary
+    )
+
+    # Build the user message
+    user_message = <<~MSG
+      I need to execute this step:
+
+      **Title**: #{@step.title}
+      **Intent**: #{@step.intent}
+
+      **Details**:
+      #{@step.details.map { |d| "- #{d}" }.join("\n")}
+
+      **Tests/Acceptance**:
+      #{@step.tests.map { |t| "- #{t}" }.join("\n")}
+
+      What codebase context do I need to gather to execute this step effectively?
+    MSG
+
+    result = prompt.execute(prompt: user_message, context: nil)
+
     @assembled_context = {
       step_intent: @step.intent,
       step_details: @step.details,
       step_tests: @step.tests,
-      codebase_path: @path
+      codebase_path: @path,
+      llm_context_needs: result[:content],
+      files_to_read: result[:content]["files_to_read"] || [],
+      patterns_to_search: result[:content]["patterns_to_search"] || [],
+      directories_to_explore: result[:content]["directories_to_explore"] || []
     }
+
+    record_decision(
+      decision: "context_assembled",
+      rationale: result[:content]["rationale"],
+      context: {
+        files_requested: @assembled_context[:files_to_read].size,
+        patterns_requested: @assembled_context[:patterns_to_search].size
+      }
+    )
   end
 
   # Phase 2: Plan Tool Sequence
@@ -162,9 +198,39 @@ class StepExecutionWorkflow < BaseWorkflow
       context: { assembled_context_keys: @assembled_context.keys }
     )
 
-    # TODO: Implement in Milestone 3 with StepPlanningPrompt
-    # For now, just record that we're in this phase
-    @planned_tools = []
+    # Get available tools
+    available_tools = get_available_tools
+
+    # Use StepPlanningPrompt for LLM-driven planning
+    prompt = Execution::StepPlanningPrompt.new(
+      step: @step,
+      available_tools: available_tools,
+      assembled_context: @assembled_context
+    )
+
+    # Use the prompt's built-in message builder
+    user_message = prompt.build_user_message
+
+    result = prompt.execute(prompt: user_message, context: nil)
+
+    @planned_tools = result[:content][:tool_sequence] || []
+    
+    # Debug logging
+    Rails.logger.info "[StepExecutionWorkflow] LLM Planning Result:"
+    Rails.logger.info "  Tool Sequence: #{@planned_tools.size} tools"
+    Rails.logger.info "  Expected Outcome: #{result[:content][:expected_outcome]}"
+    if @planned_tools.empty?
+      Rails.logger.warn "  ⚠️  LLM returned 0 tools! Full response: #{result[:content].inspect}"
+    end
+    
+    record_decision(
+      decision: "planning_complete",
+      rationale: result[:content]["expected_outcome"] || "Planning complete",
+      context: { 
+        planned_tool_count: @planned_tools.size,
+        expected_outcome: result[:content]["expected_outcome"]
+      }
+    )
   end
 
   # Phase 3: Validate Tools
@@ -176,9 +242,23 @@ class StepExecutionWorkflow < BaseWorkflow
       context: { tool_count: @planned_tools.size }
     )
 
-    # TODO: Implement in Milestone 3 with ToolValidationPrompt
-    # For now, just record that we're in this phase
-    @validation_results = []
+    # Use ToolValidationPrompt for each tool (or batch them)
+    @validation_results = @planned_tools.map do |tool_call|
+      validate_single_tool(tool_call)
+    end
+
+    warnings_count = @validation_results.count { |r| r["warnings"]&.any? }
+    errors_count = @validation_results.count { |r| r["errors"]&.any? }
+
+    record_decision(
+      decision: "validation_complete",
+      rationale: "Validated #{@validation_results.size} tools: #{warnings_count} warnings, #{errors_count} errors",
+      context: { 
+        validation_passed: @validation_results.count { |v| v["valid"] },
+        warnings: warnings_count,
+        errors: errors_count
+      }
+    )
   end
 
   # Phase 4: Execute Tools
@@ -190,10 +270,80 @@ class StepExecutionWorkflow < BaseWorkflow
       context: { validation_warnings: @validation_results.size }
     )
 
-    # TODO: Implement in Milestone 3 with StepExecutionPrompt and ToolCallService
-    # For now, just record that we're in this phase
+    # Initialize services
+    diff_service = DiffGenerationService.new
+
     @tool_executions = []
     @diffs = {}
+
+    # Execute each planned tool
+    @planned_tools.each_with_index do |tool_call, index|
+      tool_name = tool_call[:tool]
+      tool_params = tool_call[:params] || {}
+
+      begin
+        # For write_file, capture old content for diff
+        old_content = nil
+        if tool_name == "write_file"
+          file_path = tool_params[:path] || tool_params["path"]
+          full_path = File.join(@path, file_path)
+          old_content = File.exist?(full_path) ? File.read(full_path) : nil
+        end
+
+        # Add codebase_path to params for Sisyphus tools
+        enriched_params = tool_params.symbolize_keys.merge(codebase_path: @path)
+
+        # Execute the tool using Sisyphus-specific tools
+        result = execute_sisyphus_tool(tool_name, enriched_params)
+
+        @tool_executions << {
+          index: index,
+          tool: tool_name,
+          params: tool_params,
+          executed: true,
+          success: result[:success],
+          output: result[:content] || result[:error],
+          result: result
+        }
+
+        # Generate diff for file changes
+        if tool_name == "write_file" && result[:success]
+          file_path = tool_params[:path] || tool_params["path"]
+          new_content = tool_params[:content] || tool_params["content"]
+          
+          diff = diff_service.generate_diff(
+            file_path: file_path,
+            old_content: old_content,
+            new_content: new_content
+          )
+          
+          @diffs[file_path] = diff
+        end
+
+      rescue StandardError => e
+        Rails.logger.error "[StepExecutionWorkflow] Tool execution failed: #{e.message}"
+        Rails.logger.error e.backtrace.first(5).join("\n")
+        
+        @tool_executions << {
+          index: index,
+          tool: tool_name,
+          params: tool_params,
+          executed: true,
+          success: false,
+          output: e.message,
+          error: e.class.name
+        }
+      end
+    end
+
+    record_decision(
+      decision: "execution_complete",
+      rationale: "Executed #{@tool_executions.size} tools",
+      context: { 
+        executions_successful: @tool_executions.count { |e| e[:success] },
+        files_changed: @diffs.size
+      }
+    )
   end
 
   # Phase 5: Record Results
@@ -261,6 +411,104 @@ class StepExecutionWorkflow < BaseWorkflow
         final_state: current_state
       }
     }
+  end
+
+  # Generate a quick file tree summary for context
+  def generate_file_tree_summary
+    return nil unless File.directory?(@path)
+
+    # Get top-level directories
+    dirs = Dir.glob("#{@path}/*").select { |f| File.directory?(f) }
+                                 .map { |f| File.basename(f) }
+                                 .reject { |d| d.start_with?(".") || d == "node_modules" || d == "vendor" }
+                                 .first(20)
+
+    dirs.join(", ")
+  rescue StandardError
+    nil
+  end
+
+  # Get available tools for planning
+  def get_available_tools
+    [
+      {
+        name: "read_file",
+        description: "Read a file from the codebase",
+        parameters: {
+          path: "string - The path to the file to read"
+        }
+      },
+      {
+        name: "write_file",
+        description: "Write or update a file in the codebase",
+        parameters: {
+          path: "string - The path to the file to write",
+          content: "string - The content to write to the file"
+        }
+      },
+      {
+        name: "bash",
+        description: "Execute a bash command (tests, syntax checks, etc)",
+        parameters: {
+          command: "string - The bash command to execute"
+        }
+      },
+      {
+        name: "grep",
+        description: "Search for patterns in the codebase",
+        parameters: {
+          pattern: "string - The pattern to search for",
+          path: "string (optional) - Specific path to search in"
+        }
+      }
+    ]
+  end
+
+  # Validate a single tool call using ToolValidationPrompt
+  def validate_single_tool(tool_call)
+    prompt = Execution::ToolValidationPrompt.new(
+      tool_call: tool_call,
+      context: { codebase_path: @path, existing_files: [] }
+    )
+
+    user_message = <<~MSG
+      Validate this tool call:
+
+      **Tool**: #{tool_call["tool"]}
+      **Parameters**: #{tool_call["params"].inspect}
+      **Rationale**: #{tool_call["rationale"]}
+
+      Is this tool call valid and safe to execute?
+    MSG
+
+    result = prompt.execute(prompt: user_message, context: nil)
+    result[:content]
+  rescue StandardError => e
+    # If validation fails, mark as valid with warning
+    Rails.logger.warn "[StepExecutionWorkflow] Tool validation failed: #{e.message}"
+    {
+      "valid" => true,
+      "warnings" => ["Validation check failed: #{e.message}"],
+      "errors" => [],
+      "should_proceed" => true
+    }
+  end
+
+  # Execute a tool using Sisyphus-specific implementations
+  def execute_sisyphus_tool(tool_name, params)
+    tool_class = case tool_name
+    when "write_file"
+      Sisyphus::WriteFileTool
+    when "bash"
+      Sisyphus::BashTool
+    when "read_file"
+      Sisyphus::ReadFileTool
+    else
+      raise ArgumentError, "Unknown Sisyphus tool: #{tool_name}"
+    end
+
+    tool = tool_class.new
+    tool.execute(**params)
   end
 end
 

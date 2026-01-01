@@ -2,10 +2,21 @@
 description: When finishing a task or updating documentation
 alwaysApply: false
 ---
+
 [FINISH][!CLOSE] When finishing work on a feature, fix, or file change:
 
-[REVIEW][!CODE-QUALITY] Examine new code; ensure it follows good Python coding practices.
+[REVIEW][!CODE-QUALITY] Examine new code; ensure it follows good Ruby/Rails coding practices.
 
-[LINT][!CLEAN] Run the linter; ensure everything is clean.
+[LINT][!CLEAN] Run rubocop with auto-fix; ensure everything is clean.
 
-[TEST][!PASS] Run unit tests; ensure they pass after cleanup and linting.
+[TEST][!FAST] Run fast tests during development: ruby lib/test_runner.rb --speed fast
+
+[TEST][!ALL] Run all tests before finishing: ruby lib/test_runner.rb --speed all
+
+[TEST][!PASS] Ensure all tests pass after cleanup and linting.
+
+[TEST][!SPEED-PROFILE] Verify all new tests have appropriate speed_profile declarations (:fast, :medium, or :slow).
+
+[DOCS][!UPDATE] Update relevant documentation to reflect changes.
+
+[CLEAN][!TEMP] Remove any temporary files or debugging code.

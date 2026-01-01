@@ -6,7 +6,7 @@ class DndChatContextTest < ActiveSupport::TestCase
   def context
     @context ||= Contexts::DndChatContext.new
   end
-
+  speed_profile :fast
   test "initializes with standard sub-contexts" do
     assert context.has_sub_context?(:scene)
     assert context.has_sub_context?(:people)
@@ -15,10 +15,12 @@ class DndChatContextTest < ActiveSupport::TestCase
     assert context.has_sub_context?(:actions)
   end
 
+  speed_profile :fast
   test "scene returns CurrentSceneContext" do
     assert_kind_of Contexts::CurrentSceneContext, context.scene
   end
 
+  speed_profile :fast
   test "add_person adds to people sub-context" do
     context.add_person(name: "Gandalf", description: "A wise wizard")
 
@@ -26,6 +28,7 @@ class DndChatContextTest < ActiveSupport::TestCase
     assert context.people.entries.first.content.include?("Gandalf")
   end
 
+  speed_profile :fast
   test "add_quest adds to quests sub-context with status" do
     context.add_quest(
       title: "Find the Ring",
@@ -39,6 +42,7 @@ class DndChatContextTest < ActiveSupport::TestCase
     assert_equal "active", entry.metadata[:status]
   end
 
+  speed_profile :fast
   test "add_message adds to conversation sub-context" do
     context.add_message(speaker: "Player", message: "I attack the dragon!")
 
@@ -46,12 +50,14 @@ class DndChatContextTest < ActiveSupport::TestCase
     assert context.conversation.entries.first.content.include?("Player:")
   end
 
+  speed_profile :fast
   test "add_action adds to actions sub-context" do
     context.add_action(action_name: "attack", result: "Hit for 10 damage")
 
     assert_equal 1, context.actions.size
   end
 
+  speed_profile :fast
   test "format_for_action_detection includes scene and conversation" do
     context.scene.set_location(name: "Dark Cave", description: "A damp, dark cave")
     context.add_message(speaker: "DM", message: "You see a goblin")
@@ -62,6 +68,7 @@ class DndChatContextTest < ActiveSupport::TestCase
     assert formatted.include?("goblin")
   end
 
+  speed_profile :fast
   test "format_for_narrative includes completed actions" do
     context.scene.set_location(name: "Tavern", description: "A cozy tavern")
     context.add_action(action_name: "attack goblin", result: "Success!")
@@ -71,6 +78,7 @@ class DndChatContextTest < ActiveSupport::TestCase
     assert formatted.include?("attack goblin") || formatted.include?("Success")
   end
 
+  speed_profile :fast
   test "format_for_prompt with :action_detection format" do
     context.scene.set_location(name: "Forest", description: "Dense trees")
 
@@ -79,6 +87,7 @@ class DndChatContextTest < ActiveSupport::TestCase
     assert formatted.include?("Forest") || formatted.include?("trees")
   end
 
+  speed_profile :fast
   test "format_for_prompt with :narrative format" do
     context.scene.set_location(name: "Castle", description: "Grand hall")
 
@@ -87,6 +96,7 @@ class DndChatContextTest < ActiveSupport::TestCase
     assert formatted.is_a?(String)
   end
 
+  speed_profile :fast
   test "serializes and deserializes correctly" do
     context.add_person(name: "Frodo", description: "A hobbit")
     context.add_quest(title: "Destroy Ring", description: "Mount Doom", status: "active")
@@ -99,6 +109,7 @@ class DndChatContextTest < ActiveSupport::TestCase
     assert_equal context.quests.size, restored.quests.size
   end
 
+  speed_profile :fast
   test "condense works on DndChatContext" do
     10.times { |i| context.add_person(name: "NPC#{i}", description: "Character #{i}") }
 

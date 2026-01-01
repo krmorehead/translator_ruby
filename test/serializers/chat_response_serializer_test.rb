@@ -32,7 +32,7 @@ class ChatResponseSerializerTest < ActiveSupport::TestCase
 
     def execute; end
   end
-
+  speed_profile :fast
   test "serializes successful workflow with reply and conversation" do
     convo = FakeConversation.new([ { text: "hi" } ])
     result = { narrative: "Story", conversation: convo }
@@ -47,6 +47,7 @@ class ChatResponseSerializerTest < ActiveSupport::TestCase
     assert_nil payload[:error]
   end
 
+  speed_profile :fast
   test "serializes failed workflow with fallback reply" do
     workflow = StubWorkflow.new(result: nil, state: :failed, error: "boom")
 
@@ -58,6 +59,7 @@ class ChatResponseSerializerTest < ActiveSupport::TestCase
     assert payload[:reply].include?("couldn't complete")
   end
 
+  speed_profile :fast
   test "serialize_json returns JSON string" do
     workflow = StubWorkflow.new(result: { narrative: "ok" }, state: :complete)
 

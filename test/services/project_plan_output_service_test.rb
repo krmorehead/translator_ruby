@@ -11,7 +11,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(@temp_dir) if File.exist?(@temp_dir)
   end
-
+  speed_profile :fast
   test "creates project directory with date prefix" do
     service = ProjectPlanOutputService.new(
       project_name: "test_project",
@@ -27,6 +27,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
     assert_match(/\d{2}-\d{2}-\d{4}_test_project/, service.project_directory)
   end
 
+  speed_profile :fast
   test "slugifies project name correctly" do
     service = ProjectPlanOutputService.new(
       project_name: "User Authentication Feature!",
@@ -36,6 +37,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
     assert_match(/_user_authentication_feature$/, service.project_directory)
   end
 
+  speed_profile :fast
   test "writes file_references.md to correct location" do
     service = ProjectPlanOutputService.new(
       project_name: "test_project",
@@ -52,6 +54,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
     assert_equal content, File.read(paths[:file_references_path])
   end
 
+  speed_profile :fast
   test "writes project_plan.md to correct location" do
     service = ProjectPlanOutputService.new(
       project_name: "test_project",
@@ -68,6 +71,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
     assert_equal content, File.read(paths[:project_plan_path])
   end
 
+  speed_profile :fast
   test "returns correct paths" do
     service = ProjectPlanOutputService.new(
       project_name: "my_project",
@@ -86,6 +90,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
     assert paths[:project_plan_path].end_with?("project_plan.md")
   end
 
+  speed_profile :fast
   test "handles special characters in project name" do
     service = ProjectPlanOutputService.new(
       project_name: "Project #1: The @Beginning!",
@@ -102,6 +107,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
     refute_match(/[#@!:]/, File.basename(paths[:project_path]))
   end
 
+  speed_profile :fast
   test "uses custom output_base when provided" do
     custom_output = File.join(@temp_dir, "custom", "output")
     service = ProjectPlanOutputService.new(
@@ -118,6 +124,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
     assert paths[:project_path].start_with?(custom_output)
   end
 
+  speed_profile :fast
   test "default output_base is docs/projects" do
     service = ProjectPlanOutputService.new(
       project_name: "test_project",

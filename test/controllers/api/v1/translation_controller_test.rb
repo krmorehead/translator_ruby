@@ -1,6 +1,7 @@
 require "test_helper"
 
 class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
+  speed_profile :fast
   test "should return error for missing doc_to_translate" do
     post "/api/v1/translate"
 
@@ -9,6 +10,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_equal "doc_to_translate is required", result["error"]
   end
 
+  speed_profile :fast
   test "should accept valid JSON document parameter" do
     post "/api/v1/translate",
       params: {
@@ -20,6 +22,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal 400, response.status
   end
 
+  speed_profile :fast
   test "should accept valid YAML document parameter" do
     post "/api/v1/translate",
       params: {
@@ -31,6 +34,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal 400, response.status
   end
 
+  speed_profile :fast
   test "should default to JSON export format when not specified" do
     post "/api/v1/translate",
       params: { doc_to_translate: '{"test": "value"}' }
@@ -39,6 +43,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal 400, response.status
   end
 
+  speed_profile :fast
   test "should handle invalid JSON format" do
     # Test JSON format validation by submitting malformed JSON
     # The service will try JSON first and fail, then try YAML and fail
@@ -54,6 +59,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_includes [ "Invalid JSON format", "Invalid YAML format" ], result["error"]
   end
 
+  speed_profile :fast
   test "should handle invalid YAML format" do
     post "/api/v1/translate",
       params: {
@@ -66,6 +72,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Invalid YAML format", result["error"]
   end
 
+  speed_profile :fast
   test "should handle invalid export format through service validation" do
     post "/api/v1/translate",
       params: {
@@ -78,6 +85,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_equal "export_format must be JSON or YAML", result["error"]
   end
 
+  speed_profile :fast
   test "should handle JSON content type header" do
     post "/api/v1/translate",
       params: {
@@ -90,6 +98,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal 400, response.status
   end
 
+  speed_profile :fast
   test "should handle YAML content type header" do
     # Rails test integration has issues with non-standard content types
     # Test that our service can handle YAML format detection
@@ -103,6 +112,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal 400, response.status, "Parameter validation failed: #{response.body}"
   end
 
+  speed_profile :fast
   test "should respond within reasonable time" do
     start_time = Time.current
     post "/api/v1/translate",
@@ -117,6 +127,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
   end
 
   # E2E test with translation_hash and custom context
+  speed_profile :fast
   test "should handle translation_hash with custom context and formality" do
     doc = {
       "greeting" => "Hello world",
@@ -164,6 +175,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_match(/hasta|nos vemos|pronto/i, result["nested"]["custom"])
   end
 
+  speed_profile :fast
   test "should handle pluralization patterns through API" do
     doc = {
       "messages" => {
@@ -199,6 +211,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_match(/mensaje|tiene/i, result["notifications"])
   end
 
+  speed_profile :fast
   test "should handle mixed translation modes through API" do
     doc = {
       "standard" => "Good morning",
@@ -236,6 +249,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
   end
 
   # Tests for the new translate_text endpoint
+  speed_profile :fast
   test "should translate single text with required parameters only" do
     post "/api/v1/translate_text",
       params: { text: "Hello world", target_lang: "es" }
@@ -248,6 +262,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_match(/hola|mundo/i, result["translation"])
   end
 
+  speed_profile :fast
   test "should require text parameter" do
     post "/api/v1/translate_text",
       params: { target_lang: "es" }
@@ -257,6 +272,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_equal "text is required", result["error"]
   end
 
+  speed_profile :fast
   test "should require target_lang parameter" do
     post "/api/v1/translate_text",
       params: { text: "Hello world" }
@@ -266,6 +282,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_equal "target_lang is required", result["error"]
   end
 
+  speed_profile :fast
   test "should handle all optional parameters" do
     post "/api/v1/translate_text",
       params: {
@@ -284,6 +301,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_match(/gracias|agradec/i, result["translation"])
   end
 
+  speed_profile :fast
   test "should handle less formal translations" do
     post "/api/v1/translate_text",
       params: {
@@ -299,6 +317,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_not_empty result["translation"]
   end
 
+  speed_profile :fast
   test "should preserve variables in single text translation" do
     post "/api/v1/translate_text",
       params: {
@@ -313,6 +332,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal "Hello {user_name}, welcome back", result["translation"]
   end
 
+  speed_profile :fast
   test "should handle different target languages for single text" do
     # Test French
     post "/api/v1/translate_text",
@@ -331,6 +351,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_not_equal "Good morning", result["translation"]
   end
 
+  speed_profile :fast
   test "should handle context parameter for single text" do
     post "/api/v1/translate_text",
       params: {
@@ -346,6 +367,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_not_empty result["translation"]
   end
 
+  speed_profile :fast
   test "should handle empty string gracefully" do
     post "/api/v1/translate_text",
       params: { text: "", target_lang: "es" }
@@ -355,6 +377,7 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
     assert_equal "text is required", result["error"]
   end
 
+  speed_profile :fast
   test "should translate with source language specified" do
     post "/api/v1/translate_text",
       params: {

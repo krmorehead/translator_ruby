@@ -18,7 +18,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
   end
-
+  speed_profile :slow
   test "decomposes broad goal into sub-goals" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "Explain the entire architecture of a web application",
@@ -33,6 +33,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     assert workflow.result[:leaf_count] >= 1, "Should have at least one leaf"
   end
 
+  speed_profile :slow
   test "recognizes leaf goals and stops decomposing" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "What is the return type of the add method?",
@@ -48,6 +49,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     assert leaves.any?, "Should have leaf goals"
   end
 
+  speed_profile :slow
   test "respects max_depth limit" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "Explain everything about this complex system",
@@ -62,6 +64,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     assert max_depth <= 1, "Should not exceed max_depth of 1"
   end
 
+  speed_profile :slow
   test "returns structured tree with leaf markers" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "How does authentication work?",
@@ -79,6 +82,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     assert_not_nil tree[:is_leaf], "Should have is_leaf marker"
   end
 
+  speed_profile :slow
   test "handles already-specific goals" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "What line number is the divide method defined on?",
@@ -92,6 +96,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     # Should complete quickly with minimal decomposition
   end
 
+  speed_profile :slow
   test "leaf_goals returns all leaves" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "Explain the calculator class",
@@ -109,6 +114,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :slow
   test "accepts context parameter" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "Analyze the payment system",
@@ -120,6 +126,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     assert_equal full_context, workflow.context
   end
 
+  speed_profile :slow
   test "context defaults to empty hash" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "Simple goal",
@@ -129,6 +136,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     assert_equal({}, workflow.context)
   end
 
+  speed_profile :slow
   test "result includes seed_context_used flag" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "Goal with context",

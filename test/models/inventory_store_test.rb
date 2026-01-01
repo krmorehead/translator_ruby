@@ -14,12 +14,13 @@ class InventoryStoreTest < ActiveSupport::TestCase
   def new_store
     InventoryStore.new(path: @path)
   end
-
+  speed_profile :fast
   test "load empty when file missing" do
     store = new_store
     assert_equal [], store.all_items
   end
 
+  speed_profile :fast
   test "serialize and deserialize round-trip" do
     store = new_store
     item = InventoryItem.new(name: "Rope", weight: 10, description: "50ft hemp", property_type: "gear", quantity: 1)
@@ -36,6 +37,7 @@ class InventoryStoreTest < ActiveSupport::TestCase
     assert_equal item.quantity, loaded_item.quantity
   end
 
+  speed_profile :fast
   test "add then update quantity" do
     store = new_store
     store.add_or_update_item(InventoryItem.new(name: "Arrow", weight: 0.1, description: "Ammo", property_type: "ammo", quantity: 5))
@@ -45,6 +47,7 @@ class InventoryStoreTest < ActiveSupport::TestCase
     assert_equal 8, item.quantity
   end
 
+  speed_profile :fast
   test "remove item" do
     store = new_store
     store.add_or_update_item(InventoryItem.new(name: "Potion", weight: 0.5, description: "Healing", property_type: "consumable", quantity: 2))
@@ -54,6 +57,7 @@ class InventoryStoreTest < ActiveSupport::TestCase
     assert_equal [], store.all_items
   end
 
+  speed_profile :fast
   test "reject negative quantities" do
     store = new_store
     assert_raises(ArgumentError) do

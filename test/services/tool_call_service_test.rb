@@ -8,7 +8,7 @@ class ToolCallServiceTest < ActiveSupport::TestCase
       # Some tools may already be loaded; ignore
     end
   end
-
+  speed_profile :fast
   test "available_tools returns array of tool schemas" do
     tools = ToolCallService.available_tools
 
@@ -16,6 +16,7 @@ class ToolCallServiceTest < ActiveSupport::TestCase
     assert_includes tools.map { |t| t[:function][:name] }, DiceRollTool::NAME
   end
 
+  speed_profile :fast
   test "execute dispatches to dice_roll_tool" do
     service = ToolCallService.new
 
@@ -28,6 +29,7 @@ class ToolCallServiceTest < ActiveSupport::TestCase
     assert result[:result][:total].is_a?(Integer)
   end
 
+  speed_profile :fast
   test "execute raises ArgumentError for unknown tool" do
     service = ToolCallService.new
 
@@ -36,6 +38,7 @@ class ToolCallServiceTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "execute handles string keys in arguments" do
     service = ToolCallService.new
 
@@ -45,18 +48,21 @@ class ToolCallServiceTest < ActiveSupport::TestCase
     assert result[:result][:total].is_a?(Integer)
   end
 
+  speed_profile :fast
   test "tool_class_for returns correct class" do
     tool_class = ToolCallService.tool_class_for(DiceRollTool::NAME)
 
     assert_equal DiceRollTool, tool_class
   end
 
+  speed_profile :fast
   test "tool_class_for returns nil for unknown tool" do
     tool_class = ToolCallService.tool_class_for("unknown")
 
     assert_nil tool_class
   end
 
+  speed_profile :fast
   test "available_tools includes new DnD tools" do
     names = ToolCallService.available_tools.map { |t| t[:function][:name] }
     [

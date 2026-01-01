@@ -101,7 +101,7 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     args = filter_args_for(tool_name, parsed["arguments"] || {})
     ToolCallService.new().execute(tool_name: tool_name, arguments: args)
   end
-
+  speed_profile :slow
   test "LLM selects dice_roll for advantage request" do
     parsed = parsed_tool_response("Roll a d20 with advantage and add +3. Use the dice_roll tool.")
     assert_equal DiceRollTool::NAME, parsed["tool"]
@@ -109,6 +109,7 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     assert_equal true, result[:success]
   end
 
+  speed_profile :slow
   test "LLM can add and list inventory" do
     prompt = "Add a healing potion weighing 0.5 with quantity 2 using the inventory tool. Then list the inventory."
     parsed = parsed_tool_response(prompt)
@@ -134,6 +135,7 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     assert_equal 2, item["quantity"]
   end
 
+  speed_profile :slow
   test "LLM updates memory and summarizes quests" do
     prompt_update = "Record that we accepted the quest to rescue the merchant's son using the memory tool."
     parsed1 = parsed_tool_response(prompt_update)

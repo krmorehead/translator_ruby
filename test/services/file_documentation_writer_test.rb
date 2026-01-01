@@ -16,7 +16,7 @@ class FileDocumentationWriterTest < ActiveSupport::TestCase
     FileUtils.rm_rf(@output_dir) if @output_dir && File.exist?(@output_dir)
     FileUtils.rm_rf(@source_dir) if @source_dir && File.exist?(@source_dir)
   end
-
+  speed_profile :fast
   test "writes file documentation" do
     analysis = {
       file_path: "#{@source_dir}/lib/calculator.rb",
@@ -36,6 +36,7 @@ class FileDocumentationWriterTest < ActiveSupport::TestCase
     assert_includes content, "Calculator for math operations"
   end
 
+  speed_profile :fast
   test "creates directory structure" do
     analysis = {
       file_path: "#{@source_dir}/app/services/math_service.rb",
@@ -50,6 +51,7 @@ class FileDocumentationWriterTest < ActiveSupport::TestCase
     assert_includes path, "app/services/math_service.md"
   end
 
+  speed_profile :fast
   test "writes base_references for directory" do
     files = [
       { path: "lib/calculator.rb", description: "Math operations" },
@@ -65,6 +67,7 @@ class FileDocumentationWriterTest < ActiveSupport::TestCase
     assert_includes content, "# Math operations"
   end
 
+  speed_profile :fast
   test "writes synthesis summary" do
     synthesis = {
       research_goal: "How does the calculator work?",
@@ -81,6 +84,7 @@ class FileDocumentationWriterTest < ActiveSupport::TestCase
     assert_includes content, "How does the calculator work?"
   end
 
+  speed_profile :fast
   test "generates all base_references" do
     # Document some files first
     %w[lib/a.rb lib/b.rb app/c.rb].each do |rel_path|
@@ -100,6 +104,7 @@ class FileDocumentationWriterTest < ActiveSupport::TestCase
     assert paths.any? { |p| p.include?("app/base_references.md") }
   end
 
+  speed_profile :fast
   test "tracks documented files" do
     analysis = {
       file_path: "#{@source_dir}/lib/test.rb",

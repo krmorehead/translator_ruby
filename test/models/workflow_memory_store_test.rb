@@ -26,7 +26,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
   end
-
+  speed_profile :fast
   test "requires owner_id" do
     assert_raises(ArgumentError) do
       WorkflowMemoryStore.new(
@@ -37,6 +37,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "requires workflow_id" do
     assert_raises(ArgumentError) do
       WorkflowMemoryStore.new(
@@ -47,6 +48,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "initializes with default sections" do
     assert_equal [], store.get_section(:state_transitions)
     assert_equal [], store.get_section(:workflow_context)
@@ -55,6 +57,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert_equal [], store.get_section(:outputs)
   end
 
+  speed_profile :fast
   test "records state transitions" do
     entry = store.record_state_transition(
       from: :pending,
@@ -70,6 +73,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert entry[:timestamp].present?
   end
 
+  speed_profile :fast
   test "state_history returns all transitions" do
     store.record_state_transition(from: :pending, to: :running, event: :start)
     store.record_state_transition(from: :running, to: :complete, event: :finish)
@@ -80,6 +84,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert_equal :complete, history.last[:to]
   end
 
+  speed_profile :fast
   test "current_state reflects latest transition" do
     assert_equal :pending, store.current_state
 
@@ -90,6 +95,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert_equal :complete, store.current_state
   end
 
+  speed_profile :fast
   test "records decisions" do
     entry = store.record_decision(
       decision: "Use parallel analysis",
@@ -102,6 +108,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert_equal({ file_count: 10 }, entry[:context])
   end
 
+  speed_profile :fast
   test "records errors" do
     error = StandardError.new("Test error")
     entry = store.record_error(error, state: :running)
@@ -111,6 +118,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert_equal :running, entry[:state]
   end
 
+  speed_profile :fast
   test "records outputs" do
     entry = store.record_output({ findings: ["A", "B"], success: true })
 
@@ -118,6 +126,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert entry[:success]
   end
 
+  speed_profile :fast
   test "summarize returns workflow metadata" do
     store.record_state_transition(from: :pending, to: :running, event: :start)
     store.record_decision(decision: "test", rationale: "test")
@@ -131,6 +140,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert_equal 0, summary[:error_count]
   end
 
+  speed_profile :fast
   test "to_h serializes all data" do
     store.record_state_transition(from: :pending, to: :running, event: :start)
 
@@ -140,6 +150,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert hash[:sections][:state_transitions].any?
   end
 
+  speed_profile :fast
   test "persists and reloads state" do
     store.record_state_transition(from: :pending, to: :running, event: :start)
     store.record_decision(decision: "test", rationale: "rationale")
@@ -168,11 +179,13 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "query_parent returns empty hash without parent" do
     result = store.query_parent(:research_goal, :findings)
     assert_equal({}, result)
   end
 
+  speed_profile :fast
   test "query_parent retrieves sections from parent" do
     parent = MockParentMemory.new(
       research_goal: [{ text: "Test Goal" }],
@@ -192,6 +205,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert_equal [{ text: "Finding 1" }], result[:findings]
   end
 
+  speed_profile :fast
   test "query_parent_context gets compressed context" do
     parent = MockParentMemory.new(
       research_goal: [{ text: "Main Goal" }],
@@ -231,6 +245,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "merge_to_parent copies outputs to parent workflow_outputs section" do
     parent = MockUpdatableParent.new
 
@@ -253,6 +268,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
   end
 
   # Isolation tests
+  speed_profile :fast
   test "multiple workflow stores are isolated" do
     store1 = WorkflowMemoryStore.new(
       owner_id: owner_id,

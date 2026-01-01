@@ -28,7 +28,7 @@ module Execution
     end
 
     # ===== Initialization Tests =====
-
+    speed_profile :fast
     test "initializes with required parameters" do
       change_set = ChangeSet.new(files: @files)
 
@@ -37,6 +37,7 @@ module Execution
       assert_not_nil change_set.created_at
     end
 
+    speed_profile :fast
     test "initializes with optional parameters" do
       change_set = ChangeSet.new(
         files: @files,
@@ -54,6 +55,7 @@ module Execution
       assert_equal "Created user model", change_set.summary
     end
 
+    speed_profile :fast
     test "sets created_at to current time if not provided" do
       change_set = ChangeSet.new(files: @files)
 
@@ -63,6 +65,7 @@ module Execution
 
     # ===== Validation Tests =====
 
+    speed_profile :fast
     test "validates files is a Hash" do
       error = assert_raises(ArgumentError) do
         ChangeSet.new(files: [])
@@ -71,6 +74,7 @@ module Execution
       assert_match(/files must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "validates checkpoint_id is a String or nil" do
       error = assert_raises(ArgumentError) do
         ChangeSet.new(files: @files, checkpoint_id: 123)
@@ -79,6 +83,7 @@ module Execution
       assert_match(/checkpoint_id must be a String or nil/, error.message)
     end
 
+    speed_profile :fast
     test "validates checkpoint_id is not empty" do
       error = assert_raises(ArgumentError) do
         ChangeSet.new(files: @files, checkpoint_id: "  ")
@@ -87,6 +92,7 @@ module Execution
       assert_match(/checkpoint_id cannot be empty/, error.message)
     end
 
+    speed_profile :fast
     test "validates file paths are Strings" do
       invalid_files = {
         123 => { change_type: :created, diff: "+content" }
@@ -99,6 +105,7 @@ module Execution
       assert_match(/all file paths must be Strings/, error.message)
     end
 
+    speed_profile :fast
     test "validates file details are Hashes" do
       invalid_files = {
         "file.rb" => "not a hash"
@@ -111,6 +118,7 @@ module Execution
       assert_match(/all file details must be Hashes/, error.message)
     end
 
+    speed_profile :fast
     test "validates file details include change_type" do
       invalid_files = {
         "file.rb" => { diff: "+content" }
@@ -123,6 +131,7 @@ module Execution
       assert_match(/must include :change_type/, error.message)
     end
 
+    speed_profile :fast
     test "validates change_type is valid" do
       invalid_files = {
         "file.rb" => { change_type: :invalid, diff: "+content" }
@@ -136,6 +145,7 @@ module Execution
       assert_match(/created, modified, deleted/, error.message)
     end
 
+    speed_profile :fast
     test "validates file details include diff" do
       invalid_files = {
         "file.rb" => { change_type: :created }
@@ -148,6 +158,7 @@ module Execution
       assert_match(/must include :diff/, error.message)
     end
 
+    speed_profile :fast
     test "validates diff is a String" do
       invalid_files = {
         "file.rb" => { change_type: :created, diff: 123 }
@@ -160,6 +171,7 @@ module Execution
       assert_match(/diff .* must be a String/, error.message)
     end
 
+    speed_profile :fast
     test "validates before_hash is String or nil" do
       invalid_files = {
         "file.rb" => {
@@ -176,6 +188,7 @@ module Execution
       assert_match(/before_hash .* must be a String or nil/, error.message)
     end
 
+    speed_profile :fast
     test "validates after_hash is String or nil" do
       invalid_files = {
         "file.rb" => {
@@ -194,24 +207,28 @@ module Execution
 
     # ===== Count Methods Tests =====
 
+    speed_profile :fast
     test "file_count returns total number of files" do
       change_set = ChangeSet.new(files: @files)
 
       assert_equal 3, change_set.file_count
     end
 
+    speed_profile :fast
     test "modifications_count returns count of modified files" do
       change_set = ChangeSet.new(files: @files)
 
       assert_equal 1, change_set.modifications_count
     end
 
+    speed_profile :fast
     test "additions_count returns count of created files" do
       change_set = ChangeSet.new(files: @files)
 
       assert_equal 1, change_set.additions_count
     end
 
+    speed_profile :fast
     test "deletions_count returns count of deleted files" do
       change_set = ChangeSet.new(files: @files)
 
@@ -220,6 +237,7 @@ module Execution
 
     # ===== Query Methods Tests =====
 
+    speed_profile :fast
     test "changed_files returns array of file paths" do
       change_set = ChangeSet.new(files: @files)
 
@@ -231,6 +249,7 @@ module Execution
       assert_includes files, "app/models/old.rb"
     end
 
+    speed_profile :fast
     test "changes_by_type filters by created" do
       change_set = ChangeSet.new(files: @files)
 
@@ -240,6 +259,7 @@ module Execution
       assert_includes created.keys, "app/models/user.rb"
     end
 
+    speed_profile :fast
     test "changes_by_type filters by modified" do
       change_set = ChangeSet.new(files: @files)
 
@@ -249,6 +269,7 @@ module Execution
       assert_includes modified.keys, "app/models/post.rb"
     end
 
+    speed_profile :fast
     test "changes_by_type filters by deleted" do
       change_set = ChangeSet.new(files: @files)
 
@@ -258,6 +279,7 @@ module Execution
       assert_includes deleted.keys, "app/models/old.rb"
     end
 
+    speed_profile :fast
     test "changes_by_type validates type" do
       change_set = ChangeSet.new(files: @files)
 
@@ -268,6 +290,7 @@ module Execution
       assert_match(/Invalid change type/, error.message)
     end
 
+    speed_profile :fast
     test "full_diff generates unified diff" do
       change_set = ChangeSet.new(files: @files)
 
@@ -281,6 +304,7 @@ module Execution
       assert_includes diff, "-class Old"
     end
 
+    speed_profile :fast
     test "file_details returns details for specific file" do
       change_set = ChangeSet.new(files: @files)
 
@@ -292,30 +316,35 @@ module Execution
       assert_equal "abc123", details[:after_hash]
     end
 
+    speed_profile :fast
     test "file_details returns nil for non-existent file" do
       change_set = ChangeSet.new(files: @files)
 
       assert_nil change_set.file_details("nonexistent.rb")
     end
 
+    speed_profile :fast
     test "file_changed? returns true for changed file" do
       change_set = ChangeSet.new(files: @files)
 
       assert change_set.file_changed?("app/models/user.rb")
     end
 
+    speed_profile :fast
     test "file_changed? returns false for non-existent file" do
       change_set = ChangeSet.new(files: @files)
 
       refute change_set.file_changed?("nonexistent.rb")
     end
 
+    speed_profile :fast
     test "any_changes? returns true when files present" do
       change_set = ChangeSet.new(files: @files)
 
       assert change_set.any_changes?
     end
 
+    speed_profile :fast
     test "any_changes? returns false when no files" do
       change_set = ChangeSet.new(files: {})
 
@@ -324,6 +353,7 @@ module Execution
 
     # ===== Serialization Tests =====
 
+    speed_profile :fast
     test "to_h serializes all attributes" do
       change_set = ChangeSet.new(
         files: @files,
@@ -344,6 +374,7 @@ module Execution
       assert_equal "Test changes", hash[:summary]
     end
 
+    speed_profile :fast
     test "from_h reconstructs ChangeSet" do
       hash = {
         files: @files,
@@ -364,6 +395,7 @@ module Execution
       assert_equal "Test changes", change_set.summary
     end
 
+    speed_profile :fast
     test "from_h handles string keys" do
       hash = {
         "files" => @files,
@@ -376,6 +408,7 @@ module Execution
       assert_equal "commit_abc", change_set.checkpoint_id
     end
 
+    speed_profile :fast
     test "from_h validates hash parameter" do
       error = assert_raises(ArgumentError) do
         ChangeSet.from_h("not a hash")
@@ -384,6 +417,7 @@ module Execution
       assert_match(/hash must be a Hash/, error.message)
     end
 
+    speed_profile :fast
     test "serialization round-trip preserves data" do
       original = ChangeSet.new(
         files: @files,

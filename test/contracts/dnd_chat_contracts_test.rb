@@ -3,7 +3,8 @@
 require "test_helper"
 
 class DndChatContractsTest < ActiveSupport::TestCase
-  def test_message_contract_includes_expected_paths_and_schemas
+  speed_profile :fast
+  test "message contract includes expected paths and schemas" do
     contract = YAML.load_file(Rails.root.join("docs/api/contracts/dnd_chat_messages.yml"))
 
     assert_equal "3.1.0", contract["openapi"]
@@ -17,7 +18,8 @@ class DndChatContractsTest < ActiveSupport::TestCase
     end
   end
 
-  def test_agent_contract_includes_version_endpoint
+  speed_profile :fast
+  test "agent contract includes version endpoint" do
     contract = YAML.load_file(Rails.root.join("docs/api/contracts/dnd_chat_agent.yml"))
 
     paths = contract.fetch("paths")
@@ -32,3 +34,4 @@ class DndChatContractsTest < ActiveSupport::TestCase
     end
   end
 end
+

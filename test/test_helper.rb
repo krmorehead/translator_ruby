@@ -27,6 +27,9 @@ module ActiveSupport
     # Include FactoryBot methods
     include FactoryBot::Syntax::Methods
 
+    # Include SpeedProfile module for test speed enforcement
+    include SpeedProfile unless ENV["SKIP_SPEED_PROFILE_VALIDATION"] == "true"
+
     # Clean up test agent data after each test
     teardown do
       cleanup_test_agent_data

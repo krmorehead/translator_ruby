@@ -28,32 +28,37 @@ class LeafSynthesisPromptTest < ActiveSupport::TestCase
   # ============================================================================
   # Shared Result Tests - Use one LLM call
   # ============================================================================
-
+  speed_profile :medium
   test "shared: returns content" do
     result = shared_synthesis
     assert result[:content], "Should return content"
   end
 
+  speed_profile :medium
   test "shared: has summary" do
     result = shared_synthesis
     assert result[:content][:summary], "Should have a summary"
   end
 
+  speed_profile :medium
   test "shared: has key_findings array" do
     result = shared_synthesis
     assert result[:content][:key_findings].is_a?(Array), "Should have key_findings array"
   end
 
+  speed_profile :medium
   test "shared: has numeric confidence" do
     result = shared_synthesis
     assert result[:content][:confidence].is_a?(Numeric), "Should have numeric confidence"
   end
 
+  speed_profile :medium
   test "shared: has gaps array" do
     result = shared_synthesis
     assert result[:content][:gaps].is_a?(Array), "Should have gaps array"
   end
 
+  speed_profile :medium
   test "shared: key_findings is non-empty" do
     result = shared_synthesis
     assert result[:content][:key_findings].any?, "Should have key findings"
@@ -63,6 +68,7 @@ class LeafSynthesisPromptTest < ActiveSupport::TestCase
   # Edge Case Test - Minimal LLM call
   # ============================================================================
 
+  speed_profile :fast
   test "handles empty findings gracefully" do
     result = prompt.synthesize_leaf(
       sub_question: "What does empty code do?",
