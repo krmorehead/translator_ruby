@@ -46,6 +46,7 @@ module ActiveSupport
           sisyphus_memory.json
           workflow_memory.json
           research_memory.json
+          **/workflows/**/*.json
           **/state/*.json
         GITIGNORE
         
