@@ -32,14 +32,10 @@ class CheckpointTracker
   def current_id(path:, message: nil, milestone_id: nil, worker_id: nil)
     @mutex.synchronize do
       service = checkpoint_service_for(path)
+      checkpoint = @checkpoints_by_path[path]
 
-      # If nothing changed, use current HEAD as checkpoint
-      unless codebase_changed?(service)
-        head_id = service.current_commit_id
-        checkpoint = service.get_checkpoint(head_id)
-        @checkpoints_by_path[path] = checkpoint
-        return checkpoint.id
-      end
+      # If nothing changed, return current checkpoint
+      return checkpoint.id unless codebase_changed?(service)
 
       # Codebase has changed - create new checkpoint
       checkpoint = create_checkpoint(service, message, milestone_id, worker_id)
@@ -99,7 +95,13 @@ class CheckpointTracker
   private
 
   def checkpoint_service_for(path)
-    @checkpoint_services[path] ||= CheckpointService.new(path: path)
+    @checkpoint_services[path] ||= begin
+      service = CheckpointService.new(path: path)
+      # Initialize checkpoint to HEAD when service is created
+      head_id = service.current_commit_id
+      @checkpoints_by_path[path] = service.get_checkpoint(head_id)
+      service
+    end
   end
 
   def codebase_changed?(service)
