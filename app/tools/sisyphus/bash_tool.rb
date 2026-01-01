@@ -56,3 +56,6 @@ module Sisyphus
   end
 end
 
+# Register with ToolCallService
+ToolCallService.register_tool(Sisyphus::BashTool)
+

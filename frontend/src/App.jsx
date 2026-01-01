@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import ChatPage from "./components/ChatPage";
 import InspectorPage from "./pages/InspectorPage";
 import ProjectPlanPage from "./components/ProjectPlanPage";
+import SisyphusPage from "./components/SisyphusPage";
 import { useChatStore } from "./store/chatStore";
 import "./App.css";
 
@@ -18,6 +19,11 @@ function App() {
   const stopVersionPolling = useChatStore((state) => state.stopVersionPolling);
 
   const path = window.location.pathname;
+
+  // Sisyphus Agent Worker mode - no initialization needed
+  if (path.startsWith("/sisyphus")) {
+    return <SisyphusPage />;
+  }
 
   // Project Planning mode - skip D&D initialization
   if (path.startsWith("/project_planning")) {

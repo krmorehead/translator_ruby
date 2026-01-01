@@ -25,6 +25,25 @@ Rails.application.routes.draw do
   get "/project_planning", to: "project_planning#spa"
   post "/project_planning/create", to: "project_planning#create"
 
+  # Sisyphus Agent Worker routes
+  get "/sisyphus", to: "sisyphus#index"
+  
+  # Sisyphus API routes
+  post "/api/sisyphus/executions", to: "sisyphus#create_execution"
+  get "/api/sisyphus/executions", to: "sisyphus#list_executions"
+  get "/api/sisyphus/executions/:execution_id", to: "sisyphus#show_execution"
+  delete "/api/sisyphus/executions/:execution_id", to: "sisyphus#cancel_execution"
+  
+  # File system operations
+  get "/api/sisyphus/filesystem/tree", to: "sisyphus#file_tree"
+  get "/api/sisyphus/filesystem/read", to: "sisyphus#read_file"
+  get "/api/sisyphus/filesystem/search", to: "sisyphus#search_files"
+  
+  # Configuration
+  get "/api/sisyphus/config", to: "sisyphus#show_config"
+  post "/api/sisyphus/config/validate", to: "sisyphus#validate_config"
+  post "/api/sisyphus/config/test", to: "sisyphus#test_connection"
+
   # React SPA entry (built frontend/dist)
   root to: "dnd_chat#spa"
   get "/inspector", to: "dnd_chat#spa"

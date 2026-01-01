@@ -19,4 +19,15 @@ alwaysApply: true
 [COMPLEXITY][!REDUCE] When handling complexity warnings from rubocop, break files into dedicated subdirectories and decompose them; if staying in-file, break down further until complexity is appropriate. Update unit/integration tests accordingly.
 
 [ARCH][!LAYERED] Always follow the controller -> service -> model architecture.
+
 [SERIALIZE][!JSON] Controllers should always use a serializer when returning their final JSON.
+
+[SYMBOLS][!KEYS-AT-BOUNDARY] Always use symbols for hash keys throughout the application. Symbolize keys at interface boundaries (LLM responses, API inputs). Never mix string and symbol key access. GenericLlmClient should symbolize all LLM responses at the boundary.
+
+[LLM][!CONTEXT-AWARE-TOOLS] When building tools for LLM agents, inject context parameters (codebase_path, working_directory, etc.) automatically in workflows. Tools should validate context, resolve relative paths, and enforce safety boundaries. Namespace context-specific tools (e.g., Sisyphus::WriteFileTool).
+
+[LLM][!PROMPT-EXAMPLES] When writing LLM prompts, always provide concrete JSON examples showing exact format. Show multiple variations, use real values, and explicitly state parameter names. "Show, don't tell" - examples drive behavior better than descriptions.
+
+[OOP][!METHOD-CONFLICTS] Before creating methods in subclasses, check parent class public methods to avoid name conflicts. Use descriptive, specific names for subclass methods (e.g., format_assembled_context vs format_context). Run tests immediately after creating inheritance relationships.
+
+[OOP][!PROMPT-BUILDERS] Prompts should encapsulate their own message building logic via build_user_message methods. Workflows should use these builders rather than constructing messages manually. This ensures consistency and makes prompt updates easier.

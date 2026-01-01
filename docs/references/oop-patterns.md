@@ -717,6 +717,352 @@ end
 
 ---
 
+### Lesson 8: Symbol Standardization at Interface Boundaries
+
+**Problem:** Mixing string and symbol keys throughout the application creates confusion, bugs, and inconsistent code. LLMs return JSON with string keys but the application expects symbols.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Converting to symbols in multiple places
+class MyPrompt < BasePrompt
+  def parse_response(response)
+    result = super
+    # Have to remember to symbolize here
+    result[:content] = result[:content].symbolize_keys if result[:content].is_a?(Hash)
+    result
+  end
+end
+
+class MyWorkflow
+  def process_llm_result(result)
+    # Accessing with both strings and symbols
+    tools = result["tool_sequence"] || result[:tool_sequence] || []
+    tools.each do |tool|
+      name = tool["tool"] || tool[:tool]  # More string/symbol confusion
+    end
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Symbolize once at the LLM boundary
+class GenericLlmClient::ClientRetryWrapper
+  def process_response(response)
+    # Convert ALL keys to symbols at the boundary
+    JSON.parse(JSON.generate(response), symbolize_names: true)
+  end
+end
+
+class BasePrompt
+  def parse_response(response)
+    # Response already has symbol keys from GenericLlmClient
+    message = response.dig(:choices, 0, :message)  # All symbols
+    content = message[:content]
+    
+    # For structured JSON responses, parse with symbols
+    parsed = JSON.parse(content, symbolize_names: true)
+    { content: parsed, thoughts: response[:thoughts] }
+  end
+end
+
+class MyWorkflow
+  def process_llm_result(result)
+    # Always use symbols - no string keys anywhere
+    tools = result[:content][:tool_sequence]
+    tools.each do |tool|
+      execute_tool(tool[:tool], tool[:params])
+    end
+  end
+end
+```
+
+**Key Principles:**
+1. **Symbolize at boundaries** - LLM client converts all keys to symbols
+2. **Application uses symbols** - No string keys in application code
+3. **No defensive coding** - Don't check both `["key"]` and `[:key]`
+4. **Consistent everywhere** - Hashes, JSON parsing, LLM responses all use symbols
+
+---
+
+### Lesson 9: Context-Aware Tools
+
+**Problem:** Tools need to operate in specific contexts (directories, environments) but don't have access to that context. Generic tools that work everywhere don't work well anywhere.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Tool doesn't know about execution context
+class WriteFileTool
+  def execute(path:, content:)
+    File.write(path, content)  # Where? Current directory? Absolute path?
+  end
+end
+
+class Workflow
+  def execute_tool(tool_name, params)
+    # Have to manipulate paths before calling tool
+    full_path = File.join(@codebase_path, params[:path])
+    tool.execute(path: full_path, content: params[:content])
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Context-aware tool that knows its environment
+module Sisyphus
+  class WriteFileTool < BaseTool
+    def self.parameters_schema
+      {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Relative path in codebase" },
+          content: { type: "string" },
+          codebase_path: { type: "string", description: "Root directory" }
+        },
+        required: ["path", "content", "codebase_path"]
+      }
+    end
+
+    def execute(path:, content:, codebase_path:)
+      validate_codebase!(codebase_path)
+      full_path = File.join(codebase_path, path)
+      validate_within_codebase!(full_path, codebase_path)
+      
+      FileUtils.mkdir_p(File.dirname(full_path))
+      File.write(full_path, content)
+      
+      success_result("Wrote #{content.bytesize} bytes to #{path}")
+    end
+
+    private
+
+    def validate_within_codebase!(target, root)
+      real_root = File.realpath(root)
+      real_target = File.realpath(File.dirname(target))
+      unless real_target.start_with?(real_root)
+        raise ArgumentError, "Path escapes codebase: #{target}"
+      end
+    end
+  end
+end
+
+class StepExecutionWorkflow
+  def execute_tool(tool_name, params)
+    # Inject context automatically
+    enriched_params = params.merge(codebase_path: @path)
+    execute_sisyphus_tool(tool_name, enriched_params)
+  end
+end
+```
+
+**Key Principles:**
+1. **Inject context** - Workflows provide context parameters to tools
+2. **Validate context** - Tools validate they have the context they need
+3. **Resolve paths** - Tools handle relative-to-absolute path conversion
+4. **Safety first** - Validate operations stay within bounds (no escaping codebase)
+5. **Namespace tools** - Context-specific tools live in their own namespace (e.g., `Sisyphus::`)
+
+---
+
+### Lesson 10: LLM Prompt Examples Drive Behavior
+
+**Problem:** LLMs struggle with abstract schemas. Telling them "return an object with params" doesn't work as well as showing them exactly what you want.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Abstract description without examples
+def system_prompt
+  <<~PROMPT
+    Return a JSON object with:
+    - `tool_sequence`: Array of tool calls
+    - Each tool call has: `tool`, `params`, `rationale`
+    - `params` is an object with the tool's parameters
+  PROMPT
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Concrete examples showing exact format
+def system_prompt
+  <<~PROMPT
+    ## Example Tool Calls
+
+    ```json
+    {
+      "tool_sequence": [
+        {
+          "tool": "write_file",
+          "params": {
+            "path": "hello.rb",
+            "content": "#!/usr/bin/env ruby\\nputs 'Hello, World!'"
+          },
+          "rationale": "Create the hello.rb file with Ruby code"
+        },
+        {
+          "tool": "bash",
+          "params": {
+            "command": "chmod +x hello.rb"
+          },
+          "rationale": "Make the file executable"
+        }
+      ],
+      "expected_outcome": "Created a working Ruby script"
+    }
+    ```
+
+    ## Available Tools
+
+    **write_file**: 
+    - Parameters: `path` (string), `content` (string)
+    - Example: `{"path": "app.rb", "content": "puts 'hi'"}`
+
+    **bash**:
+    - Parameters: `command` (string)
+    - Example: `{"command": "ruby --version"}`
+
+    **Important**: The `params` object must contain the exact parameter 
+    names each tool expects. For example, write_file expects `path` and 
+    `content`, bash expects `command`.
+  PROMPT
+end
+```
+
+**Key Principles:**
+1. **Show, don't tell** - Provide complete JSON examples
+2. **Be explicit** - Show exact parameter names and types
+3. **Include variations** - Show different tool types
+4. **Emphasize requirements** - Repeat critical requirements
+5. **Use real values** - Examples should look like actual usage
+
+---
+
+### Lesson 11: Method Name Conflicts in Inheritance
+
+**Problem:** Subclasses can accidentally override parent methods with different signatures, causing runtime errors that are hard to debug.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Subclass overrides parent method with different signature
+class BasePrompt
+  def format_context(context, question: '')
+    context.format_for_prompt(question)
+  end
+end
+
+class StepPlanningPrompt < BasePrompt
+  # Accidentally overrides parent with different signature!
+  def format_context
+    return "No context" if @assembled_context.empty?
+    # Build context string...
+  end
+end
+
+# Later, parent calls format_context(ctx, question: "foo")
+# => ArgumentError: wrong number of arguments (given 2, expected 0)
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Use distinct method names for different purposes
+class BasePrompt
+  def format_context(context, question: '')
+    return nil if context.nil?
+    context.format_for_prompt(question)
+  end
+end
+
+class StepPlanningPrompt < BasePrompt
+  # Different name, no conflict
+  def format_assembled_context
+    return "No context" if @assembled_context.empty?
+    # Build context string...
+  end
+
+  def build_user_message
+    message = []
+    message << "## Step Details"
+    message << format_assembled_context  # Call our own method
+    message.join("\n")
+  end
+end
+```
+
+**Key Principles:**
+1. **Use descriptive names** - `format_assembled_context` vs `format_context`
+2. **Check parent class** - Always review parent's public methods before naming
+3. **Call super carefully** - If overriding, ensure signature matches exactly
+4. **Fail fast** - Run tests immediately after creating subclass
+5. **Namespace carefully** - Consider using prefixes for subclass-specific methods
+
+---
+
+### Lesson 12: Built-in Message Builders in Prompts
+
+**Problem:** Workflows building prompt messages manually leads to inconsistent formatting and missed prompt improvements.
+
+**Bad Pattern:**
+```ruby
+# ❌ BAD: Workflow builds message manually
+class MyWorkflow
+  def plan_step
+    prompt = StepPlanningPrompt.new(step: @step, tools: @tools)
+    
+    # Workflow has to know how to format the message
+    message = <<~MSG
+      Step: #{@step.title}
+      Details: #{@step.details.join(", ")}
+      Tools available: #{@tools.map(&:name).join(", ")}
+    MSG
+    
+    prompt.execute(prompt: message, context: nil)
+  end
+end
+```
+
+**Good Pattern:**
+```ruby
+# ✅ GOOD: Prompt encapsulates its own message building
+class StepPlanningPrompt < BasePrompt
+  def build_user_message
+    message = []
+    message << "## Step to Execute"
+    message << ""
+    message << "**Step #{@step.number}**: #{@step.title}"
+    message << ""
+    message << "**Intent**: #{@step.intent}"
+    message << ""
+    message << "**Details**:"
+    @step.details.each { |d| message << "- #{d}" }
+    message << ""
+    message << "## Available Tools"
+    message << format_tools
+    message.join("\n")
+  end
+end
+
+class MyWorkflow
+  def plan_step
+    prompt = StepPlanningPrompt.new(step: @step, tools: @tools)
+    
+    # Use the prompt's built-in builder
+    message = prompt.build_user_message
+    
+    prompt.execute(prompt: message, context: nil)
+  end
+end
+```
+
+**Key Principles:**
+1. **Prompts own their format** - Message building is part of the prompt
+2. **Single responsibility** - Workflow orchestrates, prompt formats
+3. **Easy updates** - Change format in one place (the prompt)
+4. **Consistency** - All uses of prompt get same formatting
+5. **Testing** - Can test message format independently
+
+---
+
 ## References
 
 - [Serialization Guide](./serialization-guide.md)
