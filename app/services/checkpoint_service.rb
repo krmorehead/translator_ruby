@@ -27,11 +27,13 @@ class CheckpointService
   # Initialize the checkpoint service
   #
   # @param path [String] Path to git repository root
+  # @param memory_store [WorkflowMemoryStore, nil] Optional memory store for generating contextual messages
   # @param auto_commit [Boolean] Whether to auto-commit (default: true)
   # @param commit_prefix [String] Prefix for commit messages (default: "Sisyphus")
   # @raise [ArgumentError] If path is not a git repository
-  def initialize(path:, **options)
+  def initialize(path:, memory_store: nil, **options)
     @path = File.expand_path(path)
+    @memory_store = memory_store
     @options = DEFAULT_OPTIONS.merge(options)
     
     validate_git_repository!
@@ -196,14 +198,23 @@ class CheckpointService
     # Initialize cached checkpoint to HEAD if not set
     @current_checkpoint ||= get_checkpoint(current_commit_id)
 
-    # If nothing has changed, return cached checkpoint
+    # If no changes, return cached checkpoint
     return @current_checkpoint.id unless has_uncommitted_changes?
 
-    # Codebase has changed - create new checkpoint with auto-generated message
+    # Changes detected - create new checkpoint
     message = "Checkpoint at #{Time.now.utc.iso8601}"
     checkpoint = create_checkpoint(message)
     @current_checkpoint = checkpoint
     checkpoint.id
+  end
+
+  # Check if there are uncommitted changes in the working directory
+  #
+  # @return [Boolean] True if there are changes to tracked files
+  def has_uncommitted_changes?
+    # Check for modifications to tracked files only
+    result = run_git_command("diff HEAD")
+    !result[:output].strip.empty?
   end
 
   # Retrieve metadata for a checkpoint
@@ -291,4 +302,3 @@ class CheckpointService
     str.gsub("'", "'\\''")
   end
 end
-
