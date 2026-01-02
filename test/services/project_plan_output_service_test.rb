@@ -120,7 +120,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
       project_plan_content: "# Plan"
     )
 
-    assert paths[:project_path].start_with?(custom_output)
+    assert paths[:project_path].start_with?(custom_path)
   end
 
 
