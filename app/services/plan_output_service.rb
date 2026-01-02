@@ -91,6 +91,7 @@ class PlanOutputService
 
   # Write metadata.json
   def write_metadata_json
+    ensure_directory!
     path = File.join(plan_directory, "metadata.json")
     metadata = {
       goal: execution_plan.goal,
