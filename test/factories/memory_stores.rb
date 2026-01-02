@@ -10,12 +10,10 @@ FactoryBot.define do
       owner { SecureRandom.uuid }
     end
 
-    path { File.join(base_dir, owner, "memory.json") }
-    owner_id { owner }
-
     initialize_with do
-      FileUtils.mkdir_p(File.dirname(path))
-      new(path: path, owner_id: owner_id)
+      memory_path = File.join(base_dir, owner, "memory.json")
+      FileUtils.mkdir_p(File.dirname(memory_path))
+      new(path: memory_path, owner_id: owner)
     end
 
     trait :with_decisions do
