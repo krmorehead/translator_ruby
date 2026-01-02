@@ -117,16 +117,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
     history = workflow.workflow_memory.state_history
     assert history.any?
-    
-    # Debug: check what's in the array
-    history.each_with_index do |h, i|
-      unless h.is_a?(WorkflowMemories::StateTransition)
-        puts "ERROR: history[#{i}] is #{h.class}: #{h.inspect}"
-      end
-    end
-    
-    assert history.all? { |h| h.is_a?(WorkflowMemories::StateTransition) },
-      "All history items should be StateTransition objects, got: #{history.map(&:class)}"
+    assert history.all? { |h| h.is_a?(WorkflowMemories::StateTransition) }
     # Should have at least start and finish transitions
     events = history.map(&:event)
     assert_includes events, :start

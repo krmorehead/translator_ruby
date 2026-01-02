@@ -40,7 +40,6 @@ class WorkflowMemoryStore
   # @param path [String] Path for persistence (REQUIRED for checkpoint tracking)
   def initialize(owner_id:, workflow_id:, workflow_name:, path:, parent_memory: nil)
 
-    puts "DEBUG: WorkflowMemoryStore.new called with path=#{path}, object_id=#{object_id}"
     @owner_id = owner_id
     @workflow_id = workflow_id
     @workflow_name = workflow_name
@@ -49,10 +48,7 @@ class WorkflowMemoryStore
     
     # Load from disk if file exists, otherwise initialize fresh
     if File.exist?(path) && File.size(path) > 0
-      puts "DEBUG: Loading from disk: #{path}"
       data = JSON.parse(File.read(path), symbolize_names: true)
-      puts "DEBUG: Sections keys: #{data[:sections]&.keys}"
-      puts "DEBUG: state_transitions count: #{data[:sections][:state_transitions]&.size}"
       @started_at = Time.parse(data[:started_at])
       @last_transition_at = Time.parse(data[:last_transition_at])
       @sections = {
@@ -63,17 +59,11 @@ class WorkflowMemoryStore
         outputs: self.class.deserialize_array(data: data[:sections][:outputs], klass: WorkflowMemories::Output),
         checkpoints: data[:sections][:checkpoints]
       }
-      puts "DEBUG: After deserialization, state_transitions has: #{@sections[:state_transitions].map(&:class)}"
     else
-      puts "DEBUG: Initializing fresh (file doesn't exist or is empty)"
       @sections = deep_dup(DEFAULT_SECTIONS)
-      puts "DEBUG: After deep_dup, DEFAULT_SECTIONS state_transitions: #{DEFAULT_SECTIONS[:state_transitions].inspect}"
-      puts "DEBUG: After deep_dup, @sections state_transitions: #{@sections[:state_transitions].inspect}"
-      puts "DEBUG: Are they the same object? #{@sections[:state_transitions].object_id == DEFAULT_SECTIONS[:state_transitions].object_id}"
       @started_at = Time.now.utc
       @last_transition_at = Time.now.utc
     end
-    puts "DEBUG: End of initialize, state_transitions has #{@sections[:state_transitions].size} items: #{@sections[:state_transitions].map(&:class)}"
   end
 
   # Load WorkflowMemoryStore from disk
@@ -127,12 +117,6 @@ class WorkflowMemoryStore
   # @param payload [Hash] Additional data
   # @return [WorkflowMemories::StateTransition] The created memory object
   def record_state_transition(from:, to:, event:, source: nil, payload: {})
-    if @sections[:state_transitions].any? { |item| item.is_a?(Hash) }
-      puts "ERROR: Array already has Hash at start of record_state_transition!"
-      puts "Caller stack:"
-      puts caller[0..10].join("\n")
-    end
-    
     memory = WorkflowMemories::StateTransition.new(
       from: from,
       to: to,
@@ -143,16 +127,9 @@ class WorkflowMemoryStore
       checkpoint_id: current_checkpoint_id,
       state: to  # New state after transition
     )
-    puts "DEBUG: About to add StateTransition, array is: #{@sections[:state_transitions].map(&:class)}"
     @sections[:state_transitions] << memory
-    puts "DEBUG: After <<, array is: #{@sections[:state_transitions].map(&:class)}"
     @last_transition_at = Time.now.utc
-    puts "DEBUG: Before save!, array is: #{@sections[:state_transitions].map(&:class)}"
     save!
-    puts "DEBUG: IMMEDIATELY after save! returns, array is: #{@sections[:state_transitions].map(&:class)}"
-    if @sections[:state_transitions].any? { |item| item.is_a?(Hash) }
-      puts "CORRUPTION: Array has Hash IMMEDIATELY after save!"
-    end
     memory
   end
 
@@ -422,10 +399,7 @@ class WorkflowMemoryStore
 
   def save!
     FileUtils.mkdir_p(File.dirname(path))
-    hash_to_save = to_h
-    puts "DEBUG: save! serializing, state_transitions in hash: #{hash_to_save[:sections][:state_transitions].map(&:class)}"
-    File.write(path, JSON.pretty_generate(hash_to_save))
-    puts "DEBUG: save! done, @sections[:state_transitions]: #{@sections[:state_transitions].map(&:class)}"
+    File.write(path, JSON.pretty_generate(to_h))
   end
 
   def deep_dup(obj)
