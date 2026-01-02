@@ -19,6 +19,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
   speed_profile :fast
   test "serialize and reload preserves sections" do
     store.update_section(name: :quests, content: { text: "Find the dragon" }, append: true)
+    store.save!
 
     reloaded = build(:memory_store, owner: @owner_id)
     quests = reloaded.get_section(:quests)

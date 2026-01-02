@@ -262,7 +262,8 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
       step: @step,
-      step_result: @successful_result
+      step_result: @successful_result,
+      path: ENV.fetch("AGENT_DATA_PATH", ".")
     )
 
     evaluation = workflow.execute
