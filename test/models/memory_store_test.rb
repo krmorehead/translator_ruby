@@ -8,7 +8,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
   end
 
   def store
-    @store ||= build(:memory_store, base_dir: @sandbox_path, owner: @owner_id)
+    @store ||= build(:memory_store, owner: @owner_id)
   end
   speed_profile :fast
   test "initializes defaults when file missing" do

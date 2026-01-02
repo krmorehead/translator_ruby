@@ -74,7 +74,7 @@ class BaseWorker
 
   # Path for storing worker state files
   def state_path
-    base = ENV["AGENT_STATE_PATH"] || File.join(path, DEFAULT_STATE_PATH)
+    base = ENV["AGENT_STATE_PATH"] || File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_STATE_PATH)
     File.join(base, owner_id)
   end
 
