@@ -1,42 +1,35 @@
 # frozen_string_literal: true
 
 module Actions
-  # Action to update quest status or add a new quest.
+  # Action that updates quest status or adds new quests
   class AdvanceQuestAction < BaseAction
-    VALID_STATUSES = %w[active completed failed].freeze
-
     def execute(quest_name:, status:, notes: nil)
-      status = status.to_s.downcase
-      unless VALID_STATUSES.include?(status)
-        return failure_result(error: "Invalid status: #{status}. Use: #{VALID_STATUSES.join(', ')}")
-      end
-
-      quest_entry = {
-        text: quest_name,
+      quest_data = {
+        title: quest_name,
         status: status,
         notes: notes,
         updated_at: Time.now.utc.iso8601
       }
-
-      memory_store.update_section(
-        name: MemoryKinds::QUEST_LOG,
-        content: quest_entry,
-        append: true
-      )
-
-      result_text = case status
-      when "active" then "Quest started: #{quest_name}"
-      when "completed" then "Quest completed: #{quest_name}!"
-      when "failed" then "Quest failed: #{quest_name}"
+      
+      # Get existing quests
+      quests = memory_store.get_section(MemoryKinds::QUEST_LOG) || []
+      
+      # Find and update existing quest or add new one
+      existing_index = quests.find_index do |q|
+        q.is_a?(Hash) && (q[:title] == quest_name || q["title"] == quest_name)
       end
-
-      success_result(
-        result: result_text,
-        summary: result_text,
-        findings: [{ text: result_text, source: "quest" }],
-        metadata: quest_entry
-      )
+      
+      if existing_index
+        quests[existing_index] = quest_data
+        summary = "Updated quest '#{quest_name}' to #{status}"
+      else
+        quests << quest_data
+        summary = "Added new quest '#{quest_name}' with status #{status}"
+      end
+      
+      memory_store.set_section(MemoryKinds::QUEST_LOG, quests)
+      
+      success_result(quest_data, summary: summary)
     end
   end
 end
-

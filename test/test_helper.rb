@@ -8,6 +8,10 @@ require_relative "../config/environment"
 require "rails/test_help"
 require "minitest/spec"
 
+# Enable logging in tests for debugging
+Rails.logger.level = Logger::DEBUG
+Rails.logger = Logger.new($stdout) if ENV["VERBOSE_TESTS"]
+
 # Load support files
 Dir[Rails.root.join("test/support/**/*.rb")].each { |f| require f }
 

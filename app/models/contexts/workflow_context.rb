@@ -1,16 +1,15 @@
 # frozen_string_literal: true
 
 # WorkflowContext that queries the ContextGraphService for relevant context
-# Automatically gathers context from the graph based on workflow_id and goal
+# Automatically gathers context from the graph based on goal
 module Contexts
   class WorkflowContext < BaseContext
-    attr_reader :workflow_id, :goal, :max_depth
+    attr_reader :id, :goal
 
-    def initialize(workflow_id:, goal:, max_depth:)
+    def initialize(goal:)
       super()
-      @workflow_id = workflow_id
+      @id = SecureRandom.uuid
       @goal = goal
-      @max_depth = max_depth
       load_from_graph
     end
 
@@ -40,7 +39,7 @@ module Contexts
 
       # Query for decisions (prior reasoning and choices)
       decision_results = service.query(
-        workflow_id: @workflow_id,
+        id: @id,
         context_type: :decision,
         query_vector: @goal,
         threshold: 0.6,
@@ -58,7 +57,7 @@ module Contexts
 
       # Query for goals (related goals and sub-questions)
       goal_results = service.query(
-        workflow_id: @workflow_id,
+        id: @id,
         context_type: :research_goal,
         query_vector: @goal,
         threshold: 0.7,
@@ -76,7 +75,7 @@ module Contexts
 
       # Query for findings (previous research results)
       finding_results = service.query(
-        workflow_id: @workflow_id,
+        id: @id,
         context_type: :findings,
         query_vector: "findings relevant to #{@goal}",
         threshold: 0.6,

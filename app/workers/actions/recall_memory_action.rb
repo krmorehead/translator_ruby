@@ -1,31 +1,44 @@
 # frozen_string_literal: true
 
 module Actions
-  # Action to retrieve information from campaign memory.
-  # Uses the memory store's context to find relevant information.
+  # Action that retrieves information from memory
   class RecallMemoryAction < BaseAction
     def execute(query:, category: nil)
-      # Build a context with relevant memories
-      context = memory_store.full_context
-
-      # Get entries relevant to the query
-      relevant = context.relevant_to(query, limit: 5)
-
-      if relevant.empty?
-        success_result(
-          result: "No memories found matching: #{query}",
-          summary: "Memory search returned no results",
-          findings: []
-        )
+      section = category ? category_to_section(category) : nil
+      
+      if section
+        data = memory_store.get_section(section)
+        results = Array(data)
       else
-        memories = relevant.map(&:content)
-        success_result(
-          result: memories.join("\n"),
-          summary: "Found #{memories.size} relevant memories",
-          findings: memories.map { |m| { text: m, source: "memory" } }
-        )
+        # Search all sections
+        results = []
+        memory_store.list_sections.each do |section_name|
+          data = memory_store.get_section(section_name)
+          results.concat(Array(data))
+        end
+      end
+      
+      # Filter by query
+      query_words = query.downcase.split
+      relevant = results.select do |item|
+        text = item.is_a?(Hash) ? (item[:text] || item["text"] || item.to_s) : item.to_s
+        query_words.any? { |word| text.downcase.include?(word) }
+      end
+      
+      summary = "Found #{relevant.size} memories matching '#{query}'"
+      success_result(relevant, summary: summary)
+    end
+    
+    private
+    
+    def category_to_section(category)
+      case category.to_s.downcase
+      when "quest" then MemoryKinds::QUEST_LOG
+      when "npc", "person" then MemoryKinds::PEOPLE
+      when "location", "scene" then MemoryKinds::CURRENT_SCENE
+      when "item" then MemoryKinds::INVENTORY
+      else MemoryKinds::MISC
       end
     end
   end
 end
-

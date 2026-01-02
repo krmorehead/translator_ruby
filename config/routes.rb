@@ -19,12 +19,13 @@ Rails.application.routes.draw do
       end
     end
   end
+  # DnD Chat API
+  post "/dnd_chat/sessions", to: "dnd_chat#create_session"
   get "/dnd_chat/messages", to: "dnd_chat#messages"
   post "/dnd_chat/messages", to: "dnd_chat#create_message"
   get "/dnd_chat/messages/contract", to: "dnd_chat#messages_contract"
 
   get "/dnd_chat/agent", to: "dnd_chat#agent"
-  get "/dnd_chat/agent/version", to: "dnd_chat#agent_version"
   get "/dnd_chat/agent/contract", to: "dnd_chat#agent_contract"
   get "/dnd_chat/agent/version/contract", to: "dnd_chat#agent_version_contract"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

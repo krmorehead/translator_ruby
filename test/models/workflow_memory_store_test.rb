@@ -4,9 +4,9 @@ require "test_helper"
 
 class WorkflowMemoryStoreTest < ActiveSupport::TestCase
   let(:temp_dir) { create_temp_git_repo }
-  
+
   let(:parent_memory) { build(:memory_store, base_dir: temp_dir) }
-  
+
   let(:store) { build(:workflow_memory_store, base_dir: temp_dir, parent: parent_memory) }
 
   def teardown

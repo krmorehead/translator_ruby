@@ -17,7 +17,7 @@
 #     register_action :analyze_file, class_name: "Actions::AnalyzeFileAction"
 #
 #     def create_memory_store
-#       ResearchMemoryStore.new(path: memory_path, owner_id: owner_id)
+#       ResearchMemoryStore.new(owner_id: owner_id)
 #     end
 #   end
 #
@@ -58,8 +58,9 @@ class AgentWorker < BaseWorker
   attr_reader :memory_store, :iteration_count, :action_count
   attr_reader :goal_context, :action_history_context
 
-  def initialize(goal:, path:, context:, **options)
-    super
+  def initialize(goal:, context:, **options)
+    # BaseWorker needs path, but we don't use it - pass nil
+    super(goal: goal, context: context, path: nil, **options)
     @max_iterations = options.fetch(:max_iterations, DEFAULT_MAX_ITERATIONS)
     @max_actions = options.fetch(:max_actions, DEFAULT_MAX_ACTIONS)
     @iteration_count = 0
@@ -252,7 +253,6 @@ class AgentWorker < BaseWorker
     action = action_class.new(
       agent: self,
       memory_store: @memory_store,
-      path: path,
       goal: goal
     )
     action.execute(**arguments.symbolize_keys)
@@ -315,7 +315,9 @@ class AgentWorker < BaseWorker
   # Build context for the planning prompt
   # @return [Contexts::WorkflowContext] Planning context
   def build_planning_context
-    context = Contexts::WorkflowContext.new
+    context = Contexts::WorkflowContext.new(
+      goal: goal
+    )
 
     # Add goal context as sub-context
     context.add_sub_context(:goal, @goal_context)
@@ -345,7 +347,9 @@ class AgentWorker < BaseWorker
   # Build context for goal evaluation
   # @return [Contexts::WorkflowContext] Evaluation context
   def build_evaluation_context
-    context = Contexts::WorkflowContext.new
+    context = Contexts::WorkflowContext.new(
+      goal: goal
+    )
 
     context.add(content: "Goal: #{goal}", topics: ["goal"], source: "agent")
     context.add(content: "Iterations: #{@iteration_count}", topics: ["progress"], source: "agent")
@@ -410,21 +414,6 @@ class AgentWorker < BaseWorker
     end
   end
 
-  # Extract a value from a result using a path like $result[0] or $result.files
-  # @param path [String] The path expression
-  # @param result [Hash] The result to extract from
-  # @return [Object] The extracted value
-  def extract_result_value(path, result)
-    if path =~ /\$result\[(\d+)\]/
-      index = $1.to_i
-      (result[:files] || result[:results])[index]
-    elsif path =~ /\$result\.(\w+)/
-      result[$1.to_sym]
-    else
-      result
-    end
-  end
-
   # Record a decision to memory
   # @param decision [String] What was decided
   # @param rationale [String] Why
@@ -445,9 +434,7 @@ class AgentWorker < BaseWorker
   def build_result(synthesis)
     {
       success: true,
-      goal: goal,
-      path: path,
-      owner_id: owner_id,
+      goal: goal,owner_id: owner_id,
       findings: memory_store.get_section(:findings),
       synthesis: synthesis,
       action_history: @action_history_context.actions,
@@ -475,7 +462,6 @@ class AgentWorker < BaseWorker
       success: false,
       error: error.message,
       goal: goal,
-      path: path,
       owner_id: owner_id,
       findings: memory_store&.get_section(:findings) || [],
       action_history: @action_history_context.actions,

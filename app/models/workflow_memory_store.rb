@@ -41,7 +41,7 @@ class WorkflowMemoryStore
   def initialize(workflow_id:, workflow_name:, path:, parent_id:, owner_id:)
     raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
     raise ArgumentError, "parent_id is required" if parent_id.nil? || parent_id.to_s.empty?
-    
+
     @workflow_id = workflow_id
     @workflow_name = workflow_name
     @parent_id = parent_id.to_s

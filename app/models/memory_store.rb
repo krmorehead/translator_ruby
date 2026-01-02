@@ -11,14 +11,19 @@ class MemoryStore
 
   attr_reader :path, :id, :owner_id
 
-  def initialize(path:, owner_id:)
+  def initialize(owner_id:, path: nil)
     raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
-    
-    @path = path
-    @id = SecureRandom.uuid
+
     @owner_id = owner_id.to_s
+    @path = path || default_path_for_owner(@owner_id)
+    @id = SecureRandom.uuid
     @sections = load_sections
     @section_contexts = {}
+  end
+
+  # Derive default path from owner_id
+  def default_path_for_owner(owner_id)
+    File.join(ENV.fetch("AGENT_DATA_PATH"), owner_id, "memory.json")
   end
 
   def list_sections

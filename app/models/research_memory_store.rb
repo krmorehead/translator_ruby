@@ -39,7 +39,7 @@ class ResearchMemoryStore
     Dir.entries(base_path)
        .select { |entry| File.directory?(File.join(base_path, entry)) && !entry.start_with?('.') }
        .select { |entry| File.exist?(File.join(base_path, entry, "research_memory.json")) }
-  end
+    end
 
   # Find an existing research memory store by path
   # @param path [String] The full path to the memory file
@@ -56,7 +56,7 @@ class ResearchMemoryStore
   # @param owner_id [String] Unique identifier for the owner (worker/session)
   def initialize(path:, owner_id:)
     raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
-    
+
     @path = path
     @id = SecureRandom.uuid
     @owner_id = owner_id.to_s

@@ -1,32 +1,33 @@
 # frozen_string_literal: true
 
 module Actions
-  # Action to store a fact or event in the campaign memory.
-  # Wraps the memory tool for the agentic workflow.
+  # Action that stores facts in memory
   class RememberFactAction < BaseAction
-    def execute(fact:, category: "general")
+    def execute(fact:, category: "misc")
+      section = category_to_section(category)
+      
       memory_store.update_section(
-        name: category_to_section(category),
+        name: section,
         content: { text: fact, timestamp: Time.now.utc.iso8601 },
         append: true
       )
-
+      
       success_result(
-        result: "Remembered: #{fact.truncate(50)}",
-        summary: "Stored fact in #{category} memory"
+        { fact: fact, category: category },
+        summary: "Remembered: #{fact}"
       )
     end
-
+    
+    private
     
     def category_to_section(category)
       case category.to_s.downcase
       when "quest" then MemoryKinds::QUEST_LOG
       when "npc", "person" then MemoryKinds::PEOPLE
-      when "location", "scene" then MemoryKinds::CURRENT_SCENE
-      when "item", "inventory" then MemoryKinds::INVENTORY
-      else MemoryKinds::GENERAL_KNOWLEDGE
+      when "location" then MemoryKinds::CURRENT_SCENE
+      when "item" then MemoryKinds::INVENTORY
+      else MemoryKinds::MISC
       end
     end
   end
 end
-

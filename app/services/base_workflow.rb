@@ -148,7 +148,7 @@ class BaseWorkflow
 
   def record_state_to_memory(from, to, event, payload)
     return unless @workflow_memory
-    
+
     @workflow_memory.record_state_transition(
       from: from,
       to: to,

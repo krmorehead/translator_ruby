@@ -68,9 +68,7 @@ def execute
     
     # Context object handles its own initialization via graph service
     workflow_context = Contexts::WorkflowContext.new(
-      workflow_id: @workflow_id,
-      goal: @goal,
-      max_depth: @max_depth
+      goal: @goal
     )
     
     Rails.logger.info "[GoalDecompositionWorkflow] Initial context loaded with #{workflow_context.size} entries"

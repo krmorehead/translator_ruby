@@ -49,16 +49,16 @@ class BaseWorker
 
   # Initialize a new worker instance
   # @param goal [String] The goal/objective to work toward
-  # @param path [String] The target path (e.g., codebase root for research)
+  # @param path [String, nil] Optional target path (e.g., codebase root for research)
   # @param context [Hash] Optional seed context/information for the worker
   # @param options [Hash] Additional options
-  def initialize(goal:, path:, context:, **options)
+  def initialize(goal:, context:, path: nil, **options)
     raise TypeError, "context must be a Contexts::BaseContext, got #{context.class}" unless context.is_a?(Contexts::BaseContext)
     
     initialize_state_machine
-    @owner_id = SecureRandom.uuid
+    @owner_id = options[:owner_id] || SecureRandom.uuid
     @goal = goal
-    @path = validate_path!(path)
+    @path = path ? validate_path!(path) : ENV.fetch("AGENT_DATA_PATH", ".")
     @context = context
     @options = options
     @result = nil

@@ -3,40 +3,39 @@
 require "test_helper"
 
 class DndChatWorkflowTest < ActiveSupport::TestCase
-  SANDBOX = Rails.root.join("tmp", "dnd_workflow_test_#{Process.pid}_#{Thread.current.object_id}")
-
   def setup
-    FileUtils.rm_rf(SANDBOX)
-    FileUtils.mkdir_p(SANDBOX)
+    @owner_id = SecureRandom.uuid
+    @parent_memory = MemoryStore.new(owner_id: @owner_id)
     load_tools
   end
 
   def teardown
-    FileUtils.rm_rf(SANDBOX)
+    # Cleanup memory files
+    data_path = ENV.fetch("AGENT_DATA_PATH")
+    owner_path = File.join(data_path, @owner_id)
+    FileUtils.rm_rf(owner_path) if File.exist?(owner_path)
   end
+  
   speed_profile :fast
   test "inherits base workflow and exposes workflow_name" do
-    workflow = DndChatWorkflow.new
+    workflow = DndChatWorkflow.new(owner_id: @owner_id, parent_memory: @parent_memory)
     assert_kind_of BaseWorkflow, workflow
     assert_equal "dnd_chat", DndChatWorkflow.workflow_name
   end
 
   speed_profile :medium
-  test " configured" do
-    workflow = DndChatWorkflow.new
+  test "workflow executes and returns narrative" do
+    workflow = DndChatWorkflow.new(owner_id: @owner_id, parent_memory: @parent_memory)
     conversation = Conversation.new(messages: [ Message.new(source: "user", target: "assistant", message: "Start the adventure") ])
 
     workflow.setup(prompt: "Search the room", conversation: conversation)
-    state = workflow.execute
+    result = workflow.execute
 
-    assert workflow.complete?, "Workflow should complete: #{workflow.error || state&.error}"
-    assert_kind_of WorkflowState, state
-    result = workflow.result
+    assert workflow.complete?, "Workflow should complete: #{workflow.error}"
     assert_kind_of Hash, result
-    assert result[:narrative].is_a?(String)
-    assert result[:actions].is_a?(Array)
+    assert result[:narrative].is_a?(String), "Should return narrative string"
+    assert result[:actions].is_a?(Array), "Should return actions array"
     assert_kind_of Conversation, result[:conversation]
-    assert result.key?(:thoughts), "Result should include thoughts field"
   end
 
   

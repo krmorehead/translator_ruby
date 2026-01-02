@@ -5,21 +5,21 @@ require "test_helper"
 class WorkflowContextTest < ActiveSupport::TestCase
   def context
     @context ||= Contexts::WorkflowContext.new(
-      workflow_name: "test_workflow",
-      workflow_id: "wf-123"
+      goal: "test goal"
     )
   end
   speed_profile :fast
   test "initializes with workflow metadata" do
-    assert_equal "test_workflow", context.workflow_name
     assert_equal "wf-123", context.workflow_id
-    assert_equal :pending, context.current_state
+    assert_equal "test goal", context.goal
   end
 
   speed_profile :fast
-  test "generates workflow_id if not provided" do
-    ctx = Contexts::WorkflowContext.new
-    assert_not_nil ctx.workflow_id
+  test "generates id automatically" do
+    ctx = Contexts::WorkflowContext.new(
+      goal: "test"
+    )
+    assert_not_nil ctx.id
   end
 
   speed_profile :fast

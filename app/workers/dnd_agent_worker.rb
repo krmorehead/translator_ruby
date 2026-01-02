@@ -16,12 +16,11 @@
 #
 # @example
 #   worker = DndAgentWorker.new(
-#     goal: "I search the room for hidden doors",
-#     path: sandbox_path,
-#     memory_store: existing_memory_store
+#     goal: "Facilitate D&D game session",
+#     owner_id: "session-123"
 #   )
-#   result = worker.execute
-#   puts result[:narrative]
+#   result = worker.process_message("I search the room for hidden doors")
+#   puts result[:message]
 #
 class DndAgentWorker < AgentWorker
   # D&D-specific states - narrating instead of synthesizing
@@ -71,32 +70,122 @@ class DndAgentWorker < AgentWorker
   DEFAULT_MAX_ITERATIONS = 10
   DEFAULT_MAX_ACTIONS = 20
 
-  attr_reader :narrative, :completed_actions
+  attr_reader :narrative, :completed_actions, :session_id, :conversation
 
-  def initialize(goal:, path:, memory_store: nil, conversation: nil, **options)
-    super(goal: goal, path: path, **options)
-    @external_memory_store = memory_store
-    @conversation = conversation
+  def initialize(goal:, owner_id:)
+    # Set up required attributes
+    @owner_id = owner_id
+    @session_id = owner_id
+    
+    # Initialize parent with proper context
+    context = Contexts::BaseContext.new
+    super(goal: goal, context: context, owner_id: owner_id)
+    
+    # D&D-specific initialization
     @completed_actions = []
     @narrative = nil
-    @max_iterations = options.fetch(:max_iterations, DEFAULT_MAX_ITERATIONS)
-    @max_actions = options.fetch(:max_actions, DEFAULT_MAX_ACTIONS)
+    @conversation = Conversation.new(messages: [])
+  end
+  
+  # Override create_memory_store from AgentWorker
+  def create_memory_store
+    MemoryStore.new(owner_id: @owner_id)
+  end
+
+  # Override initialize_agent to set up D&D-specific context
+  def initialize_agent
+    super  # Parent sets up @memory_store, @goal_context, @action_history_context
+    
+    # D&D-specific: Build context from memory
+    @dnd_context = build_dnd_context
+    
+    Rails.logger.info("DnD: Agent initialized with context sections: #{@dnd_context.sub_contexts.keys}")
+  end
+
+  private
+
+  # Generate an initial quest/scenario for a new D&D session
+  def generate_initial_quest
+    # TODO: Use LLM to generate an interesting opening scenario
+    # For now, set a default scenario
+    quest = "You find yourself at the entrance of a mysterious dungeon..."
+    memory_store.update_section(
+      name: :quests,
+      content: {
+        title: "The Mysterious Dungeon",
+        description: quest,
+        status: "active",
+        created_at: Time.now.utc.iso8601
+      },
+      append: false
+    )
+    Rails.logger.info("DnD: Generated initial quest for session #{@session_id}")
+  end
+
+  public
+
+  # Process a user message in this session
+  # @param message [String] User's message
+  # @return [Hash] Result with :success, :message, :conversation
+  def process_message(message)
+    # Ensure agent is initialized
+    initialize_agent unless @memory_store
+    
+    # Add user message to conversation
+    conversation << Message.new(source: "user", target: "assistant", message: message)
+    
+    # Worker creates and orchestrates workflow
+    workflow = DndChatWorkflow.new(owner_id: @owner_id, parent_memory: @memory_store)
+    workflow.setup(prompt: message, conversation: conversation)
+    
+    result = workflow.execute
+    
+    # Extract narrative and update conversation
+    narrative = result[:narrative]
+    conversation << Message.new(source: "assistant", target: "user", message: narrative)
+    save_conversation
+    
+    {
+      success: true,
+      message: narrative,
+      conversation: conversation.to_h
+    }
+  rescue => e
+    Rails.logger.error("DnD message processing error: #{e.message}\n#{e.backtrace.join("\n")}")
+    {
+      success: false,
+      error: e.message
+    }
   end
 
   # Override execute to produce a narrative result
   def execute
+    execute_with_goal(@goal)
+  end
+
+  private
+
+  # Execute agent with a specific goal
+  def execute_with_goal(user_goal)
+    @goal = user_goal
     @started_at = Time.now.utc
     trigger(:start)
+    Rails.logger.info("DnD: Starting agent execution for goal: #{@goal}")
+    
     initialize_agent
+    Rails.logger.info("DnD: Agent initialized successfully")
 
     trigger(:initialized)
+    Rails.logger.info("DnD: Triggered initialized, entering main loop")
 
     # Main agent loop - plan and execute actions until intent is satisfied
     until should_stop?
       @iteration_count += 1
+      Rails.logger.info("DnD: Iteration #{@iteration_count}")
 
       # Plan phase: decide what to do next
       plan = plan_next_action
+      Rails.logger.info("DnD: Planned action: #{plan[:action]}")
       break if plan[:action] == "narrate" || plan[:action] == "stop"
 
       trigger(:action_selected)
@@ -128,36 +217,17 @@ class DndAgentWorker < AgentWorker
     @result = build_dnd_result
     @result
   rescue StandardError => e
+    Rails.logger.error("DnD agent execution error: #{e.class.name}: #{e.message}")
+    Rails.logger.error(e.backtrace.first(20).join("\n"))
     handle_error(e)
   end
 
-  
-  # Use external memory store if provided, otherwise create one
-  def create_memory_store
-    @external_memory_store || MemoryStore.new(
-      path: File.join(state_path, "memory.json"),
-      owner_id: @owner_id
-    )
-  end
-
-  # Initialize D&D-specific components
-  def initialize_agent
-    ensure_state_directory!
-    @memory_store = create_memory_store
-
-    # Set up goal context with player's intent
-    @goal_context.set_primary_goal(
-      goal,
-      metadata: { type: :player_intent }
-    )
-
-    # Build initial DnD context
-    @dnd_context = build_dnd_context
-
-    record_decision(
-      decision: "Starting D&D agent",
-      rationale: "Player intent: #{goal}",
-      context: { max_iterations: @max_iterations }
+  # Load conversation from memory
+  # Save conversation to memory
+  def save_conversation
+    @memory_store.set_section(
+      MemoryKinds::RECENT_CONVERSATION,
+      { messages: @conversation.messages }
     )
   end
 
@@ -229,7 +299,9 @@ class DndAgentWorker < AgentWorker
 
   # Build a tight planning context for D&D
   def build_dnd_planning_context
-    context = Contexts::WorkflowContext.new
+    context = Contexts::WorkflowContext.new(
+      goal: goal
+    )
 
     # Add scene (most important for action selection)
     scene_summary = @dnd_context.scene.compressed_summary
@@ -272,7 +344,9 @@ class DndAgentWorker < AgentWorker
 
   # Build context for intent evaluation
   def build_dnd_evaluation_context
-    context = Contexts::WorkflowContext.new
+    context = Contexts::WorkflowContext.new(
+      goal: goal
+    )
 
     context.add(content: "Player intent: #{goal}", topics: ["intent"], source: "player")
 
@@ -339,6 +413,7 @@ class DndAgentWorker < AgentWorker
 
     {
       success: true,
+      state: current_state,
       narrative: @narrative,
       actions: @completed_actions,
       goal: goal,
@@ -376,6 +451,7 @@ class DndAgentWorker < AgentWorker
 
     {
       success: false,
+      state: current_state,
       narrative: error_narrative,
       error: error.message,
       actions: @completed_actions,
