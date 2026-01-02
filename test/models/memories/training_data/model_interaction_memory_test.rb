@@ -7,7 +7,8 @@ class ModelInteractionMemoryTest < ActiveSupport::TestCase
     @sandbox = Rails.root.join("tmp", "model_interaction_test_#{Process.pid}_#{Thread.current.object_id}")
     FileUtils.mkdir_p(@sandbox)
     @memory_path = @sandbox.join("memory.json")
-    @store = MemoryStore.new(path: @memory_path.to_s)
+    @owner_id = SecureRandom.uuid
+    @store = MemoryStore.new(owner_id: @owner_id, path: @memory_path.to_s)
   end
 
   teardown do

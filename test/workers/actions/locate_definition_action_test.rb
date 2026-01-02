@@ -81,7 +81,6 @@ class LocateDefinitionActionTest < ActiveSupport::TestCase
     Actions::LocateDefinitionAction.new(
       agent: @agent,
       memory_store: @memory_store,
-      path: @test_path,
       goal: "Test goal"
     )
   end

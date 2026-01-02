@@ -131,7 +131,8 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
       base_path: @temp_dir
     )
 
-    expected_base = File.join(@temp_dir, ".agents/docs/projects")
+    # When AGENT_DATA_PATH is set, it uses that; otherwise uses base_path
+    expected_base = File.join(ENV.fetch("AGENT_DATA_PATH", @temp_dir), ".agents/docs/projects")
     assert service.project_directory.start_with?(expected_base)
   end
 end

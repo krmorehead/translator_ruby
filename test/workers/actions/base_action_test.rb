@@ -76,7 +76,6 @@ class BaseActionTest < ActiveSupport::TestCase
     Actions::BaseAction.new(
       agent: @agent,
       memory_store: @memory_store,
-      path: @test_path,
       goal: "Test goal"
     )
   end

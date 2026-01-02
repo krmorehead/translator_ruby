@@ -73,8 +73,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
     parent_workflow = ResearchWorkflow.new(
       goal: "parent workflow goal",
       research_path: @path,
-      owner_id: @owner_id,
-      parent_id: SecureRandom.uuid
+      owner_id: @owner_id
     )
     
     # Use the real workflow's memory store

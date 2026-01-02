@@ -54,10 +54,10 @@ module Graph
     end
 
     speed_profile :fast
-    test "node is frozen after creation" do
+    test "node is not frozen to allow subclass attribute setting" do
       node = Node.new(id: "test_1", node_type: :worker)
 
-      assert node.frozen?
+      refute node.frozen?
     end
 
     speed_profile :fast
