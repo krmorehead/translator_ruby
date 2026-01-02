@@ -4,14 +4,12 @@ class MemoryStoreTest < ActiveSupport::TestCase
   def setup
     @sandbox_path = Rails.root.join("test", "tool_test", "memory_store_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(@sandbox_path)
+    @owner_id = SecureRandom.uuid
   end
 
-  def teardown
-    FileUtils.rm_rf(@sandbox_path) if File.exist?(@sandbox_path)
+  def store
+    @store ||= build(:memory_store, base_dir: @sandbox_path, owner: @owner_id)
   end
-
-  let(:owner_id) { SecureRandom.uuid }
-  let(:store) { build(:memory_store, base_dir: @sandbox_path, owner: owner_id) }
   speed_profile :fast
   test "initializes defaults when file missing" do
     assert_includes store.list_sections, :recent_conversation
@@ -22,7 +20,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
   test "serialize and reload preserves sections" do
     store.update_section(name: :quests, content: { text: "Find the dragon" }, append: true)
 
-    reloaded = build(:memory_store, base_dir: @sandbox_path, owner: owner_id)
+    reloaded = build(:memory_store, base_dir: @sandbox_path, owner: @owner_id)
     quests = reloaded.get_section(:quests)
     assert_equal 1, quests.size
     assert_includes quests.first[:text], "Find the dragon"
