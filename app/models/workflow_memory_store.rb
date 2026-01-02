@@ -127,7 +127,12 @@ class WorkflowMemoryStore
   # @param payload [Hash] Additional data
   # @return [WorkflowMemories::StateTransition] The created memory object
   def record_state_transition(from:, to:, event:, source: nil, payload: {})
-    puts "DEBUG: record_state_transition START, array has: #{@sections[:state_transitions].map(&:class)}"
+    if @sections[:state_transitions].any? { |item| item.is_a?(Hash) }
+      puts "ERROR: Array already has Hash at start of record_state_transition!"
+      puts "Caller stack:"
+      puts caller[0..10].join("\n")
+    end
+    
     memory = WorkflowMemories::StateTransition.new(
       from: from,
       to: to,
@@ -138,14 +143,9 @@ class WorkflowMemoryStore
       checkpoint_id: current_checkpoint_id,
       state: to  # New state after transition
     )
-    puts "DEBUG: Created memory object: #{memory.class} - #{memory.inspect[0..100]}"
-    puts "DEBUG: Array before <<: #{@sections[:state_transitions].map(&:class)}"
     @sections[:state_transitions] << memory
-    puts "DEBUG: Array after <<: #{@sections[:state_transitions].map(&:class)}"
-    puts "DEBUG: After adding StateTransition, array has: #{@sections[:state_transitions].map(&:class)}"
     @last_transition_at = Time.now.utc
     save!
-    puts "DEBUG: After save!, array has: #{@sections[:state_transitions].map(&:class)}"
     memory
   end
 
