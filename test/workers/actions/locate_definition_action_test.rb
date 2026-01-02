@@ -7,7 +7,7 @@ class LocateDefinitionActionTest < ActiveSupport::TestCase
   def setup
     @test_path = File.expand_path("../../../fixtures/example_codebase", __FILE__)
     @agent = OpenStruct.new(goal: "Test goal", path: @test_path)
-    @memory_store = create_mock_memory_store
+    @memory_store = build(:memory_store)
   end
   speed_profile :fast
   test "locates class definitions" do

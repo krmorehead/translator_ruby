@@ -7,7 +7,7 @@ class SearchFilesActionTest < ActiveSupport::TestCase
   def setup
     @test_path = File.expand_path("../../../fixtures/example_codebase", __FILE__)
     @agent = OpenStruct.new(goal: "Test goal", path: @test_path)
-    @memory_store = create_mock_memory_store
+    @memory_store = build(:memory_store)
   end
   speed_profile :fast
   test "searches by filename pattern" do
@@ -82,27 +82,5 @@ class SearchFilesActionTest < ActiveSupport::TestCase
     )
   end
 
-  def create_mock_memory_store
-    # Create a mock that properly handles keyword arguments
-    mock = Object.new
-
-    def mock.get_section(_name)
-      []
-    end
-
-    def mock.update_section(name:, content:, append: true)
-      # No-op for tests
-    end
-
-    def mock.set_section(_name, _data)
-      # No-op for tests
-    end
-
-    def mock.respond_to?(method, *)
-      [:get_section, :update_section, :set_section].include?(method) || super
-    end
-
-    mock
-  end
 end
 

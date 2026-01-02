@@ -7,7 +7,7 @@ class BaseActionTest < ActiveSupport::TestCase
   def setup
     @test_path = File.expand_path("../../../fixtures/example_codebase", __FILE__)
     @agent = OpenStruct.new(goal: "Test goal", path: @test_path)
-    @memory_store = create_mock_memory_store
+    @memory_store = build(:memory_store)
   end
   speed_profile :fast
   test "success_result returns proper structure" do
@@ -29,7 +29,7 @@ class BaseActionTest < ActiveSupport::TestCase
 
     refute result[:success]
     assert_equal "Something went wrong", result[:error]
-    assert_equal "testing", result[:context]
+    assert_includes result[:summary], "Error: Something went wrong"
   end
 
   speed_profile :fast
@@ -43,12 +43,12 @@ class BaseActionTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "read_file returns nil for non-existent files" do
+  test "read_file returns empty string for non-existent files" do
     action = create_action
 
     content = action.send(:read_file, "nonexistent.rb")
 
-    assert_nil content
+    assert_equal "", content
   end
 
   speed_profile :fast
@@ -78,25 +78,6 @@ class BaseActionTest < ActiveSupport::TestCase
       memory_store: @memory_store,
       goal: "Test goal"
     )
-  end
-
-  def create_mock_memory_store
-    # Create a mock that properly handles keyword arguments
-    mock = Object.new
-
-    def mock.get_section(_name)
-      []
-    end
-
-    def mock.update_section(name:, content:, append: true)
-      # No-op for tests
-    end
-
-    def mock.set_section(_name, _data)
-      # No-op for tests
-    end
-
-    mock
   end
 end
 

@@ -21,12 +21,12 @@ module Actions
     protected
     
     # Helper to build success result
-    def success_result(result, summary: nil)
+    # Merges provided data into a success response
+    def success_result(**data)
       {
         success: true,
-        result: result,
-        summary: summary || result.to_s
-      }
+        timestamp: Time.now.utc.iso8601
+      }.merge(data)
     end
     
     # Helper to build error result

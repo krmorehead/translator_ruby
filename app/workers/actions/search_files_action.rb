@@ -65,14 +65,13 @@ module Actions
         )
       end
 
-      result_data = {
+      success_result(
         files: files,
         count: files.size,
         pattern: pattern,
         search_type: search_type,
         findings: files.any? ? [{ text: "Found #{files.size} files matching '#{pattern}'", source: "search" }] : []
-      }
-      success_result(result_data)
+      )
     end
 
     
