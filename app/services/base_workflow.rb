@@ -157,12 +157,7 @@ class BaseWorkflow
   # @return [String] The ID to use for graph edges
   def extract_parent_id(parent_memory)
     # Workflow memory stores use workflow_id, others use id
-    if parent_memory.respond_to?(:workflow_id)
-      parent_memory.workflow_id
-    elsif parent_memory.respond_to?(:id)
       parent_memory.id
-    else
-      nil
     end
   end
 end
