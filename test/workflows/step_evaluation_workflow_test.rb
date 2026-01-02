@@ -77,7 +77,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
     )
     
     # Use the real workflow's memory store
-    parent_memory = parent_workflow.memory
+    parent_memory = parent_workflow.workflow_memory
 
     workflow = StepEvaluationWorkflow.new(
       owner_id: @owner_id,

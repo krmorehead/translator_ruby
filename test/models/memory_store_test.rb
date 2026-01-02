@@ -14,17 +14,15 @@ class MemoryStoreTest < ActiveSupport::TestCase
   let(:store) { build(:memory_store, base_dir: @sandbox_path, owner: owner_id) }
   speed_profile :fast
   test "initializes defaults when file missing" do
-    store = new_store
     assert_includes store.list_sections, :recent_conversation
     assert_equal [], store.get_section(:quests)
   end
 
   speed_profile :fast
   test "serialize and reload preserves sections" do
-    store = new_store
     store.update_section(name: :quests, content: { text: "Find the dragon" }, append: true)
 
-    reloaded = new_store
+    reloaded = build(:memory_store, base_dir: @sandbox_path, owner: owner_id)
     quests = reloaded.get_section(:quests)
     assert_equal 1, quests.size
     assert_includes quests.first[:text], "Find the dragon"
@@ -32,7 +30,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "append and replace behaviors" do
-    store = new_store
     store.update_section(name: :people, content: { text: "Gandalf" }, append: true)
     store.update_section(name: :people, content: { text: "Aragorn" }, append: true)
 
@@ -47,7 +44,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "update specific section and retrieve" do
-    store = new_store
     store.update_section(name: :current_scene, content: { text: "In the tavern" }, append: false)
 
     scene = store.get_section(:current_scene)
@@ -58,7 +54,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
   # Context integration tests
   speed_profile :fast
   test "context_for returns a context for a section" do
-    store = new_store
     store.update_section(name: :current_scene, content: { text: "Dark forest" }, append: false)
 
     context = store.context_for(:current_scene)
@@ -69,7 +64,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "context_for uses memory class context_class" do
-    store = new_store
     store.update_section(name: :current_scene, content: { text: "Castle" }, append: false)
 
     context = store.context_for(:current_scene)
@@ -80,7 +74,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "context_for caches contexts" do
-    store = new_store
     store.update_section(name: :people, content: { text: "Gandalf" }, append: true)
 
     context1 = store.context_for(:people)
@@ -91,7 +84,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "set_section invalidates cached context" do
-    store = new_store
     store.update_section(name: :people, content: { text: "Gandalf" }, append: true)
 
     context1 = store.context_for(:people)
@@ -103,7 +95,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "update_section invalidates cached context" do
-    store = new_store
     context1 = store.context_for(:quests)
 
     store.update_section(name: :quests, content: { text: "Find dragon" }, append: true)
@@ -114,7 +105,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "full_context returns composite context with sub-contexts" do
-    store = new_store
     store.update_section(name: :current_scene, content: { text: "Tavern" }, append: false)
     store.update_section(name: :people, content: { text: "Bartender" }, append: true)
 
@@ -127,7 +117,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "invalidate_contexts clears all cached contexts" do
-    store = new_store
     context1 = store.context_for(:people)
 
     store.invalidate_contexts!

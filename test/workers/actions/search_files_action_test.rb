@@ -78,7 +78,6 @@ class SearchFilesActionTest < ActiveSupport::TestCase
     Actions::SearchFilesAction.new(
       agent: @agent,
       memory_store: @memory_store,
-      path: @test_path,
       goal: "Test goal"
     )
   end

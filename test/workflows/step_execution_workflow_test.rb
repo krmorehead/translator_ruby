@@ -50,7 +50,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
       research_path: @path,
       owner_id: @owner_id
     )
-    parent_memory = parent_workflow.memory
+    parent_memory = parent_workflow.workflow_memory
 
     workflow = StepExecutionWorkflow.new(
       owner_id: @owner_id,
