@@ -39,7 +39,6 @@ FactoryBot.define do
     skip_create
 
     transient do
-      base_dir { Dir.mktmpdir("workflow_memory_test") }
       owner { SecureRandom.uuid }
       workflow_id_value { SecureRandom.uuid }
       workflow_name_value { "test_workflow" }
@@ -47,7 +46,7 @@ FactoryBot.define do
     end
 
     initialize_with do
-      workflow_path = File.join(base_dir, owner, "workflows", "#{workflow_name_value}_#{workflow_id_value}.json")
+      workflow_path = File.join(ENV.fetch("AGENT_DATA_PATH"), owner, "workflows", "#{workflow_name_value}_#{workflow_id_value}.json")
       FileUtils.mkdir_p(File.dirname(workflow_path))
       
       # Always create a real parent instance if not provided
