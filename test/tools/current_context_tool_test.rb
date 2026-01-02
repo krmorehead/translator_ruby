@@ -2,26 +2,19 @@ require "test_helper"
 
 class CurrentContextToolTest < ActiveSupport::TestCase
   def setup
-    @sandbox = Rails.root.join("tmp", "current_context_tool_test").to_s
-    FileUtils.mkdir_p(@sandbox)
-    @memory_path = File.join(@sandbox, "memory.json")
-    @store = MemoryStore.new(
-      path: @memory_path,
-      owner_id: SecureRandom.uuid
-    )
+    @owner_id = SecureRandom.uuid
+    @store = MemoryStore.new(owner_id: @owner_id)
     @store.set_section(MemoryKinds::CURRENT_SCENE, "A dimly lit tavern")
     @store.set_section(MemoryKinds::PEOPLE, [ { text: "Barkeep" } ])
     @store.set_section(MemoryKinds::CURRENT_GOAL, "Find the missing scout")
     @store.set_section(MemoryKinds::RECENT_CONVERSATION, [ "Hello there" ])
+    @store.save!
   end
 
-  def teardown
-    FileUtils.rm_rf(@sandbox)
-  end
   speed_profile :medium
   test "returns current context sections" do
     tool = CurrentContextTool.new()
-    result = tool.execute(path: @memory_path)
+    result = tool.execute(owner_id: @owner_id)
 
     assert result[:success]
     ctx = result[:result]

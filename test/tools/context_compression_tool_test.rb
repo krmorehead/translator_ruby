@@ -2,22 +2,18 @@ require "test_helper"
 
 class ContextCompressionToolTest < ActiveSupport::TestCase
   def setup
-    @sandbox = Rails.root.join("tmp", "context_compression_tool_test").to_s
-    FileUtils.mkdir_p(@sandbox)
-    @memory_path = File.join(@sandbox, "memory.json")
-    @store = MemoryStore.new(owner_id: SecureRandom.uuid)
+    @owner_id = SecureRandom.uuid
+    @store = MemoryStore.new(owner_id: @owner_id)
     @store.update_section(name: :current_scene, content: "A misty glade", append: false)
     @store.update_section(name: :people, content: "Elder Rowan", append: true)
     @store.update_section(name: :quest_log, content: "Recover the moonstone", append: true)
+    @store.save!
   end
 
-  def teardown
-    FileUtils.rm_rf(@sandbox)
-  end
   speed_profile :medium
   test "returns weighted summaries for all sections" do
     tool = ContextCompressionTool.new()
-    result = tool.execute(path: @memory_path)
+    result = tool.execute(owner_id: @owner_id)
 
     assert result[:success]
     payload = result[:result]
