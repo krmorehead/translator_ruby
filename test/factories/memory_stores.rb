@@ -6,14 +6,11 @@ FactoryBot.define do
     skip_create
 
     transient do
-      base_dir { Dir.mktmpdir("memory_store_test") }
       owner { SecureRandom.uuid }
     end
 
     initialize_with do
-      memory_path = File.join(base_dir, owner, "memory.json")
-      FileUtils.mkdir_p(File.dirname(memory_path))
-      new(path: memory_path, owner_id: owner)
+      new(owner_id: owner)
     end
 
     trait :with_decisions do
