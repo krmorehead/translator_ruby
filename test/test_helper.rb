@@ -37,7 +37,9 @@ module ActiveSupport
     # Ensure AGENT_DATA_PATH exists at start of each test
     setup do
       agent_data_path = ENV["AGENT_DATA_PATH"]
-      FileUtils.mkdir_p(agent_data_path) if agent_data_path && !File.exist?(agent_data_path)
+      if agent_data_path
+        FileUtils.mkdir_p(agent_data_path) unless File.directory?(agent_data_path)
+      end
     end
 
     # Automatic cleanup of AGENT_DATA_PATH after each test

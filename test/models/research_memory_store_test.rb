@@ -68,9 +68,11 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
 
     store1 = build(:research_memory_store, owner_id: other_owner1)
     store1.set_section(:research_goal, [{ text: "Goal 1" }])
+    store1.save!
 
     store2 = build(:research_memory_store, owner_id: other_owner2)
     store2.set_section(:research_goal, [{ text: "Goal 2" }])
+    store2.save!
 
     owners = ResearchMemoryStore.list_owners
 

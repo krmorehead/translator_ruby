@@ -262,8 +262,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
       step: @step,
-      step_result: @successful_result,
-      path: @path
+      step_result: @successful_result
     )
 
     evaluation = workflow.execute
