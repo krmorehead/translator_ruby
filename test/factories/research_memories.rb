@@ -6,12 +6,11 @@ FactoryBot.define do
     skip_create
 
     transient do
-      base_dir { Dir.mktmpdir("research_memory_test") }
       owner_id { SecureRandom.uuid }
     end
 
     initialize_with do
-      path = File.join(base_dir, owner_id, "research_memory.json")
+      path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), owner_id, "research_memory.json")
       FileUtils.mkdir_p(File.dirname(path))
       ResearchMemoryStore.new(path: path, owner_id: owner_id)
     end
