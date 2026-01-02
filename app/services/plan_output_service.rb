@@ -81,6 +81,7 @@ class PlanOutputService
 
   # Write plan.json with full serialization
   def write_plan_json
+    ensure_directory!
     path = File.join(plan_directory, "plan.json")
     content = JSON.pretty_generate(execution_plan.to_h)
     File.write(path, content)
