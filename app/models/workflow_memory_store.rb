@@ -127,6 +127,7 @@ class WorkflowMemoryStore
   # @param payload [Hash] Additional data
   # @return [WorkflowMemories::StateTransition] The created memory object
   def record_state_transition(from:, to:, event:, source: nil, payload: {})
+    puts "DEBUG: record_state_transition START, array has: #{@sections[:state_transitions].map(&:class)}"
     memory = WorkflowMemories::StateTransition.new(
       from: from,
       to: to,
