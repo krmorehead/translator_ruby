@@ -353,7 +353,7 @@ class ResearchWorkflow < BaseWorkflow
     decomposition_context = build_decomposition_context
 
     # Find relevant context if available
-    relevant_context = find_relevant_context("research goal context chain")
+    relevant_context = find_relevant_context(query_text: "research goal context chain")
     decomposition_context.merge!(parent_research_context: relevant_context) if relevant_context.any?
 
     decomposition = GoalDecompositionWorkflow.new(
