@@ -34,6 +34,12 @@ module ActiveSupport
     # Include SpeedProfile module for test speed enforcement
     include SpeedProfile unless ENV["SKIP_SPEED_PROFILE_VALIDATION"] == "true"
 
+    # Ensure AGENT_DATA_PATH exists at start of each test
+    setup do
+      agent_data_path = ENV["AGENT_DATA_PATH"]
+      FileUtils.mkdir_p(agent_data_path) if agent_data_path && !File.exist?(agent_data_path)
+    end
+
     # Automatic cleanup of AGENT_DATA_PATH after each test
     teardown do
       agent_data_path = ENV["AGENT_DATA_PATH"]
