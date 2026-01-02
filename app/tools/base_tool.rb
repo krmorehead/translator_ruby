@@ -3,10 +3,7 @@
 # Abstract base class for all tools that can be called by the LLM.
 # Subclasses must implement the schema class method and execute instance method.
 class BaseTool
-  # Default base path for agent data storage
   # Override with AGENT_DATA_PATH env var
-  DEFAULT_DATA_PATH = ".agents/memories"
-
   # Base tool config for OpenAI tool calling
   def self.tool_choice
     "auto"
@@ -14,16 +11,6 @@ class BaseTool
 
   def self.tools
     [ schema ]
-  end
-
-  # Base path for agent data - use env var or default
-  def self.data_path
-    ENV.fetch("AGENT_DATA_PATH", DEFAULT_DATA_PATH)
-  end
-
-  # Default file path for this tool's data
-  def self.default_file_path
-    File.join(data_path, "#{name_identifier}.json")
   end
 
   def initialize
@@ -72,16 +59,6 @@ class BaseTool
   # Returns a hash with { success: bool, result: string, error: string }
   def execute(**args)
     raise NotImplementedError, "#{self.class.name} must implement #execute"
-  end
-
-  # Instance method to access data path
-  def data_path
-    self.class.data_path
-  end
-
-  # Instance method to access default file path
-  def default_file_path
-    self.class.default_file_path
   end
 
   

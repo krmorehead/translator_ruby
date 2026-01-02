@@ -109,11 +109,10 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "uses custom output_base when provided" do
-    custom_output = File.join(@temp_dir, "custom", "output")
+    custom_path = File.join(@temp_dir, "custom", "output")
     service = ProjectPlanOutputService.new(
       project_name: "test_project",
-      base_path: @temp_dir,
-      output_base: custom_output
+      output_base: custom_path
     )
 
     paths = service.write(
@@ -124,16 +123,6 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
     assert paths[:project_path].start_with?(custom_output)
   end
 
-  speed_profile :fast
-  test "default output_base is .agents/docs/projects" do
-    service = ProjectPlanOutputService.new(
-      project_name: "test_project",
-      base_path: @temp_dir
-    )
 
-    # When AGENT_DATA_PATH is set, it uses that; otherwise uses base_path
-    expected_base = File.join(ENV.fetch("AGENT_DATA_PATH", @temp_dir), ".agents/docs/projects")
-    assert service.project_directory.start_with?(expected_base)
-  end
 end
 

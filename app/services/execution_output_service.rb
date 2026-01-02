@@ -28,8 +28,8 @@ class ExecutionOutputService
   #
   # @param base_path [String] Base directory for execution logs
   # @param options [Hash] Additional options
-  def initialize(base_path: nil, **options)
-    @base_path = base_path || File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_BASE_PATH)
+  def initialize(**options)
+    @base_path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_BASE_PATH)
     @options = DEFAULT_OPTIONS.merge(options)
   end
 

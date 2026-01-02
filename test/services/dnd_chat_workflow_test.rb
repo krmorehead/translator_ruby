@@ -8,14 +8,6 @@ class DndChatWorkflowTest < ActiveSupport::TestCase
     @parent_memory = MemoryStore.new(owner_id: @owner_id)
     load_tools
   end
-
-  def teardown
-    # Cleanup memory files
-    data_path = ENV.fetch("AGENT_DATA_PATH")
-    owner_path = File.join(data_path, @owner_id)
-    FileUtils.rm_rf(owner_path) if File.exist?(owner_path)
-  end
-  
   speed_profile :fast
   test "inherits base workflow and exposes workflow_name" do
     workflow = DndChatWorkflow.new(owner_id: @owner_id, parent_memory: @parent_memory)

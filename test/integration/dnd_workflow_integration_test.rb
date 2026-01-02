@@ -1,23 +1,22 @@
 require "test_helper"
 
 class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
-  # Use the same data path as the controller/tools
-  DATA_PATH = BaseTool.data_path
-
   def setup
     # Verify LLM configuration (fail fast if not configured per OOP Lesson 46)
     ENV.fetch("API_KEY")
     ENV.fetch("LLM_URL")
     
-    FileUtils.rm_rf(DATA_PATH)
-    FileUtils.mkdir_p(DATA_PATH)
+    # Create isolated temp directory for this test
+    @data_path = Rails.root.join("tmp", "dnd_workflow_integration_test_#{Process.pid}_#{Thread.current.object_id}").to_s
+    FileUtils.rm_rf(@data_path)
+    FileUtils.mkdir_p(@data_path)
     
     # Create session for testing
     @session_id = SecureRandom.uuid
   end
 
   def teardown
-    FileUtils.rm_rf(DATA_PATH) if File.exist?(DATA_PATH)
+    FileUtils.rm_rf(@data_path) if @data_path && File.exist?(@data_path)
   end
   speed_profile :slow
   test "simple prompt completes the full workflow" do

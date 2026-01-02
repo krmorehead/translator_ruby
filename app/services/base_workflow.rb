@@ -132,18 +132,20 @@ class BaseWorkflow
   def initialize_workflow_memory
     parent_id = @parent_memory ? @parent_memory.id : @owner_id
     
+    # Create path under AGENT_DATA_PATH
+    memory_path = File.join(
+      ENV.fetch("AGENT_DATA_PATH", "."),
+      @owner_id,
+      "workflow_#{@workflow_id}_memory.json"
+    )
+    
     @workflow_memory = WorkflowMemoryStore.new(
       workflow_id: @workflow_id,
       workflow_name: self.class.workflow_name,
       parent_id: parent_id,
       owner_id: @owner_id,
-      path: workflow_memory_path
+      path: memory_path
     )
-  end
-
-  def workflow_memory_path
-    base = ENV.fetch("AGENT_DATA_PATH")
-    File.join(base, "workflows", @workflow_id, "#{self.class.workflow_name}_#{@workflow_id}.json")
   end
 
   def record_state_to_memory(from, to, event, payload)

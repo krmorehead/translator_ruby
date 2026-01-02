@@ -15,16 +15,14 @@
 #   puts paths[:project_path]
 #
 class ProjectPlanOutputService
-  attr_reader :project_name, :base_path, :output_base
+  attr_reader :project_name, :output_base
 
   # @param project_name [String] Name of the project (will be slugified)
   # @param base_path [String] Path to the codebase (for context)
   # @param output_base [String] Base output directory (default: docs/projects/)
-  def initialize(project_name:, base_path:, output_base: nil)
+  def initialize(project_name:, output_base: ENV.fetch("AGENT_DATA_PATH"))
     @project_name = project_name
-    @base_path = base_path
-    @output_base = output_base || default_output_base
-  end
+    @output_base = output_base
 
   # Full path to the project directory
   # @return [String] Project directory path
@@ -90,7 +88,7 @@ class ProjectPlanOutputService
 
   # Default output base directory
   def default_output_base
-    File.join(ENV.fetch("AGENT_DATA_PATH", base_path), ".agents/docs/projects")
+    File.join(base_path, ".agents/docs/projects")
   end
 
   # Ensure the project directory exists

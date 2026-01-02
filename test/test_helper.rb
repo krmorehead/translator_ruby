@@ -34,6 +34,14 @@ module ActiveSupport
     # Include SpeedProfile module for test speed enforcement
     include SpeedProfile unless ENV["SKIP_SPEED_PROFILE_VALIDATION"] == "true"
 
+    # Automatic cleanup of AGENT_DATA_PATH after each test
+    teardown do
+      agent_data_path = ENV["AGENT_DATA_PATH"]
+      if agent_data_path && File.exist?(agent_data_path)
+        FileUtils.rm_rf(agent_data_path)
+      end
+    end
+
     # Helper to create a temporary directory initialized as a Git repository
     # @return [String] Path to the temporary Git repository
     def create_temp_git_repo
