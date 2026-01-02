@@ -3,21 +3,31 @@
 require "test_helper"
 
 class ToolCallPromptTest < ActiveSupport::TestCase
-  def setup
-    @tools = [
+  # Test tool class following OOP patterns
+  class TestTool < BaseTool
+    def self.name_identifier
+      "test_tool"
+    end
+
+    def self.description
+      "A test tool"
+    end
+
+    def self.parameters_schema
       {
-        type: "function",
-        function: {
-          name: "test_tool",
-          description: "A test tool",
-          parameters: {
-            type: "object",
-            properties: { arg: { type: "string" } },
-            required: [ "arg" ]
-          }
-        }
+        type: "object",
+        properties: { arg: { type: "string" } },
+        required: ["arg"]
       }
-    ]
+    end
+
+    def execute(arg:)
+      { success: true, result: "test result: #{arg}" }
+    end
+  end
+
+  def setup
+    @tools = [TestTool.new]
   end
   speed_profile :fast
   test "inherits from BasePrompt" do

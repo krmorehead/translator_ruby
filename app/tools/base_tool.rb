@@ -39,6 +39,15 @@ class BaseTool
     schema
   end
 
+  # Instance methods that delegate to class methods (OOP pattern: tools are objects)
+  def name
+    self.class.name_identifier
+  end
+
+  def to_h
+    self.class.schema
+  end
+
   # Returns the tool name identifier (e.g., "read_file")
   def self.name_identifier
     raise NotImplementedError, "#{self} must implement .name_identifier"
