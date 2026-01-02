@@ -42,10 +42,10 @@ module Actions
     # @param type [String] The type of definition to find
     # @return [Hash] Search results with definition locations
     def execute(symbol:, type: "any")
-      return failure_result("Symbol cannot be empty") if symbol.strip.empty?
+      return error_result("Symbol cannot be empty") if symbol.strip.empty?
 
       valid_types = %w[class module method constant any]
-      return failure_result("Invalid type: #{type}") unless valid_types.include?(type)
+      return error_result("Invalid type: #{type}") unless valid_types.include?(type)
 
       definitions = find_definitions(symbol, type)
 

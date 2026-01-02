@@ -39,9 +39,6 @@ module Actions
       }
     end
     
-    # Alias for error_result (used by some actions)
-    alias_method :failure_result, :error_result
-    
     # Get the working directory path from agent
     def path
       @agent.respond_to?(:path) ? @agent.path : ENV.fetch("AGENT_DATA_PATH", ".")

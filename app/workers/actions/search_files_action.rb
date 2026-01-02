@@ -46,8 +46,8 @@ module Actions
     # @param limit [Integer] Maximum results
     # @return [Hash] Search results
     def execute(pattern:, search_type: "filename", file_types: nil, limit: 20)
-      return failure_result("Pattern cannot be empty") if pattern.strip.empty?
-      return failure_result("Invalid search_type") unless %w[filename content].include?(search_type)
+      return error_result("Pattern cannot be empty") if pattern.strip.empty?
+      return error_result("Invalid search_type") unless %w[filename content].include?(search_type)
 
       files = case search_type
               when "content"

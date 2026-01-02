@@ -40,7 +40,7 @@ module Actions
     # @param context [String] Additional context
     # @return [Hash] Decomposition results with sub-questions
     def execute(question:, max_questions: 5, context: nil)
-      return failure_result("Question cannot be empty") if question.strip.empty?
+      return error_result("Question cannot be empty") if question.strip.empty?
 
       # Check if this is already a leaf question (simple enough to answer directly)
       if leaf_question?(question)

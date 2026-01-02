@@ -40,7 +40,7 @@ module Actions
     # @param limit [Integer] Maximum results
     # @return [Hash] Trace results with reference locations
     def execute(symbol:, exclude_definitions: true, limit: 30)
-      return failure_result("Symbol cannot be empty") if symbol.strip.empty?
+      return error_result("Symbol cannot be empty") if symbol.strip.empty?
 
       references = find_references(symbol, exclude_definitions)
 
