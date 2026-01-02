@@ -55,7 +55,6 @@ class GoalDecompositionWorkflow < BaseWorkflow
 def execute
   trigger(:start)
   Rails.logger.info "[GoalDecompositionWorkflow] Starting decomposition for goal: #{goal}"
-  Rails.logger.info "[GoalDecompositionWorkflow] Using context: #{context.inspect}"
   
   begin
     record_decision(
@@ -65,15 +64,22 @@ def execute
     )
 
     trigger(:initialized)
-    Rails.logger.info "[GoalDecompositionWorkflow] Building initial context"
-    decomp_context = build_initial_context
-    Rails.logger.info "[GoalDecompositionWorkflow] Initial context built: #{decomp_context.inspect}"
+    Rails.logger.info "[GoalDecompositionWorkflow] Building initial context via graph service"
+    
+    # Context object handles its own initialization via graph service
+    workflow_context = Contexts::WorkflowContext.new(
+      workflow_id: @workflow_id,
+      goal: @goal,
+      max_depth: @max_depth
+    )
+    
+    Rails.logger.info "[GoalDecompositionWorkflow] Initial context loaded with #{workflow_context.size} entries"
     
     @goal_tree = decompose_recursively(
       goal: goal,
       parent_id: nil,
       depth: 0,
-      decomp_context: decomp_context
+      context: workflow_context
     )
 
     Rails.logger.info "[GoalDecompositionWorkflow] Decomposition completed with tree: #{@goal_tree.inspect}"
@@ -102,45 +108,7 @@ end
     collect_leaves(@goal_tree)
   end
 
-  
-  def build_initial_context
-    initial = {}
-
-    # Include codebase summary
-    initial[:codebase_summary] = context[:codebase_summary] if context[:codebase_summary]
-
-    # Include focus areas as guidance
-    if context[:focus_areas]&.any?
-      initial[:focus_guidance] = "Focus particularly on: #{context[:focus_areas].join(', ')}"
-    end
-
-    # Include known files
-    if context[:known_files]&.any?
-      initial[:known_relevant_files] = context[:known_files]
-    end
-
-    # Include prior findings
-    if context[:prior_findings].present?
-      initial[:prior_knowledge] = context[:prior_findings]
-    end
-
-    # Find relevant context from memory
-    relevant_context = find_relevant_context("research goal sub questions context chain")
-
-    if relevant_context.any?
-      # Use first relevant context as parent goal
-      initial[:parent_goal] = relevant_context.first.to_s
-    end
-
-    # Include constraints
-    if context[:constraints].present?
-      initial[:constraints] = context[:constraints]
-    end
-
-    initial
-  end
-
-  def decompose_recursively(goal:, parent_id:, depth:, decomp_context:)
+  def decompose_recursively(goal:, parent_id:, depth:, context:)
     # Base case: max depth reached
     if depth >= max_depth
       return create_leaf_node(goal, parent_id, depth, "Max depth reached")
@@ -148,9 +116,16 @@ end
 
     # Use TopicDecompositionPrompt to break down the goal
     prompt = Research::TopicDecompositionPrompt.new
+    
+    # Build context hash from context object for prompt
+    decomp_context = {
+      formatted_context: context.format_for_prompt(goal),
+      parent_question: parent_id ? goal : nil
+    }
+    
     result = prompt.decompose(
       topic: goal,
-      context: decomp_context.merge(parent_question: parent_id ? goal : nil)
+      context: decomp_context
     )
 
     questions = result[:content]["questions"] || []
@@ -197,10 +172,7 @@ end
           goal: question_text,
           parent_id: node[:id],
           depth: depth + 1,
-          decomp_context: decomp_context.merge(
-            parent_question: goal,
-            previous_questions: node[:children].map { |c| c[:text] }
-          )
+          context: context
         )
         child[:priority] = q["priority"]
         child[:rationale] = q["rationale"]
