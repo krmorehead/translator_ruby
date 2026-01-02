@@ -64,7 +64,11 @@ class BasePrompt
     parameters = build_parameters(messages)
 
     response = @client.chat(parameters: parameters)
-    parse_response(response)
+    
+    # Wrap in JSON response if this prompt expects JSON schema
+    response = LlmJsonResponse.new(response) if response_schema
+    
+    response.to_h
   rescue JSON::ParserError => e
     raise "Failed to parse LLM response as JSON: #{e.message}"
   rescue => e
@@ -112,21 +116,6 @@ class BasePrompt
         "Total characters: #{total_chars}. Reduce context or increase MAX_SAFE_CONTEXT."
       )
     end
-  end
-
-  def parse_response(response)
-    # Response from GenericLlmClient is now an LlmResponse object
-    raise TypeError, "response must be an LlmResponse, got #{response.class}" unless response.is_a?(LlmResponse)
-    
-    # Validate content if response_schema is required
-    if response_schema
-      raise "LLM response missing content" unless response.content
-      # Let LlmResponse handle JSON parsing
-      return response.to_prompt_result(parse_json: true)
-    end
-
-    # For non-JSON responses, return content as-is
-    response.to_prompt_result(parse_json: false)
   end
 
   def build_messages(prompt, context)
