@@ -66,9 +66,11 @@ class WorkflowMemoryStore
     else
       puts "DEBUG: Initializing fresh (file doesn't exist or is empty)"
       @sections = deep_dup(DEFAULT_SECTIONS)
+      puts "DEBUG: After deep_dup, state_transitions has: #{@sections[:state_transitions].inspect}"
       @started_at = Time.now.utc
       @last_transition_at = Time.now.utc
     end
+    puts "DEBUG: End of initialize, state_transitions has #{@sections[:state_transitions].size} items: #{@sections[:state_transitions].map(&:class)}"
   end
 
   # Load WorkflowMemoryStore from disk
