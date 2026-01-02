@@ -71,7 +71,7 @@ module Actions
       end
 
       if definitions.any?
-        success_result(
+        result_data = {
           definitions: definitions,
           count: definitions.size,
           symbol: symbol,
@@ -80,19 +80,20 @@ module Actions
             text: "Found #{definitions.size} definition(s) of '#{symbol}'",
             source: "locate_definition"
           }]
-        )
+        }
+        success_result(result_data)
       else
-        success_result(
+        result_data = {
           definitions: [],
           count: 0,
           symbol: symbol,
           requested_type: type,
-          summary: "No definition found for '#{symbol}'",
           findings: [{
             text: "Could not locate definition of '#{symbol}' in the codebase",
             source: "locate_definition"
           }]
-        )
+        }
+        success_result(result_data, summary: "No definition found for '#{symbol}'")
       end
     end
 

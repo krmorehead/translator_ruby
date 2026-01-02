@@ -22,10 +22,10 @@ class BaseActionTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "failure_result returns proper structure" do
+  test "error_result returns proper structure" do
     action = create_action
 
-    result = action.send(:failure_result, "Something went wrong", context: "testing")
+    result = action.send(:error_result, "Something went wrong")
 
     refute result[:success]
     assert_equal "Something went wrong", result[:error]
