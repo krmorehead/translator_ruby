@@ -36,9 +36,10 @@ module ActiveSupport
 
     # Create isolated AGENT_DATA_PATH for each test to avoid parallel conflicts
     setup do
-      # Each test gets its own unique directory
-      @test_agent_path = File.join("tmp", "test_agent_data", SecureRandom.uuid)
-      @original_agent_data_path = ENV["AGENT_DATA_PATH"]
+      # Each test gets its own unique directory under the configured AGENT_DATA_PATH
+      base_path = ENV["AGENT_DATA_PATH"]
+      @test_agent_path = File.join(base_path, SecureRandom.uuid)
+      @original_agent_data_path = base_path
       ENV["AGENT_DATA_PATH"] = @test_agent_path
       FileUtils.mkdir_p(@test_agent_path)
     end
@@ -46,8 +47,7 @@ module ActiveSupport
     # Automatic cleanup of test-specific AGENT_DATA_PATH after each test
     teardown do
       FileUtils.rm_rf(@test_agent_path) if @test_agent_path && File.exist?(@test_agent_path)
-      ENV["AGENT_DATA_PATH"] = @original_agent_data_path if @original_agent_data_path
-      ENV.delete("AGENT_DATA_PATH") unless @original_agent_data_path
+      ENV["AGENT_DATA_PATH"] = @original_agent_data_path
     end
 
     # Helper to create a temporary directory initialized as a Git repository
