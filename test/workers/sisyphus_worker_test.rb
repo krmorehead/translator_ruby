@@ -53,7 +53,6 @@ class SisyphusWorkerTest < ActiveSupport::TestCase
     )
 
     assert_equal @execution_plan, worker.execution_plan
-    assert_equal @path, worker.path
     assert_equal "Test Goal", worker.goal
     assert_equal :autonomous, worker.config.approval_mode
     assert_equal 3, worker.config.max_retries

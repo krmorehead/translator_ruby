@@ -58,6 +58,7 @@ class BaseWorker
     initialize_state_machine
     @owner_id = options[:owner_id] || SecureRandom.uuid
     @goal = goal
+    @path = options[:path] ? File.expand_path(options[:path]) : nil
     @context = context
     @options = options
     @result = nil

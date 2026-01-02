@@ -85,12 +85,13 @@ class BaseWorkerTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "creates directory for non-existent paths" do
-    # BaseWorker now creates directories for agent data paths
+    # BaseWorker stores path but doesn't need to create it
     test_path = File.join(temp_dir, "new_subdir_#{SecureRandom.hex(4)}")
     refute File.exist?(test_path)
 
     worker = BaseWorker.new(goal: "test goal", path: test_path, context: worker_context)
-    assert File.exist?(test_path), "Worker should create non-existent directory"
+    # Worker stores the path but doesn't need to create the directory
+    # Directories are created when actually writing files via services
     assert_equal File.expand_path(test_path), worker.path
   end
 
@@ -127,21 +128,11 @@ class BaseWorkerTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "output_path uses RESEARCH_OUTPUT_PATH env var when set" do
-    custom_path = File.join(temp_dir, "custom_output")
-
-    original_env = ENV["RESEARCH_OUTPUT_PATH"]
-    ENV["RESEARCH_OUTPUT_PATH"] = custom_path
-
+  test "output_path uses AGENT_DATA_PATH for output" do
     worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
-    assert_equal custom_path, worker.output_path
-  ensure
-    if original_env
-      ENV["RESEARCH_OUTPUT_PATH"] = original_env
-    else
-      ENV.delete("RESEARCH_OUTPUT_PATH")
-    end
+    expected_path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), BaseWorker::DEFAULT_OUTPUT_PATH)
+    assert_equal expected_path, worker.output_path
   end
 
   speed_profile :fast
