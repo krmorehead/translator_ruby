@@ -28,11 +28,6 @@ class DaedalusControllerTest < ActionDispatch::IntegrationTest
     assert_match(/path does not exist or is not readable/i, json["error"])
   end
 
-  speed_profile :fast
-  test "should accept valid params" do
-    # This test will actually invoke the DaedalusWorker, so we'll skip it for now
-    # since it requires LLM integration. We'll test it manually through the browser.
-    skip "Manual browser testing only - requires LLM"
-  end
+  # Full integration test with LLM is in test/integration/daedalus_integration_test.rb
 end
 

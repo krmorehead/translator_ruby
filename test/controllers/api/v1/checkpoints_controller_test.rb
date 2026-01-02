@@ -3,7 +3,11 @@
 require "test_helper"
 
 class Api::V1::CheckpointsControllerTest < ActionDispatch::IntegrationTest
-  let(:repo_path) { Rails.root.to_s }
+  let(:temp_repo) { create_temp_git_repo }
+
+  def teardown
+    FileUtils.rm_rf(temp_repo) if temp_repo && File.exist?(temp_repo)
+  end
 
   speed_profile :fast
   test "POST /api/v1/checkpoints requires path parameter" do
@@ -21,7 +25,7 @@ class Api::V1::CheckpointsControllerTest < ActionDispatch::IntegrationTest
   speed_profile :fast
   test "POST /api/v1/checkpoints requires message parameter" do
     post "/api/v1/checkpoints", params: {
-      path: repo_path
+      path: temp_repo
     }, as: :json
 
     assert_response :bad_request
@@ -57,9 +61,7 @@ class Api::V1::CheckpointsControllerTest < ActionDispatch::IntegrationTest
 
   speed_profile :fast
   test "GET /api/v1/checkpoints/current returns current checkpoint ID" do
-    skip "Skipping - requires clean git state"
-    
-    get "/api/v1/checkpoints/current", params: { path: repo_path }
+    get "/api/v1/checkpoints/current", params: { path: temp_repo }
 
     assert_response :success
     json = JSON.parse(response.body)
@@ -71,10 +73,8 @@ class Api::V1::CheckpointsControllerTest < ActionDispatch::IntegrationTest
 
   speed_profile :fast
   test "POST /api/v1/checkpoints creates a checkpoint" do
-    skip "Skipping - requires clean git state"
-    
     post "/api/v1/checkpoints", params: {
-      path: repo_path,
+      path: temp_repo,
       message: "Test checkpoint from API"
     }, as: :json
 

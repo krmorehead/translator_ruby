@@ -46,14 +46,7 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
     result = worker.execute
 
     # Verify worker completed successfully
-    assert worker.complete? || worker.failed?, "Worker should reach terminal state (complete or failed)"
-    
-    # If worker failed, log the error but don't fail the test (LLM issues are not our bugs)
-    if worker.failed?
-      Rails.logger.warn("DaedalusWorker failed during integration test: #{worker.error}")
-      Rails.logger.warn("This may be due to LLM API issues, not code issues")
-      skip "LLM integration failed: #{worker.error}"
-    end
+    assert worker.complete?, "Worker should complete successfully. Error: #{worker.error}"
 
     # Worker completed successfully - verify all outputs
     assert_not_nil result, "Result should not be nil"
@@ -168,12 +161,8 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
     # THIS HITS THE LLM FOR REAL
     analysis_results = workflow.execute
 
-    # Verify analysis completed (may fail or succeed depending on LLM)
-    assert workflow.complete? || workflow.failed?
-    
-    if workflow.failed?
-      skip "Analysis workflow failed: #{workflow.error}"
-    end
+    # Verify analysis completed successfully
+    assert workflow.complete?, "Analysis workflow should complete successfully. Error: #{workflow.error}"
 
     # Verify analysis results structure
     assert analysis_results.is_a?(Hash)
@@ -217,12 +206,8 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
     # THIS HITS THE LLM FOR REAL
     execution_plan = workflow.execute
 
-    # Verify plan generation completed
-    assert workflow.complete? || workflow.failed?
-    
-    if workflow.failed?
-      skip "Plan generation workflow failed: #{workflow.error}"
-    end
+    # Verify plan generation completed successfully
+    assert workflow.complete?, "Plan generation workflow should complete successfully. Error: #{workflow.error}"
 
     # Verify execution plan structure
     assert execution_plan.is_a?(Planning::ExecutionPlan)

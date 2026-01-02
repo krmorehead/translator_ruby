@@ -60,35 +60,24 @@ module ActiveSupport
   end
 end
 
-# Minitest plugin to detect explicit skip() calls after test run
-module Minitest
-  def self.plugin_skip_detector_init(options)
-    # Run after all tests complete
-  end
-
-  def self.plugin_skip_detector_report(options)
-    detect_explicit_skips
-  end
-
-  def self.detect_explicit_skips
-    # Find all test files with explicit skip() calls
-    test_dir = File.join(Rails.root, "test")
-    skip_files = []
+# After all tests complete, check for explicit skip() calls
+Minitest.after_run do
+  test_dir = File.join(Rails.root, "test")
+  skip_files = []
+  
+  Dir.glob("#{test_dir}/**/*_test.rb").each do |file|
+    # Skip the speed_profile.rb file itself (it has legitimate skip for filtering)
+    next if file.include?("support/speed_profile.rb")
     
-    Dir.glob("#{test_dir}/**/*_test.rb").each do |file|
-      # Skip the speed_profile.rb file itself (it has legitimate skip for filtering)
-      next if file.include?("support/speed_profile.rb")
-      
-      File.readlines(file).each_with_index do |line, index|
-        # Match lines with skip calls (not commented out)
-        if line.match?(/^\s*skip\b/) && !line.strip.start_with?("#")
-          skip_files << { file: file.sub("#{Rails.root}/", ""), line: index + 1, content: line.strip }
-        end
+    File.readlines(file).each_with_index do |line, index|
+      # Match lines with skip calls (not commented out)
+      if line.match?(/^\s*skip\b/) && !line.strip.start_with?("#")
+        skip_files << { file: file.sub("#{Rails.root}/", ""), line: index + 1, content: line.strip }
       end
     end
-    
-    return if skip_files.empty?
-    
+  end
+  
+  if skip_files.any?
     # Print LOUD warning
     puts "\n\n"
     puts "=" * 80

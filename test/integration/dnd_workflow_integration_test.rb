@@ -6,7 +6,10 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
   MEMORY_PATH = File.join(DATA_PATH, "memory.json")
 
   def setup
-    skip_unless_llm_configured!
+    # Verify LLM configuration (fail fast if not configured per OOP Lesson 46)
+    ENV.fetch("API_KEY")
+    ENV.fetch("LLM_URL")
+    
     FileUtils.rm_rf(DATA_PATH)
     FileUtils.mkdir_p(DATA_PATH)
   end
@@ -45,12 +48,6 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   
-  def skip_unless_llm_configured!
-    creds = ENV["API_KEY"].to_s.strip
-    url = ENV["LLM_URL"].to_s.strip
-    skip "LLM credentials not configured for integration run" if creds.empty? || url.empty?
-  end
-
   def post_message(message)
     post "/dnd_chat/messages", params: { message: message }
     assert_response :success
