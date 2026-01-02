@@ -48,10 +48,7 @@ class BaseWorkflow
   def setup(prompt: nil, conversation: nil)
     @prompt = prompt
     @conversation = conversation
-
-    # Initialize workflow memory if we have an owner_id
-    initialize_workflow_memory if @owner_id
-
+    initialize_workflow_memory
     self
   end
 
@@ -87,8 +84,6 @@ class BaseWorkflow
 
   # Record a decision to workflow memory
   def record_decision(decision:, rationale:, context: {})
-    return unless workflow_memory
-
     workflow_memory.record_decision(
       decision: decision,
       rationale: rationale,
@@ -98,15 +93,11 @@ class BaseWorkflow
 
   # Get the workflow's state history
   def state_history
-    return super unless workflow_memory
-
     workflow_memory.state_history
   end
 
   # Get workflow memory summary
   def memory_summary
-    return {} unless workflow_memory
-
     workflow_memory.summarize
   end
 
@@ -119,7 +110,7 @@ class BaseWorkflow
     @result = result
 
     # Do all potentially-failing work BEFORE transitioning state
-    workflow_memory&.record_output(result) if result.is_a?(Hash)
+    workflow_memory&.record_output(result)
     workflow_memory&.merge_to_parent(:outputs)
 
     # Only transition after all work is done
@@ -144,8 +135,8 @@ class BaseWorkflow
   end
 
   def workflow_memory_path
-    base = ENV["AGENT_STATE_PATH"] || File.join(".agents", "state")
-    File.join(base, @owner_id, "workflows", "#{self.class.workflow_name}_#{@workflow_id}.json")
+    base = ENV.fetch("AGENT_DATA_PATH")
+    File.join(base, "workflows", @owner_id, "#{self.class.workflow_name}_#{@workflow_id}.json")
   end
 
   def record_state_to_memory(from, to, event, payload)

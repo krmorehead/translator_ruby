@@ -3321,6 +3321,73 @@ ruby scripts/migrate_workflow_memory_v1_to_v2.rb
 
 ---
 
+## Lesson 46: Always Use ENV.fetch() - No Fallback Defaults
+
+**Problem**: Using `ENV["KEY"] || default_value` silently hides configuration errors and makes debugging harder.
+
+**Bad**:
+```ruby
+def base_path
+  ENV["AGENT_DATA_PATH"] || File.join(".agents", "state")
+end
+```
+
+**Good**:
+```ruby
+def base_path
+  ENV.fetch("AGENT_DATA_PATH")
+end
+```
+
+**Why This Matters:**
+- **Fail fast** - Missing ENV vars are caught immediately, not at runtime
+- **Explicit contracts** - `.env.test` MUST define all required variables
+- **No silent failures** - Know exactly when configuration is wrong
+- **Test integrity** - Tests fail loudly if `.env.test` isn't loaded
+
+**Rule**: ALL environment variable access must use `ENV.fetch("KEY")` with NO default fallback. The `.env.test` file must define all variables needed for tests.
+
+---
+
+## Lesson 45: Tests Should Never Set ENV Variables - Use .env.test
+
+**Problem**: Tests that manually set `ENV` variables create brittle, environment-dependent tests that can interfere with each other in parallel execution.
+
+**Bad**:
+```ruby
+test "some behavior" do
+  ENV["AGENT_STATE_PATH"] = temp_dir
+  # ... test code ...
+ensure
+  ENV.delete("AGENT_STATE_PATH")
+end
+```
+
+**Good**:
+```ruby
+# .env.test (auto-loaded during test execution)
+AGENT_DATA_PATH=tmp/test_agent_data
+AGENT_STATE_PATH=tmp/test_state
+
+# test
+test "some behavior" do
+  # ENV is already configured correctly
+  # ... test code ...
+end
+```
+
+**Why This Matters:**
+- **Parallel safety** - ENV modifications can leak between parallel tests
+- **Single source of truth** - All test config in .env.test
+- **Simpler tests** - No setup/teardown for ENV
+- **Production parity** - Tests use same ENV pattern as production
+
+**Rule**: Tests should NEVER set ENV variables. If a test needs specific config, it should be:
+1. **Added to .env.test** for test-wide defaults
+2. **Passed as parameters** to the class/method under test
+
+---
+
 ## References
 
 - [Serialization Guide](./serialization-guide.md)

@@ -314,8 +314,9 @@ module StateMachine
     exit_hook = self.class._exit_hooks[old_state]
     instance_exec(&exit_hook) if exit_hook
 
-    # Record in history
-    state_history << {
+    # Record in history - use @state_history directly, not state_history method
+    # (subclasses may override state_history method to delegate elsewhere)
+    @state_history << {
       from: old_state,
       to: new_state,
       event: event,

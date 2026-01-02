@@ -29,7 +29,7 @@ class WorkflowMemoryStore
     errors: [],
     outputs: [],
     checkpoints: []
-  }.freeze
+  }
 
   attr_reader :owner_id, :workflow_id, :workflow_name, :parent_memory, :path
 
@@ -60,7 +60,15 @@ class WorkflowMemoryStore
         checkpoints: data[:sections][:checkpoints]
       }
     else
-      @sections = deep_dup(DEFAULT_SECTIONS)
+      # Create fresh sections - each instance gets its own arrays
+      @sections = {
+        state_transitions: [],
+        workflow_context: [],
+        decisions: [],
+        errors: [],
+        outputs: [],
+        checkpoints: []
+      }
       @started_at = Time.now.utc
       @last_transition_at = Time.now.utc
     end
@@ -400,10 +408,6 @@ class WorkflowMemoryStore
   def save!
     FileUtils.mkdir_p(File.dirname(path))
     File.write(path, JSON.pretty_generate(to_h))
-  end
-
-  def deep_dup(obj)
-    Marshal.load(Marshal.dump(obj))
   end
 
   def calculate_duration
