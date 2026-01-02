@@ -88,8 +88,6 @@ class BaseWorker
   # @param section_names [Array<Symbol>] Section names to retrieve
   # @return [Hash] Hash of section_name => section_data
   def query_memory(*section_names)
-    return {} unless respond_to?(:memory_store) && memory_store
-
     result = {}
     section_names.each do |name|
       begin
@@ -105,9 +103,7 @@ class BaseWorker
   # Get compressed context summary for passing to workflows/prompts
   # @return [Hash] Summary of current memory state
   def context_summary
-    return {} unless respond_to?(:memory_store) && memory_store
     return memory_store.summarize_findings if memory_store.respond_to?(:summarize_findings)
-
     {}
   end
 
@@ -179,9 +175,6 @@ class BaseWorker
 
   
   def record_state_transition_to_memory(from, to, event, payload)
-    return unless respond_to?(:memory_store) && memory_store
-    return unless memory_store.respond_to?(:record_state_transition)
-
     memory_store.record_state_transition(
       from: from,
       to: to,

@@ -4,12 +4,10 @@
 # while providing access to query the parent worker's memory for context.
 #
 # Each workflow instance gets its own isolated memory, identified by:
-#   - owner_id (from parent worker)
 #   - workflow_id (unique to this workflow instance)
 #
 # @example
 #   store = WorkflowMemoryStore.new(
-#     owner_id: worker.owner_id,
 #     workflow_id: SecureRandom.uuid,
 #     workflow_name: "research_workflow",
 #     parent_memory: worker.memory_store
@@ -31,16 +29,13 @@ class WorkflowMemoryStore
     checkpoints: []
   }
 
-  attr_reader :owner_id, :workflow_id, :workflow_name, :parent_memory, :path
+  attr_reader :workflow_id, :workflow_name, :parent_memory, :path
 
-  # @param owner_id [String] The parent worker's owner ID
   # @param workflow_id [String] Unique ID for this workflow instance
   # @param workflow_name [String] Name of the workflow class
   # @param parent_memory [#get_section, nil] Parent memory store to query for context
   # @param path [String] Path for persistence (REQUIRED for checkpoint tracking)
-  def initialize(owner_id:, workflow_id:, workflow_name:, path:, parent_memory: nil)
-
-    @owner_id = owner_id
+  def initialize(workflow_id:, workflow_name:, path:, parent_memory: nil)
     @workflow_id = workflow_id
     @workflow_name = workflow_name
     @parent_memory = parent_memory

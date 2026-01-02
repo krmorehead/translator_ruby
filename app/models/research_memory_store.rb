@@ -17,40 +17,20 @@ class ResearchMemoryStore
     action_history: []
   }.freeze
 
-  attr_reader :path, :owner_id, :current_iteration
+  attr_reader :path, :current_iteration
 
-  # Find an existing research memory store by owner ID
-  # @param owner_id [String] The owner ID to search for
-  # @param base_path [String] Base path to search in (defaults to env or .agents/state)
+  # Find an existing research memory store by path
+  # @param path [String] The full path to the memory file
   # @return [ResearchMemoryStore, nil] The store if found, nil otherwise
-  def self.find_by_owner(owner_id, base_path: nil)
-    base = base_path || ENV["AGENT_STATE_PATH"] || ".agents/state"
-    store_path = File.join(base, owner_id, "research_memory.json")
-    return nil unless File.exist?(store_path)
-
-    new(path: store_path, owner_id: owner_id)
-  end
-
-  # List all owner IDs with existing research sessions
-  # @param base_path [String] Base path to search in
-  # @return [Array<String>] List of owner IDs
-  def self.list_owners(base_path: nil)
-    base = base_path || ENV["AGENT_STATE_PATH"] || ".agents/state"
-    return [] unless File.directory?(base)
-
-    Dir.children(base).select do |dir|
-      File.exist?(File.join(base, dir, "research_memory.json"))
-    end
+  def self.find_by_path(path)
+    return nil unless File.exist?(path)
+    new(path: path)
   end
 
   # Initialize the research memory store
   # @param path [String] File path for persistence
-  # @param owner_id [String] Required owner ID for isolation
-  def initialize(path:, owner_id:)
-    raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.empty?
-
+  def initialize(path:)
     @path = path
-    @owner_id = owner_id
     @current_iteration = 0
     @sections = load_sections
     @context_stack = []

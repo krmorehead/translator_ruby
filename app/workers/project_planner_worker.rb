@@ -107,7 +107,7 @@ class ProjectPlannerWorker < BaseWorker
   # Create the planning memory store
   def create_memory_store
     store_path = File.join(state_path, "planning_memory.json")
-    ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
+    ResearchMemoryStore.new(path: store_path)
   end
 
   # Phase 1: Research the codebase using ResearchWorkflow

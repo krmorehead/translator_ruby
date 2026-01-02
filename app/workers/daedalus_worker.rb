@@ -89,7 +89,7 @@ class DaedalusWorker < BaseWorker
   # Initialize worker memory
   def initialize_worker
     store_path = File.join(state_path, "plan_memory.json")
-    @research_memory = ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
+    @research_memory = ResearchMemoryStore.new(path: store_path)
     # Store goal in research_goal section (it's an array)
     @research_memory.set_section(:research_goal, [goal])
   end

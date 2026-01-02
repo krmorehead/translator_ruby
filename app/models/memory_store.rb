@@ -7,10 +7,11 @@ class MemoryStore
     h[klass.section_name.to_sym] = klass.default.dup
   end.freeze
 
-  attr_reader :path
+  attr_reader :path, :owner_id
 
-  def initialize(path:)
+  def initialize(path:, owner_id:)
     @path = path
+    @owner_id = owner_id
     @sections = load_sections
     @section_contexts = {}
   end

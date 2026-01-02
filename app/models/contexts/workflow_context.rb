@@ -123,7 +123,7 @@ module Contexts
           topics: ["decisions", "reasoning"],
           source: "context_graph"
         )
-      end
+    end
 
       # Load workflow context entries
       context_results = ContextGraphService.instance.query(

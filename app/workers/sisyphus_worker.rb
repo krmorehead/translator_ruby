@@ -572,7 +572,6 @@ class SisyphusWorker < BaseWorker
   # Create memory store for this execution
   def create_memory_store
     WorkflowMemoryStore.new(
-      owner_id: @owner_id,
       workflow_id: SecureRandom.uuid,
       workflow_name: self.class.worker_name,
       path: File.join(@path, "sisyphus_memory.json")
