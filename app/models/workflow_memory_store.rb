@@ -134,7 +134,10 @@ class WorkflowMemoryStore
       checkpoint_id: current_checkpoint_id,
       state: to  # New state after transition
     )
+    puts "DEBUG: Created memory object: #{memory.class} - #{memory.inspect[0..100]}"
+    puts "DEBUG: Array before <<: #{@sections[:state_transitions].map(&:class)}"
     @sections[:state_transitions] << memory
+    puts "DEBUG: Array after <<: #{@sections[:state_transitions].map(&:class)}"
     puts "DEBUG: After adding StateTransition, array has: #{@sections[:state_transitions].map(&:class)}"
     @last_transition_at = Time.now.utc
     save!
