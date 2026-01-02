@@ -20,6 +20,8 @@
 #   store.record_state_transition(from: :pending, to: :running, event: :start)
 #
 class WorkflowMemoryStore
+  include GraphNode
+  
   DEFAULT_SECTIONS = {
     state_transitions: [],
     workflow_context: [],
@@ -29,16 +31,16 @@ class WorkflowMemoryStore
     checkpoints: []
   }
 
-  attr_reader :workflow_id, :workflow_name, :parent_memory, :path
+  attr_reader :workflow_id, :workflow_name, :parent_id, :path
 
   # @param workflow_id [String] Unique ID for this workflow instance
   # @param workflow_name [String] Name of the workflow class
-  # @param parent_memory [#get_section, nil] Parent memory store to query for context
+  # @param parent_id [String, nil] ID of parent workflow or worker
   # @param path [String] Path for persistence (REQUIRED for checkpoint tracking)
-  def initialize(workflow_id:, workflow_name:, path:, parent_memory: nil)
+  def initialize(workflow_id:, workflow_name:, path:, parent_id: nil)
     @workflow_id = workflow_id
     @workflow_name = workflow_name
-    @parent_memory = parent_memory
+    @parent_id = parent_id
     @path = path
     
     # Load from disk if file exists, otherwise initialize fresh
@@ -67,19 +69,16 @@ class WorkflowMemoryStore
       @started_at = Time.now.utc
       @last_transition_at = Time.now.utc
     end
-    
-    # Register with context graph service (automatically creates edges)
-    ContextGraphService.instance.register_workflow_memory_store(self)
   end
 
   # Load WorkflowMemoryStore from disk
   # @param path [String] Path to the JSON file
   # @return [WorkflowMemoryStore] Loaded memory store
-  def self.from_h(workflow_id:, workflow_name:, path:, sections:, started_at:, last_transition_at:, parent_memory: nil)
+  def self.from_h(workflow_id:, workflow_name:, path:, sections:, started_at:, last_transition_at:, parent_id:)
     store = allocate
     store.instance_variable_set(:@workflow_id, workflow_id)
     store.instance_variable_set(:@workflow_name, workflow_name)
-    store.instance_variable_set(:@parent_memory, parent_memory)
+    store.instance_variable_set(:@parent_id, parent_id)
     store.instance_variable_set(:@path, path)
     store.instance_variable_set(:@started_at, Time.parse(started_at))
     store.instance_variable_set(:@last_transition_at, Time.parse(last_transition_at))
@@ -422,6 +421,37 @@ class WorkflowMemoryStore
       current = File.dirname(current)
     end
     raise "No Git repository found for path: #{@path}"
+  end
+
+  # GraphNode concern implementations
+  def graph_node_id
+    @workflow_id
+  end
+
+  def graph_node_type
+    :workflow
+  end
+
+  def define_graph_edges
+    edges = []
+    
+    edges << {
+      type: :parent_child,
+      to: @parent_id,
+      metadata: { relationship: :workflow_to_parent }
+    }
+  
+    # Create edges for each memory section
+    list_sections.each do |section_name|
+      edges << {
+        type: :memory_section,
+        section: section_name,
+        access_pattern: :read_write,
+        metadata: {}
+      }
+    end
+    
+    edges
   end
 end
 

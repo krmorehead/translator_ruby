@@ -3,6 +3,8 @@
 # File-backed store for narrative memory broken into named sections.
 # Each section can provide a Context instance for smart relevance filtering.
 class MemoryStore
+  include GraphNode
+  
   DEFAULT_SECTIONS = Memories::Registry::ALL.each_with_object({}) do |klass, h|
     h[klass.section_name.to_sym] = klass.default.dup
   end.freeze
@@ -14,9 +16,6 @@ class MemoryStore
     @id = SecureRandom.uuid
     @sections = load_sections
     @section_contexts = {}
-    
-    # Register with context graph service
-    ContextGraphService.instance.register_memory_store(self)
   end
 
   def list_sections
@@ -172,5 +171,32 @@ class MemoryStore
     else
       []
     end
+  end
+
+  private
+
+  # GraphNode concern implementations
+  def graph_node_id
+    @id
+  end
+
+  def graph_node_type
+    :worker
+  end
+
+  def define_graph_edges
+    edges = []
+    
+    # Create edges for each memory section
+    list_sections.each do |section_name|
+      edges << {
+        type: :memory_section,
+        section: section_name,
+        access_pattern: :read_write,
+        metadata: {}
+      }
+    end
+    
+    edges
   end
 end

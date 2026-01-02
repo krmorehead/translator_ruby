@@ -4,6 +4,8 @@
 # Specialized for research sessions with owner-based isolation and
 # context chaining between iterations.
 class ResearchMemoryStore
+  include GraphNode
+  
   DEFAULT_SECTIONS = {
     research_goal: [],
     sub_questions: [],
@@ -36,9 +38,6 @@ class ResearchMemoryStore
     @sections = load_sections
     @context_stack = []
     @section_contexts = {}  # Cache for section contexts
-    
-    # Register with context graph service
-    ContextGraphService.instance.register_memory_store(self)
   end
 
   def list_sections
@@ -375,6 +374,33 @@ class ResearchMemoryStore
       timestamp: Time.now.utc.iso8601
     }
     save!
+  end
+
+  private
+
+  # GraphNode concern implementations
+  def graph_node_id
+    @id
+  end
+
+  def graph_node_type
+    :worker
+  end
+
+  def define_graph_edges
+    edges = []
+    
+    # Create edges for each memory section
+    list_sections.each do |section_name|
+      edges << {
+        type: :memory_section,
+        section: section_name,
+        access_pattern: :read_write,
+        metadata: {}
+      }
+    end
+    
+    edges
   end
 end
 

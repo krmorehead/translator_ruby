@@ -49,7 +49,6 @@ class BaseWorkflow
     @prompt = prompt
     @conversation = conversation
     initialize_workflow_memory
-    register_in_context_graph
     self
   end
 
@@ -132,7 +131,7 @@ class BaseWorkflow
     @workflow_memory = WorkflowMemoryStore.new(
       workflow_id: @workflow_id,
       workflow_name: self.class.workflow_name,
-      parent_memory: @parent_memory,
+      parent_id: @parent_memory ? extract_parent_id(@parent_memory) : nil,
       path: workflow_memory_path
     )
   end

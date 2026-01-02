@@ -48,13 +48,13 @@ module Contexts
       )
 
       decision_results.each do |res|
-        add(
+      add(
           content: "Prior Decision: #{res[:memory].decision}",
           topics: ["decisions", "prior_knowledge"],
           source: res[:source],
           metadata: { score: res[:final_score], distance: res[:distance] }
         )
-      end
+    end
 
       # Query for goals (related goals and sub-questions)
       goal_results = service.query(
@@ -72,7 +72,7 @@ module Contexts
           source: res[:source],
           metadata: { score: res[:final_score], distance: res[:distance] }
         )
-      end
+    end
 
       # Query for findings (previous research results)
       finding_results = service.query(
