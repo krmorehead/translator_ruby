@@ -8,13 +8,13 @@ class WorkflowContextTest < ActiveSupport::TestCase
       goal: "test goal"
     )
   end
-  speed_profile :fast
+  speed_profile :slow
   test "initializes with workflow metadata" do
     assert_equal "wf-123", context.workflow_id
     assert_equal "test goal", context.goal
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "generates id automatically" do
     ctx = Contexts::WorkflowContext.new(
       goal: "test"
@@ -22,14 +22,14 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_not_nil ctx.id
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "record_transition updates current_state" do
     context.record_transition(from: :pending, to: :running, event: :start)
 
     assert_equal :running, context.current_state
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "record_transition creates transition object and entry" do
     transition = context.record_transition(from: :pending, to: :running, event: :start, payload: { reason: "test" })
 
@@ -45,7 +45,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal 1, context.transitions.size
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "record_decision creates decision object and entry" do
     decision = context.record_decision(
       decision: "Use parallel processing",
@@ -65,7 +65,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal 1, context.decisions.size
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "record_error creates error object and entry" do
     error_obj = context.record_error("Connection timeout", recoverable: true)
 
@@ -81,7 +81,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal 1, context.errors.size
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "record_error handles exceptions" do
     error = StandardError.new("Something went wrong")
     error_obj = context.record_error(error, recoverable: false)
@@ -97,7 +97,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert entry.content.include?("[ERROR]")
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "record_input creates input entry" do
     context.record_input(input: { file: "test.rb" }, input_type: "file")
 
@@ -105,7 +105,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal :input, entry.metadata[:entity_type]
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "record_output creates output entry" do
     context.record_output(output: { result: "success" }, output_type: "final")
 
@@ -113,7 +113,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal :output, entry.metadata[:entity_type]
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "transitions returns all transition objects" do
     context.record_transition(from: :pending, to: :running, event: :start)
     context.record_decision(decision: "test", rationale: "test")
@@ -123,7 +123,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert context.transitions.all? { |t| t.is_a?(Contexts::Workflow::StateTransition) }
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "decisions returns all decision objects" do
     context.record_decision(decision: "A", rationale: "reason A")
     context.record_transition(from: :pending, to: :running, event: :start)
@@ -133,7 +133,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert context.decisions.all? { |d| d.is_a?(Contexts::Workflow::Decision) }
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "errors returns error objects" do
     context.record_error("Error 1", recoverable: true)
     context.record_error("Error 2", recoverable: false)
@@ -151,7 +151,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert recoverable_only.first.recoverable?
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "states_visited returns ordered list of states" do
     context.record_transition(from: :pending, to: :running, event: :start)
     context.record_transition(from: :running, to: :processing, event: :process)
@@ -161,12 +161,12 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal [:running, :processing, :complete], states
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "duration returns time since start" do
     assert context.duration >= 0
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "format_timeline creates chronological view" do
     context.record_transition(from: :pending, to: :running, event: :start)
     context.record_decision(decision: "test", rationale: "testing")
@@ -177,7 +177,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert formatted.include?("Duration:")
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "format_summary creates brief summary" do
     context.record_transition(from: :pending, to: :running, event: :start)
     context.record_decision(decision: "Use cache", rationale: "performance")
@@ -189,19 +189,19 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert formatted.include?("Recent decisions")
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "format_for_prompt with :timeline format" do
     formatted = context.format_for_prompt("status", format: :timeline)
     assert formatted.include?("test_workflow")
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "format_for_prompt with :summary format" do
     formatted = context.format_for_prompt("status", format: :summary)
     assert formatted.include?("pending")
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "serializes with workflow metadata and entities" do
     context.record_transition(from: :pending, to: :running, event: :start)
     context.record_decision(decision: "test", rationale: "testing")
@@ -214,7 +214,7 @@ class WorkflowContextTest < ActiveSupport::TestCase
     assert_equal 1, hash[:decisions].size
   end
 
-  speed_profile :fast
+  speed_profile :slow
   test "deserializes with workflow metadata and entities" do
     context.record_transition(from: :pending, to: :running, event: :start)
     context.record_decision(decision: "test", rationale: "testing")
