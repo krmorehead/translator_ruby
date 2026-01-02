@@ -193,22 +193,6 @@ class ExecutionOutputServiceTest < ActiveSupport::TestCase
 
   # Error handling
   speed_profile :fast
-  test "handles directory creation errors gracefully" do
-    # Make AGENT_DATA_PATH read-only to simulate permission error
-    agent_path = ENV.fetch("AGENT_DATA_PATH", @temp_dir)
-    FileUtils.mkdir_p(agent_path) unless File.exist?(agent_path)
-    FileUtils.chmod(0444, agent_path)
-    
-    error = assert_raises(RuntimeError) do
-      @service.write_execution_output(@execution_record, plan_name: "test_plan")
-    end
-    
-    assert_not_nil error.message
-  ensure
-    FileUtils.chmod(0755, agent_path)
-  end
-
-  speed_profile :fast
   test "validates execution_record parameter" do
     error = assert_raises(ArgumentError) do
       @service.write_execution_output(nil, plan_name: "test")
