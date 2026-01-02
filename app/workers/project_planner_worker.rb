@@ -53,10 +53,11 @@ class ProjectPlannerWorker < BaseWorker
              to: :failed, on: :fail
   transition from: :failed, to: :pending, on: :retry
 
-  attr_reader :project_name, :memory_store, :research_result, :planning_result
+  attr_reader :project_name, :memory_store, :research_result, :planning_result, :path
 
   def initialize(goal:, path:, project_name:, context: {}, **options)
-    super(goal: goal, path: path, context: context, **options)
+    super(goal: goal, context: context, **options)
+    @path = path
     @project_name = project_name
     @max_research_depth = options.fetch(:max_research_depth, 2)
     @research_result = nil

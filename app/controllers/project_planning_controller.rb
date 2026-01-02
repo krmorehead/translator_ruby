@@ -99,11 +99,33 @@ class ProjectPlanningController < ApplicationController
   # Logic is delegated to service object per project rules
   # Returns ProjectPlanner::Result object
   def execute_project_planning(goal:, path:, project_name:, context:)
+    # Create proper context object
+    context_obj = Contexts::GoalContext.new(goal_text: goal)
+    
+    # Add any additional context information if provided
+    if context[:known_files].present?
+      context[:known_files].each do |file|
+        context_obj.add(
+          content: "Known file: #{file}",
+          topics: ["file", "known"],
+          source: "user_input"
+        )
+      end
+    end
+    
+    if context[:constraints].present?
+      context_obj.add(
+        content: "Constraints: #{context[:constraints]}",
+        topics: ["constraints"],
+        source: "user_input"
+      )
+    end
+    
     worker = ProjectPlannerWorker.new(
       goal: goal,
       path: path,
       project_name: project_name,
-      context: context
+      context: context_obj
     )
 
     worker.execute
