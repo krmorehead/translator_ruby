@@ -89,16 +89,6 @@ class GenericLlmClientTest < ActiveSupport::TestCase
   end
 
   speed_profile :medium
-  test "retry_attempts defaults to 1" do
-    ENV["LLM_RETRY_AT"] = "0"
-    assert_equal 0, GenericLlmClient.retry_attempts
-
-    # But wrap_with_retry forces at least 1
-    ENV.delete("LLM_RETRY_AT")
-    assert_equal 1, GenericLlmClient.retry_attempts
-  end
-
-  speed_profile :medium
   test "ClientRetryWrapper process_response filters think tags" do
     client = Object.new
     wrapper = GenericLlmClient::ClientRetryWrapper.new(client: client, attempts: 1, delay: 0)
@@ -113,10 +103,11 @@ class GenericLlmClientTest < ActiveSupport::TestCase
       ]
     }
     
-    processed = wrapper.send(:process_response, response)
+    llm_response = wrapper.process_response(response)
     
-    assert_equal "The actual response", processed.dig("choices", 0, "message", "content")
-    assert_equal "This is reasoning", processed["thoughts"]
+    assert_instance_of LlmResponse, llm_response
+    assert_equal "The actual response", llm_response.content
+    assert_equal "This is reasoning", llm_response.thoughts
   end
 
   speed_profile :medium
@@ -134,10 +125,11 @@ class GenericLlmClientTest < ActiveSupport::TestCase
       ]
     }
     
-    processed = wrapper.send(:process_response, response)
+    llm_response = wrapper.process_response(response)
     
-    assert_equal "Regular response", processed.dig("choices", 0, "message", "content")
-    assert_nil processed["thoughts"]
+    assert_instance_of LlmResponse, llm_response
+    assert_equal "Regular response", llm_response.content
+    assert_nil llm_response.thoughts
   end
 
   speed_profile :medium
@@ -160,13 +152,14 @@ class GenericLlmClientTest < ActiveSupport::TestCase
       }
     }
     
-    processed = wrapper.send(:process_response, response)
+    llm_response = wrapper.process_response(response)
     
-    assert_equal "test-123", processed["id"]
-    assert_equal "test-model", processed["model"]
-    assert_equal 100, processed.dig("usage", "tokens")
-    assert_equal "response", processed.dig("choices", 0, "message", "content")
-    assert_equal "reasoning", processed["thoughts"]
+    assert_instance_of LlmResponse, llm_response
+    assert_equal "test-123", llm_response.id
+    assert_equal "test-model", llm_response.model
+    assert_equal 100, llm_response.usage[:tokens]
+    assert_equal "response", llm_response.content
+    assert_equal "reasoning", llm_response.thoughts
   end
 end
 

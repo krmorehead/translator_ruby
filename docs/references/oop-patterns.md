@@ -3388,6 +3388,121 @@ end
 
 ---
 
+## Lesson 47: No .send() to Call Private Methods in Tests - Make Methods Public
+
+**Problem**: Using `.send()` to bypass visibility and call private methods in tests is a code smell. It indicates the method needs to be testable, which means it should be public.
+
+**Bad**:
+```ruby
+# In code - method is private
+class MyService
+  private
+  
+  def process_data(data)
+    # ... complex logic worth testing ...
+  end
+end
+
+# In test - using .send() to bypass visibility
+test "process_data works" do
+  service = MyService.new
+  result = service.send(:process_data, data)  # ❌ BAD!
+  assert_equal expected, result
+end
+```
+
+**Good**:
+```ruby
+# In code - method is public with documentation
+class MyService
+  # Process data by filtering and transforming it.
+  # Public for testing.
+  #
+  # @param data [Array] Raw data to process
+  # @return [Array] Processed data
+  def process_data(data)
+    # ... complex logic ...
+  end
+  
+  private
+  
+  def internal_helper
+    # Truly internal methods that don't need direct testing
+  end
+end
+
+# In test - call method directly
+test "process_data works" do
+  service = MyService.new
+  result = service.process_data(data)  # ✅ GOOD!
+  assert_equal expected, result
+end
+```
+
+**Key Principles:**
+1. **If it needs testing, make it public** - Tests should use the public API
+2. **Mark with "Public for testing"** - Document why it's public
+3. **True private methods don't need direct tests** - They're tested via public methods that use them
+4. **No .send(), .method(), or other visibility bypasses in tests**
+
+**When Methods Should Be Public:**
+- ✅ Complex logic that's worth unit testing independently
+- ✅ Methods with multiple code paths/edge cases
+- ✅ Data transformation/processing methods
+- ✅ Validation methods
+- ❌ Simple getters/setters (use attr_reader/attr_accessor)
+- ❌ Trivial helpers with one-line implementations
+
+**Why This Matters:**
+- **Honest API** - Public methods are the contract, test the contract
+- **No magic** - Anyone reading the code sees what's testable
+- **Refactoring safety** - Public methods are stable, private ones can change
+- **Clear intent** - "Public for testing" documents the design decision
+
+**Migration Strategy:**
+1. Find all `.send()` calls in tests
+2. Make those methods public
+3. Add `# Public for testing` comment
+4. Remove `.send()` from tests
+
+**Example:**
+```ruby
+# Before migration
+class GenericLlmClient::ClientRetryWrapper
+  private
+  
+  def process_response(response)
+    # Complex response processing logic
+  end
+end
+
+# Test uses .send()
+llm_response = wrapper.send(:process_response, response)  # ❌
+
+# After migration
+class GenericLlmClient::ClientRetryWrapper
+  # Processes response to extract and filter think tags.
+  # Public for testing.
+  #
+  # @param response [Hash] Raw LLM API response
+  # @return [LlmResponse] Processed response object
+  def process_response(response)
+    # Complex response processing logic
+  end
+  
+  private
+  
+  def deep_copy_with_symbols(obj)
+    # This helper doesn't need direct testing
+  end
+end
+
+# Test calls directly
+llm_response = wrapper.process_response(response)  # ✅
+```
+
+---
+
 ## References
 
 - [Serialization Guide](./serialization-guide.md)

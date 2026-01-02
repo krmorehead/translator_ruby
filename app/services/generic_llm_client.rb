@@ -175,6 +175,44 @@ module GenericLlmClient
       raise last_error
     end
 
+    # Processes response to extract and filter think tags.
+    # Returns LlmResponse object with filtered content and thoughts field.
+    # ALL keys are symbolized at this boundary between LLM and application.
+    #
+    # Public for testing.
+    #
+    # @param response [Hash] Raw LLM API response
+    # @return [LlmResponse] Processed response object
+    def process_response(response)
+      # Deep copy response to avoid mutating original
+      processed = deep_copy_with_symbols(response)
+      
+      # Extract content from response
+      content = processed.dig(:choices, 0, :message, :content)
+      
+      # If no content, return response as-is wrapped in LlmResponse
+      return LlmResponse.new(processed) unless content
+
+      # Extract and filter think tags
+      result = ThoughtExtractor.extract_and_filter(content)
+
+      # Debug logging in test environment
+      if defined?(Rails) && Rails.env.test? && ENV["DEBUG_THOUGHT_FILTERING"] == "1"
+        Rails.logger.debug "ThoughtExtractor - Original: #{content[0...100]}"
+        Rails.logger.debug "ThoughtExtractor - Filtered: #{result[:content][0...100]}"
+        Rails.logger.debug "ThoughtExtractor - Thoughts: #{result[:thoughts] ? 'present' : 'nil'}"
+      end
+
+      # Update content with filtered version
+      processed[:choices][0][:message][:content] = result[:content]
+
+      # Add thoughts field to top level of response
+      processed[:thoughts] = result[:thoughts]
+
+      # Return wrapped in LlmResponse object
+      LlmResponse.new(processed)
+    end
+
     private
 
     def extract_embedding_vector(response)
@@ -263,36 +301,6 @@ module GenericLlmClient
 
     def log(level, message)
       Rails.logger.send(level, message)
-    end
-
-    # Processes response to extract and filter think tags.
-    # Returns modified response with filtered content and added thoughts field.
-    # ALL keys are symbolized at this boundary between LLM and application.
-    def process_response(response)
-      # Deep copy response to avoid mutating original
-      processed = deep_copy_with_symbols(response)
-      
-      # Extract content from response
-      content = processed.dig(:choices, 0, :message, :content)
-      return processed unless content
-
-      # Extract and filter think tags
-      result = ThoughtExtractor.extract_and_filter(content)
-
-      # Debug logging in test environment
-      if defined?(Rails) && Rails.env.test? && ENV["DEBUG_THOUGHT_FILTERING"] == "1"
-        Rails.logger.debug "ThoughtExtractor - Original: #{content[0...100]}"
-        Rails.logger.debug "ThoughtExtractor - Filtered: #{result[:content][0...100]}"
-        Rails.logger.debug "ThoughtExtractor - Thoughts: #{result[:thoughts] ? 'present' : 'nil'}"
-      end
-
-      # Update content with filtered version
-      processed[:choices][0][:message][:content] = result[:content]
-
-      # Add thoughts field to top level of response
-      processed[:thoughts] = result[:thoughts]
-
-      processed
     end
 
     # Deep copy with symbolized keys - handles the boundary between LLM (strings) and app (symbols)

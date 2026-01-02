@@ -47,7 +47,7 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
     assert_conversation_persisted_with_messages(4)
   end
 
-  
+
   def post_message(message)
     post "/dnd_chat/messages", params: { message: message }
     assert_response :success
