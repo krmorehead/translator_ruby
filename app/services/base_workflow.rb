@@ -122,7 +122,7 @@ class BaseWorkflow
 
   def mark_failed(message)
     @error = message
-    workflow_memory&.record_error(message, state: current_state)
+    workflow_memory.record_error(message, state: current_state)
     trigger(:fail)
   end
 
