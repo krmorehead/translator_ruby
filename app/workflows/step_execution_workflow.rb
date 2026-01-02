@@ -144,8 +144,8 @@ class StepExecutionWorkflow < BaseWorkflow
   def assemble_context
     record_decision(
       decision: "assemble_context",
-      reasoning: "Gathering context for step: #{@step.title}",
-      evidence: { step_number: @step.number }
+      rationale: "Gathering context for step: #{@step.title}",
+      context: { step_number: @step.number }
     )
 
     # Use ContextAssemblyPrompt to determine needed context
@@ -186,8 +186,8 @@ class StepExecutionWorkflow < BaseWorkflow
 
     record_decision(
       decision: "context_assembled",
-      reasoning: result[:content]["rationale"] || "Context assembly completed",
-      evidence: {
+      rationale: result[:content]["rationale"] || "Context assembly completed",
+      context: {
         files_requested: @assembled_context[:files_to_read].size,
         patterns_requested: @assembled_context[:patterns_to_search].size
       }
@@ -199,7 +199,7 @@ class StepExecutionWorkflow < BaseWorkflow
   def plan_tool_sequence
     record_decision(
       decision: "plan_tool_sequence",
-      reasoning: "Planning tool calls for step: #{@step.title}",
+      rationale: "Planning tool calls for step: #{@step.title}",
       context: { assembled_context_keys: @assembled_context.keys }
     )
 
@@ -230,7 +230,7 @@ class StepExecutionWorkflow < BaseWorkflow
     
     record_decision(
       decision: "planning_complete",
-      reasoning: result[:content]["expected_outcome"] || "Planning complete",
+      rationale: result[:content]["expected_outcome"] || "Planning complete",
       context: { 
         planned_tool_count: @planned_tools.size,
         expected_outcome: result[:content]["expected_outcome"]
@@ -243,7 +243,7 @@ class StepExecutionWorkflow < BaseWorkflow
   def validate_tools
     record_decision(
       decision: "validate_tools",
-      reasoning: "Validating #{@planned_tools.size} planned tool calls",
+      rationale: "Validating #{@planned_tools.size} planned tool calls",
       context: { tool_count: @planned_tools.size }
     )
 
@@ -257,7 +257,7 @@ class StepExecutionWorkflow < BaseWorkflow
 
     record_decision(
       decision: "validation_complete",
-      reasoning: "Validated #{@validation_results.size} tools: #{warnings_count} warnings, #{errors_count} errors",
+      rationale: "Validated #{@validation_results.size} tools: #{warnings_count} warnings, #{errors_count} errors",
       context: { 
         validation_passed: @validation_results.count { |v| v["valid"] },
         warnings: warnings_count,
@@ -271,7 +271,7 @@ class StepExecutionWorkflow < BaseWorkflow
   def execute_tools
     record_decision(
       decision: "execute_tools",
-      reasoning: "Executing tools for step: #{@step.title}",
+      rationale: "Executing tools for step: #{@step.title}",
       context: { validation_warnings: @validation_results.size }
     )
 
@@ -343,7 +343,7 @@ class StepExecutionWorkflow < BaseWorkflow
 
     record_decision(
       decision: "execution_complete",
-      reasoning: "Executed #{@tool_executions.size} tools",
+      rationale: "Executed #{@tool_executions.size} tools",
       context: { 
         executions_successful: @tool_executions.count { |e| e[:success] },
         files_changed: @diffs.size
@@ -356,7 +356,7 @@ class StepExecutionWorkflow < BaseWorkflow
   def record_results
     record_decision(
       decision: "record_results",
-      reasoning: "Recording results for step: #{@step.title}",
+      rationale: "Recording results for step: #{@step.title}",
       context: {
         tool_executions: @tool_executions.size,
         diffs_generated: @diffs.size
@@ -391,7 +391,7 @@ class StepExecutionWorkflow < BaseWorkflow
 
     record_decision(
       decision: "execution_failed",
-      reasoning: "Step execution failed: #{error.message}",
+      rationale: "Step execution failed: #{error.message}",
       context: {
         error_class: error.class.name,
         step_number: @step&.number,
