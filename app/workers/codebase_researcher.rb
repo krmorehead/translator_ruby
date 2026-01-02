@@ -111,7 +111,7 @@ class CodebaseResearcher < BaseWorker
     workflow = GoalDecompositionWorkflow.new(
       goal: goal,
       owner_id: owner_id,
-      context: context,
+      context: { goal_tree: @goal_tree },
       parent_memory: memory_store,
       max_depth: @max_depth
     )
@@ -196,7 +196,7 @@ class CodebaseResearcher < BaseWorker
       goal: goal,
       owner_id: owner_id,
       research_path: path,
-      context: context.merge(goal_tree: @goal_tree),
+      context: { goal_tree: @goal_tree },
       parent_memory: memory_store,
       max_depth: @max_depth,
       output_modes: output_modes
