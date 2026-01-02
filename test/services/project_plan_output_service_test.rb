@@ -15,7 +15,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
   test "creates project directory with date prefix" do
     service = ProjectPlanOutputService.new(
       project_name: "test_project",
-      base_path: @temp_dir
+      output_base: @temp_dir
     )
 
     service.write(
@@ -31,7 +31,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
   test "slugifies project name correctly" do
     service = ProjectPlanOutputService.new(
       project_name: "User Authentication Feature!",
-      base_path: @temp_dir
+      output_base: @temp_dir
     )
 
     assert_match(/_user_authentication_feature$/, service.project_directory)
@@ -41,7 +41,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
   test "writes file_references.md to correct location" do
     service = ProjectPlanOutputService.new(
       project_name: "test_project",
-      base_path: @temp_dir
+      output_base: @temp_dir
     )
 
     content = "# File References\n\nTest content"
@@ -58,7 +58,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
   test "writes project_plan.md to correct location" do
     service = ProjectPlanOutputService.new(
       project_name: "test_project",
-      base_path: @temp_dir
+      output_base: @temp_dir
     )
 
     content = "# Project Plan\n\nTest content"
@@ -75,7 +75,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
   test "returns correct paths" do
     service = ProjectPlanOutputService.new(
       project_name: "my_project",
-      base_path: @temp_dir
+      output_base: @temp_dir
     )
 
     paths = service.write(
@@ -94,7 +94,7 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
   test "handles special characters in project name" do
     service = ProjectPlanOutputService.new(
       project_name: "Project #1: The @Beginning!",
-      base_path: @temp_dir
+      output_base: @temp_dir
     )
 
     paths = service.write(
