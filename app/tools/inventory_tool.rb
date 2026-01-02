@@ -98,7 +98,7 @@ class InventoryTool < BaseTool
     op = operation || OP_ADD_ITEM
     op = OP_ADD_ITEM if op == "add"
     op = OP_REMOVE_ITEM if op == "remove"
-    store_path = path || default_file_path
+    store_path = path
 
     # Allow a nested item hash
     if name.is_a?(Hash)
