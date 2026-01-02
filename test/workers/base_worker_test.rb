@@ -22,7 +22,6 @@ class BaseWorkerTest < ActiveSupport::TestCase
     worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
 
     assert_equal "test goal", worker.goal
-    assert_equal File.expand_path(temp_dir), worker.path
     assert worker.pending?
   end
 

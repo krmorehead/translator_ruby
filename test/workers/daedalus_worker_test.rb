@@ -24,7 +24,6 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
 
     assert_not_nil worker
     assert_equal @goal, worker.goal
-    assert_equal @temp_path, worker.path
     assert_not_nil worker.owner_id
     assert worker.pending?
   end

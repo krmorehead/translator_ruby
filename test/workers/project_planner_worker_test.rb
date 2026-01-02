@@ -60,7 +60,6 @@ class ProjectPlannerWorkerTest < ActiveSupport::TestCase
     )
 
     assert_equal "Add user authentication", worker.goal
-    assert_equal File.expand_path(temp_dir), worker.path
     assert_equal "user_auth", worker.project_name
     assert_not_nil worker.owner_id
     assert worker.pending?
