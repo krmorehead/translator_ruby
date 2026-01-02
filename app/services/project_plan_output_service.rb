@@ -23,6 +23,7 @@ class ProjectPlanOutputService
   def initialize(project_name:, output_base: ENV.fetch("AGENT_DATA_PATH"))
     @project_name = project_name
     @output_base = output_base
+  end
 
   # Full path to the project directory
   # @return [String] Project directory path

@@ -20,7 +20,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
   test "serialize and reload preserves sections" do
     store.update_section(name: :quests, content: { text: "Find the dragon" }, append: true)
 
-    reloaded = build(:memory_store, base_dir: @sandbox_path, owner: @owner_id)
+    reloaded = build(:memory_store, owner: @owner_id)
     quests = reloaded.get_section(:quests)
     assert_equal 1, quests.size
     assert_includes quests.first[:text], "Find the dragon"

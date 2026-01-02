@@ -4,8 +4,6 @@ require "test_helper"
 
 class QuestLogMemoryTest < ActiveSupport::TestCase
   def setup
-    @sandbox_path = Rails.root.join("test", "tool_test", "quest_log_#{Process.pid}_#{Thread.current.object_id}").to_s
-    FileUtils.mkdir_p(@sandbox_path)
 
     @store = MemoryStore.new(owner_id: SecureRandom.uuid)
   end
