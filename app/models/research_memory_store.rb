@@ -35,7 +35,6 @@ class ResearchMemoryStore
   # @return [Array<String>] Array of owner IDs
   def self.list_owners
     base_path = ENV.fetch("AGENT_DATA_PATH")
-    return [] unless Dir.exist?(base_path)
     Dir.entries(base_path)
        .select { |entry| File.directory?(File.join(base_path, entry)) && !entry.start_with?('.') }
        .select { |entry| File.exist?(File.join(base_path, entry, "research_memory.json")) }
