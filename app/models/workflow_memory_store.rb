@@ -323,7 +323,6 @@ class WorkflowMemoryStore
     {
       workflow_name: workflow_name,
       workflow_id: workflow_id,
-      owner_id: owner_id,
       started_at: @started_at.iso8601,
       current_state: current_state,
       transition_count: transitions.size,
