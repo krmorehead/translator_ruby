@@ -40,6 +40,7 @@ class WorkflowMemoryStore
   # @param path [String] Path for persistence (REQUIRED for checkpoint tracking)
   def initialize(owner_id:, workflow_id:, workflow_name:, path:, parent_memory: nil)
 
+    puts "DEBUG: WorkflowMemoryStore.new called with path=#{path}, object_id=#{object_id}"
     @owner_id = owner_id
     @workflow_id = workflow_id
     @workflow_name = workflow_name
