@@ -5,7 +5,10 @@ class CurrentContextToolTest < ActiveSupport::TestCase
     @sandbox = Rails.root.join("tmp", "current_context_tool_test").to_s
     FileUtils.mkdir_p(@sandbox)
     @memory_path = File.join(@sandbox, "memory.json")
-    @store = MemoryStore.new(path: @memory_path)
+    @store = MemoryStore.new(
+      path: @memory_path,
+      owner_id: SecureRandom.uuid
+    )
     @store.set_section(MemoryKinds::CURRENT_SCENE, "A dimly lit tavern")
     @store.set_section(MemoryKinds::PEOPLE, [ { text: "Barkeep" } ])
     @store.set_section(MemoryKinds::CURRENT_GOAL, "Find the missing scout")

@@ -3,6 +3,16 @@
 class DndChatController < ApplicationController
   before_action :ensure_data_path!
   before_action :ensure_tools_loaded!
+  before_action :initialize_worker
+
+  def initialize_worker
+    # DndAgentWorker will load existing memory if path exists, or create new
+    @dnd_worker = DndAgentWorker.new(
+      goal: "Facilitate D&D game session",
+      path: data_path
+    )
+    @memory_store = @dnd_worker.memory_store
+  end
 
   def spa
     public_index = Rails.root.join("public", "index.html")
@@ -119,7 +129,11 @@ class DndChatController < ApplicationController
   end
 
   def memory_store
-    @memory_store ||= MemoryStore.new(path: memory_path)
+    @memory_store ||= dnd_worker.memory_store
+  end
+
+  def dnd_worker
+    @dnd_worker ||= DndAgentWorker.new
   end
 
   def inventory_store
@@ -144,7 +158,7 @@ class DndChatController < ApplicationController
   def seed_story_if_needed
     return if File.exist?(memory_path)
 
-    MemoryStore.new(path: memory_path)
+    # Memory store is initialized via worker in before_action
     # Leave sections empty; LLM will create scenario + main quest on first interaction per system prompt.
   end
 end
