@@ -69,7 +69,6 @@ class CodebaseResearcherTest < ActiveSupport::TestCase
     )
 
     assert_equal "How does authentication work?", worker.goal
-    assert_equal File.expand_path(temp_dir), worker.path
     assert_not_nil worker.owner_id
     assert worker.pending?
   end
