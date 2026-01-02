@@ -38,7 +38,11 @@ module ActiveSupport
     setup do
       agent_data_path = ENV["AGENT_DATA_PATH"]
       if agent_data_path
-        FileUtils.mkdir_p(agent_data_path) unless File.directory?(agent_data_path)
+        begin
+          FileUtils.mkdir_p(agent_data_path) unless File.directory?(agent_data_path)
+        rescue Errno::EEXIST
+          # Directory was created by another parallel test, ignore
+        end
       end
     end
 
