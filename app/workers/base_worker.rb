@@ -80,7 +80,7 @@ class BaseWorker
 
   # Path for writing output files
   def output_path
-    ENV["RESEARCH_OUTPUT_PATH"] || File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_OUTPUT_PATH)
+    File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_OUTPUT_PATH)
   end
 
   # Query memory for specific sections - used by workflows to get context
