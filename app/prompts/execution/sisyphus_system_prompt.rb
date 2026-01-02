@@ -28,8 +28,8 @@ module Execution
 
     # @param capabilities [Array<String>] List of agent capabilities
     # @param available_tools [Array<Hash>] Array of tool schemas
-    # @param execution_context [Hash] Current execution context
-    def initialize(capabilities: [], available_tools: [], execution_context: {})
+    # @param execution_context [Contexts::BaseContext, nil] Current execution context
+    def initialize(capabilities: [], available_tools: [], execution_context: nil)
       validate_parameters!(capabilities, available_tools, execution_context)
       
       @capabilities = Array(capabilities)
@@ -166,8 +166,8 @@ module Execution
         raise ArgumentError, "available_tools must be an Array, got #{available_tools.class}"
       end
 
-      unless execution_context.is_a?(Hash)
-        raise ArgumentError, "execution_context must be a Hash, got #{execution_context.class}"
+      if execution_context && !execution_context.is_a?(Contexts::BaseContext)
+        raise TypeError, "execution_context must be a Contexts::BaseContext subclass, got #{execution_context.class}"
       end
     end
 
@@ -192,13 +192,30 @@ module Execution
     end
 
     def format_execution_context
-      return "No specific context provided." if @execution_context.empty?
+      return "No specific context provided." unless @execution_context
 
+      # Use SisyphusContext's formatting method if available
+      if @execution_context.respond_to?(:format_for_sisyphus_prompt)
+        return @execution_context.format_for_sisyphus_prompt
+      end
+
+      # Fallback: extract data from context.to_h
+      context_data = @execution_context.to_h
+      sisyphus_data = context_data[:sisyphus_context] || {}
+      
       parts = []
-      parts << "**Codebase**: #{@execution_context[:codebase_path]}" if @execution_context[:codebase_path]
-      parts << "**Goal**: #{@execution_context[:plan_goal]}" if @execution_context[:plan_goal]
-      parts << "**Current Milestone**: #{@execution_context[:current_milestone]}" if @execution_context[:current_milestone]
-      parts << "**Current Step**: #{@execution_context[:current_step]}" if @execution_context[:current_step]
+      parts << "**Codebase**: #{sisyphus_data[:codebase_path]}" if sisyphus_data[:codebase_path]
+      parts << "**Goal**: #{sisyphus_data[:plan_goal]}" if sisyphus_data[:plan_goal]
+      
+      if sisyphus_data[:current_milestone]
+        milestone = sisyphus_data[:current_milestone]
+        parts << "**Current Milestone**: #{milestone[:number]} - #{milestone[:title]}"
+      end
+      
+      if sisyphus_data[:current_step]
+        step = sisyphus_data[:current_step]
+        parts << "**Current Step**: #{step[:number]} - #{step[:title]}"
+      end
       
       parts.join("\n")
     end

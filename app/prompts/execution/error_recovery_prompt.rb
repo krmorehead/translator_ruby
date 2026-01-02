@@ -25,14 +25,16 @@ module Execution
     # @param step_result [Hash] Partial execution result
     # @param previous_attempts [Array<Hash>] Previous recovery attempts
     # @param recovery_patterns [Hash] Common error patterns and solutions
-    def initialize(step:, error:, step_result:, previous_attempts: [], recovery_patterns: {})
-      validate_parameters!(step, step_result)
+    # @param context [Contexts::BaseContext, nil] Execution context
+    def initialize(step:, error:, step_result:, previous_attempts: [], recovery_patterns: {}, context: nil)
+      validate_parameters!(step, step_result, context)
       
       @step = step
       @error = error
       @step_result = step_result
       @previous_attempts = Array(previous_attempts)
       @recovery_patterns = recovery_patterns || {}
+      @context = context
       
       super()
     end
@@ -204,13 +206,17 @@ module Execution
 
     private
 
-    def validate_parameters!(step, step_result)
+    def validate_parameters!(step, step_result, context)
       unless step.is_a?(Planning::Step)
         raise TypeError, "step must be a Planning::Step, got #{step.class}"
       end
 
       unless step_result.is_a?(Hash)
         raise TypeError, "step_result must be a Hash"
+      end
+
+      if context && !context.is_a?(Contexts::BaseContext)
+        raise TypeError, "context must be a Contexts::BaseContext subclass, got #{context.class}"
       end
     end
 

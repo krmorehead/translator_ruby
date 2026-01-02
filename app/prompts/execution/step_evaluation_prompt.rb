@@ -15,8 +15,8 @@ module Execution
 
     # @param step [Planning::Step] The step that was executed
     # @param step_result [Hash] The execution result
-    # @param context [Hash] Execution context
-    def initialize(step:, step_result:, context:)
+    # @param context [Contexts::BaseContext, nil] Execution context
+    def initialize(step:, step_result:, context: nil)
       validate_parameters!(step, step_result, context)
       
       @step = step
@@ -187,8 +187,8 @@ module Execution
         raise TypeError, "step_result must be a Hash"
       end
 
-      unless context.is_a?(Hash)
-        raise ArgumentError, "context must be a Hash"
+      if context && !context.is_a?(Contexts::BaseContext)
+        raise TypeError, "context must be a Contexts::BaseContext subclass, got #{context.class}"
       end
     end
   end

@@ -4,6 +4,18 @@ require "test_helper"
 
 module Execution
   class SisyphusSystemPromptTest < ActiveSupport::TestCase
+    # Helper to create a SisyphusContext for testing
+    def create_test_context
+      Contexts::SisyphusContext.new(
+        codebase_path: Rails.root.to_s,
+        plan_goal: "Test Plan Goal",
+        plan_id: "test-plan-123",
+        execution_id: "test-exec-456",
+        current_milestone: { number: 1, title: "User Model", description: "Create user model" },
+        current_step: { number: "1.1", title: "Create User Model", intent: "Define user entity" }
+      )
+    end
+
     # ===== Initialization Tests =====
     speed_profile :fast
     test "initializes with default empty parameters" do
@@ -11,7 +23,7 @@ module Execution
 
       assert_equal [], prompt.capabilities
       assert_equal [], prompt.available_tools
-      assert_equal({}, prompt.execution_context)
+      assert_nil prompt.execution_context
     end
 
     speed_profile :fast
@@ -37,16 +49,12 @@ module Execution
 
     speed_profile :fast
     test "initializes with execution_context" do
-      context = {
-        codebase_path: "/path/to/code",
-        plan_goal: "Add authentication",
-        current_milestone: "User Model",
-        current_step: "Create User Model"
-      }
+      context = create_test_context
       
       prompt = SisyphusSystemPrompt.new(execution_context: context)
 
       assert_equal context, prompt.execution_context
+      assert_kind_of Contexts::BaseContext, prompt.execution_context
     end
 
     # ===== Validation Tests =====
@@ -70,12 +78,12 @@ module Execution
     end
 
     speed_profile :fast
-    test "validates execution_context is a Hash" do
-      error = assert_raises(ArgumentError) do
-        SisyphusSystemPrompt.new(execution_context: [])
+    test "validates execution_context is a Context object" do
+      error = assert_raises(TypeError) do
+        SisyphusSystemPrompt.new(execution_context: {})
       end
 
-      assert_match(/execution_context must be a Hash/, error.message)
+      assert_match(/execution_context must be a Contexts::BaseContext subclass/, error.message)
     end
 
     # ===== System Prompt Generation Tests =====
@@ -159,18 +167,13 @@ module Execution
 
     speed_profile :fast
     test "system_prompt formats execution context" do
-      context = {
-        codebase_path: "/path/to/code",
-        plan_goal: "Add authentication",
-        current_milestone: "User Model",
-        current_step: "Create User Model"
-      }
+      context = create_test_context
       prompt = SisyphusSystemPrompt.new(execution_context: context)
 
       system_message = prompt.system_prompt
 
-      assert_includes system_message, "/path/to/code"
-      assert_includes system_message, "Add authentication"
+      assert_includes system_message, Rails.root.to_s
+      assert_includes system_message, "Test Plan Goal"
       assert_includes system_message, "User Model"
       assert_includes system_message, "Create User Model"
     end
@@ -217,7 +220,7 @@ module Execution
 
     speed_profile :fast
     test "system_prompt handles empty context gracefully" do
-      prompt = SisyphusSystemPrompt.new(execution_context: {})
+      prompt = SisyphusSystemPrompt.new(execution_context: nil)
 
       system_message = prompt.system_prompt
 
@@ -239,11 +242,7 @@ module Execution
     test "generates complete system prompt with all sections" do
       capabilities = ["file_modification", "testing"]
       tools = [{ name: "write_file", description: "Write files" }]
-      context = {
-        codebase_path: "/code",
-        plan_goal: "Test goal",
-        current_step: "Test step"
-      }
+      context = create_test_context
 
       prompt = SisyphusSystemPrompt.new(
         capabilities: capabilities,
@@ -266,8 +265,8 @@ module Execution
       # Verify content is included
       assert_includes system_message, "File modification"
       assert_includes system_message, "write_file"
-      assert_includes system_message, "/code"
-      assert_includes system_message, "Test goal"
+      assert_includes system_message, Rails.root.to_s
+      assert_includes system_message, "Test Plan Goal"
     end
 
     speed_profile :fast
