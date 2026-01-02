@@ -41,17 +41,17 @@ class BaseTool
 
   # Returns the tool name identifier (e.g., "read_file")
   def self.name_identifier
-    raise NotImplementedError, "#{name} must implement .name_identifier"
+    raise NotImplementedError, "#{self} must implement .name_identifier"
   end
 
   # Returns the tool description for the LLM
   def self.description
-    raise NotImplementedError, "#{name} must implement .description"
+    raise NotImplementedError, "#{self} must implement .description"
   end
 
   # Returns the JSON schema for parameters
   def self.parameters_schema
-    raise NotImplementedError, "#{name} must implement .parameters_schema"
+    raise NotImplementedError, "#{self} must implement .parameters_schema"
   end
 
   # Executes the tool with the given arguments.
