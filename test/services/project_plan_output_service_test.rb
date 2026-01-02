@@ -125,13 +125,13 @@ class ProjectPlanOutputServiceTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "default output_base is docs/projects" do
+  test "default output_base is .agents/docs/projects" do
     service = ProjectPlanOutputService.new(
       project_name: "test_project",
       base_path: @temp_dir
     )
 
-    expected_base = File.join(@temp_dir, "docs", "projects")
+    expected_base = File.join(@temp_dir, ".agents/docs/projects")
     assert service.project_directory.start_with?(expected_base)
   end
 end

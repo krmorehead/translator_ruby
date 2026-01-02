@@ -18,7 +18,7 @@
 class ExecutionOutputService
   attr_reader :base_path, :options
 
-  DEFAULT_BASE_PATH = "docs/executions"
+  DEFAULT_BASE_PATH = ".agents/docs/executions"
   DEFAULT_OPTIONS = {
     include_diffs: true,
     include_checkpoints: true
@@ -29,7 +29,7 @@ class ExecutionOutputService
   # @param base_path [String] Base directory for execution logs
   # @param options [Hash] Additional options
   def initialize(base_path: nil, **options)
-    @base_path = base_path || File.join(Rails.root, DEFAULT_BASE_PATH)
+    @base_path = base_path || File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_BASE_PATH)
     @options = DEFAULT_OPTIONS.merge(options)
   end
 

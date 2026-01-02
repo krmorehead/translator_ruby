@@ -47,7 +47,7 @@ class ExecutionOutputServiceTest < ActiveSupport::TestCase
   test "initializes with default options" do
     service = ExecutionOutputService.new
     assert_not_nil service.base_path
-    assert_includes service.base_path, "docs/executions"
+    assert_includes service.base_path, ".agents/docs/executions"
   end
 
   # Writing execution output

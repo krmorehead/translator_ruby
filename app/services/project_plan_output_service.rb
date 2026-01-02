@@ -90,7 +90,7 @@ class ProjectPlanOutputService
 
   # Default output base directory
   def default_output_base
-    File.join(base_path, "docs", "projects")
+    File.join(ENV.fetch("AGENT_DATA_PATH", base_path), ".agents/docs/projects")
   end
 
   # Ensure the project directory exists
