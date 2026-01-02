@@ -75,9 +75,8 @@ class WorkflowMemoryStore
   # Load WorkflowMemoryStore from disk
   # @param path [String] Path to the JSON file
   # @return [WorkflowMemoryStore] Loaded memory store
-  def self.from_h(owner_id:, workflow_id:, workflow_name:, path:, sections:, started_at:, last_transition_at:, parent_memory: nil)
+  def self.from_h(workflow_id:, workflow_name:, path:, sections:, started_at:, last_transition_at:, parent_memory: nil)
     store = allocate
-    store.instance_variable_set(:@owner_id, owner_id)
     store.instance_variable_set(:@workflow_id, workflow_id)
     store.instance_variable_set(:@workflow_name, workflow_name)
     store.instance_variable_set(:@parent_memory, parent_memory)
