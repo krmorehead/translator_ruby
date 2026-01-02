@@ -66,10 +66,10 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
     other_owner1 = SecureRandom.uuid
     other_owner2 = SecureRandom.uuid
 
-    store1 = build(:research_memory_store, base_dir: temp_dir, owner_id: other_owner1)
+    store1 = build(:research_memory_store, owner_id: other_owner1)
     store1.set_section(:research_goal, [{ text: "Goal 1" }])
 
-    store2 = build(:research_memory_store, base_dir: temp_dir, owner_id: other_owner2)
+    store2 = build(:research_memory_store, owner_id: other_owner2)
     store2.set_section(:research_goal, [{ text: "Goal 2" }])
 
     owners = ResearchMemoryStore.list_owners(base_path: temp_dir)
