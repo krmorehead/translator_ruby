@@ -120,11 +120,14 @@ class ProjectPlannerWorker < BaseWorker
     )
 
     # Use ResearchWorkflow directly instead of CodebaseResearcher worker
+    # Extract metadata from context object for research workflow
+    research_context = {}
+    
     workflow = ResearchWorkflow.new(
       goal: goal,
       owner_id: owner_id,
       research_path: path,
-      context: context,
+      context: research_context,
       parent_memory: memory_store,
       max_depth: @max_research_depth,
       output_modes: [:report]
