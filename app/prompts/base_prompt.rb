@@ -118,22 +118,15 @@ class BasePrompt
     # Response from GenericLlmClient is now an LlmResponse object
     raise TypeError, "response must be an LlmResponse, got #{response.class}" unless response.is_a?(LlmResponse)
     
-    content = response.content
-    thoughts = response.thoughts
-    finish_reason = response.finish_reason
-
-    parsed_content = if response_schema
-      raise "LLM response missing content" unless content
-      # Content is JSON string, parse with symbolized keys
-      JSON.parse(content, symbolize_names: true)
-    else
-      content.to_s
+    # Validate content if response_schema is required
+    if response_schema
+      raise "LLM response missing content" unless response.content
+      # Let LlmResponse handle JSON parsing
+      return response.to_prompt_result(parse_json: true)
     end
 
-    {
-      content: parsed_content,
-      thoughts: thoughts
-    }
+    # For non-JSON responses, return content as-is
+    response.to_prompt_result(parse_json: false)
   end
 
   def build_messages(prompt, context)
