@@ -26,6 +26,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
       max_depth: 2
     )
 
+    workflow.setup
     workflow.execute
 
     assert workflow.complete?, "Workflow should complete: #{workflow.error}"
@@ -41,6 +42,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
       max_depth: 4
     )
 
+    workflow.setup
     workflow.execute
 
     assert workflow.complete?
@@ -57,6 +59,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
       max_depth: 1
     )
 
+    workflow.setup
     workflow.execute
 
     assert workflow.complete?
@@ -72,6 +75,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
       max_depth: 2
     )
 
+    workflow.setup
     workflow.execute
 
     assert workflow.complete?
@@ -90,6 +94,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
       max_depth: 3
     )
 
+    workflow.setup
     workflow.execute
 
     assert workflow.complete?
@@ -104,6 +109,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
       max_depth: 2
     )
 
+    workflow.setup
     workflow.execute
 
     assert workflow.complete?
@@ -145,6 +151,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
       max_depth: 1
     )
 
+    workflow.setup
     workflow.execute
 
     assert workflow.complete?

@@ -17,7 +17,7 @@ class ResearchMemoryStore
     action_history: []
   }.freeze
 
-  attr_reader :path, :current_iteration
+  attr_reader :path, :id, :current_iteration
 
   # Find an existing research memory store by path
   # @param path [String] The full path to the memory file
@@ -31,10 +31,14 @@ class ResearchMemoryStore
   # @param path [String] File path for persistence
   def initialize(path:)
     @path = path
+    @id = SecureRandom.uuid
     @current_iteration = 0
     @sections = load_sections
     @context_stack = []
     @section_contexts = {}  # Cache for section contexts
+    
+    # Register with context graph service
+    ContextGraphService.instance.register_memory_store(self)
   end
 
   def list_sections

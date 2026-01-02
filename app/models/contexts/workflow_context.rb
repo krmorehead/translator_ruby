@@ -1,180 +1,98 @@
 # frozen_string_literal: true
 
+# WorkflowContext that queries the ContextGraphService for relevant context
+# Automatically gathers context from the graph based on workflow_id and goal
 module Contexts
-  # Context for workflow decomposition that queries the context graph service.
-  # This context class automatically loads relevant context from parent workflows,
-  # workers, and memory stores using vector similarity search across the graph.
   class WorkflowContext < BaseContext
     attr_reader :workflow_id, :goal, :max_depth
 
-    # @param workflow_id [String] ID of the workflow requesting context
-    # @param goal [String] The goal being worked on
-    # @param max_depth [Integer] Maximum depth for decomposition
-    def initialize(workflow_id:, goal:, max_depth: nil)
-      raise ArgumentError, "workflow_id is required" if workflow_id.nil? || workflow_id.empty?
-      raise ArgumentError, "goal is required" if goal.nil? || goal.empty?
-
+    def initialize(workflow_id:, goal:, max_depth:)
       super()
       @workflow_id = workflow_id
       @goal = goal
       @max_depth = max_depth
-
       load_from_graph
+    end
+
+    # Format context for prompts
+    def format_for_prompt(query_text = nil)
+      return "No context available" if entries.empty?
+
+      sections = []
+      
+      # Group entries by topic
+      by_topic = entries.group_by { |e| e.topics.first || "general" }
+      
+      by_topic.each do |topic, topic_entries|
+        sections << "## #{topic.to_s.titleize}"
+        topic_entries.first(3).each do |entry|
+          sections << "- #{entry.content}"
+        end
+      end
+      
+      sections.join("\n\n")
     end
 
     private
 
-    # Query the context graph for relevant information
     def load_from_graph
-      # Query for codebase/architecture context
-      load_codebase_context
+      service = ContextGraphService.instance
 
-      # Query for related goals
-      load_goal_context
-
-      # Query for prior findings
-      load_findings_context
-
-      # Query for decisions and workflow context
-      load_workflow_context
-    end
-
-    # Load codebase and architecture context
-    def load_codebase_context
-      results = ContextGraphService.instance.query(
-        workflow_id: @workflow_id,
-        context_type: :codebase_summary,
-        query_vector: "codebase architecture structure overview",
-        threshold: 0.7,
-        limit: 3
-      )
-
-      return if results.empty?
-
-      content = format_results_section("Codebase Context", results)
-      add(
-        content: content,
-        topics: ["codebase", "architecture"],
-        source: "context_graph"
-      )
-    rescue StandardError => e
-      Rails.logger.warn "[WorkflowContext] Failed to load codebase context: #{e.message}"
-    end
-
-    # Load related goals and objectives
-    def load_goal_context
-      results = ContextGraphService.instance.query(
-        workflow_id: @workflow_id,
-        context_type: :current_goal,
-        query_vector: @goal,
-        threshold: 0.75,
-        limit: 5
-      )
-
-      return if results.empty?
-
-      content = format_results_section("Related Goals", results)
-      add(
-        content: content,
-        topics: ["goals", "objectives"],
-        source: "context_graph"
-      )
-    rescue StandardError => e
-      Rails.logger.warn "[WorkflowContext] Failed to load goal context: #{e.message}"
-    end
-
-    # Load prior findings and research
-    def load_findings_context
-      results = ContextGraphService.instance.query(
-        workflow_id: @workflow_id,
-        context_type: :findings,
-        query_vector: @goal,
-        threshold: 0.7,
-        limit: 10
-      )
-
-      return if results.empty?
-
-      content = format_results_section("Prior Findings", results)
-      add(
-        content: content,
-        topics: ["findings", "research"],
-        source: "context_graph"
-      )
-    rescue StandardError => e
-      Rails.logger.warn "[WorkflowContext] Failed to load findings context: #{e.message}"
-    end
-
-    # Load workflow decisions and context
-    def load_workflow_context
-      # Load recent decisions
-      decision_results = ContextGraphService.instance.query(
+      # Query for decisions (prior reasoning and choices)
+      decision_results = service.query(
         workflow_id: @workflow_id,
         context_type: :decision,
         query_vector: @goal,
-        threshold: 0.7,
-        limit: 5
+        threshold: 0.6,
+        limit: 3
       )
 
-      if decision_results.any?
-        content = format_results_section("Recent Decisions", decision_results)
+      decision_results.each do |res|
         add(
-          content: content,
-          topics: ["decisions", "reasoning"],
-          source: "context_graph"
+          content: "Prior Decision: #{res[:memory].decision}",
+          topics: ["decisions", "prior_knowledge"],
+          source: res[:source],
+          metadata: { score: res[:final_score], distance: res[:distance] }
         )
-    end
+      end
 
-      # Load workflow context entries
-      context_results = ContextGraphService.instance.query(
+      # Query for goals (related goals and sub-questions)
+      goal_results = service.query(
         workflow_id: @workflow_id,
-        context_type: :workflow_context,
+        context_type: :research_goal,
         query_vector: @goal,
         threshold: 0.7,
-        limit: 5
+        limit: 2
       )
 
-      if context_results.any?
-        content = format_results_section("Workflow Context", context_results)
+      goal_results.each do |res|
         add(
-          content: content,
-          topics: ["workflow", "context"],
-          source: "context_graph"
+          content: "Related Goal: #{res[:memory].to_s}",
+          topics: ["goals", "research"],
+          source: res[:source],
+          metadata: { score: res[:final_score], distance: res[:distance] }
         )
       end
-    rescue StandardError => e
-      Rails.logger.warn "[WorkflowContext] Failed to load workflow context: #{e.message}"
-    end
 
-    # Format results into a readable section
-    # @param title [String] Section title
-    # @param results [Array<Hash>] Query results from graph service
-    # @return [String] Formatted section
-    def format_results_section(title, results)
-      lines = ["## #{title}", ""]
-      
-      results.each do |result|
-        memory = result[:memory]
-        score = result[:final_score]
-        distance = result[:path_distance]
-        
-        # Format the memory content
-        memory_text = if memory.respond_to?(:to_s)
-          memory.to_s
-        elsif memory.respond_to?(:content)
-          memory.content
-        elsif memory.is_a?(Hash)
-          memory.inspect
-        else
-          memory.inspect
-        end
+      # Query for findings (previous research results)
+      finding_results = service.query(
+        workflow_id: @workflow_id,
+        context_type: :findings,
+        query_vector: "findings relevant to #{@goal}",
+        threshold: 0.6,
+        limit: 2
+      )
 
-        # Add with relevance score and distance info
-        relevance_pct = (score * 100).round
-        lines << "- #{memory_text.truncate(200)} (relevance: #{relevance_pct}%, distance: #{distance})"
+      finding_results.each do |res|
+        add(
+          content: "Prior Finding: #{res[:memory].to_s}",
+          topics: ["findings", "prior_research"],
+          source: res[:source],
+          metadata: { score: res[:final_score], distance: res[:distance] }
+        )
       end
 
-      lines.join("\n")
+      Rails.logger.info "[WorkflowContext] Loaded #{entries.size} context entries from graph"
     end
   end
 end

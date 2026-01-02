@@ -7,13 +7,16 @@ class MemoryStore
     h[klass.section_name.to_sym] = klass.default.dup
   end.freeze
 
-  attr_reader :path, :owner_id
+  attr_reader :path, :id
 
-  def initialize(path:, owner_id:)
+  def initialize(path:)
     @path = path
-    @owner_id = owner_id
+    @id = SecureRandom.uuid
     @sections = load_sections
     @section_contexts = {}
+    
+    # Register with context graph service
+    ContextGraphService.instance.register_memory_store(self)
   end
 
   def list_sections

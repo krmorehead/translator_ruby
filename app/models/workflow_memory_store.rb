@@ -67,6 +67,9 @@ class WorkflowMemoryStore
       @started_at = Time.now.utc
       @last_transition_at = Time.now.utc
     end
+    
+    # Register with context graph service (automatically creates edges)
+    ContextGraphService.instance.register_workflow_memory_store(self)
   end
 
   # Load WorkflowMemoryStore from disk

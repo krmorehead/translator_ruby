@@ -176,7 +176,7 @@ class BaseWorker
   
   def record_state_transition_to_memory(from, to, event, payload)
     return unless @memory_store
-    
+
     memory_store.record_state_transition(
       from: from,
       to: to,
