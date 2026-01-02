@@ -337,7 +337,6 @@ class WorkflowMemoryStore
   # Convert to hash for serialization
   def to_h
     {
-      owner_id: owner_id,
       workflow_id: workflow_id,
       workflow_name: workflow_name,
       started_at: @started_at.iso8601,
