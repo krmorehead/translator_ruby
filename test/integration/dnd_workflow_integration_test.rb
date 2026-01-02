@@ -53,7 +53,7 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
   def post_message(message)
     # Create session first if needed
     unless @session_created
-      post "/dnd/sessions"
+      post "/dnd_chat/sessions"
       assert_response :created
       session_data = JSON.parse(response.body)
       @session_id = session_data["session_id"]
