@@ -30,7 +30,7 @@ class BaseWorker
   DEFAULT_STATE_PATH = ".agents/state"
   DEFAULT_OUTPUT_PATH = ".agents/references"
 
-  attr_reader :owner_id, :goal, :path, :context, :result, :error, :workflows
+  attr_reader :owner_id, :goal, :context, :result, :error, :workflows
 
   class << self
     def registered_workflows
@@ -52,13 +52,12 @@ class BaseWorker
   # @param path [String, nil] Optional target path (e.g., codebase root for research)
   # @param context [Hash] Optional seed context/information for the worker
   # @param options [Hash] Additional options
-  def initialize(goal:, context:, path: nil, **options)
+  def initialize(goal:, context:, **options)
     raise TypeError, "context must be a Contexts::BaseContext, got #{context.class}" unless context.is_a?(Contexts::BaseContext)
     
     initialize_state_machine
     @owner_id = options[:owner_id] || SecureRandom.uuid
     @goal = goal
-    @path = path ? File.expand_path(path) : Dir.pwd
     @context = context
     @options = options
     @result = nil

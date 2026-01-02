@@ -79,10 +79,10 @@ class SisyphusWorker < BaseWorker
     # Initialize parent with synthesized goal from plan
     super(
       goal: execution_plan.goal,
-      path: path,
       context: context
     )
 
+    @path = File.expand_path(path)
     @execution_plan = execution_plan
     @config = config
     @current_milestone_index = 0
@@ -217,9 +217,9 @@ class SisyphusWorker < BaseWorker
   
   # Initialize checkpoint service if git repository exists
   def initialize_checkpoint_service
-    return nil unless path && File.directory?(File.join(path, ".git"))
+    return nil unless @path && File.directory?(File.join(@path, ".git"))
     
-    CheckpointService.new(path: path)
+    CheckpointService.new(path: @path)
   rescue ArgumentError => e
     Rails.logger.warn "[SisyphusWorker] Checkpoint service unavailable: #{e.message}"
     nil
