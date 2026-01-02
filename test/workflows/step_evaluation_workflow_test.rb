@@ -69,12 +69,16 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "initializes with parent_memory" do
-    parent_memory = WorkflowMemoryStore.new(
+    # Create a REAL parent workflow instance (not a mock)
+    parent_workflow = ResearchWorkflow.new(
+      goal: "parent workflow goal",
+      research_path: @path,
       owner_id: @owner_id,
-      workflow_id: SecureRandom.uuid,
-      workflow_name: "test_parent",
-      path: File.join(@path, "parent_memory.json")
+      parent_id: SecureRandom.uuid
     )
+    
+    # Use the real workflow's memory store
+    parent_memory = parent_workflow.memory
 
     workflow = StepEvaluationWorkflow.new(
       owner_id: @owner_id,
