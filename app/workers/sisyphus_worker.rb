@@ -224,6 +224,39 @@ class SisyphusWorker < BaseWorker
     Rails.logger.warn "[SisyphusWorker] Checkpoint service unavailable: #{e.message}"
     nil
   end
+  
+  # Build SisyphusContext for current execution state
+  # Creates proper Context object (not hash) for workflows
+  # @return [Contexts::SisyphusContext] Context with current execution state
+  def build_sisyphus_context
+    milestone = current_milestone
+    step = current_step
+    
+    Contexts::SisyphusContext.new(
+      codebase_path: @path,
+      plan_goal: @execution_plan.goal,
+      plan_id: @execution_plan.id,
+      execution_id: @owner_id, # Use owner_id as execution_id
+      current_milestone: milestone ? {
+        number: milestone.number,
+        title: milestone.title,
+        description: milestone.description
+      } : nil,
+      current_step: step ? {
+        number: step.number,
+        title: step.title,
+        intent: step.intent
+      } : nil,
+      execution_metadata: {
+        approval_mode: @config.approval_mode,
+        max_retries: @config.max_retries,
+        dry_run: @config.dry_run,
+        current_milestone_index: @current_milestone_index,
+        current_step_index: @current_step_index,
+        progress_percentage: progress_percentage
+      }
+    )
+  end
 
   # Execute all milestones in sequence
   def execute_all_milestones
@@ -300,10 +333,13 @@ class SisyphusWorker < BaseWorker
           parent_memory: @memory_store
         )
         
+        # Build proper SisyphusContext (OOP pattern - no hashes!)
+        sisyphus_context = build_sisyphus_context
+        
         execution_workflow.setup(
           step: step,
           path: @path,
-          context: @context,
+          context: sisyphus_context,
           system_prompt: nil # TODO: Add SisyphusSystemPrompt in future iteration
         )
         
@@ -408,12 +444,16 @@ class SisyphusWorker < BaseWorker
       parent_memory: @memory_store
     )
     
-    evaluation_workflow.setup(
-      step: step,
-      step_result: step_result,
-      path: @path,
-      system_prompt: nil
-    )
+        # Build proper SisyphusContext for evaluation
+        sisyphus_context = build_sisyphus_context
+        
+        evaluation_workflow.setup(
+          step: step,
+          step_result: step_result,
+          path: @path,
+          context: sisyphus_context,
+          system_prompt: nil
+        )
     
     evaluation_workflow.execute
   rescue StandardError => e

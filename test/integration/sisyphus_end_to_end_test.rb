@@ -56,9 +56,17 @@ class SisyphusEndToEndTest < ActiveSupport::TestCase
   # Full end-to-end test with real LLM and tool execution
   speed_profile :slow
   test "executes complete workflow from planning to evaluation" do
+    # Create proper SisyphusContext (OOP pattern - no hashes!)
+    context = Contexts::SisyphusContext.new(
+      codebase_path: @temp_dir,
+      plan_goal: @execution_plan.goal,
+      plan_id: @execution_plan.id,
+      execution_id: SecureRandom.uuid
+    )
+    
     # Create and execute workflow for single step
     execution_workflow = StepExecutionWorkflow.new(owner_id: "test_user")
-    execution_workflow.setup(step: @step, path: @temp_dir)
+    execution_workflow.setup(step: @step, path: @temp_dir, context: context)
 
     # Execute - this will hit real LLM for context, planning, validation, and execution
     step_result = execution_workflow.execute
@@ -78,7 +86,8 @@ class SisyphusEndToEndTest < ActiveSupport::TestCase
     evaluation_workflow.setup(
       step: @step,
       step_result: step_result,
-      path: @temp_dir
+      path: @temp_dir,
+      context: context
     )
 
     # Execute evaluation - hits real LLM
@@ -108,8 +117,16 @@ class SisyphusEndToEndTest < ActiveSupport::TestCase
   # Test workflow memory is captured
   speed_profile :slow
   test "captures workflow memory and decisions" do
+    # Create proper SisyphusContext
+    context = Contexts::SisyphusContext.new(
+      codebase_path: @temp_dir,
+      plan_goal: @execution_plan.goal,
+      plan_id: @execution_plan.id,
+      execution_id: SecureRandom.uuid
+    )
+    
     execution_workflow = StepExecutionWorkflow.new(owner_id: "test_user")
-    execution_workflow.setup(step: @step, path: @temp_dir)
+    execution_workflow.setup(step: @step, path: @temp_dir, context: context)
 
     step_result = execution_workflow.execute
 
@@ -129,8 +146,16 @@ class SisyphusEndToEndTest < ActiveSupport::TestCase
   # Test that tools are actually executed
   speed_profile :slow
   test "actually executes tools and creates files" do
+    # Create proper SisyphusContext
+    context = Contexts::SisyphusContext.new(
+      codebase_path: @temp_dir,
+      plan_goal: @execution_plan.goal,
+      plan_id: @execution_plan.id,
+      execution_id: SecureRandom.uuid
+    )
+    
     execution_workflow = StepExecutionWorkflow.new(owner_id: "test_user")
-    execution_workflow.setup(step: @step, path: @temp_dir)
+    execution_workflow.setup(step: @step, path: @temp_dir, context: context)
 
     step_result = execution_workflow.execute
 

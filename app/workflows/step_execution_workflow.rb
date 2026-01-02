@@ -72,11 +72,11 @@ class StepExecutionWorkflow < BaseWorkflow
   # Setup the workflow with step and context
   # @param step [Planning::Step] The step to execute
   # @param path [String] Codebase root path
-  # @param context [Hash] Additional context
+  # @param context [Contexts::BaseContext] Context object (REQUIRED - no default)
   # @param system_prompt [Object] System prompt for LLM calls
   # @return [self]
-  def setup(step:, path:, context: {}, system_prompt: nil)
-    validate_setup_params!(step, path)
+  def setup(step:, path:, context:, system_prompt: nil)
+    validate_setup_params!(step, path, context)
     
     @step = step
     @path = path
@@ -120,7 +120,7 @@ class StepExecutionWorkflow < BaseWorkflow
   private
 
   # Validate setup parameters
-  def validate_setup_params!(step, path)
+  def validate_setup_params!(step, path, context)
     unless step.is_a?(Planning::Step)
       raise TypeError, "step must be a Planning::Step, got #{step.class}"
     end
@@ -131,6 +131,11 @@ class StepExecutionWorkflow < BaseWorkflow
 
     unless File.directory?(path)
       raise ArgumentError, "path must be an existing directory: #{path}"
+    end
+    
+    # Validate context is a Context object (OOP pattern - no hashes!)
+    unless context.is_a?(Contexts::BaseContext)
+      raise TypeError, "context must be a Contexts::BaseContext (or subclass), got #{context.class}. Example: Contexts::SisyphusContext.new(...)"
     end
   end
 

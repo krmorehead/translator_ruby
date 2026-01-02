@@ -60,14 +60,16 @@ class StepEvaluationWorkflow < BaseWorkflow
   # @param step [Planning::Step] The step that was executed
   # @param step_result [Hash] The execution result from StepExecutionWorkflow
   # @param path [String] Codebase root path
+  # @param context [Contexts::BaseContext] Context object (REQUIRED - no default)
   # @param system_prompt [Object] System prompt for LLM calls
   # @return [self]
-  def setup(step:, step_result:, path:, system_prompt: nil)
-    validate_setup_params!(step, step_result, path)
+  def setup(step:, step_result:, path:, context:, system_prompt: nil)
+    validate_setup_params!(step, step_result, path, context)
     
     @step = step
     @step_result = step_result
     @path = path
+    @context = context
     @system_prompt = system_prompt
 
     # Initialize workflow memory
@@ -98,13 +100,13 @@ class StepEvaluationWorkflow < BaseWorkflow
   private
 
   # Validate setup parameters
-  def validate_setup_params!(step, step_result, path)
+  def validate_setup_params!(step, step_result, path, context)
     unless step.is_a?(Planning::Step)
       raise TypeError, "step must be a Planning::Step, got #{step.class}"
     end
 
     unless step_result.is_a?(Hash)
-      raise TypeError, "step_result must be a Hash, got #{step_result.class}"
+      raise TypeError, "step_result must be a Hash, got #{step.class}"
     end
 
     unless step_result.key?(:step_id)
@@ -117,6 +119,11 @@ class StepEvaluationWorkflow < BaseWorkflow
 
     unless File.directory?(path)
       raise ArgumentError, "path must be an existing directory: #{path}"
+    end
+    
+    # Validate context is a Context object (OOP pattern - no hashes!)
+    unless context.is_a?(Contexts::BaseContext)
+      raise TypeError, "context must be a Contexts::BaseContext (or subclass), got #{context.class}. Example: Contexts::SisyphusContext.new(...)"
     end
   end
 
