@@ -241,7 +241,7 @@ module Api
           id: checkpoint.id,
           message: checkpoint.message,
           created_at: checkpoint.created_at.iso8601,
-          files_changed: checkpoint.diffs.size,
+          files_changed: checkpoint.files_changed.size,
           metadata: checkpoint.metadata,
           milestone_id: checkpoint.milestone_id,
           execution_id: checkpoint.execution_id,

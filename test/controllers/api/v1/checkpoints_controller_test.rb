@@ -73,6 +73,12 @@ class Api::V1::CheckpointsControllerTest < ActionDispatch::IntegrationTest
 
   speed_profile :fast
   test "POST /api/v1/checkpoints creates a checkpoint" do
+    # Make a change in the temp repo so there's something to commit
+    File.write(File.join(temp_repo, "test.txt"), "test content")
+    Dir.chdir(temp_repo) do
+      system("git add test.txt", out: File::NULL, err: File::NULL)
+    end
+    
     post "/api/v1/checkpoints", params: {
       path: temp_repo,
       message: "Test checkpoint from API"
@@ -83,7 +89,7 @@ class Api::V1::CheckpointsControllerTest < ActionDispatch::IntegrationTest
     
     assert json["success"]
     assert json["checkpoint"]
-    assert_equal "Test checkpoint from API", json["checkpoint"]["message"]
+    assert_equal "Sisyphus: Test checkpoint from API", json["checkpoint"]["message"]
     assert json["checkpoint"]["id"]
     assert json["checkpoint"]["created_at"]
   end
