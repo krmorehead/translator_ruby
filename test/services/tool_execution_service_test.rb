@@ -5,7 +5,11 @@ require "test_helper"
 class ToolExecutionServiceTest < ActiveSupport::TestCase
   def setup
     @service = ToolExecutionService.new
-    @test_dir = Rails.root.join("test", "fixtures", "sample_project")
+    # Use unique temp directory for each test to avoid parallel test conflicts
+    @test_dir = Pathname.new(Dir.mktmpdir("tool_execution_test"))
+  end
+
+  def teardown
   end
 
   speed_profile :fast
@@ -16,7 +20,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
   # execute_tool tests
   speed_profile :medium
   test "execute_tool with file_tree calls FileTreeTool" do
-    FileUtils.mkdir_p(@test_dir)
     
     result = @service.execute_tool(
       tool_name: :file_tree,
@@ -26,14 +29,11 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
     assert result[:success]
     assert result[:data]
     assert_nil result[:error]
-  ensure
-    FileUtils.rm_rf(@test_dir) if @test_dir.exist?
   end
 
   speed_profile :medium
   test "execute_tool with read_file calls ReadFileTool" do
     file_path = @test_dir.join("sample_file.rb")
-    FileUtils.mkdir_p(@test_dir)
     File.write(file_path, "# Sample Ruby file\nputs 'hello'")
 
     result = @service.execute_tool(
@@ -44,13 +44,10 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
     assert result[:success]
     assert_includes result[:data], "Sample Ruby file"
     assert_nil result[:error]
-  ensure
-    FileUtils.rm_rf(@test_dir) if @test_dir.exist?
   end
 
   speed_profile :medium
   test "execute_tool with grep calls GrepTool" do
-    FileUtils.mkdir_p(@test_dir)
     File.write(@test_dir.join("test.rb"), "class TestClass\nend")
 
     result = @service.execute_tool(
@@ -61,8 +58,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
     assert result[:success]
     assert result[:data]
     assert_nil result[:error]
-  ensure
-    FileUtils.rm_rf(@test_dir) if @test_dir.exist?
   end
 
   speed_profile :fast
@@ -110,7 +105,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
   # list_directory tests
   speed_profile :medium
   test "list_directory wraps FileTreeTool" do
-    FileUtils.mkdir_p(@test_dir)
     File.write(@test_dir.join("file1.rb"), "content")
 
     result = @service.list_directory(path: @test_dir.to_s)
@@ -119,13 +113,10 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
     assert result[:data]
     assert result[:data][:tree]
     assert_nil result[:error]
-  ensure
-    FileUtils.rm_rf(@test_dir) if @test_dir.exist?
   end
 
   speed_profile :medium
   test "list_directory accepts options" do
-    FileUtils.mkdir_p(@test_dir)
 
     result = @service.list_directory(
       path: @test_dir.to_s,
@@ -133,8 +124,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
     )
 
     assert result[:success]
-  ensure
-    FileUtils.rm_rf(@test_dir) if @test_dir.exist?
   end
 
   speed_profile :fast
@@ -158,7 +147,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
   # read_file tests
   speed_profile :medium
   test "read_file wraps ReadFileTool" do
-    FileUtils.mkdir_p(@test_dir)
     file_path = @test_dir.join("test.txt")
     File.write(file_path, "test content")
 
@@ -167,8 +155,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
     assert result[:success]
     assert_equal "test content", result[:data]
     assert_nil result[:error]
-  ensure
-    FileUtils.rm_rf(@test_dir) if @test_dir.exist?
   end
 
   speed_profile :fast
@@ -192,7 +178,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
   # search_files tests
   speed_profile :medium
   test "search_files wraps GrepTool" do
-    FileUtils.mkdir_p(@test_dir)
     File.write(@test_dir.join("test.rb"), "class MyClass\nend")
 
     result = @service.search_files(
@@ -203,13 +188,10 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
     assert result[:success]
     assert result[:data]
     assert_nil result[:error]
-  ensure
-    FileUtils.rm_rf(@test_dir) if @test_dir.exist?
   end
 
   speed_profile :medium
   test "search_files accepts options" do
-    FileUtils.mkdir_p(@test_dir)
     File.write(@test_dir.join("test.rb"), "test")
 
     result = @service.search_files(
@@ -219,8 +201,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
     )
 
     assert result[:success]
-  ensure
-    FileUtils.rm_rf(@test_dir) if @test_dir.exist?
   end
 
   speed_profile :fast
@@ -257,7 +237,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
   # Response standardization tests
   speed_profile :medium
   test "standardizes successful tool responses" do
-    FileUtils.mkdir_p(@test_dir)
     File.write(@test_dir.join("test.txt"), "content")
 
     result = @service.read_file(path: @test_dir.join("test.txt").to_s)
@@ -268,8 +247,6 @@ class ToolExecutionServiceTest < ActiveSupport::TestCase
     assert result[:success]
     assert result[:data]
     assert_nil result[:error]
-  ensure
-    FileUtils.rm_rf(@test_dir) if @test_dir.exist?
   end
 
   speed_profile :medium
