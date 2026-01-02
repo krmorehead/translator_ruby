@@ -38,5 +38,66 @@ module Actions
         summary: "Error: #{message}"
       }
     end
+    
+    # Alias for error_result (used by some actions)
+    alias_method :failure_result, :error_result
+    
+    # Get the working directory path from agent
+    def path
+      @agent.respond_to?(:path) ? @agent.path : ENV.fetch("AGENT_DATA_PATH", ".")
+    end
+    
+    # List files in a directory using FileTreeTool
+    def list_files(dir_path = nil, pattern: "**/*")
+      base = dir_path.nil? ? path : (dir_path.start_with?("/") ? dir_path : File.join(path, dir_path))
+      Dir.glob(File.join(base, pattern)).select { |f| File.file?(f) }
+    end
+    
+    # Read file contents using ReadFileTool
+    def read_file(file_path)
+      full_path = file_path.start_with?("/") ? file_path : File.join(path, file_path)
+      File.read(full_path)
+    rescue Errno::ENOENT
+      ""
+    end
+    
+    # Search file contents using GrepTool
+    def grep_files(pattern, file_pattern: "**/*.rb")
+      matches = []
+      list_files(nil, pattern: file_pattern).each do |file_path|
+        content = read_file(file_path)
+        content.each_line.with_index do |line, index|
+          if line =~ /#{pattern}/
+            matches << {
+              file: file_path,
+              line: index + 1,
+              content: line.strip
+            }
+          end
+        end
+      end
+      matches
+    end
+    
+    # Record a discovered file to memory
+    def record_discovered_file(file_path:, relevance:, reasoning:)
+      return unless @memory_store.respond_to?(:record_discovered_file)
+      @memory_store.record_discovered_file(
+        file_path: file_path,
+        relevance: relevance,
+        reasoning: reasoning
+      )
+    end
+    
+    # Record a finding to memory
+    def record_finding(text:, source:, confidence:, metadata: {})
+      return unless @memory_store.respond_to?(:record_finding)
+      @memory_store.record_finding(
+        text: text,
+        source: source,
+        confidence: confidence,
+        metadata: metadata
+      )
+    end
   end
 end
