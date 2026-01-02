@@ -130,10 +130,12 @@ class BaseWorkflow
 
   
   def initialize_workflow_memory
+    parent_id = @parent_memory ? @parent_memory.id : @owner_id
+    
     @workflow_memory = WorkflowMemoryStore.new(
       workflow_id: @workflow_id,
       workflow_name: self.class.workflow_name,
-      parent_id: @parent_memory.id,
+      parent_id: parent_id,
       owner_id: @owner_id,
       path: workflow_memory_path
     )

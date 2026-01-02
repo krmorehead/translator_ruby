@@ -115,23 +115,12 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   end
 
   # Parent memory query tests
-  class MockParentMemory
-    def initialize(data = {})
-      @data = data
-    end
-
-    def context_for(workflow_name)
-      # Return a proper Context object with relevant entries
-      Contexts::BaseContext.new
-    end
-  end
-
   speed_profile :fast
   test "workflow can get parent context" do
-    parent = MockParentMemory.new
+    parent_memory = build(:memory_store, base_dir: create_temp_git_repo)
     workflow = TestWorkflow.new(
       owner_id: SecureRandom.uuid,
-      parent_memory: parent
+      parent_memory: parent_memory
     )
     workflow.setup()
 
