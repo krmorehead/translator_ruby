@@ -49,13 +49,9 @@ FactoryBot.define do
       parent { nil }
     end
 
-    workflow_id { workflow_id_value }
-    workflow_name { workflow_name_value }
-    owner_id { owner }
-    path { File.join(base_dir, owner, "workflows", "#{workflow_name_value}_#{workflow_id_value}.json") }
-    
     initialize_with do
-      FileUtils.mkdir_p(File.dirname(path))
+      workflow_path = File.join(base_dir, owner, "workflows", "#{workflow_name_value}_#{workflow_id_value}.json")
+      FileUtils.mkdir_p(File.dirname(workflow_path))
       
       # Always create a real parent instance if not provided
       parent_instance = parent || begin
@@ -65,11 +61,11 @@ FactoryBot.define do
       end
       
       new(
-        workflow_id: workflow_id,
-        workflow_name: workflow_name,
-        owner_id: owner_id,
+        workflow_id: workflow_id_value,
+        workflow_name: workflow_name_value,
+        owner_id: owner,
         parent_id: parent_instance.id,
-        path: path
+        path: workflow_path
       )
     end
 
