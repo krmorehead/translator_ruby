@@ -6,7 +6,7 @@ class QuestLogMemoryTest < ActiveSupport::TestCase
   def setup
     @sandbox_path = Rails.root.join("test", "tool_test", "quest_log_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(@sandbox_path)
-    @path = File.join(@sandbox_path, "memory.json")
+
     @store = MemoryStore.new(owner_id: SecureRandom.uuid)
   end
 
