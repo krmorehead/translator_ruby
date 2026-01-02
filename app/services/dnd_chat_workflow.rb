@@ -40,9 +40,11 @@ class DndChatWorkflow < BaseWorkflow
   private
   
   def detect_actions_from_prompt
-    # Use ActionDetectionPrompt to identify what tools to use
-    tools = ToolCallService.available_dnd_tools
-    detection_prompt = ActionDetectionPrompt.new(tools: tools)
+    # Get DnD tool classes
+    dnd_tool_names = %w[dice_roll skill_check inventory memory memory_summarize current_context context_compress]
+    tool_classes = ToolCallService::TOOL_CLASSES.select { |klass| dnd_tool_names.include?(klass.name_identifier) }
+    
+    detection_prompt = ActionDetectionPrompt.new(tools: tool_classes)
     context = build_context_for_detection
     
     result = detection_prompt.execute(prompt: prompt, context: context)
