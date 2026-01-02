@@ -117,7 +117,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Parent memory query tests
   speed_profile :fast
   test "workflow can get parent context" do
-    parent_memory = build(:memory_store, base_dir: create_temp_git_repo)
+    parent_memory = build(:memory_store)
     workflow = TestWorkflow.new(
       owner_id: SecureRandom.uuid,
       parent_memory: parent_memory

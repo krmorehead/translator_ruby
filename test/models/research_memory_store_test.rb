@@ -14,7 +14,7 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
   let(:store_path) { File.join(temp_dir, owner_id, "research_memory.json") }
 
   # Required by ContextLeakTests - uses factory
-  let(:memory) { build(:research_memory_store, base_dir: temp_dir, owner_id: owner_id) }
+  let(:memory) { build(:research_memory_store, owner_id: owner_id) }
 
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
@@ -164,8 +164,8 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
     parallel_owner1 = SecureRandom.uuid
     parallel_owner2 = SecureRandom.uuid
 
-    store1 = build(:research_memory_store, base_dir: temp_dir, owner_id: parallel_owner1)
-    store2 = build(:research_memory_store, base_dir: temp_dir, owner_id: parallel_owner2)
+    store1 = build(:research_memory_store, owner_id: parallel_owner1)
+    store2 = build(:research_memory_store, owner_id: parallel_owner2)
 
     store1.set_section(:research_goal, [{ text: "Goal for owner 1" }])
     store2.set_section(:research_goal, [{ text: "Goal for owner 2" }])
@@ -201,21 +201,21 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
   # Test factory traits
   speed_profile :fast
   test "factory with_goal trait works" do
-    store = build(:research_memory_store, :with_goal, base_dir: temp_dir)
+    store = build(:research_memory_store, :with_goal)
     goal = store.get_section(:research_goal).first
     assert_equal "Test research goal", goal[:text]
   end
 
   speed_profile :fast
   test "factory with_context_chain trait works" do
-    store = build(:research_memory_store, :with_context_chain, base_dir: temp_dir)
+    store = build(:research_memory_store, :with_context_chain)
     chain = store.get_section(:context_chain)
     assert_equal 2, chain.size
   end
 
   speed_profile :fast
   test "factory full trait creates complete store" do
-    store = build(:research_memory_store, :full, base_dir: temp_dir)
+    store = build(:research_memory_store, :full)
 
     assert store.get_section(:research_goal).any?
     assert store.get_section(:sub_questions).any?

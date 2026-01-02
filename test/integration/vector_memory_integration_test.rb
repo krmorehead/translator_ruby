@@ -6,7 +6,7 @@ class VectorMemoryIntegrationTest < ActiveSupport::TestCase
   let(:temp_dir) { create_temp_git_repo }
 
   let(:store) do
-    build(:workflow_memory_store, base_dir: temp_dir)
+    build(:workflow_memory_store)
   end
 
   def teardown

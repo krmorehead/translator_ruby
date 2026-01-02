@@ -5,9 +5,9 @@ require "test_helper"
 class WorkflowMemoryStoreTest < ActiveSupport::TestCase
   let(:temp_dir) { create_temp_git_repo }
 
-  let(:parent_memory) { build(:memory_store, base_dir: temp_dir) }
+  let(:parent_memory) { build(:memory_store) }
 
-  let(:store) { build(:workflow_memory_store, base_dir: temp_dir, parent: parent_memory) }
+  let(:store) { build(:workflow_memory_store, parent: parent_memory) }
 
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
@@ -185,11 +185,11 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
   # Isolation tests
   speed_profile :fast
   test "multiple workflow stores are isolated" do
-    parent1 = build(:memory_store, base_dir: temp_dir)
-    parent2 = build(:memory_store, base_dir: temp_dir)
-    
-    store1 = build(:workflow_memory_store, base_dir: temp_dir, parent: parent1, workflow_name_value: "workflow_1")
-    store2 = build(:workflow_memory_store, base_dir: temp_dir, parent: parent2, workflow_name_value: "workflow_2")
+    parent1 = build(:memory_store)
+    parent2 = build(:memory_store)
+
+    store1 = build(:workflow_memory_store, parent: parent1, workflow_name_value: "workflow_1")
+    store2 = build(:workflow_memory_store, parent: parent2, workflow_name_value: "workflow_2")
 
     store1.record_state_transition(from: :pending, to: :running, event: :start)
     store2.record_state_transition(from: :pending, to: :failed, event: :fail)

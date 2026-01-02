@@ -129,8 +129,8 @@ module ContextLeakTests
       owner1 = SecureRandom.uuid
       owner2 = SecureRandom.uuid
 
-      memory1 = build(:research_memory_store, base_dir: temp_dir, owner_id: owner1)
-      memory2 = build(:research_memory_store, base_dir: temp_dir, owner_id: owner2)
+      memory1 = build(:research_memory_store, owner_id: owner1)
+      memory2 = build(:research_memory_store, owner_id: owner2)
 
       # Add data to memory1
       memory1.push_context(sub_question: "Owner1 Question", key_insights: "Owner1 Insights")
