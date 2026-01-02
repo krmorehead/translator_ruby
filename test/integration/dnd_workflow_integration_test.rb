@@ -24,7 +24,7 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
     body = post_message("I search the room carefully.")
 
     assert body["success"], "expected success response"
-    assert body["reply"].to_s.strip.present?, "reply should be present"
+    assert body["message"].to_s.strip.present?, "message should be present"
     assert_conversation_persisted_with_messages(2)
     assert_actions_recorded(require_entries: false)
   end
@@ -34,7 +34,7 @@ class DndWorkflowIntegrationTest < ActionDispatch::IntegrationTest
     body = post_message("Use the memory tool to record that we accepted the quest to rescue the merchant's son, then summarize our quests.")
 
     assert body["success"], "expected success response"
-    assert body["reply"].to_s.strip.present?
+    assert body["message"].to_s.strip.present?
     assert_conversation_persisted_with_messages(2)
     assert_actions_recorded(require_entries: false)
   end
