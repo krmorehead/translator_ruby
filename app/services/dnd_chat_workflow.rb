@@ -41,10 +41,14 @@ class DndChatWorkflow < BaseWorkflow
     FileUtils.mkdir_p(@agent_path) unless File.exist?(@agent_path)
 
     memory_store = build_memory_store
+    
+    # Create a context for the agent (required by AgentWorker)
+    context = Contexts::BaseContext.new
 
     agent = DndAgentWorker.new(
       goal: prompt,
       path: @agent_path,
+      context: context,
       memory_store: memory_store,
       conversation: conversation
     )
