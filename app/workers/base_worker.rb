@@ -82,22 +82,6 @@ class BaseWorker
     File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_OUTPUT_PATH)
   end
 
-  # Query memory for specific sections - used by workflows to get context
-  # @param section_names [Array<Symbol>] Section names to retrieve
-  # @return [Hash] Hash of section_name => section_data
-  def query_memory(*section_names)
-    result = {}
-    section_names.each do |name|
-      begin
-        data = memory_store.get_section(name)
-        result[name] = data if data
-      rescue StandardError
-        # Section doesn't exist, skip
-      end
-    end
-    result
-  end
-
   # Get compressed context summary for passing to workflows/prompts
   # @return [Hash] Summary of current memory state
   def context_summary
