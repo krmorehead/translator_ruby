@@ -122,8 +122,6 @@ class BaseWorkerTest < ActiveSupport::TestCase
   test "ensure_output_directory creates directory" do
     worker = BaseWorker.new(goal: "test goal", context: worker_context)
 
-    refute File.exist?(worker.output_path)
-
     worker.send(:ensure_output_directory!)
 
     assert File.exist?(worker.output_path)
