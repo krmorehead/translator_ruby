@@ -41,6 +41,16 @@ class BaseTool
       }
     }
   end
+  
+  # Alias for compatibility with ToolCallPrompt
+  def self.name
+    name_identifier
+  end
+  
+  # Alias for compatibility with ToolCallPrompt
+  def self.to_h
+    schema
+  end
 
   # Returns the tool name identifier (e.g., "read_file")
   def self.name_identifier
