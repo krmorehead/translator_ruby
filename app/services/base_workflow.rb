@@ -136,6 +136,7 @@ class BaseWorkflow
     memory_path = File.join(
       ENV.fetch("AGENT_DATA_PATH", "."),
       @owner_id,
+      "workflows",
       "workflow_#{@workflow_id}_memory.json"
     )
     
