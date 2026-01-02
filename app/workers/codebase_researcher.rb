@@ -51,10 +51,11 @@ class CodebaseResearcher < BaseWorker
              to: :failed, on: :fail
   transition from: :failed, to: :pending, on: :retry
 
-  attr_reader :output_modes, :memory_store, :goal_tree
+  attr_reader :output_modes, :memory_store, :goal_tree, :path
 
   def initialize(goal:, path:, context:, **options)
-    super
+    super(goal: goal, context: context, **options)
+    @path = path
     @output_modes = Array(options.fetch(:output_modes, [:report, :documentation])).map(&:to_sym)
     @max_depth = options.fetch(:max_depth, 4)
     @goal_tree = nil
@@ -74,7 +75,7 @@ class CodebaseResearcher < BaseWorker
     record_decision(
       decision: "Starting codebase research",
       rationale: "Goal: #{goal}",
-      context: { path: path, output_modes: output_modes, max_depth: @max_depth }
+      context: context
     )
   end
 
@@ -105,7 +106,7 @@ class CodebaseResearcher < BaseWorker
     record_decision(
       decision: "Decomposing research goal",
       rationale: "Breaking down goal for systematic research",
-      context: { goal: goal, max_depth: @max_depth }
+      context: context
     )
 
     workflow = GoalDecompositionWorkflow.new(
@@ -126,7 +127,7 @@ class CodebaseResearcher < BaseWorker
       record_decision(
         decision: "Using fallback decomposition",
         rationale: "Original decomposition failed",
-        context: { error: workflow.error }
+        context: context
       )
     else
       @goal_tree = workflow.result[:goal_tree]
@@ -155,10 +156,7 @@ class CodebaseResearcher < BaseWorker
     record_decision(
       decision: "Goal decomposition complete",
       rationale: "Processed #{flat_structure.size} questions",
-      context: {
-        leaf_count: flat_structure.size,
-        decomposition_status: workflow.failed? ? "fallback" : "success"
-      }
+      context: context
     )
   end
 
@@ -184,7 +182,7 @@ class CodebaseResearcher < BaseWorker
     record_decision(
       decision: "Starting research workflow",
       rationale: "Researching decomposed goals",
-      context: { output_modes: output_modes }
+      context: context
     )
 
     Rails.logger.info "[CodebaseResearcher] Starting ResearchWorkflow with goal: #{goal}"
@@ -235,7 +233,7 @@ class CodebaseResearcher < BaseWorker
     record_decision(
       decision: "Research workflow complete",
       rationale: "Found #{(@research_result[:findings] || []).size} findings",
-      context: { file_count: (@research_result[:file_analyses] || []).size }
+      context: context
     )
   end
 
@@ -244,7 +242,7 @@ class CodebaseResearcher < BaseWorker
     record_decision(
       decision: "Synthesizing research results",
       rationale: "Combining findings from all workflows",
-      context: {}
+      context: context
     )
 
     # Build result before state transition so current_state reflects synthesis phase

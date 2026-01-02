@@ -98,10 +98,18 @@ class ProjectPlannerWorker < BaseWorker
     ensure_state_directory!
     @memory_store = create_memory_store
 
+    # Add metadata to context object
+    context.add(
+      content: "Project planning initialized for #{project_name} at path: #{path}",
+      topics: ["initialization", "project_planning"],
+      source: "worker_setup",
+      metadata: { max_research_depth: @max_research_depth }
+    )
+
     record_decision(
       decision: "Starting project planning",
       rationale: "Goal: #{goal}, Project: #{project_name}",
-      context: { path: path, max_research_depth: @max_research_depth }
+      context: context
     )
   end
 
@@ -116,37 +124,32 @@ class ProjectPlannerWorker < BaseWorker
     record_decision(
       decision: "Starting codebase research",
       rationale: "Gathering information about the codebase for planning",
-      context: { goal: goal, max_depth: @max_research_depth }
+      context: context
     )
 
-    # Use ResearchWorkflow directly instead of CodebaseResearcher worker
-    # Extract metadata from context object for research workflow
-    research_context = {}
-    
-    workflow = ResearchWorkflow.new(
+    # Use CodebaseResearcher worker (designed for project planning)
+    researcher = CodebaseResearcher.new(
       goal: goal,
-      owner_id: owner_id,
-      research_path: path,
-      context: research_context,
-      parent_memory: memory_store,
+      path: path,
+      context: context,  # Pass the actual GoalContext object
+      output_modes: [:report],
       max_depth: @max_research_depth,
-      output_modes: [:report]
+      owner_id: owner_id
     )
 
-    workflow.setup
-    workflow.execute
+    @research_result = researcher.execute
 
-    if workflow.failed?
-      raise "Research workflow failed: #{workflow.error}"
+    if researcher.failed?
+      raise "Research workflow failed: #{researcher.error}"
     end
 
-    @research_result = workflow.result
+    @research_result = researcher.result
     store_workflow_result(:research, @research_result)
 
     record_decision(
       decision: "Codebase research complete",
       rationale: "Found #{(@research_result[:findings] || []).size} findings",
-      context: { file_count: (@research_result[:relevant_files] || []).size }
+      context: context
     )
   end
 
@@ -155,7 +158,7 @@ class ProjectPlannerWorker < BaseWorker
     record_decision(
       decision: "Starting project plan generation",
       rationale: "Transforming research findings into structured plan",
-      context: { project_name: project_name }
+      context: context
     )
 
     workflow = ProjectPlanningWorkflow.new(
@@ -180,7 +183,7 @@ class ProjectPlannerWorker < BaseWorker
     record_decision(
       decision: "Project plan generation complete",
       rationale: "Generated #{@planning_result.milestone_count} milestones",
-      context: {}
+      context: context
     )
   end
 
@@ -189,7 +192,7 @@ class ProjectPlannerWorker < BaseWorker
     record_decision(
       decision: "Writing output files",
       rationale: "Persisting project plan to filesystem",
-      context: { project_name: project_name }
+      context: context
     )
 
     output_service = ProjectPlanOutputService.new(
