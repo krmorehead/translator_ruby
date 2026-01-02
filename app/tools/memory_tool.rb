@@ -31,9 +31,9 @@ class MemoryTool < BaseTool
             OP_LIST
           ]
         },
-        path: {
+        owner_id: {
           type: "string",
-          description: "Memory file path (optional, defaults to agent data path)"
+          description: "Owner ID for the memory store (required)"
         },
         section: { type: "string", description: "Section name" },
         content: {
@@ -42,14 +42,14 @@ class MemoryTool < BaseTool
         },
         append: { type: "boolean", description: "Append (true) or replace (false) for update" }
       },
-      required: [ "operation" ],
+      required: [ "operation", "owner_id" ],
       additionalProperties: false
     }
   end
 
-  def execute(operation:, section: nil, content: nil, append: true, path: nil)
-    op, store_path, normalized = normalize_args(operation, path, section, content, append)
-    store = MemoryStore.new(path: store_path)
+  def execute(operation:, section: nil, content: nil, append: true, owner_id:)
+    op, normalized = normalize_args(operation, section, content, append)
+    store = MemoryStore.new(owner_id: owner_id)
 
     case op
     when OP_LIST
@@ -71,13 +71,11 @@ class MemoryTool < BaseTool
   end
 
   
-  def normalize_args(operation, path, section, content, append)
+  def normalize_args(operation, section, content, append)
     op = operation || OP_UPDATE
     op = OP_UPDATE if op == "update" || op == "write"
     op = OP_GET if op == "get"
     op = OP_LIST if op == "list"
-
-    store_path = path || default_file_path
 
     normalized_section = normalize_section(section)
 
@@ -94,7 +92,7 @@ class MemoryTool < BaseTool
       content: content_val || content || "",
       append: append
     }.yield_self do |norm|
-      [ op, store_path, norm ]
+      [ op, norm ]
     end
   end
 

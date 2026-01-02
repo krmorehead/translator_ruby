@@ -17,18 +17,18 @@ class ContextCompressionTool < BaseTool
     {
       type: "object",
       properties: {
-        path: {
+        owner_id: {
           type: "string",
-          description: "Memory file path (optional, defaults to agent data path)"
+          description: "Owner ID for the memory store (required)"
         }
       },
-      required: [],
+      required: ["owner_id"],
       additionalProperties: false
     }
   end
 
-  def execute(path: nil)
-    store = MemoryStore.new(path: path || default_file_path)
+  def execute(owner_id:)
+    store = MemoryStore.new(owner_id: owner_id)
 
     summaries = Memories::Registry::ALL.map do |klass|
       summary = klass.summarize(store: store)

@@ -26,18 +26,18 @@ class MemorySummarizeTool < BaseTool
           type: "string",
           description: "Name of the person or location (required for person/location)"
         },
-        path: {
+        owner_id: {
           type: "string",
-          description: "Memory file path (optional, defaults to agent data path)"
+          description: "Owner ID for the memory store (required)"
         }
       },
-      required: [],
+      required: ["owner_id"],
       additionalProperties: false
     }
   end
 
-  def execute(target: "quest_log", name: nil, path: nil)
-    store = MemoryStore.new(path: path || default_file_path)
+  def execute(target: "quest_log", name: nil, owner_id:)
+    store = MemoryStore.new(owner_id: owner_id)
 
     case target
     when "person"
