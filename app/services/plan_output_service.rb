@@ -73,6 +73,7 @@ class PlanOutputService
 
   # Write plan.md with markdown formatting
   def write_plan_markdown
+    ensure_directory!
     path = File.join(plan_directory, "plan.md")
     content = format_plan_markdown
     File.write(path, content)
