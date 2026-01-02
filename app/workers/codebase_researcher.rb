@@ -123,7 +123,11 @@ class CodebaseResearcher < BaseWorker
       Rails.logger.warn "Decomposition failed: #{workflow.error}"
       # Fallback to minimal structure
       @goal_tree = { is_leaf: true, text: "Fallback question" }
-      record_decision(decision: "Using fallback decomposition", rationale: "Original decomposition failed")
+      record_decision(
+        decision: "Using fallback decomposition",
+        rationale: "Original decomposition failed",
+        context: { error: workflow.error }
+      )
     else
       @goal_tree = workflow.result[:goal_tree]
       @metadata[:decomposition_id] = @goal_tree[:metadata][:decomposition_id]
