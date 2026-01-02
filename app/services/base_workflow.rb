@@ -152,40 +152,17 @@ class BaseWorkflow
     )
   end
 
-  # Register this workflow in the context graph for queryable context access
-  def register_in_context_graph
-    return unless @workflow_memory
-
-    # Create workflow node
-    node = Graph::WorkflowNode.new(
-      id: @workflow_id,
-      workflow_memory: @workflow_memory
-    )
-    ContextGraphService.instance.register_node(node)
-
-    # Create edge to parent if exists
-    if @parent_memory
-      parent_id = extract_parent_id(@parent_memory)
-      edge = Graph::Edges::ParentChildEdge.new(
-        from_node_id: @workflow_id,
-        to_node_id: parent_id,
-        metadata: { relationship: :workflow_to_parent }
-      )
-      ContextGraphService.instance.add_edge(edge)
-    end
-  end
-
   # Extract parent ID from parent memory store
   # @param parent_memory [Object] Parent memory store (WorkflowMemoryStore, MemoryStore, etc)
-  # @return [String] Parent node ID
+  # @return [String] The ID to use for graph edges
   def extract_parent_id(parent_memory)
-    # WorkflowMemoryStore has workflow_id, MemoryStore uses owner_id
+    # Workflow memory stores use workflow_id, others use id
     if parent_memory.respond_to?(:workflow_id)
       parent_memory.workflow_id
-    elsif parent_memory.respond_to?(:owner_id)
-      parent_memory.owner_id
+    elsif parent_memory.respond_to?(:id)
+      parent_memory.id
     else
-      @owner_id # Fallback to owner_id
+      nil
     end
   end
 end
