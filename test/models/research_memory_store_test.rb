@@ -72,7 +72,7 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
     store2 = build(:research_memory_store, owner_id: other_owner2)
     store2.set_section(:research_goal, [{ text: "Goal 2" }])
 
-    owners = ResearchMemoryStore.list_owners(base_path: ENV.fetch("AGENT_DATA_PATH", "."))
+    owners = ResearchMemoryStore.list_owners
 
     assert_includes owners, other_owner1
     assert_includes owners, other_owner2
