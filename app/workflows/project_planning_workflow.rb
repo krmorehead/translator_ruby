@@ -154,7 +154,8 @@ class ProjectPlanningWorkflow < BaseWorkflow
       steps_data.first(4).each_with_index do |s, index|
         # Create Planning::Step object with placeholder details/tests
         step = Planning::Step.new(
-          number: "#{milestone.number}.#{index + 1}",
+          milestone_number: milestone.number,
+          step_number: index + 1,
           title: (s[:title] || s["title"]).to_s.truncate(50),
           intent: (s[:intent] || s["intent"]).to_s.truncate(100),
           details: [],  # Will be filled in add_step_details
