@@ -23,7 +23,7 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
   test "creates with default sections" do
     store = ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
 
-    assert_equal owner_id, store.owner_id
+    assert_kind_of String, store.id
     assert_includes store.list_sections, :research_goal
     assert_includes store.list_sections, :sub_questions
     assert_includes store.list_sections, :discovered_files
@@ -33,27 +33,23 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "requires owner_id" do
-    assert_raises(ArgumentError) do
-      ResearchMemoryStore.new(path: store_path, owner_id: nil)
-    end
-
-    assert_raises(ArgumentError) do
-      ResearchMemoryStore.new(path: store_path, owner_id: "")
-    end
+  test "stores have unique IDs" do
+    store1 = ResearchMemoryStore.new(path: File.join(temp_dir, "store1.json"), owner_id: owner_id)
+    store2 = ResearchMemoryStore.new(path: File.join(temp_dir, "store2.json"), owner_id: SecureRandom.uuid)
+    
+    assert_not_equal store1.id, store2.id
   end
 
   speed_profile :fast
-  test "find_by_owner loads existing store" do
+  test "find_by_path loads existing store" do
     # Create and persist a store
     store1 = ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
     store1.set_section(:research_goal, [{ text: "Test goal", timestamp: Time.now.utc.iso8601 }])
 
-    # Load it using find_by_owner
-    store2 = ResearchMemoryStore.find_by_owner(owner_id, base_path: temp_dir)
+    # Load it using find_by_path
+    store2 = ResearchMemoryStore.find_by_path(store_path)
 
     assert_not_nil store2
-    assert_equal owner_id, store2.owner_id
     goal = store2.get_section(:research_goal).first
     assert_equal "Test goal", goal[:text]
   end

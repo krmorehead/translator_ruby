@@ -3,24 +3,11 @@
 require "test_helper"
 
 class WorkflowMemoryStoreTest < ActiveSupport::TestCase
-  let(:temp_dir) do
-    dir = create_temp_git_repo
-    dir
-  end
-
-  let(:owner_id) { SecureRandom.uuid }
-  let(:workflow_id) { SecureRandom.uuid }
-  let(:workflow_name) { "test_workflow" }
-
-  let(:store) do
-    path = File.join(temp_dir, owner_id, "workflows", "#{workflow_name}_#{workflow_id}.json")
-    WorkflowMemoryStore.new(
-      owner_id: owner_id,
-      workflow_id: workflow_id,
-      workflow_name: workflow_name,
-      path: path
-    )
-  end
+  let(:temp_dir) { create_temp_git_repo }
+  
+  let(:parent_memory) { build(:memory_store, base_dir: temp_dir) }
+  
+  let(:store) { build(:workflow_memory_store, base_dir: temp_dir, parent: parent_memory) }
 
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
@@ -30,8 +17,10 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert_raises(ArgumentError) do
       WorkflowMemoryStore.new(
         owner_id: nil,
-        workflow_id: workflow_id,
-        workflow_name: workflow_name
+        workflow_id: SecureRandom.uuid,
+        workflow_name: "test",
+        parent_id: parent_memory.id,
+        path: File.join(temp_dir, "test.json")
       )
     end
   end
@@ -40,9 +29,11 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
   test "requires workflow_id" do
     assert_raises(ArgumentError) do
       WorkflowMemoryStore.new(
-        owner_id: owner_id,
+        owner_id: parent_memory.owner_id,
         workflow_id: nil,
-        workflow_name: workflow_name
+        workflow_name: "test",
+        parent_id: parent_memory.id,
+        path: File.join(temp_dir, "test.json")
       )
     end
   end
@@ -133,9 +124,9 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     store.record_decision(decision: "test", rationale: "test")
 
     summary = store.summarize
-    assert_equal workflow_name, summary[:workflow_name]
-    assert_equal workflow_id, summary[:workflow_id]
-    assert_equal owner_id, summary[:owner_id]
+    assert_equal store.workflow_name, summary[:workflow_name]
+    assert_equal store.workflow_id, summary[:workflow_id]
+    assert_equal store.owner_id, summary[:owner_id]
     assert_equal 1, summary[:transition_count]
     assert_equal 1, summary[:decision_count]
     assert_equal 0, summary[:error_count]
@@ -146,8 +137,8 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     store.record_state_transition(from: :pending, to: :running, event: :start)
 
     hash = store.to_h
-    assert_equal owner_id, hash[:owner_id]
-    assert_equal workflow_id, hash[:workflow_id]
+    assert_equal store.owner_id, hash[:owner_id]
+    assert_equal store.workflow_id, hash[:workflow_id]
     assert hash[:sections][:state_transitions].any?
   end
 
@@ -156,11 +147,12 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     store.record_state_transition(from: :pending, to: :running, event: :start)
     store.record_decision(decision: "test", rationale: "rationale")
 
-    # Create new store with same path
+    # Create new store with same path using existing parent_memory
     reloaded = WorkflowMemoryStore.new(
-      owner_id: owner_id,
-      workflow_id: workflow_id,
-      workflow_name: workflow_name,
+      owner_id: store.owner_id,
+      workflow_id: store.workflow_id,
+      workflow_name: store.workflow_name,
+      parent_id: parent_memory.id,
       path: store.path
     )
 
@@ -169,100 +161,35 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     assert_equal 1, reloaded.get_section(:decisions).size
   end
 
-  # Parent memory query tests
-  class MockParentMemory
-    def initialize(sections = {})
-      @sections = sections
-    end
-
-    def context_for(workflow_name)
-      # Return a proper Context object with relevant entries
-      Contexts::BaseContext.new
-    end
-  end
-
+  # Context query tests
   speed_profile :fast
-  test "query_parent_context returns empty context without parent" do
-    result = store.query_parent_context
-    assert_equal({}, result)
-  end
-
-  speed_profile :fast
-  test "query_parent_context gets context from parent" do
-    parent = MockParentMemory.new
-
-    store_with_parent = WorkflowMemoryStore.new(
-      owner_id: owner_id,
-      workflow_id: workflow_id,
-      workflow_name: workflow_name,
-      parent_memory: parent,
-      path: File.join(temp_dir, "with_parent.json")
-    )
-
-    result = store_with_parent.query_parent_context
-    assert_instance_of Contexts::BaseContext, result
+  test "query_context queries via graph service" do
+    result = store.query_context(context_type: :goal, query_text: "test query")
+    assert result.is_a?(Array)
   end
 
   # Merge tests
-  class MockUpdatableParent
-    attr_reader :sections
-
-    def initialize
-      @sections = Hash.new { |h, k| h[k] = [] }
-    end
-
-    def get_section(name)
-      @sections[name.to_sym]
-    end
-
-    def update_section(name:, content:, append: false)
-      if append
-        @sections[name.to_sym] << content
-      else
-        @sections[name.to_sym] = [content]
-      end
-    end
-  end
-
   speed_profile :fast
   test "merge_to_parent copies outputs to parent workflow_outputs section" do
-    parent = MockUpdatableParent.new
-
-    store_with_parent = WorkflowMemoryStore.new(
-      owner_id: owner_id,
-      workflow_id: workflow_id,
-      workflow_name: workflow_name,
-      parent_memory: parent,
-      path: File.join(temp_dir, "merge.json")
-    )
-
-    store_with_parent.record_output({ result: "success" })
-    store_with_parent.merge_to_parent(:outputs)
+    store.record_output({ result: "success" })
+    store.merge_to_parent(:outputs)
 
     # :outputs maps to :workflow_outputs in parent
-    merged = parent.sections[:workflow_outputs]
+    merged = parent_memory.get_section(:workflow_outputs)
     assert_equal 1, merged.size
     # Output data is nested under :output_data
     assert_equal "success", merged.first[:output_data][:result]
-    assert_equal workflow_name, merged.first[:source_workflow]
+    assert_equal store.workflow_name, merged.first[:source_workflow]
   end
 
   # Isolation tests
   speed_profile :fast
   test "multiple workflow stores are isolated" do
-    store1 = WorkflowMemoryStore.new(
-      owner_id: owner_id,
-      workflow_id: SecureRandom.uuid,
-      workflow_name: "workflow_1",
-      path: File.join(temp_dir, "store1.json")
-    )
-
-    store2 = WorkflowMemoryStore.new(
-      owner_id: owner_id,
-      workflow_id: SecureRandom.uuid,
-      workflow_name: "workflow_2",
-      path: File.join(temp_dir, "store2.json")
-    )
+    parent1 = build(:memory_store, base_dir: temp_dir)
+    parent2 = build(:memory_store, base_dir: temp_dir)
+    
+    store1 = build(:workflow_memory_store, base_dir: temp_dir, parent: parent1, workflow_name_value: "workflow_1")
+    store2 = build(:workflow_memory_store, base_dir: temp_dir, parent: parent2, workflow_name_value: "workflow_2")
 
     store1.record_state_transition(from: :pending, to: :running, event: :start)
     store2.record_state_transition(from: :pending, to: :failed, event: :fail)

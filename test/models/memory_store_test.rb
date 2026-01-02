@@ -4,16 +4,14 @@ class MemoryStoreTest < ActiveSupport::TestCase
   def setup
     @sandbox_path = Rails.root.join("test", "tool_test", "memory_store_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(@sandbox_path)
-    @path = File.join(@sandbox_path, "memory.json")
   end
 
   def teardown
     FileUtils.rm_rf(@sandbox_path) if File.exist?(@sandbox_path)
   end
 
-  def new_store
-    MemoryStore.new(path: @path)
-  end
+  let(:owner_id) { SecureRandom.uuid }
+  let(:store) { build(:memory_store, base_dir: @sandbox_path, owner: owner_id) }
   speed_profile :fast
   test "initializes defaults when file missing" do
     store = new_store

@@ -19,21 +19,47 @@ class ResearchMemoryStore
     action_history: []
   }.freeze
 
-  attr_reader :path, :id, :current_iteration
+  attr_reader :path, :id, :current_iteration, :owner_id
+
+  # Find an existing research memory store by owner ID
+  # @param owner_id [String] The owner ID to search for
+  # @param base_path [String] Base directory to search in
+  # @return [ResearchMemoryStore, nil] The store if found, nil otherwise
+  def self.find_by_owner(owner_id, base_path:)
+    search_path = File.join(base_path, owner_id, "research_memory.json")
+    return nil unless File.exist?(search_path)
+    new(path: search_path, owner_id: owner_id)
+  end
+
+  # List all owner IDs that have research memory stores
+  # @param base_path [String] Base directory to search in
+  # @return [Array<String>] Array of owner IDs
+  def self.list_owners(base_path:)
+    return [] unless Dir.exist?(base_path)
+    Dir.entries(base_path)
+       .select { |entry| File.directory?(File.join(base_path, entry)) && !entry.start_with?('.') }
+       .select { |entry| File.exist?(File.join(base_path, entry, "research_memory.json")) }
+  end
 
   # Find an existing research memory store by path
   # @param path [String] The full path to the memory file
   # @return [ResearchMemoryStore, nil] The store if found, nil otherwise
   def self.find_by_path(path)
     return nil unless File.exist?(path)
-    new(path: path)
+    # Extract owner_id from path if possible, otherwise use a generated one
+    owner_id = File.basename(File.dirname(path))
+    new(path: path, owner_id: owner_id)
   end
 
   # Initialize the research memory store
   # @param path [String] File path for persistence
-  def initialize(path:)
+  # @param owner_id [String] Unique identifier for the owner (worker/session)
+  def initialize(path:, owner_id:)
+    raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
+    
     @path = path
     @id = SecureRandom.uuid
+    @owner_id = owner_id.to_s
     @current_iteration = 0
     @sections = load_sections
     @context_stack = []

@@ -574,6 +574,8 @@ class SisyphusWorker < BaseWorker
     WorkflowMemoryStore.new(
       workflow_id: SecureRandom.uuid,
       workflow_name: self.class.worker_name,
+      parent_id: "root",
+      owner_id: @owner_id,
       path: File.join(@path, "sisyphus_memory.json")
     )
   end

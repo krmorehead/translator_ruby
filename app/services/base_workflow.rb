@@ -76,13 +76,15 @@ class BaseWorkflow
 
   # Find relevant context using vector search
   # @param query_text [String] Text to search for
-  # @param limit [Integer] Maximum number of results
-  # @return [Array] Array of similar memory objects
-  def find_relevant_context(query_text:)
-    workflow_memory.query_similar_memories(
+  # @param context_type [Symbol] Type of context (:goal, :decision, :output, etc)
+  # @param limit [Integer] Maximum results to return (default: 10)
+  # @return [Array] Array of context entries with scores
+  def find_relevant_context(query_text:, context_type: :memory, limit: 10)
+    workflow_memory.query_context(
+      context_type: context_type,
       query_text: query_text,
-      limit: limit
-    )
+      threshold: 0.7
+    ).first(limit)
   end
 
   # Record a decision to workflow memory
@@ -131,7 +133,8 @@ class BaseWorkflow
     @workflow_memory = WorkflowMemoryStore.new(
       workflow_id: @workflow_id,
       workflow_name: self.class.workflow_name,
-      parent_id: @parent_memory ? extract_parent_id(@parent_memory) : nil,
+      parent_id: @parent_memory.id,
+      owner_id: @owner_id,
       path: workflow_memory_path
     )
   end
@@ -148,19 +151,5 @@ class BaseWorkflow
       event: event,
       payload: payload
     )
-  end
-
-  # Extract parent ID from parent memory store
-  # @param parent_memory [Object] Parent memory store (WorkflowMemoryStore, MemoryStore, etc)
-  # @return [String] The ID to use for graph edges
-  def extract_parent_id(parent_memory)
-    # Workflow memory stores use workflow_id, others use id
-    if parent_memory.respond_to?(:workflow_id)
-      parent_memory.workflow_id
-    elsif parent_memory.respond_to?(:id)
-      parent_memory.id
-    else
-      nil
-    end
   end
 end

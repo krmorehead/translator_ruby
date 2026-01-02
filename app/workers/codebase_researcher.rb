@@ -165,7 +165,7 @@ class CodebaseResearcher < BaseWorker
   # Create the research memory store
   def create_memory_store
     store_path = File.join(state_path, "research_memory.json")
-    store = ResearchMemoryStore.new(path: store_path)
+    store = ResearchMemoryStore.new(path: store_path, owner_id: @owner_id)
 
     store.set_section(:research_goal, [
       { text: goal, status: "active", context: context, timestamp: Time.now.utc.iso8601 }

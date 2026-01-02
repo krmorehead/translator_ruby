@@ -31,16 +31,21 @@ class WorkflowMemoryStore
     checkpoints: []
   }
 
-  attr_reader :workflow_id, :workflow_name, :parent_id, :path
+  attr_reader :workflow_id, :workflow_name, :parent_id, :path, :owner_id
 
   # @param workflow_id [String] Unique ID for this workflow instance
   # @param workflow_name [String] Name of the workflow class
-  # @param parent_id [String, nil] ID of parent workflow or worker
+  # @param parent_id [String] ID of parent workflow or worker
   # @param path [String] Path for persistence (REQUIRED for checkpoint tracking)
-  def initialize(workflow_id:, workflow_name:, path:, parent_id: nil)
+  # @param owner_id [String] Owner ID for isolation
+  def initialize(workflow_id:, workflow_name:, path:, parent_id:, owner_id:)
+    raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
+    raise ArgumentError, "parent_id is required" if parent_id.nil? || parent_id.to_s.empty?
+    
     @workflow_id = workflow_id
     @workflow_name = workflow_name
-    @parent_id = parent_id
+    @parent_id = parent_id.to_s
+    @owner_id = owner_id.to_s
     @path = path
     
     # Load from disk if file exists, otherwise initialize fresh
@@ -74,11 +79,12 @@ class WorkflowMemoryStore
   # Load WorkflowMemoryStore from disk
   # @param path [String] Path to the JSON file
   # @return [WorkflowMemoryStore] Loaded memory store
-  def self.from_h(workflow_id:, workflow_name:, path:, sections:, started_at:, last_transition_at:, parent_id:)
+  def self.from_h(workflow_id:, workflow_name:, path:, sections:, started_at:, last_transition_at:, parent_id:, owner_id:)
     store = allocate
     store.instance_variable_set(:@workflow_id, workflow_id)
     store.instance_variable_set(:@workflow_name, workflow_name)
     store.instance_variable_set(:@parent_id, parent_id)
+    store.instance_variable_set(:@owner_id, owner_id)
     store.instance_variable_set(:@path, path)
     store.instance_variable_set(:@started_at, Time.parse(started_at))
     store.instance_variable_set(:@last_transition_at, Time.parse(last_transition_at))
@@ -105,13 +111,22 @@ class WorkflowMemoryStore
     data.map { |hash| klass.from_h(**hash.deep_symbolize_keys) }
   end
 
-  # Query parent for a compressed context summary matching our work
-  # @return [Hash] Summary of parent context
-  def query_parent_context
-    return {} unless parent_memory
+  # Query for context using the graph service
+  # The service automatically traverses edges to find relevant context
+  # @param context_type [Symbol] Type of context to query (:goal, :decision, etc)
+  # @param query_text [String] Text to search for
+  # @param threshold [Float] Similarity threshold (default: 0.7)
+  # @return [Array<Hash>] Relevant context entries with similarity scores
+  def query_context(context_type:, query_text:, threshold: 0.7)
+    service = ContextGraphService.instance
+    query_embedding = VectorizationService.new.vectorize(text: query_text)
     
-    # Only query for contextually relevant information
-    parent_memory.context_for(workflow_name)
+    service.query(
+      id: @id,  # MY id - I am a node in the graph
+      context_type: context_type,
+      query_vector: query_embedding.vector,
+      threshold: threshold
+    )
   end
 
   # Record a state transition to memory
@@ -214,26 +229,6 @@ class WorkflowMemoryStore
     ]
   end
 
-  # Query for similar memories using vector similarity
-  # @param query_text [String] Text to search for similar memories
-  # @param threshold [Float] Minimum similarity threshold (0.0-1.0)
-  # @param limit [Integer, nil] Maximum number of results to return
-  # @return [Array<Hash>] Array of {memory:, similarity:} hashes, sorted by similarity
-  def query_similar_memories(query_text:, threshold: VectorizationService::DEFAULT_SIMILARITY_THRESHOLD, limit: nil)
-    raise ArgumentError, "query_text cannot be empty" if query_text.nil? || query_text.empty?
-    
-    service = VectorizationService.new
-    query_embedding = service.vectorize(text: query_text)
-    
-    results = service.find_similar(
-      query_embedding: query_embedding,
-      memories: all_memories,
-      threshold: threshold
-    )
-    
-    limit ? results.first(limit) : results
-  end
-
   # Record checkpoint creation
   # @param checkpoint [Checkpoint] Checkpoint object to record
   # @raise [TypeError] If checkpoint is not a Checkpoint object
@@ -322,6 +317,7 @@ class WorkflowMemoryStore
     {
       workflow_name: workflow_name,
       workflow_id: workflow_id,
+      owner_id: owner_id,
       started_at: @started_at.iso8601,
       current_state: current_state,
       transition_count: transitions.size,
@@ -338,6 +334,7 @@ class WorkflowMemoryStore
     {
       workflow_id: workflow_id,
       workflow_name: workflow_name,
+      owner_id: owner_id,
       started_at: @started_at.iso8601,
       last_transition_at: @last_transition_at.iso8601,
       sections: serialize_sections
@@ -345,16 +342,23 @@ class WorkflowMemoryStore
   end
 
   # Merge this workflow's findings back to parent memory
+  # Uses ContextGraphService to find parent via edges
   # @param sections [Array<Symbol>] Sections to merge (default: [:outputs])
   def merge_to_parent(*sections)
-    return false unless parent_memory
-    return false unless parent_memory.respond_to?(:update_section)
+    # Use the graph service to find parent
+    service = ContextGraphService.instance
+    parent_node = service.find_by_id(@parent_id)
+    return false unless parent_node
+    
+    parent_store = parent_node.memory_store
 
     sections = [:outputs] if sections.empty?
 
     # Map workflow section names to parent section names
     section_mapping = {
-      outputs: :workflow_outputs
+      outputs: :workflow_outputs,
+      decisions: :workflow_decisions,
+      errors: :workflow_errors
     }
 
     sections.each do |section|
@@ -366,7 +370,7 @@ class WorkflowMemoryStore
       data.each do |entry|
         # Convert domain object to hash for merging
         entry_hash = entry.respond_to?(:to_h) ? entry.to_h : entry
-        parent_memory.update_section(
+        parent_store.update_section(
           name: parent_section,
           content: entry_hash.merge(source_workflow: workflow_name, source_workflow_id: workflow_id),
           append: true

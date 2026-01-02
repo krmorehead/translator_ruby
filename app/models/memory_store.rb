@@ -9,11 +9,14 @@ class MemoryStore
     h[klass.section_name.to_sym] = klass.default.dup
   end.freeze
 
-  attr_reader :path, :id
+  attr_reader :path, :id, :owner_id
 
-  def initialize(path:)
+  def initialize(path:, owner_id:)
+    raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
+    
     @path = path
     @id = SecureRandom.uuid
+    @owner_id = owner_id.to_s
     @sections = load_sections
     @section_contexts = {}
   end
