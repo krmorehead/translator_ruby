@@ -145,7 +145,7 @@ class StepEvaluationWorkflow < BaseWorkflow
     prompt = Execution::StepEvaluationPrompt.new(
       step: @step,
       step_result: @step_result,
-      context: {}
+      context: @context
     )
 
     user_message = <<~MSG
