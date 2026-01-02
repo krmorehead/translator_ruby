@@ -129,14 +129,17 @@ module GenericLlmClient
 
     # Executes chat request with retry logic and processes response to extract thoughts.
     # Always filters <think> tags from content and adds thoughts field to response.
-    def chat(parameters:)
+    # @param parameters [Hash] LLM API parameters
+    # @param response_type [Class] Response class to instantiate (LlmResponse or LlmJsonResponse)
+    # @return [LlmResponse, LlmJsonResponse] Processed response object
+    def chat(parameters:, response_type: LlmResponse)
       log_token_usage(parameters)
 
       last_error = nil
       @attempts.times do |i|
         begin
           response = @client.chat(parameters: parameters)
-          return process_response(response)
+          return process_response(response, response_type: response_type)
         rescue *GenericLlmClient::RETRY_ERRORS => e
           last_error = e
           log_retry_attempt(i, e, parameters)
@@ -182,16 +185,20 @@ module GenericLlmClient
     # Public for testing.
     #
     # @param response [Hash] Raw LLM API response
-    # @return [LlmResponse] Processed response object
-    def process_response(response)
+    # @param response_type [Class] Response class to instantiate
+    # @return [LlmResponse, LlmJsonResponse] Processed response object
+    def process_response(response, response_type: LlmResponse)
       # Deep copy response to avoid mutating original
       processed = deep_copy_with_symbols(response)
       
       # Extract content from response
       content = processed.dig(:choices, 0, :message, :content)
       
-      # If no content, return response as-is wrapped in LlmResponse
-      return LlmResponse.new(processed) unless content
+      # If no content, return response as-is wrapped in response object
+      unless content
+        base_response = LlmResponse.new(processed)
+        return response_type == LlmResponse ? base_response : response_type.new(base_response)
+      end
 
       # Extract and filter think tags
       result = ThoughtExtractor.extract_and_filter(content)
@@ -209,8 +216,9 @@ module GenericLlmClient
       # Add thoughts field to top level of response
       processed[:thoughts] = result[:thoughts]
 
-      # Return wrapped in LlmResponse object
-      LlmResponse.new(processed)
+      # Return wrapped in appropriate response type
+      base_response = LlmResponse.new(processed)
+      response_type == LlmResponse ? base_response : response_type.new(base_response)
     end
 
     private

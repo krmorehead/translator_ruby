@@ -42,6 +42,12 @@ class BasePrompt
     raise NotImplementedError, "#{self.class.name} must define #response_schema"
   end
 
+  # Returns the response type class to use for this prompt
+  # @return [Class] LlmResponse or LlmJsonResponse
+  def response_type
+    response_schema ? LlmJsonResponse : LlmResponse
+  end
+
   # Convert a context into a string payload for the LLM.
   # Context objects format themselves completely via format_for_prompt.
   # @param context [Contexts::BaseContext, nil] The context (optional)
@@ -63,11 +69,7 @@ class BasePrompt
 
     parameters = build_parameters(messages)
 
-    response = @client.chat(parameters: parameters)
-    
-    # Wrap in JSON response if this prompt expects JSON schema
-    response = LlmJsonResponse.new(response) if response_schema
-    
+    response = @client.chat(parameters: parameters, response_type: response_type)
     response.to_h
   rescue JSON::ParserError => e
     raise "Failed to parse LLM response as JSON: #{e.message}"
