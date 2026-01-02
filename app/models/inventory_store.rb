@@ -51,7 +51,7 @@ class InventoryStore
 
   
   def load_items
-    return [] unless File.exist?(path)
+    return [] unless path && File.exist?(path)
 
     data = JSON.parse(File.read(path), symbolize_names: true)
     (data || []).map { |h| InventoryItem.from_h(h) }

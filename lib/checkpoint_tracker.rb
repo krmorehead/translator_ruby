@@ -25,10 +25,16 @@ class CheckpointTracker
   # Creates a new checkpoint if the codebase has changed since the last checkpoint.
   #
   # @param path [String] The repository path
+  # @param message [String] Optional commit message (ignored, for backwards compatibility)
+  # @param worker_id [String] Optional worker ID (ignored, for backwards compatibility)
+  # @param milestone_id [String] Optional milestone ID (ignored, for backwards compatibility)
   # @return [String] The current checkpoint ID
-  def current_id(path:)
+  def current_id(path:, message: nil, worker_id: nil, milestone_id: nil)
     @mutex.synchronize do
-      checkpoint_service_for(path).current_checkpoint_id
+      service = checkpoint_service_for(path)
+      checkpoint_id = service.current_checkpoint_id
+      @checkpoints_by_path[path] = service.get_checkpoint(checkpoint_id) if checkpoint_id
+      checkpoint_id
     end
   end
 
@@ -39,6 +45,20 @@ class CheckpointTracker
   def current_checkpoint(path:)
     @mutex.synchronize do
       @checkpoints_by_path[path]
+    end
+  end
+
+  # Force create a checkpoint even if there are no changes
+  #
+  # @param path [String] The repository path
+  # @param message [String] Commit message
+  # @return [String] The checkpoint ID
+  def force_checkpoint(path:, message: "Forced checkpoint")
+    @mutex.synchronize do
+      service = checkpoint_service_for(path)
+      checkpoint = service.create_checkpoint(message)
+      @checkpoints_by_path[path] = checkpoint
+      checkpoint.id
     end
   end
 

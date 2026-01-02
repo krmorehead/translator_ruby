@@ -77,10 +77,15 @@ class CheckpointableTest < ActiveSupport::TestCase
     test_dir_2 = Dir.mktmpdir("checkpointable_test_memory")
     setup_git_repo(test_dir_2)
     
+    memory_path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), "test_worker_2", "workflows", "test_workflow_memory.json")
+    FileUtils.mkdir_p(File.dirname(memory_path))
+    
     memory_store = WorkflowMemoryStore.new(
       owner_id: "test_worker_2",
       workflow_id: "test_workflow",
-      workflow_name: "TestWorkflow"
+      workflow_name: "TestWorkflow",
+      path: memory_path,
+      parent_id: "test_parent"
     )
     worker = TestWorker.new(path: test_dir_2, owner_id: "test_worker_2", memory_store: memory_store)
     
