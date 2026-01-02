@@ -30,7 +30,7 @@ class BaseWorker
   DEFAULT_STATE_PATH = ".agents/state"
   DEFAULT_OUTPUT_PATH = ".agents/references"
 
-  attr_reader :owner_id, :goal, :path, :context, :result, :error, :workflows
+  attr_reader :owner_id, :goal, :context, :result, :error, :workflows
 
   class << self
     def registered_workflows
@@ -58,7 +58,6 @@ class BaseWorker
     initialize_state_machine
     @owner_id = options[:owner_id] || SecureRandom.uuid
     @goal = goal
-    @path = options[:path] ? File.expand_path(options[:path]) : nil
     @context = context
     @options = options
     @result = nil
