@@ -99,7 +99,7 @@ class WriteFileToolTest < ActiveSupport::TestCase
     expected_content = "Hello from the LLM!"
 
     # Only include the write_file tool to keep context size small for tool-calling model
-    tools = [WriteFileTool.schema]
+    tools = [WriteFileTool.new]
     detector = ActionDetectionPrompt.new(tools: tools)
 
     context = Contexts::BaseContext.new

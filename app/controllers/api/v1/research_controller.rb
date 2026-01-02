@@ -54,14 +54,14 @@ module Api
         end
         output_modes_sym = output_modes.map(&:to_sym)
 
-        # Normalize context keys to symbols
-        normalized_context = normalize_context(context)
+        # Build proper context object from parameters (OOP pattern: use context objects, not hashes)
+        research_context = build_research_context(goal, context)
 
         # Execute research
         worker = CodebaseResearcher.new(
           goal: goal,
           path: expanded_path,
-          context: normalized_context,
+          context: research_context,
           max_depth: options[:max_depth]&.to_i || 4,
           output_modes: output_modes_sym
         )
@@ -118,10 +118,34 @@ module Api
       end
 
 
-      def normalize_context(context)
-        return {} if context.blank?
+      def build_research_context(goal, context_params)
+        research_context = Contexts::ResearchContext.new(research_goal: goal)
 
-        context.to_h.deep_symbolize_keys
+        # Populate from parameters if provided
+        if context_params.present?
+          normalized = context_params.to_h.deep_symbolize_keys
+
+          # Add known files if provided
+          if normalized[:known_files].present?
+            Array(normalized[:known_files]).each do |file_path|
+              research_context.add_file_summary(
+                file_path: file_path,
+                summary: "Known file from context",
+                methods: []
+              )
+            end
+          end
+
+          # Add prior findings if provided
+          if normalized[:prior_findings].present?
+            research_context.add_finding(
+              text: normalized[:prior_findings],
+              source: "context"
+            )
+          end
+        end
+
+        research_context
       end
     end
   end

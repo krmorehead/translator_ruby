@@ -99,7 +99,7 @@ class BashToolTest < ActiveSupport::TestCase
     File.write(File.join(@sandbox_path, "llm_test_file.txt"), "LLM test content")
 
     # Only include the bash tool to keep context size small for tool-calling model
-    tools = [BashTool.schema]
+    tools = [BashTool.new]
     detector = ActionDetectionPrompt.new(tools: tools)
 
     context = Contexts::BaseContext.new

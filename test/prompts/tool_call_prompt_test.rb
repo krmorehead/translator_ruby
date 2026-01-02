@@ -42,7 +42,7 @@ class ToolCallPromptTest < ActiveSupport::TestCase
   end
 
   speed_profile :medium
-  test "execute with model_override uses specified capability" do
+  test "execute uses tool_calling capability" do
     assert llm_configured?, "LLM must be configured for this test"
     
     prompt = ActionDetectionPrompt.new(tools: @tools)
@@ -51,8 +51,7 @@ class ToolCallPromptTest < ActiveSupport::TestCase
     
     result = prompt.execute(
       prompt: "I look around",
-      context: context,
-      model_override: :general_llm
+      context: context
     )
     
     # Should return expected structure

@@ -86,7 +86,7 @@ class ReadFileToolTest < ActiveSupport::TestCase
     File.write(test_file, test_content)
 
     # Only include the read_file tool to keep context size small for tool-calling model
-    tools = [ReadFileTool.schema]
+    tools = [ReadFileTool.new]
     detector = ActionDetectionPrompt.new(tools: tools)
 
     context = Contexts::BaseContext.new
