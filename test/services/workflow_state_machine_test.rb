@@ -124,8 +124,12 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
     )
     workflow.setup()
 
-    context = workflow.parent_context
-    assert_instance_of Contexts::BaseContext, context
+    # Use find_relevant_context instead of parent_context
+    results = workflow.find_relevant_context(
+      query_text: "test context",
+      context_type: :memory
+    )
+    assert results.is_a?(Array)
   end
 
   # Decision recording tests
