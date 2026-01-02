@@ -143,9 +143,16 @@ class WorkflowMemoryStore
       checkpoint_id: current_checkpoint_id,
       state: to  # New state after transition
     )
+    puts "DEBUG: About to add StateTransition, array is: #{@sections[:state_transitions].map(&:class)}"
     @sections[:state_transitions] << memory
+    puts "DEBUG: After <<, array is: #{@sections[:state_transitions].map(&:class)}"
     @last_transition_at = Time.now.utc
+    puts "DEBUG: Before save!, array is: #{@sections[:state_transitions].map(&:class)}"
     save!
+    puts "DEBUG: IMMEDIATELY after save! returns, array is: #{@sections[:state_transitions].map(&:class)}"
+    if @sections[:state_transitions].any? { |item| item.is_a?(Hash) }
+      puts "CORRUPTION: Array has Hash IMMEDIATELY after save!"
+    end
     memory
   end
 
