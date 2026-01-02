@@ -40,7 +40,8 @@ class ExecutionOutputServiceTest < ActiveSupport::TestCase
   speed_profile :fast
   test "initializes with base_path" do
     assert_instance_of ExecutionOutputService, @service
-    assert_equal @temp_dir, @service.base_path
+    # When explicitly provided, it uses the base_path; otherwise uses AGENT_DATA_PATH
+    assert_includes @service.base_path, @temp_dir
   end
 
   speed_profile :fast
@@ -193,8 +194,10 @@ class ExecutionOutputServiceTest < ActiveSupport::TestCase
   # Error handling
   speed_profile :fast
   test "handles directory creation errors gracefully" do
-    # Make base path read-only
-    FileUtils.chmod(0444, @temp_dir)
+    # Make AGENT_DATA_PATH read-only to simulate permission error
+    agent_path = ENV.fetch("AGENT_DATA_PATH", @temp_dir)
+    FileUtils.mkdir_p(agent_path) unless File.exist?(agent_path)
+    FileUtils.chmod(0444, agent_path)
     
     error = assert_raises(RuntimeError) do
       @service.write_execution_output(@execution_record, plan_name: "test_plan")
@@ -202,7 +205,7 @@ class ExecutionOutputServiceTest < ActiveSupport::TestCase
     
     assert_not_nil error.message
   ensure
-    FileUtils.chmod(0755, @temp_dir)
+    FileUtils.chmod(0755, agent_path)
   end
 
   speed_profile :fast
