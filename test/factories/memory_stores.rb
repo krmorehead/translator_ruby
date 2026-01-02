@@ -44,7 +44,7 @@ FactoryBot.define do
       workflow_name_value { "test_workflow" }
       parent { nil }
     end
-
+    
     initialize_with do
       workflow_path = File.join(ENV.fetch("AGENT_DATA_PATH"), owner, "workflows", "#{workflow_name_value}_#{workflow_id_value}.json")
       # Don't create directory here - let WorkflowMemoryStore.save! handle it

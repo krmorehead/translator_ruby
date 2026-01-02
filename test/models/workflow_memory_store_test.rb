@@ -187,7 +187,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
   test "multiple workflow stores are isolated" do
     parent1 = build(:memory_store)
     parent2 = build(:memory_store)
-
+    
     store1 = build(:workflow_memory_store, parent: parent1, workflow_name_value: "workflow_1")
     store2 = build(:workflow_memory_store, parent: parent2, workflow_name_value: "workflow_2")
 

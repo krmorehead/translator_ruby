@@ -34,20 +34,6 @@ module ActiveSupport
     # Include SpeedProfile module for test speed enforcement
     include SpeedProfile unless ENV["SKIP_SPEED_PROFILE_VALIDATION"] == "true"
 
-    # Create isolated AGENT_DATA_PATH for each test to avoid parallel conflicts
-    setup do
-      # Each test gets its own unique directory under the configured AGENT_DATA_PATH
-      @original_agent_data_path = ENV["AGENT_DATA_PATH"]
-      @test_agent_path = File.join(@original_agent_data_path, SecureRandom.uuid)
-      ENV["AGENT_DATA_PATH"] = @test_agent_path
-      FileUtils.mkdir_p(@test_agent_path)
-    end
-
-    # Automatic cleanup of test-specific AGENT_DATA_PATH after each test
-    teardown do
-      FileUtils.rm_rf(@test_agent_path) if @test_agent_path && File.exist?(@test_agent_path)
-      ENV["AGENT_DATA_PATH"] = @original_agent_data_path
-    end
 
     # Helper to create a temporary directory initialized as a Git repository
     # @return [String] Path to the temporary Git repository
