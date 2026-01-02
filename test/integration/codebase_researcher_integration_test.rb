@@ -15,9 +15,11 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
   def shared_execution
     return [self.class.shared_worker, self.class.shared_result] if self.class.shared_computed
 
+    context = Contexts::BaseContext.new
     worker = CodebaseResearcher.new(
       goal: "How does Calculator work? What are the dependencies between services?",
       path: FIXTURE_PATH,
+      context: context,
       max_depth: 2,
       output_modes: [:report, :documentation]
     )
@@ -135,9 +137,11 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
   speed_profile :slow
   test "multiple parallel research sessions have unique owner_ids" do
     workers = 2.times.map do |i|
+      context = Contexts::BaseContext.new
       CodebaseResearcher.new(
         goal: "Research topic #{i}",
         path: FIXTURE_PATH,
+        context: context,
         max_depth: 1
       )
     end
@@ -158,9 +162,11 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
     FileUtils.mkdir_p(empty_dir)
 
     begin
+      context = Contexts::BaseContext.new
       worker = CodebaseResearcher.new(
         goal: "What is in this codebase?",
         path: empty_dir,
+        context: context,
         max_depth: 1
       )
 
@@ -174,9 +180,11 @@ class CodebaseResearcherIntegrationTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "terminates gracefully when no relevant files found" do
+    context = Contexts::BaseContext.new
     worker = CodebaseResearcher.new(
       goal: "How does the quantum flux capacitor integrate with the warp drive?",
       path: FIXTURE_PATH,
+      context: context,
       max_depth: 1
     )
 

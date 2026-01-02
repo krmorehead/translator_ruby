@@ -53,7 +53,7 @@ class CodebaseResearcher < BaseWorker
 
   attr_reader :output_modes, :memory_store, :goal_tree
 
-  def initialize(goal:, path:, context: {}, **options)
+  def initialize(goal:, path:, context:, **options)
     super
     @output_modes = Array(options.fetch(:output_modes, [:report, :documentation])).map(&:to_sym)
     @max_depth = options.fetch(:max_depth, 4)
@@ -111,7 +111,7 @@ class CodebaseResearcher < BaseWorker
     workflow = GoalDecompositionWorkflow.new(
       goal: goal,
       owner_id: owner_id,
-      context: context.merge(goal_tree: @goal_tree),
+      context: context,
       parent_memory: memory_store,
       max_depth: @max_depth
     )
