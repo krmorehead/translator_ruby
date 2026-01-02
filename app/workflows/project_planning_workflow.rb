@@ -189,7 +189,8 @@ class ProjectPlanningWorkflow < BaseWorkflow
 
         # Create new step with details and tests
         updated_step = Planning::Step.new(
-          number: step.number,
+          milestone_number: step.milestone_number,
+          step_number: step.step_number,
           title: step.title,
           intent: step.intent,
           details: details,

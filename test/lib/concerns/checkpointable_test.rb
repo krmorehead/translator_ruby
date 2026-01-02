@@ -77,17 +77,22 @@ class CheckpointableTest < ActiveSupport::TestCase
     test_dir_2 = Dir.mktmpdir("checkpointable_test_memory")
     setup_git_repo(test_dir_2)
     
-    memory_path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), "test_worker_2", "workflows", "test_workflow_memory.json")
+    # Use unique owner_id to avoid conflicts with parallel tests
+    unique_owner = "test_worker_#{SecureRandom.hex(4)}"
+    memory_path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), unique_owner, "workflows", "test_workflow_memory.json")
     FileUtils.mkdir_p(File.dirname(memory_path))
     
+    # Clean up any existing file from previous test runs
+    FileUtils.rm_f(memory_path)
+    
     memory_store = WorkflowMemoryStore.new(
-      owner_id: "test_worker_2",
+      owner_id: unique_owner,
       workflow_id: "test_workflow",
       workflow_name: "TestWorkflow",
       path: memory_path,
       parent_id: "test_parent"
     )
-    worker = TestWorker.new(path: test_dir_2, owner_id: "test_worker_2", memory_store: memory_store)
+    worker = TestWorker.new(path: test_dir_2, owner_id: unique_owner, memory_store: memory_store)
     
     create_file_change(test_dir_2)
     checkpoint = worker.create_checkpoint("Test checkpoint")
@@ -96,6 +101,7 @@ class CheckpointableTest < ActiveSupport::TestCase
     assert_equal checkpoint.id, memory_store.latest_checkpoint[:checkpoint_id]
   ensure
     FileUtils.remove_entry(test_dir_2) if test_dir_2 && File.exist?(test_dir_2)
+    FileUtils.rm_f(memory_path) if memory_path && File.exist?(memory_path)
   end
 
   speed_profile :fast
