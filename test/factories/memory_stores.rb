@@ -52,7 +52,6 @@ FactoryBot.define do
       
       # Always create a real parent instance if not provided
       parent_instance = parent || begin
-        FileUtils.mkdir_p(File.dirname(parent_path))
         MemoryStore.new(path: parent_path, owner_id: owner)
       end
       
