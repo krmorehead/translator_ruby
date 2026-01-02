@@ -8,9 +8,6 @@ class QuestLogMemoryTest < ActiveSupport::TestCase
     @store = MemoryStore.new(owner_id: SecureRandom.uuid)
   end
 
-  def teardown
-    FileUtils.rm_rf(@sandbox_path) if File.exist?(@sandbox_path)
-  end
   speed_profile :fast
   test "adds quests to quest_log" do
     Memories::QuestLogMemory.add(@store, text: "Find the dragon")
