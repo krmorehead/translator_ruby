@@ -352,11 +352,9 @@ class ResearchWorkflow < BaseWorkflow
     # Build context for decomposition including seed information
     decomposition_context = build_decomposition_context
 
-    # Query parent memory for additional context if available
-    if parent_memory
-      parent_context = query_parent_memory(:research_goal, :context_chain)
-      decomposition_context.merge!(parent_research_context: parent_context) if parent_context.any?
-    end
+    # Find relevant context if available
+    relevant_context = find_relevant_context("research goal context chain")
+    decomposition_context.merge!(parent_research_context: relevant_context) if relevant_context.any?
 
     decomposition = GoalDecompositionWorkflow.new(
       goal: goal,

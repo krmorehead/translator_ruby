@@ -74,12 +74,17 @@ class BaseWorkflow
     current_state == :failed
   end
 
-  # Get compressed context from parent memory relevant to this workflow
-  # @return [Contexts::BaseContext] Context object with relevant parent information
-  def parent_context
-    return Contexts::BaseContext.new unless workflow_memory
-
-    workflow_memory.query_parent_context
+  # Find relevant context using vector search
+  # @param query_text [String] Text to search for
+  # @param limit [Integer] Maximum number of results
+  # @return [Array] Array of similar memory objects
+  def find_relevant_context(query_text, limit: 5)
+    return [] unless workflow_memory
+    
+    workflow_memory.query_similar_memories(
+      query_text: query_text,
+      limit: limit
+    )
   end
 
   # Record a decision to workflow memory
