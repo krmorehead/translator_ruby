@@ -67,7 +67,9 @@ class WorkflowMemoryStore
     else
       puts "DEBUG: Initializing fresh (file doesn't exist or is empty)"
       @sections = deep_dup(DEFAULT_SECTIONS)
-      puts "DEBUG: After deep_dup, state_transitions has: #{@sections[:state_transitions].inspect}"
+      puts "DEBUG: After deep_dup, DEFAULT_SECTIONS state_transitions: #{DEFAULT_SECTIONS[:state_transitions].inspect}"
+      puts "DEBUG: After deep_dup, @sections state_transitions: #{@sections[:state_transitions].inspect}"
+      puts "DEBUG: Are they the same object? #{@sections[:state_transitions].object_id == DEFAULT_SECTIONS[:state_transitions].object_id}"
       @started_at = Time.now.utc
       @last_transition_at = Time.now.utc
     end
@@ -412,7 +414,10 @@ class WorkflowMemoryStore
 
   def save!
     FileUtils.mkdir_p(File.dirname(path))
-    File.write(path, JSON.pretty_generate(to_h))
+    hash_to_save = to_h
+    puts "DEBUG: save! serializing, state_transitions in hash: #{hash_to_save[:sections][:state_transitions].map(&:class)}"
+    File.write(path, JSON.pretty_generate(hash_to_save))
+    puts "DEBUG: save! done, @sections[:state_transitions]: #{@sections[:state_transitions].map(&:class)}"
   end
 
   def deep_dup(obj)
