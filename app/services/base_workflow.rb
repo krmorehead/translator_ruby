@@ -78,9 +78,7 @@ class BaseWorkflow
   # @param query_text [String] Text to search for
   # @param limit [Integer] Maximum number of results
   # @return [Array] Array of similar memory objects
-  def find_relevant_context(query_text, limit: 5)
-    return [] unless workflow_memory
-    
+  def find_relevant_context(query_text:)
     workflow_memory.query_similar_memories(
       query_text: query_text,
       limit: limit

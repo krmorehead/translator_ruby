@@ -124,17 +124,12 @@ end
       initial[:prior_knowledge] = context[:prior_findings]
     end
 
-    # Query parent memory for additional context
-    if parent_memory
-      parent_data = query_parent_memory(:research_goal, :sub_questions, :context_chain)
+    # Find relevant context from memory
+    relevant_context = find_relevant_context("research goal sub questions context chain")
 
-      if parent_data[:research_goal]&.any?
-        initial[:parent_goal] = parent_data[:research_goal].first[:text]
-      end
-
-      if parent_data[:context_chain]&.any?
-        initial[:parent_insights] = parent_data[:context_chain].map { |c| c[:key_insights] }.compact.join("; ")
-      end
+    if relevant_context.any?
+      # Use first relevant context as parent goal
+      initial[:parent_goal] = relevant_context.first.to_s
     end
 
     # Include constraints
