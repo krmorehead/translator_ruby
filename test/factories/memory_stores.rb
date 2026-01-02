@@ -52,7 +52,6 @@ FactoryBot.define do
       
       # Always create a real parent instance if not provided
       parent_instance = parent || begin
-        parent_path = File.join(base_dir, owner, "parent_memory.json")
         FileUtils.mkdir_p(File.dirname(parent_path))
         MemoryStore.new(path: parent_path, owner_id: owner)
       end
