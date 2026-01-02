@@ -404,7 +404,13 @@ class WorkflowMemoryStore
   end
 
   def save!
-    FileUtils.mkdir_p(File.dirname(path))
+    dir = File.dirname(path)
+    FileUtils.mkdir_p(dir) unless File.directory?(dir)
+    File.write(path, JSON.pretty_generate(to_h))
+  rescue Errno::ENOENT
+    # Race condition: directory was deleted between mkdir_p and write
+    # Retry once after recreating directory
+    FileUtils.mkdir_p(dir)
     File.write(path, JSON.pretty_generate(to_h))
   end
 
