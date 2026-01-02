@@ -41,11 +41,13 @@ class DndChatWorkflow < BaseWorkflow
   
   def detect_actions_from_prompt
     # Use ActionDetectionPrompt to identify what tools to use
-    detection_prompt = ActionDetectionPrompt.new
+    tools = ToolCallService.available_dnd_tools
+    detection_prompt = ActionDetectionPrompt.new(tools: tools)
     context = build_context_for_detection
     
     result = detection_prompt.execute(prompt: prompt, context: context)
-    result[:content][:actions] || []
+    # ActionDetectionPrompt returns array of actions directly
+    result[:content] || []
   end
   
   def execute_actions(actions)
@@ -53,7 +55,7 @@ class DndChatWorkflow < BaseWorkflow
     
     tool_service = ToolCallService.new
     actions.map do |action|
-      tool_service.execute(tool_name: action[:tool], arguments: action[:arguments])
+      tool_service.execute(tool_name: action[:tool_name], arguments: action[:arguments])
     end
   end
   
