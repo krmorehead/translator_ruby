@@ -59,3 +59,56 @@ module ActiveSupport
     end
   end
 end
+
+# Minitest plugin to detect explicit skip() calls after test run
+module Minitest
+  def self.plugin_skip_detector_init(options)
+    # Run after all tests complete
+  end
+
+  def self.plugin_skip_detector_report(options)
+    detect_explicit_skips
+  end
+
+  def self.detect_explicit_skips
+    # Find all test files with explicit skip() calls
+    test_dir = File.join(Rails.root, "test")
+    skip_files = []
+    
+    Dir.glob("#{test_dir}/**/*_test.rb").each do |file|
+      # Skip the speed_profile.rb file itself (it has legitimate skip for filtering)
+      next if file.include?("support/speed_profile.rb")
+      
+      File.readlines(file).each_with_index do |line, index|
+        # Match lines with skip calls (not commented out)
+        if line.match?(/^\s*skip\b/) && !line.strip.start_with?("#")
+          skip_files << { file: file.sub("#{Rails.root}/", ""), line: index + 1, content: line.strip }
+        end
+      end
+    end
+    
+    return if skip_files.empty?
+    
+    # Print LOUD warning
+    puts "\n\n"
+    puts "=" * 80
+    puts "⚠️  INVALID SKIPS DETECTED ⚠️".center(80)
+    puts "=" * 80
+    puts "\nThe following tests have explicit skip() calls which violate OOP Lesson 23:"
+    puts "(Tests should fail loudly if misconfigured, not skip silently)\n\n"
+    
+    skip_files.each do |skip|
+      puts "  #{skip[:file]}:#{skip[:line]}"
+      puts "    #{skip[:content]}"
+      puts ""
+    end
+    
+    puts "All skip() calls must be removed. Tests should:"
+    puts "  - Use proper configuration from .env.test"
+    puts "  - Fail with clear errors if misconfigured"
+    puts "  - Not hide problems with skip() calls"
+    puts "\n"
+    puts "=" * 80
+    puts "\n"
+  end
+end
