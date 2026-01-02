@@ -190,7 +190,7 @@ class ProjectPlannerWorker < BaseWorker
 
     output_service = ProjectPlanOutputService.new(
       project_name: project_name,
-      base_path: path
+      output_base: ENV.fetch("AGENT_DATA_PATH", ".")
     )
 
     output_paths = output_service.write(

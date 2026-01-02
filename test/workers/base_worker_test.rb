@@ -107,35 +107,8 @@ class BaseWorkerTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "state_path uses AGENT_STATE_PATH env var when set" do
-    custom_path = File.join(temp_dir, "custom_state")
-
-    original_env = ENV["AGENT_STATE_PATH"]
-    ENV["AGENT_STATE_PATH"] = custom_path
-
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
-
-    assert worker.state_path.start_with?(custom_path)
-    assert_includes worker.state_path, worker.owner_id
-  ensure
-    if original_env
-      ENV["AGENT_STATE_PATH"] = original_env
-    else
-      ENV.delete("AGENT_STATE_PATH")
-    end
-  end
-
-  speed_profile :fast
-  test "output_path uses AGENT_DATA_PATH for output" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
-
-    expected_path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), BaseWorker::DEFAULT_OUTPUT_PATH)
-    assert_equal expected_path, worker.output_path
-  end
-
-  speed_profile :fast
   test "ensure_state_directory creates directory" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
+    worker = BaseWorker.new(goal: "test goal", context: worker_context)
 
     refute File.exist?(worker.state_path)
 
@@ -147,7 +120,7 @@ class BaseWorkerTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "ensure_output_directory creates directory" do
-    worker = BaseWorker.new(goal: "test goal", path: temp_dir, context: worker_context)
+    worker = BaseWorker.new(goal: "test goal", context: worker_context)
 
     refute File.exist?(worker.output_path)
 

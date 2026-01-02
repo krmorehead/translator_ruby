@@ -44,7 +44,7 @@ class PlanOutputService
 
   # Full path to the plan directory
   def plan_directory
-    @plan_directory ||= File.join(ENV.fetch("AGENT_DATA_PATH", base_path), ".agents/docs/plans", directory_name)
+    @plan_directory ||= File.join(base_path, ".agents/docs/plans", directory_name)
   end
 
   # Generate directory name with timestamp and sanitized goal
