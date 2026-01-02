@@ -37,9 +37,8 @@ module ActiveSupport
     # Create isolated AGENT_DATA_PATH for each test to avoid parallel conflicts
     setup do
       # Each test gets its own unique directory under the configured AGENT_DATA_PATH
-      base_path = ENV["AGENT_DATA_PATH"]
-      @test_agent_path = File.join(base_path, SecureRandom.uuid)
-      @original_agent_data_path = base_path
+      @original_agent_data_path = ENV["AGENT_DATA_PATH"]
+      @test_agent_path = File.join(@original_agent_data_path, SecureRandom.uuid)
       ENV["AGENT_DATA_PATH"] = @test_agent_path
       FileUtils.mkdir_p(@test_agent_path)
     end
