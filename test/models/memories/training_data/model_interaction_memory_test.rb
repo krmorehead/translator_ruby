@@ -8,7 +8,7 @@ class ModelInteractionMemoryTest < ActiveSupport::TestCase
     FileUtils.mkdir_p(@sandbox)
     @memory_path = @sandbox.join("memory.json")
     @owner_id = SecureRandom.uuid
-    @store = MemoryStore.new(owner_id: @owner_id, path: @memory_path.to_s)
+    @store = MemoryStore.new(owner_id: @owner_id)
   end
 
   teardown do

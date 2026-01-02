@@ -19,7 +19,7 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
   speed_profile :fast
   test "memory stores automatically register in graph when created" do
     # Create a memory store
-    store1 = MemoryStore.new(path: File.join(@temp_dir, "store1.json"), owner_id: "owner-123")
+    store1 = MemoryStore.new(owner_id: "owner-123")
     
     # Verify it's registered
     service = ContextGraphService.instance
@@ -47,7 +47,7 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
   speed_profile :fast
   test "workflow memory stores automatically register with parent edges" do
     # Create parent memory store
-    parent_store = MemoryStore.new(path: File.join(@temp_dir, "parent.json"), owner_id: "owner-123")
+    parent_store = MemoryStore.new(owner_id: "owner-123")
     
     # Create workflow memory store with parent
     workflow_store = WorkflowMemoryStore.new(
@@ -79,7 +79,7 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
   speed_profile :fast
   test "can query across registered nodes" do
     # Create a memory hierarchy
-    parent_store = MemoryStore.new(path: File.join(@temp_dir, "parent.json"), owner_id: "owner-123")
+    parent_store = MemoryStore.new(owner_id: "owner-123")
     
     # Add some data to parent
     parent_store.update_section(
@@ -118,8 +118,8 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
   speed_profile :fast
   test "multiple memory stores all register independently" do
     # Create multiple stores
-    store1 = MemoryStore.new(path: File.join(@temp_dir, "store1.json"), owner_id: "owner-1")
-    store2 = MemoryStore.new(path: File.join(@temp_dir, "store2.json"), owner_id: "owner-2")
+    store1 = MemoryStore.new(owner_id: "owner-1")
+    store2 = MemoryStore.new(owner_id: "owner-2")
     store3 = ResearchMemoryStore.new(path: File.join(@temp_dir, "research.json"), owner_id: "owner-3")
     
     # Verify all are registered
@@ -136,7 +136,7 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
   speed_profile :fast
   test "workflow with nested parent relationships creates proper edges" do
     # Create grandparent (worker memory)
-    grandparent = MemoryStore.new(path: File.join(@temp_dir, "grandparent.json"), owner_id: "owner-123")
+    grandparent = MemoryStore.new(owner_id: "owner-123")
     
     # Create parent workflow
     parent_wf_id = SecureRandom.uuid

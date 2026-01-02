@@ -5,7 +5,7 @@ class ContextCompressionToolTest < ActiveSupport::TestCase
     @sandbox = Rails.root.join("tmp", "context_compression_tool_test").to_s
     FileUtils.mkdir_p(@sandbox)
     @memory_path = File.join(@sandbox, "memory.json")
-    @store = MemoryStore.new(path: @memory_path)
+    @store = MemoryStore.new(owner_id: SecureRandom.uuid)
     @store.update_section(name: :current_scene, content: "A misty glade", append: false)
     @store.update_section(name: :people, content: "Elder Rowan", append: true)
     @store.update_section(name: :quest_log, content: "Recover the moonstone", append: true)

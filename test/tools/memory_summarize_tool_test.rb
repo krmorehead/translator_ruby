@@ -6,7 +6,7 @@ class MemorySummarizeToolTest < ActiveSupport::TestCase
     FileUtils.mkdir_p(@sandbox_path)
     @path = File.join(@sandbox_path, "memory.json")
 
-    @store = MemoryStore.new(path: @path)
+    @store = MemoryStore.new(owner_id: SecureRandom.uuid)
     @store.update_section(name: :quests, content: "Rescue the prince", append: true)
     @store.update_section(name: :quests, content: "Find the lost sword", append: true)
     @store.update_section(name: :current_goal, content: "Enter the castle", append: false)
