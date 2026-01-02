@@ -217,9 +217,9 @@ class SisyphusWorker < BaseWorker
   
   # Initialize checkpoint service if git repository exists
   def initialize_checkpoint_service
-    return nil unless File.directory?(File.join(@path, ".git"))
+    return nil unless path && File.directory?(File.join(path, ".git"))
     
-    CheckpointService.new(path: @path)
+    CheckpointService.new(path: path)
   rescue ArgumentError => e
     Rails.logger.warn "[SisyphusWorker] Checkpoint service unavailable: #{e.message}"
     nil

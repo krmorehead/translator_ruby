@@ -26,10 +26,10 @@ class ExecutionOutputService
 
   # Initialize the output service
   #
-  # @param base_path [String] Base directory for execution logs
+  # @param base_path [String] Base directory for execution logs (optional, defaults to AGENT_DATA_PATH)
   # @param options [Hash] Additional options
-  def initialize(**options)
-    @base_path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_BASE_PATH)
+  def initialize(base_path: nil, **options)
+    @base_path = base_path || File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_BASE_PATH)
     @options = DEFAULT_OPTIONS.merge(options)
   end
 
