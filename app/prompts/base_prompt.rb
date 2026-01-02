@@ -115,11 +115,12 @@ class BasePrompt
   end
 
   def parse_response(response)
-    # Response from GenericLlmClient now has symbolized keys
-    message = response.dig(:choices, 0, :message) || {}
-    content = message[:content]
-    thoughts = response[:thoughts]
-    finish_reason = response.dig(:choices, 0, :finish_reason)
+    # Response from GenericLlmClient is now an LlmResponse object
+    raise TypeError, "response must be an LlmResponse, got #{response.class}" unless response.is_a?(LlmResponse)
+    
+    content = response.content
+    thoughts = response.thoughts
+    finish_reason = response.finish_reason
 
     parsed_content = if response_schema
       raise "LLM response missing content" unless content
