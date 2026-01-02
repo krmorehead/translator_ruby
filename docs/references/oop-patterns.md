@@ -2924,6 +2924,403 @@ log_execution(record_id: @execution_record.id, plan_id: @execution_plan.id)
 
 ---
 
+### Lesson 34: from_h Requires ID - Constructors May Default It
+
+**Problem:** Confusion about when `id` should be required vs. optional leads to inconsistent object creation patterns.
+
+**Solution:** `from_h` methods always require `id` because they're hydrating existing objects. Constructors for new objects can have `id` as optional with a default.
+
+#### ❌ BAD: from_h allows missing id
+
+```ruby
+# ❌ BAD: from_h tries to generate new ID if missing
+class Planning::Result
+  def self.from_h(hash)
+    id = hash[:id] || hash["id"] || SecureRandom.uuid  # WRONG!
+    new(id: id, goal: hash[:goal], ...)
+  end
+end
+```
+
+#### ✅ GOOD: from_h requires id, constructor defaults it
+
+```ruby
+# ✅ GOOD: Clear distinction between creation and hydration
+class Planning::Result
+  attr_reader :id, :goal, :project_name
+  
+  def initialize(goal:, project_name:, milestones:, id: SecureRandom.uuid)
+    @id = id  # Optional for NEW objects
+    @goal = goal
+    @project_name = project_name
+    @milestones = milestones
+  end
+  
+  def self.from_h(id:, goal:, project_name:, milestones:, **rest)
+    # id is REQUIRED - we're hydrating an existing object
+    new(
+      id: id,
+      goal: goal,
+      project_name: project_name,
+      milestones: milestones.map { |m| Milestone.from_h(**m) }
+    )
+  end
+end
+
+# Usage
+new_result = Planning::Result.new(goal: "Build X", ...)  # Gets new UUID
+existing = Planning::Result.from_h(id: "abc123", goal: "Build X", ...)  # Uses provided ID
+```
+
+**Key Principles:**
+1. **`from_h` always requires `id`** - Hydrating existing objects must preserve identity
+2. **Constructor can default `id`** - New objects get fresh UUIDs automatically
+3. **Use keyword arguments** - Make requirements explicit
+4. **No fallbacks in from_h** - Don't hide missing data with defaults
+5. **Deep symbolize keys before calling** - Caller responsibility: `from_h(**hash.deep_symbolize_keys)`
+
+**Why This Matters:**
+- **Clear intent** - Creation vs. hydration are distinct operations
+- **Data integrity** - Existing objects keep their IDs
+- **No confusion** - Method signature shows what's required
+- **Fail fast** - Missing ID raises ArgumentError immediately
+
+---
+
+### Lesson 35: Shadow Commit Log Pattern
+
+**Problem:** Workflow memory files being tracked by Git causes unnecessary checkpoint creation on every memory update, creating noise in Git history.
+
+**Solution:** Use `.gitignore` to exclude workflow memory and state files, creating a "shadow commit log" where checkpoints only track actual codebase changes.
+
+#### ❌ BAD: Memory files tracked by Git
+
+```ruby
+# .gitignore doesn't exclude memory files
+# Result: Every workflow state update creates a Git change
+
+# CheckpointService sees this as a codebase change:
+def has_uncommitted_changes?
+  `git diff --quiet`
+  !$?.success?  # Returns true when memory file updated
+end
+```
+
+**Problems:**
+- Memory updates trigger checkpoint creation
+- Git history cluttered with memory file commits
+- Checkpoint != actual code change
+- Tests create hundreds of meaningless checkpoints
+
+#### ✅ GOOD: Gitignore memory files (shadow commit log)
+
+```gitignore
+# .gitignore
+# Workflow memory and state files (shadow commit log)
+*_memory.json
+sisyphus_memory.json
+workflow_memory.json
+research_memory.json
+**/state/*.json
+**/workflows/**/*.json
+```
+
+```ruby
+# CheckpointService only tracks REAL codebase changes
+def has_uncommitted_changes?
+  # Only checks tracked files - ignores gitignored memory files
+  result = `git diff HEAD --quiet`
+  !$?.success?
+end
+
+def current_checkpoint_id
+  # Return current HEAD if no tracked changes
+  return @current_checkpoint.id unless has_uncommitted_changes?
+  
+  # Create checkpoint ONLY for actual code changes
+  create_checkpoint("Code changes detected")
+end
+```
+
+**Key Principles:**
+1. **Memory files are gitignored** - Workflow state doesn't pollute Git
+2. **Checkpoints track code only** - Use `git diff HEAD` for tracked files
+3. **Always have a checkpoint** - HEAD is always valid
+4. **Create checkpoints on demand** - Only when tracked files change
+5. **Test repos need .gitignore** - Include in `create_temp_git_repo` helper
+
+**Implementation:**
+```ruby
+# test/test_helper.rb
+def create_temp_git_repo
+  dir = Dir.mktmpdir
+  Dir.chdir(dir) do
+    system("git init", out: File::NULL)
+    system("git config user.email 'test@example.com'", out: File::NULL)
+    system("git config user.name 'Test User'", out: File::NULL)
+    
+    # Create .gitignore for shadow commit log
+    File.write(".gitignore", <<~GITIGNORE)
+      *_memory.json
+      sisyphus_memory.json
+      workflow_memory.json
+      **/state/*.json
+      **/workflows/**/*.json
+    GITIGNORE
+    
+    FileUtils.touch("README.md")
+    system("git add .", out: File::NULL)
+    system("git commit -m 'Initial commit'", out: File::NULL)
+  end
+  dir
+end
+```
+
+**Why This Matters:**
+- **Clean Git history** - Only code changes create commits
+- **Correct semantics** - Checkpoint means "code changed", not "memory updated"
+- **Fewer checkpoints** - No checkpoint spam from memory operations
+- **Faster tests** - Don't create unnecessary Git commits
+
+---
+
+### Lesson 36: File Existence Determines Initialization Strategy
+
+**Problem:** Complex logic trying to handle both new and existing objects in the same initialization path creates confusion and bugs.
+
+**Solution:** Check if persistence file exists. If yes, load from disk. If no, initialize fresh. Never mix the two.
+
+#### ❌ BAD: Mixed initialization strategies
+
+```ruby
+# ❌ BAD: Trying to be clever with fallbacks
+def initialize(owner_id:, workflow_id:, workflow_name:, path:)
+  @path = path
+  @sections = load_sections || DEFAULT_SECTIONS rescue deep_dup(DEFAULT_SECTIONS)
+  # Confusing! Which path are we on?
+end
+
+def load_sections
+  return nil unless File.exist?(@path)
+  data = JSON.parse(File.read(@path))
+  deserialize_sections(data[:sections])
+rescue
+  nil  # Silent failure!
+end
+```
+
+#### ✅ GOOD: Clear file-based branching
+
+```ruby
+# ✅ GOOD: Explicit branching based on file existence
+def initialize(owner_id:, workflow_id:, workflow_name:, path:, parent_memory: nil)
+  @owner_id = owner_id
+  @workflow_id = workflow_id
+  @workflow_name = workflow_name
+  @parent_memory = parent_memory
+  @path = path
+  
+  if File.exist?(path) && File.size(path) > 0
+    # Load existing data from disk
+    data = JSON.parse(File.read(path), symbolize_names: true)
+    @started_at = Time.parse(data[:started_at])
+    @last_transition_at = Time.parse(data[:last_transition_at])
+    @sections = {
+      state_transitions: self.class.deserialize_array(
+        data: data[:sections][:state_transitions],
+        klass: WorkflowMemories::StateTransition
+      ),
+      # ... other sections
+    }
+  else
+    # Initialize fresh
+    @sections = deep_dup(DEFAULT_SECTIONS)
+    @started_at = Time.now.utc
+    @last_transition_at = Time.now.utc
+  end
+end
+
+# from_h is for explicit deserialization with ALL data
+def self.from_h(owner_id:, workflow_id:, workflow_name:, path:, sections:, started_at:, last_transition_at:)
+  store = allocate
+  # Set all instance variables explicitly
+  store.instance_variable_set(:@owner_id, owner_id)
+  store.instance_variable_set(:@started_at, Time.parse(started_at))
+  store.instance_variable_set(:@sections, deserialize_sections(sections))
+  store
+end
+```
+
+**Key Principles:**
+1. **Check file existence explicitly** - `File.exist?(path) && File.size(path) > 0`
+2. **Two clear branches** - Load existing OR initialize fresh, never both
+3. **No rescue fallbacks** - Let errors bubble up
+4. **from_h is different** - Used when you have full data already in memory
+5. **No complex helper methods** - Inline the logic for clarity
+
+**Why This Matters:**
+- **Predictable behavior** - Clear which path is taken
+- **No silent failures** - Errors reveal problems immediately
+- **Easier debugging** - Can follow exact execution path
+- **Proper separation** - File loading vs. memory deserialization are distinct
+
+---
+
+### Lesson 37: deserialize_array Must Be a Class Method When Used in Initialization
+
+**Problem:** Calling instance methods from `initialize` before the instance is fully set up can fail, especially when using `allocate` pattern.
+
+**Solution:** Make deserialization methods class methods so they can be called during initialization without instance context.
+
+#### ❌ BAD: Private instance method called during init
+
+```ruby
+# ❌ BAD: Instance method used in initialization
+class WorkflowMemoryStore
+  def initialize(path:, ...)
+    if File.exist?(path)
+      data = load_data(path)
+      @sections = deserialize_sections(data)  # Calling instance method during init
+    end
+  end
+  
+  private
+  
+  def deserialize_sections(data)
+    # What if this needs other instance vars that aren't set yet?
+  end
+end
+```
+
+#### ✅ GOOD: Class method for deserialization
+
+```ruby
+# ✅ GOOD: Class method can be called anytime
+class WorkflowMemoryStore
+  def initialize(path:, ...)
+    if File.exist?(path)
+      data = load_data(path)
+      # Call class method - no instance context needed
+      @sections = {
+        state_transitions: self.class.deserialize_array(
+          data: data[:state_transitions],
+          klass: WorkflowMemories::StateTransition
+        )
+      }
+    end
+  end
+  
+  # Class method - stateless, works anywhere
+  def self.deserialize_array(data:, klass:)
+    data.map { |hash| klass.from_h(**hash.deep_symbolize_keys) }
+  end
+end
+
+# from_h can also use it
+def self.from_h(sections:, ...)
+  store = allocate
+  deserialized = {
+    state_transitions: WorkflowMemoryStore.deserialize_array(
+      data: sections[:state_transitions],
+      klass: WorkflowMemories::StateTransition
+    )
+  }
+  store.instance_variable_set(:@sections, deserialized)
+  store
+end
+```
+
+**Key Principles:**
+1. **Deserialize methods are class methods** - No instance state needed
+2. **Use explicit keyword arguments** - `data:` and `klass:` are clear
+3. **Call with self.class or ClassName** - Works from instance or class context
+4. **Stateless operations** - Pure transformation of data
+
+**Why This Matters:**
+- **Works in all contexts** - Initialize, from_h, anywhere
+- **No instance dependencies** - Pure data transformation
+- **allocate pattern compatible** - Can set instance vars in any order
+- **Reusable** - One implementation for all deserialization needs
+
+---
+
+### Lesson 38: No Safety Checks in Deserialization - Clean Up Old Data
+
+**Problem:** Adding safety checks to handle old or malformed data hides the real problem and prevents proper data migrations.
+
+**Solution:** Remove all safety checks. If deserialization fails, fix the source data, don't work around it.
+
+#### ❌ BAD: Defensive deserialization
+
+```ruby
+# ❌ BAD: Trying to handle every possible data format
+def self.deserialize_array(data:, klass:)
+  return [] if data.nil?  # WRONG!
+  return [] unless data.is_a?(Array)  # WRONG!
+  
+  data&.map do |item|  # WRONG!
+    if item.is_a?(klass)
+      item
+    elsif item.is_a?(Hash)
+      klass.from_h(item.deep_symbolize_keys)
+    else
+      nil
+    end
+  end.compact  # Hiding failures!
+end
+```
+
+**Problems:**
+- Hides data quality issues
+- Returns partial data silently
+- Makes debugging impossible
+- Prevents proper data migration
+
+#### ✅ GOOD: Fail fast, fix data
+
+```ruby
+# ✅ GOOD: Expect correct format, fail if wrong
+def self.deserialize_array(data:, klass:)
+  # No safety checks - data must be correct
+  data.map { |hash| klass.from_h(**hash.deep_symbolize_keys) }
+  # If this fails:
+  # - NoMethodError -> data isn't an array
+  # - ArgumentError -> hash missing required keys
+  # Both are GOOD - they tell you exactly what's wrong
+end
+
+# When errors occur:
+# 1. Check test/production data directories
+# 2. Delete old incompatible files
+# 3. Run migrations if needed
+# 4. Don't add safety checks to hide the problem
+```
+
+**How to Fix Old Data:**
+```bash
+# Find and delete old state files with wrong format
+rm -rf .agents/state/*
+rm -rf test/tmp/*
+
+# Or write a migration script if data must be preserved
+ruby scripts/migrate_workflow_memory_v1_to_v2.rb
+```
+
+**Key Principles:**
+1. **No `data&.map`** - Use required keyword args instead
+2. **No nil checks** - If data is required, enforce it
+3. **No type branching** - Expect one format
+4. **No rescue blocks** - Let errors surface
+5. **Clean up old data** - Don't code around it
+
+**Why This Matters:**
+- **Real errors surface** - Know exactly what's wrong
+- **Forces proper migrations** - Handle data changes correctly
+- **Simpler code** - No defensive complexity
+- **Honest failures** - Tests fail with real problems, not hidden issues
+
+---
+
 ## References
 
 - [Serialization Guide](./serialization-guide.md)
