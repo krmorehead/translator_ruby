@@ -104,7 +104,7 @@ slow("integration - should send message and get real LLM response for simple mat
 
   await expect(page.locator(".chat-message, .message").first()).toBeVisible();
   
-  await expect(page.locator(".chat-message, .message")).toHaveCount(2, { timeout: 25000 });
+  await expect(page.locator(".chat-message, .message")).toHaveCount(2);
 
   const messages = page.locator(".chat-message, .message");
   const userMessage = messages.nth(0);
@@ -137,7 +137,7 @@ slow("integration - should extract thoughts from real LLM reasoning", async ({ p
   await messageInput.fill("Is 7 prime?");
   await page.getByRole("button", { name: /send/i }).click();
 
-  await expect(page.locator(".chat-message, .message")).toHaveCount(2, { timeout: 25000 });
+  await expect(page.locator(".chat-message, .message")).toHaveCount(2);
 
   const thoughtsTab = page.getByRole("button", { name: /💭|thoughts/i });
   await expect(thoughtsTab).toBeVisible();
@@ -354,7 +354,7 @@ slow("integration - should use context in real LLM query", async ({ page }) => {
   await messageInput.fill("What is 3 + 3?");
   await page.getByRole("button", { name: /send/i }).click();
 
-  await expect(page.locator(".chat-message, .message")).toHaveCount(2, { timeout: 25000 });
+  await expect(page.locator(".chat-message, .message")).toHaveCount(2);
 
   await contextTab.click();
   await page.waitForLoadState("networkidle");
