@@ -9,14 +9,14 @@ async function handleJson(response) {
 }
 
 export const daedalusApi = {
-  async createPlan({ goal, contextHint, projectPath }) {
-    const response = await fetch("/api/daedalus/plans", {
+  async createPlan({ goal, path, context }) {
+    const response = await fetch("/daedalus/create", {
       method: "POST",
       headers: jsonHeaders,
       body: JSON.stringify({
         goal,
-        context_hint: contextHint,
-        project_path: projectPath
+        path,
+        context
       })
     });
     return handleJson(response);
