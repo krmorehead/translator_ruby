@@ -398,116 +398,117 @@ function AgentWorkspace() {
                 )}
               </section>
 
-              {daedalus.result && (
+              {daedalus.result && daedalus.result.execution_plan && (
                 <section className="plan-result-section">
                   <div className="result-header">
                     <h2>📋 Execution Plan</h2>
                     <div className="result-meta">
                       <span>
-                        {daedalus.result.metadata.milestone_count} Milestones
+                        {daedalus.result.metadata?.milestone_count || 0} Milestones
                       </span>
-                      <span>{daedalus.result.metadata.step_count} Steps</span>
+                      <span>{daedalus.result.metadata?.step_count || 0} Steps</span>
                     </div>
                   </div>
 
                   <div className="plan-goal">
                     <h3>Goal</h3>
-                    <p>{daedalus.result.result.execution_plan.goal}</p>
+                    <p>{daedalus.result.execution_plan.goal}</p>
                   </div>
 
+                  {daedalus.result.execution_plan.constraints?.length > 0 && (
                   <div className="plan-section">
                     <h3>⚠️ Constraints</h3>
                     <ul>
-                      {daedalus.result.result.execution_plan.constraints.map(
+                      {daedalus.result.execution_plan.constraints.map(
                         (constraint, i) => (
                           <li key={i}>{constraint}</li>
                         )
                       )}
                     </ul>
                   </div>
+                  )}
 
+                  {daedalus.result.execution_plan.assumptions?.length > 0 && (
                   <div className="plan-section">
                     <h3>💡 Assumptions</h3>
                     <ul>
-                      {daedalus.result.result.execution_plan.assumptions.map(
+                      {daedalus.result.execution_plan.assumptions.map(
                         (assumption, i) => (
                           <li key={i}>{assumption}</li>
                         )
                       )}
                     </ul>
                   </div>
+                  )}
 
+                  {daedalus.result.execution_plan.risks?.length > 0 && (
                   <div className="plan-section">
                     <h3>⚠️ Risks</h3>
                     <ul>
-                      {daedalus.result.result.execution_plan.risks.map(
+                      {daedalus.result.execution_plan.risks.map(
                         (risk, i) => (
                           <li key={i}>{risk}</li>
                         )
                       )}
                     </ul>
                   </div>
+                  )}
 
                   <div className="milestones-section">
                     <h3>🎯 Milestones</h3>
-                    {daedalus.result.result.execution_plan.milestones.map(
+                    {(daedalus.result.execution_plan.milestones || []).map(
                       (milestone, index) => renderMilestone(milestone, index)
                     )}
                   </div>
 
+                  {daedalus.result.output_paths && (
                   <div className="output-paths">
                     <h3>📁 Output Files</h3>
                     <p>
                       <strong>Plan Markdown:</strong>{" "}
                       <code>
-                        {daedalus.result.result.output_paths.plan_path}
+                        {daedalus.result.output_paths.plan_path}
                       </code>
                     </p>
                     <p>
                       <strong>Plan JSON:</strong>{" "}
                       <code>
-                        {daedalus.result.result.output_paths.json_path}
+                        {daedalus.result.output_paths.json_path}
                       </code>
                     </p>
                     <p>
                       <strong>Metadata:</strong>{" "}
                       <code>
-                        {daedalus.result.result.output_paths.metadata_path}
+                        {daedalus.result.output_paths.metadata_path}
                       </code>
                     </p>
                   </div>
+                  )}
 
+                  {daedalus.result.analysis_summary?.relevant_files?.length > 0 && (
                   <div className="analysis-summary">
                     <h3>🔍 Analysis Summary</h3>
                     <div>
                       <strong>
-                        Relevant Files (
-                        {
-                          daedalus.result.result.analysis_summary.relevant_files
-                            .length
-                        }
-                        ):
+                        Relevant Files ({daedalus.result.analysis_summary.relevant_files.length}):
                       </strong>
                       <ul>
-                        {daedalus.result.result.analysis_summary.relevant_files
+                        {daedalus.result.analysis_summary.relevant_files
                           .slice(0, 10)
                           .map((file, i) => (
                             <li key={i}>
                               <code>{file}</code>
                             </li>
                           ))}
-                        {daedalus.result.result.analysis_summary.relevant_files
-                          .length > 10 && (
+                        {daedalus.result.analysis_summary.relevant_files.length > 10 && (
                           <li>
-                            ... and{" "}
-                            {daedalus.result.result.analysis_summary
-                              .relevant_files.length - 10}{" "}
-                            more
+                            ... and {daedalus.result.analysis_summary.relevant_files.length - 10} more
                           </li>
                         )}
                       </ul>
                     </div>
                   </div>
+                  )}
                 </section>
               )}
             </>
