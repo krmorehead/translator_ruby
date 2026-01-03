@@ -250,31 +250,29 @@ describe("AgentWorkspace", () => {
 
   speed_profile("fast")("renders execution plan when result exists", () => {
     const mockResult = {
-      result: {
-        execution_plan: {
-          goal: "Test goal",
-          constraints: ["constraint1"],
-          assumptions: ["assumption1"],
-          risks: ["risk1"],
-          milestones: [
-            {
-              id: "m1",
-              title: "Milestone 1",
-              description: "Test milestone",
-              estimated_duration: "1 day",
-              success_criteria: ["criteria1"],
-              steps: [],
-            },
-          ],
-        },
-        output_paths: {
-          plan_path: "/test/plan.md",
-          json_path: "/test/plan.json",
-          metadata_path: "/test/metadata.json",
-        },
-        analysis_summary: {
-          relevant_files: ["file1.rb", "file2.rb"],
-        },
+      execution_plan: {
+        goal: "Test goal",
+        constraints: ["constraint1"],
+        assumptions: ["assumption1"],
+        risks: ["risk1"],
+        milestones: [
+          {
+            id: "m1",
+            title: "Milestone 1",
+            description: "Test milestone",
+            estimated_duration: "1 day",
+            success_criteria: ["criteria1"],
+            steps: [],
+          },
+        ],
+      },
+      output_paths: {
+        plan_path: "/test/plan.md",
+        json_path: "/test/plan.json",
+        metadata_path: "/test/metadata.json",
+      },
+      analysis_summary: {
+        relevant_files: ["file1.rb", "file2.rb"],
       },
       metadata: {
         milestone_count: 1,
@@ -283,6 +281,7 @@ describe("AgentWorkspace", () => {
     };
 
     useAgentStore.setState({
+      currentSessionId: null, // Ensure no session so plan form shows
       daedalus: {
         ...useAgentStore.getState().daedalus,
         result: mockResult,
