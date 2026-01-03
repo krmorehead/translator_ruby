@@ -92,7 +92,7 @@ medium("approval - should render Sisyphus interface", async ({ page }) => {
   
   await ensureSisyphusMode(page);
   
-  await expect(page.locator("h1").filter({ hasText: /sisyphus/i })).toBeVisible({ timeout: 5000 });
+  await expect(page.locator("h1").filter({ hasText: /sisyphus/i })).toBeVisible();
   
   const startButton = page.getByRole("button", { name: /start|execute/i });
   await expect(startButton).toBeVisible();
