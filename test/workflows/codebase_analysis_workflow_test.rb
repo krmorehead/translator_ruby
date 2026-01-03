@@ -183,5 +183,30 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     assert workflow.running?
     refute workflow.pending?
   end
+
+  speed_profile :fast
+  test "uses DEFAULT_MAX_FILES (15) by default" do
+    workflow = CodebaseAnalysisWorkflow.new(
+      goal: @goal,
+      path: @temp_path,
+      owner_id: @owner_id
+    )
+
+    assert_equal CodebaseAnalysisWorkflow::DEFAULT_MAX_FILES, workflow.max_files
+    assert_equal 15, workflow.max_files
+  end
+
+  speed_profile :fast
+  test "respects custom max_files parameter" do
+    custom_max = 25
+    workflow = CodebaseAnalysisWorkflow.new(
+      goal: @goal,
+      path: @temp_path,
+      owner_id: @owner_id,
+      max_files: custom_max
+    )
+
+    assert_equal custom_max, workflow.max_files
+  end
 end
 
