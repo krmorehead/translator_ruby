@@ -85,15 +85,16 @@ class CodebaseAnalysisWorkflow < BaseWorkflow
     tool = FileTreeTool.new
     result = tool.execute(path: @path, max_depth: 5)
 
-    if result[:success]
+    if result[:success] && result[:output]
       @file_tree = result[:output]
+      file_count = result[:output].is_a?(String) ? result[:output].lines.count : 0
       record_decision(
         decision: "Scanned codebase structure",
         rationale: "Generated file tree for analysis",
-        context: { file_count: result[:output].lines.count }
+        context: { file_count: file_count }
       )
     else
-      raise "Failed to scan codebase: #{result[:error]}"
+      raise "Failed to scan codebase: #{result[:error] || 'No output generated'}"
     end
   end
 
