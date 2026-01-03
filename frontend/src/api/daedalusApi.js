@@ -1,20 +1,43 @@
-const API_BASE = '';
+const jsonHeaders = { "Content-Type": "application/json" };
+
+async function handleJson(response) {
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body.error);
+  }
+  return body;
+}
 
 export const daedalusApi = {
-  createPlan: async ({ goal, path, context }) => {
-    const response = await fetch(`${API_BASE}/daedalus/create`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal, path, context }),
+  async createPlan({ goal, contextHint, projectPath }) {
+    const response = await fetch("/api/daedalus/plans", {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        goal,
+        context_hint: contextHint,
+        project_path: projectPath
+      })
     });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error);
-    }
-
-    return data;
+    return handleJson(response);
   },
+
+  async getPlan(planId) {
+    const response = await fetch(`/api/daedalus/plans/${planId}`);
+    return handleJson(response);
+  },
+
+  async listPlans(limit = 50) {
+    const response = await fetch(`/api/daedalus/plans?limit=${limit}`);
+    return handleJson(response);
+  },
+
+  async cancelPlan(planId) {
+    const response = await fetch(`/api/daedalus/plans/${planId}`, {
+      method: "DELETE"
+    });
+    return handleJson(response);
+  }
 };
+
 

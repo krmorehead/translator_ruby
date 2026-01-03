@@ -248,3 +248,4 @@ end
 - Vector similarity: Cosine distance
 - OpenAI Embeddings API: text-embedding-3-small
 
+

@@ -39,6 +39,12 @@ class LlmResponse
     !@thoughts.nil? && !@thoughts.empty?
   end
 
+  # Check if response has content
+  # @return [Boolean] True if content is present
+  def has_content?
+    !@content.nil? && !@content.empty?
+  end
+
   # Get the full message hash (for compatibility)
   # @return [Hash, nil] The message hash or nil
   def message

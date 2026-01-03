@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import ChatPage from "./components/ChatPage";
 import InspectorPage from "./pages/InspectorPage";
 import ProjectPlanPage from "./components/ProjectPlanPage";
-import DaedalusPage from "./components/DaedalusPage";
-import SisyphusPage from "./components/SisyphusPage";
+import AgentWorkspace from "./components/AgentWorkspace";
 import CheckpointManager from "./components/CheckpointManager";
 import { useChatStore } from "./store/chatStore";
 import "./App.css";
@@ -27,19 +26,14 @@ function App() {
     return <CheckpointManager />;
   }
 
-  // Sisyphus Agent Worker mode - no initialization needed
-  if (path.startsWith("/sisyphus")) {
-    return <SisyphusPage />;
+  // Agent Workspace mode (unified Daedalus + Sisyphus)
+  if (path.startsWith("/agent") || path.startsWith("/daedalus") || path.startsWith("/sisyphus")) {
+    return <AgentWorkspace />;
   }
 
   // Project Planning mode - skip D&D initialization
   if (path.startsWith("/project_planning")) {
     return <ProjectPlanPage />;
-  }
-
-  // Daedalus mode - skip D&D initialization
-  if (path.startsWith("/daedalus")) {
-    return <DaedalusPage />;
   }
 
   // Inspector mode - skip D&D initialization

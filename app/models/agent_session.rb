@@ -1,0 +1,151 @@
+# frozen_string_literal: true
+
+# Domain model representing an agent's conversation session.
+# Tracks chat messages, thoughts, memory state, and context.
+#
+# Strict OOP principles:
+# - Immutable value object
+# - Validation in constructor
+# - No hash access patterns
+class AgentSession
+  attr_reader :session_id, :owner_id, :agent_type, :started_at, :last_activity_at, :status
+
+  STATUS_ACTIVE = "active"
+  STATUS_PAUSED = "paused"
+  STATUS_COMPLETE = "complete"
+  STATUS_FAILED = "failed"
+
+  VALID_STATUSES = [STATUS_ACTIVE, STATUS_PAUSED, STATUS_COMPLETE, STATUS_FAILED].freeze
+  
+  AGENT_TYPE_DAEDALUS = "daedalus"
+  AGENT_TYPE_SISYPHUS = "sisyphus"
+  AGENT_TYPE_RESEARCHER = "researcher"
+  
+  VALID_AGENT_TYPES = [AGENT_TYPE_DAEDALUS, AGENT_TYPE_SISYPHUS, AGENT_TYPE_RESEARCHER].freeze
+
+  # Initialize a new agent session
+  # @param session_id [String] Unique session identifier
+  # @param owner_id [String] Owner/user identifier
+  # @param agent_type [String] Type of agent (daedalus, sisyphus, etc.)
+  # @param started_at [Time, String] Session start time
+  # @param last_activity_at [Time, String] Last activity timestamp
+  # @param status [String] Current session status
+  def initialize(session_id:, owner_id:, agent_type:, started_at:, last_activity_at:, status:)
+    raise ArgumentError, "session_id is required" if session_id.nil? || session_id.to_s.empty?
+    raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
+    raise ArgumentError, "agent_type is required" if agent_type.nil? || agent_type.to_s.empty?
+    raise ArgumentError, "Invalid agent_type: #{agent_type}" unless VALID_AGENT_TYPES.include?(agent_type.to_s)
+    raise ArgumentError, "Invalid status: #{status}" unless VALID_STATUSES.include?(status.to_s)
+    raise ArgumentError, "started_at is required" if started_at.nil?
+    raise ArgumentError, "last_activity_at is required" if last_activity_at.nil?
+
+    @session_id = session_id.to_s
+    @owner_id = owner_id.to_s
+    @agent_type = agent_type.to_s
+    @started_at = parse_time(started_at)
+    @last_activity_at = parse_time(last_activity_at)
+    @status = status.to_s
+    
+    freeze
+  end
+
+  # Check if session is active
+  # @return [Boolean]
+  def active?
+    @status == STATUS_ACTIVE
+  end
+
+  # Check if session is complete
+  # @return [Boolean]
+  def complete?
+    @status == STATUS_COMPLETE
+  end
+
+  # Check if session is paused
+  # @return [Boolean]
+  def paused?
+    @status == STATUS_PAUSED
+  end
+
+  # Check if session failed
+  # @return [Boolean]
+  def failed?
+    @status == STATUS_FAILED
+  end
+
+  # Update last activity timestamp
+  # Returns a NEW instance (immutable)
+  # @param timestamp [Time, String] New timestamp
+  # @return [AgentSession] New instance with updated timestamp
+  def touch(timestamp = Time.now.utc)
+    self.class.new(
+      session_id: @session_id,
+      owner_id: @owner_id,
+      agent_type: @agent_type,
+      started_at: @started_at,
+      last_activity_at: timestamp,
+      status: @status
+    )
+  end
+
+  # Update session status
+  # Returns a NEW instance (immutable)
+  # @param new_status [String] New status
+  # @return [AgentSession] New instance with updated status
+  def with_status(new_status)
+    raise ArgumentError, "Invalid status: #{new_status}" unless VALID_STATUSES.include?(new_status.to_s)
+    
+    self.class.new(
+      session_id: @session_id,
+      owner_id: @owner_id,
+      agent_type: @agent_type,
+      started_at: @started_at,
+      last_activity_at: Time.now.utc,
+      status: new_status
+    )
+  end
+
+  # Serialize to hash for API responses
+  # @return [Hash]
+  def to_h
+    {
+      session_id: @session_id,
+      owner_id: @owner_id,
+      agent_type: @agent_type,
+      started_at: @started_at.iso8601,
+      last_activity_at: @last_activity_at.iso8601,
+      status: @status
+    }
+  end
+  alias_method :to_json, :to_h
+
+  # Create session from hash
+  # @param data [Hash] Session data
+  # @return [AgentSession]
+  def self.from_h(data)
+    raise ArgumentError, "data must be a Hash" unless data.is_a?(Hash)
+    
+    new(
+      session_id: data[:session_id] || data["session_id"],
+      owner_id: data[:owner_id] || data["owner_id"],
+      agent_type: data[:agent_type] || data["agent_type"],
+      started_at: data[:started_at] || data["started_at"],
+      last_activity_at: data[:last_activity_at] || data["last_activity_at"],
+      status: data[:status] || data["status"]
+    )
+  end
+
+  private
+
+  # Parse time from various formats
+  # @param value [Time, String, Integer] Time value
+  # @return [Time]
+  def parse_time(value)
+    return value if value.is_a?(Time)
+    return Time.at(value) if value.is_a?(Integer)
+    return Time.parse(value) if value.is_a?(String)
+    raise ArgumentError, "Invalid time value: #{value}"
+  end
+end
+
+

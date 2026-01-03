@@ -458,3 +458,4 @@ class FileDiffTest < ActiveSupport::TestCase
   end
 end
 
+

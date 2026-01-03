@@ -230,3 +230,4 @@ WorkflowMemoryStore tests verify:
 - `app/services/checkpoint_service.rb` - Git operations
 - `docs/references/oop-patterns.md` - Design patterns (Lessons 20 & 21)
 
+

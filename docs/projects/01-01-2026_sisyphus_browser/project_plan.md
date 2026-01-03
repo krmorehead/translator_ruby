@@ -1010,3 +1010,4 @@ export const ProjectBrowserContainer = () => {
 - **Composition**: Build complex UIs from simple, tested pieces
 - **Test everything**: Backend follows TDD, frontend tests all components
 
+

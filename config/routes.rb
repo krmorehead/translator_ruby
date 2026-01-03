@@ -18,6 +18,25 @@ Rails.application.routes.draw do
         end
       end
     end
+
+    # Agent configuration routes
+    namespace :agent do
+      get "config", to: "agent_config#show"
+      post "config/validate", to: "agent_config#validate"
+      post "config/test", to: "agent_config#test"
+    end
+
+    # Agent session management routes (chat, thoughts, memory, context)
+    resources :agent_sessions, param: :session_id do
+      member do
+        get "messages", to: "agent_sessions#list_messages"
+        post "messages", to: "agent_sessions#create_message"
+        get "thoughts", to: "agent_sessions#list_thoughts"
+        get "memories", to: "agent_sessions#list_memories"
+        delete "memories/clear", to: "agent_sessions#clear_memory"
+        get "actions", to: "agent_sessions#list_actions"
+      end
+    end
   end
   # DnD Chat API
   post "/dnd_chat/sessions", to: "dnd_chat#create_session"
@@ -44,6 +63,9 @@ Rails.application.routes.draw do
 
   # Sisyphus Agent Worker routes
   get "/sisyphus", to: "sisyphus#index"
+  
+  # Unified Agent Workspace (serves same SPA for both)
+  get "/agent", to: "daedalus#spa"
   
   # Checkpoint Manager SPA
   get "/checkpoints", to: "sisyphus#index"  # Reuse Sisyphus controller for SPA

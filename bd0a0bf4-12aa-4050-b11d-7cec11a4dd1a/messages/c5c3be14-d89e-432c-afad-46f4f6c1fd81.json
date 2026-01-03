@@ -1,0 +1,11 @@
+[
+  {
+    "id": "51e60d93-5009-49f6-9543-0ed75d9a17d1",
+    "session_id": "c5c3be14-d89e-432c-afad-46f4f6c1fd81",
+    "role": "user",
+    "content": "What is 3 + 3?",
+    "thoughts": null,
+    "timestamp": "2026-01-03T08:07:05Z",
+    "metadata": {}
+  }
+]

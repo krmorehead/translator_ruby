@@ -1,0 +1,22 @@
+[
+  {
+    "id": "cf71c841-ead4-40dc-a32f-487ccb01e86d",
+    "session_id": "54c1a4ec-9001-4067-8424-f638261e009f",
+    "role": "user",
+    "content": "Test",
+    "thoughts": null,
+    "timestamp": "2026-01-03T08:27:49Z",
+    "metadata": {}
+  },
+  {
+    "id": "e8cddbb4-025f-4811-90e8-fe5e9416ea9c",
+    "session_id": "54c1a4ec-9001-4067-8424-f638261e009f",
+    "role": "agent",
+    "content": "Hello! It seems like you're testing the system. How can I assist you today? Whether you have questions, need information, or want to explore a topic, feel free to let me know! 😊",
+    "thoughts": null,
+    "timestamp": "2026-01-03T08:27:53Z",
+    "metadata": {
+      "model": "./vllm/models/qwen3_32B_dense"
+    }
+  }
+]

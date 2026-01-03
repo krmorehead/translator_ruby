@@ -457,3 +457,4 @@ test("page matches screenshot", async ({ page }) => {
 **Test Count**: 34 total (20 active, 14 pending backend integration)  
 **Coverage**: ~80% of Sisyphus UI workflows
 
+

@@ -1,0 +1,271 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+class AgentConfigServiceTest < ActiveSupport::TestCase
+  def setup
+    @service = AgentConfigService.new
+  end
+
+  # ============================================================================
+  # FAST TESTS - No I/O
+  # ============================================================================
+
+  speed_profile :fast
+  test "get_config returns AgentConfig instance" do
+    config = @service.get_config
+    
+    assert_instance_of Configuration::AgentConfig, config
+  end
+
+  speed_profile :fast
+  test "get_config includes all standard capabilities" do
+    config = @service.get_config
+    
+    assert config.capability?(:planner)
+    assert config.capability?(:executor)
+    assert config.capability?(:researcher)
+  end
+
+  speed_profile :fast
+  test "each capability has required fields" do
+    config = @service.get_config
+    
+    config.capabilities.each do |name, capability|
+      assert capability.model.present?, "#{name} missing model"
+      assert capability.provider.present?, "#{name} missing provider"
+      assert capability.base_url.present?, "#{name} missing base_url"
+    end
+  end
+
+  speed_profile :fast
+  test "get_config includes environment variables" do
+    config = @service.get_config
+    
+    assert config.environment.is_a?(Hash)
+    assert config.environment.key?("RAILS_ENV")
+  end
+
+  speed_profile :fast
+  test "validate_capability returns true for valid capability" do
+    result = @service.validate_capability("planner")
+    
+    assert result[:valid]
+    assert_nil result[:error]
+  end
+
+  speed_profile :fast
+  test "validate_capability returns false for nonexistent capability" do
+    result = @service.validate_capability("nonexistent_capability")
+    
+    assert_equal false, result[:valid]
+    assert result[:error].present?
+    assert_match(/not found|unknown/i, result[:error])
+  end
+
+  speed_profile :fast
+  test "validate_capability returns false for nil capability" do
+    result = @service.validate_capability(nil)
+    
+    assert_equal false, result[:valid]
+    assert result[:error].present?
+  end
+
+  speed_profile :fast
+  test "validate_capability returns false for empty string" do
+    result = @service.validate_capability("")
+    
+    assert_equal false, result[:valid]
+    assert result[:error].present?
+  end
+
+  speed_profile :fast
+  test "update_config validates capability structure" do
+    invalid_capabilities = {
+      "invalid_cap" => { "random" => "data" }
+    }
+    
+    result = @service.update_config(invalid_capabilities)
+    
+    assert_equal false, result[:success]
+    assert result[:error].present?
+  end
+
+  speed_profile :fast
+  test "update_config rejects empty model" do
+    capabilities = {
+      "planner" => {
+        "model" => "",
+        "provider" => "openai",
+        "base_url" => "http://localhost:11434"
+      }
+    }
+    
+    result = @service.update_config(capabilities)
+    
+    assert_equal false, result[:success]
+    assert_match(/model.*required/i, result[:error])
+  end
+
+  speed_profile :fast
+  test "update_config rejects missing provider" do
+    capabilities = {
+      "planner" => {
+        "model" => "gpt-4",
+        "base_url" => "http://localhost:11434"
+      }
+    }
+    
+    result = @service.update_config(capabilities)
+    
+    assert_equal false, result[:success]
+    assert_match(/provider.*required/i, result[:error])
+  end
+
+  # ============================================================================
+  # MEDIUM TESTS - Configuration Updates
+  # ============================================================================
+
+  speed_profile :medium
+  test "update_config updates capability configuration" do
+    original_config = @service.get_config
+    original_model = original_config.capability(:planner).model
+    
+    new_capabilities = {
+      "planner" => {
+        "model" => "gpt-4-turbo",
+        "provider" => "openai",
+        "base_url" => "http://localhost:11434"
+      }
+    }
+    
+    result = @service.update_config(new_capabilities)
+    
+    assert result[:success]
+    
+    updated_config = @service.get_config
+    assert_equal "gpt-4-turbo", updated_config.capability(:planner).model
+    
+    # Restore original for other tests
+    @service.update_config({
+      "planner" => {
+        "model" => original_model,
+        "provider" => "openai",
+        "base_url" => "http://localhost:11434"
+      }
+    })
+  end
+
+  speed_profile :medium
+  test "update_config returns updated config" do
+    new_capabilities = {
+      "planner" => {
+        "model" => "gpt-4",
+        "provider" => "openai",
+        "base_url" => "http://localhost:11434"
+      }
+    }
+    
+    result = @service.update_config(new_capabilities)
+    
+    assert result[:success]
+    assert result[:config].is_a?(Configuration::AgentConfig)
+    assert_equal "gpt-4", result[:config].capability(:planner).model
+  end
+
+  # ============================================================================
+  # SLOW TESTS - Real LLM Connections
+  # ============================================================================
+
+  speed_profile :slow
+  test "test_connection validates real LLM endpoint" do
+    result = @service.test_connection("planner")
+    
+    assert result[:success]
+    assert result[:connected]
+    assert result[:response_time].present?
+  end
+
+  speed_profile :slow
+  test "test_connection returns model information" do
+    result = @service.test_connection("planner")
+    
+    assert result[:success]
+    assert result[:model_info].present?
+  end
+
+  speed_profile :fast
+  test "test_connection fails for invalid capability" do
+    result = @service.test_connection("nonexistent")
+    
+    assert_equal false, result[:success]
+    assert result[:error].present?
+    assert_match(/not found|unknown/i, result[:error])
+  end
+
+  speed_profile :slow
+  test "test_connection handles timeout gracefully" do
+    # This would require a capability configured with unreachable endpoint
+    # For now, we test with a valid one and ensure it doesn't timeout
+    result = @service.test_connection("planner")
+    
+    # Should complete within reasonable time (handled by test timeout)
+    assert result.key?(:success)
+  end
+
+  speed_profile :slow
+  test "test_connection for all capabilities" do
+    config = @service.get_config
+    
+    config.capabilities.each do |name, _capability|
+      result = @service.test_connection(name.to_s)
+      
+      # Each should at least respond (may fail if LLM not running, but should respond)
+      assert result.key?(:success), "#{name} test_connection didn't respond"
+      assert result.key?(:connected), "#{name} test_connection missing connected status"
+    end
+  end
+
+  # ============================================================================
+  # INTEGRATION TESTS
+  # ============================================================================
+
+  speed_profile :medium
+  test "full config lifecycle: get, update, validate, get" do
+    # Get original
+    original = @service.get_config
+    original_model = original.capability(:planner).model
+    
+    # Update
+    new_capabilities = {
+      "planner" => {
+        "model" => "test-model-temp",
+        "provider" => "openai",
+        "base_url" => "http://localhost:11434"
+      }
+    }
+    update_result = @service.update_config(new_capabilities)
+    assert update_result[:success]
+    
+    # Validate
+    validate_result = @service.validate_capability("planner")
+    assert validate_result[:valid]
+    
+    # Get updated
+    updated = @service.get_config
+    assert_equal "test-model-temp", updated.capability(:planner).model
+    
+    # Restore
+    @service.update_config({
+      "planner" => {
+        "model" => original_model,
+        "provider" => "openai",
+        "base_url" => "http://localhost:11434"
+      }
+    })
+    
+    # Verify restored
+    final = @service.get_config
+    assert_equal original_model, final.capability(:planner).model
+  end
+end

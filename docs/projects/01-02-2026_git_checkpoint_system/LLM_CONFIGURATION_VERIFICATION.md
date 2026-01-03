@@ -81,3 +81,4 @@ client = GenericLlmClient.client_for(:embeddings)
 - Both models verified working
 - Integration tests confirm real LLM usage
 
+

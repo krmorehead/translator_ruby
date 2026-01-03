@@ -1,0 +1,11 @@
+[
+  {
+    "id": "88f510bf-cee2-4e75-84c9-4f84a49be6d0",
+    "session_id": "7255ed88-3aa0-41a9-8776-9a982ea4a117",
+    "role": "user",
+    "content": "What is 2 + 2?",
+    "thoughts": null,
+    "timestamp": "2026-01-03T08:06:47Z",
+    "metadata": {}
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "7f990baa-9e06-4cf9-b993-90bd94abd0c5",
+    "session_id": "c16dc833-338a-4797-bc56-00d67aed220c",
+    "role": "user",
+    "content": "What is 2 + 2?",
+    "thoughts": null,
+    "timestamp": "2026-01-03T08:22:35Z",
+    "metadata": {}
+  },
+  {
+    "id": "c3f1c3af-d86a-4929-a8c1-2ddd7936ebad",
+    "session_id": "c16dc833-338a-4797-bc56-00d67aed220c",
+    "role": "agent",
+    "content": "The sum of 2 and 2 is **4**. This is a basic arithmetic operation where adding two quantities together results in four. In standard base-10 mathematics, 2 + 2 = 4.",
+    "thoughts": null,
+    "timestamp": "2026-01-03T08:22:43Z",
+    "metadata": {
+      "model": "./vllm/models/qwen3_32B_dense"
+    }
+  }
+]
