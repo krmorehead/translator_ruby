@@ -138,6 +138,7 @@ class DaedalusWorker < BaseWorker
   # Build final result hash
   def build_result
     @result = {
+      success: true,
       execution_plan: @execution_plan,
       output_paths: @output_paths,
       metadata: {
@@ -159,7 +160,7 @@ class DaedalusWorker < BaseWorker
   def handle_error(error)
     mark_failed("DaedalusWorker failed: #{error.message}")
     Rails.logger.error("DaedalusWorker error: #{error.message}\n#{error.backtrace.join("\n")}")
-    { error: error.message }
+    { success: false, error: error.message }
   end
 
   # Mark worker as failed
