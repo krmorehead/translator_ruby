@@ -7,6 +7,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
     globals: true,
+    // Exclude Playwright E2E tests - they're run with `npm run e2e`
+    exclude: ['e2e/**', 'node_modules/**'],
     // Speed profiling enforcement
     testTimeout: 120000, // 120 seconds max for any test (slow threshold)
     hookTimeout: 10000,  // 10 seconds for hooks

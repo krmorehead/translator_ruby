@@ -19,8 +19,7 @@ export class ApprovalRequestFactory {
       estimatedChanges: {},
       createdAt: new Date().toISOString(),
       resolvedAt: null,
-      resolvedBy: null,
-      timeoutSeconds: 300
+      resolvedBy: null
     };
   }
 
@@ -121,34 +120,6 @@ export class ApprovalRequestFactory {
   }
 
   /**
-   * Build an expired approval request
-   * @param {Object} attributes - Additional attributes
-   * @returns {ApprovalRequest}
-   */
-  static buildExpired(attributes = {}) {
-    const expiredTime = new Date(Date.now() - 400000).toISOString(); // 400s ago
-    return this.build({
-      createdAt: expiredTime,
-      timeoutSeconds: 300, // 5 minutes, so it's expired
-      ...attributes
-    });
-  }
-
-  /**
-   * Build an approval about to expire
-   * @param {Object} attributes - Additional attributes
-   * @returns {ApprovalRequest}
-   */
-  static buildAboutToExpire(attributes = {}) {
-    const recentTime = new Date(Date.now() - 280000).toISOString(); // 280s ago (20s remaining)
-    return this.build({
-      createdAt: recentTime,
-      timeoutSeconds: 300,
-      ...attributes
-    });
-  }
-
-  /**
    * Build an approved request
    * @param {Object} attributes - Additional attributes
    * @returns {ApprovalRequest}
@@ -166,16 +137,6 @@ export class ApprovalRequestFactory {
   static buildRejected(attributes = {}) {
     const approval = this.build(attributes);
     return approval.reject("test_user");
-  }
-
-  /**
-   * Build a timed out request
-   * @param {Object} attributes - Additional attributes
-   * @returns {ApprovalRequest}
-   */
-  static buildTimeout(attributes = {}) {
-    const approval = this.build(attributes);
-    return approval.markTimeout();
   }
 }
 

@@ -20,10 +20,10 @@ export class ApprovalRequest extends BaseRequest {
   static TYPE_MILESTONE = "milestone";
 
   // Approval statuses (extends base statuses)
+  // NOTE: NO TIMEOUT STATUS - approvals wait forever for user action
   static STATUS_PENDING = "pending";
   static STATUS_APPROVED = "approved";
   static STATUS_REJECTED = "rejected";
-  static STATUS_TIMEOUT = "timeout";
 
   constructor({
     id,
@@ -36,14 +36,13 @@ export class ApprovalRequest extends BaseRequest {
     estimatedChanges = {},
     createdAt,
     resolvedAt = null,
-    resolvedBy = null,
-    timeoutSeconds = 300
+    resolvedBy = null
   }) {
     // Call parent constructor with base params
     super({ id, status, createdAt, resolvedAt, resolvedBy });
 
     // Validate approval-specific params
-    this.validateApprovalParams(executionId, type, subjectId, subjectTitle, timeoutSeconds);
+    this.validateApprovalParams(executionId, type, subjectId, subjectTitle);
 
     // Set properties with underscore prefix for immutability
     this._executionId = executionId;
@@ -52,13 +51,12 @@ export class ApprovalRequest extends BaseRequest {
     this._subjectTitle = subjectTitle;
     this._plannedActions = Object.freeze([...plannedActions]);
     this._estimatedChanges = Object.freeze({ ...estimatedChanges });
-    this._timeoutSeconds = timeoutSeconds;
 
     // Freeze the entire object - NO mutation allowed
     this.freeze();
   }
 
-  validateApprovalParams(executionId, type, subjectId, subjectTitle, timeoutSeconds) {
+  validateApprovalParams(executionId, type, subjectId, subjectTitle) {
     if (!executionId || typeof executionId !== "string") {
       throw new TypeError("ApprovalRequest: executionId must be a non-empty string");
     }
@@ -73,9 +71,6 @@ export class ApprovalRequest extends BaseRequest {
     }
     if (!subjectTitle || typeof subjectTitle !== "string") {
       throw new TypeError("ApprovalRequest: subjectTitle must be a non-empty string");
-    }
-    if (!Number.isInteger(timeoutSeconds) || timeoutSeconds <= 0) {
-      throw new TypeError("ApprovalRequest: timeoutSeconds must be a positive integer");
     }
   }
 
@@ -104,10 +99,6 @@ export class ApprovalRequest extends BaseRequest {
     return this._estimatedChanges; // Already frozen
   }
 
-  get timeoutSeconds() {
-    return this._timeoutSeconds;
-  }
-
   // Override base query methods
   isPending() {
     return this._status === ApprovalRequest.STATUS_PENDING;
@@ -121,20 +112,8 @@ export class ApprovalRequest extends BaseRequest {
     return this._status === ApprovalRequest.STATUS_REJECTED;
   }
 
-  isTimeout() {
-    return this._status === ApprovalRequest.STATUS_TIMEOUT;
-  }
-
   isResolved() {
     return !this.isPending();
-  }
-
-  isExpired() {
-    if (!this.isPending()) return false;
-    
-    const createdTime = new Date(this._createdAt).getTime();
-    const timeoutTime = createdTime + (this._timeoutSeconds * 1000);
-    return Date.now() > timeoutTime;
   }
 
   isStep() {
@@ -143,19 +122,6 @@ export class ApprovalRequest extends BaseRequest {
 
   isMilestone() {
     return this._type === ApprovalRequest.TYPE_MILESTONE;
-  }
-
-  getTimeoutAt() {
-    const createdTime = new Date(this._createdAt).getTime();
-    return new Date(createdTime + (this._timeoutSeconds * 1000));
-  }
-
-  getRemainingSeconds() {
-    if (!this.isPending()) return 0;
-    
-    const timeoutTime = this.getTimeoutAt().getTime();
-    const remaining = Math.max(0, Math.floor((timeoutTime - Date.now()) / 1000));
-    return remaining;
   }
 
   // Transformation methods (return new instances - immutable)
@@ -179,8 +145,7 @@ export class ApprovalRequest extends BaseRequest {
       estimatedChanges: { ...this._estimatedChanges },
       createdAt: this._createdAt,
       resolvedAt: new Date().toISOString(),
-      resolvedBy,
-      timeoutSeconds: this._timeoutSeconds
+      resolvedBy
     });
   }
 
@@ -204,29 +169,7 @@ export class ApprovalRequest extends BaseRequest {
       estimatedChanges: { ...this._estimatedChanges },
       createdAt: this._createdAt,
       resolvedAt: new Date().toISOString(),
-      resolvedBy,
-      timeoutSeconds: this._timeoutSeconds
-    });
-  }
-
-  markTimeout() {
-    if (!this.isPending()) {
-      throw new Error(`Cannot timeout non-pending approval (current status: ${this._status})`);
-    }
-
-    return new ApprovalRequest({
-      id: this._id,
-      executionId: this._executionId,
-      type: this._type,
-      status: ApprovalRequest.STATUS_TIMEOUT,
-      subjectId: this._subjectId,
-      subjectTitle: this._subjectTitle,
-      plannedActions: [...this._plannedActions],
-      estimatedChanges: { ...this._estimatedChanges },
-      createdAt: this._createdAt,
-      resolvedAt: new Date().toISOString(),
-      resolvedBy: "system_timeout",
-      timeoutSeconds: this._timeoutSeconds
+      resolvedBy
     });
   }
 
@@ -243,8 +186,7 @@ export class ApprovalRequest extends BaseRequest {
       estimated_changes: this._estimatedChanges,
       created_at: this._createdAt,
       resolved_at: this._resolvedAt,
-      resolved_by: this._resolvedBy,
-      timeout_seconds: this._timeoutSeconds
+      resolved_by: this._resolvedBy
     };
   }
 
@@ -277,8 +219,7 @@ export class ApprovalRequest extends BaseRequest {
       estimatedChanges: json.estimated_changes || {},
       createdAt: json.created_at,
       resolvedAt: json.resolved_at,
-      resolvedBy: json.resolved_by,
-      timeoutSeconds: json.timeout_seconds || 300
+      resolvedBy: json.resolved_by
     });
   }
 

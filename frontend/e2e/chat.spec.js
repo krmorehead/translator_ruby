@@ -1,6 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { expect, fast, medium, slow } from "./base-test";
 
-test("chat page loads and accepts input", async ({ page }) => {
+/**
+ * DND Chat E2E Tests - Uses real LLM
+ */
+
+medium("chat page loads and accepts input", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByText("Darkwood Adventure")).toBeVisible();
@@ -12,25 +16,21 @@ test("chat page loads and accepts input", async ({ page }) => {
   await expect(page.getByText("Inspect the ancient door")).toBeVisible();
 });
 
-test("agent version bumps after chat message", async ({ page }) => {
+slow("agent version bumps after chat message", async ({ page }) => {
   await page.goto("/");
 
-  // Get initial version
   const initialVersion = await page.evaluate(async () => {
     const res = await fetch("/dnd_chat/agent/version");
     const data = await res.json();
     return data.version || 0;
   });
 
-  // Send a message
   const input = page.getByPlaceholder("Type your action or ask the DM...");
   await input.fill("Light a torch");
   await input.press("Enter");
 
-  // Wait for assistant reply to appear
   await expect(page.getByText("Light a torch")).toBeVisible();
 
-  // Poll version until it changes or timeout
   const versionChanged = await page.waitForFunction(
     async (start) => {
       const res = await fetch("/dnd_chat/agent/version");
@@ -38,9 +38,7 @@ test("agent version bumps after chat message", async ({ page }) => {
       return (data.version || 0) > start;
     },
     initialVersion,
-    { timeout: 10_000 }
   );
 
   expect(versionChanged).toBeTruthy();
 });
-

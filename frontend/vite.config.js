@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:3000",  // Rails backend
+        target: "http://localhost:4000",  // Rails backend
         changeOrigin: true
       },
       "/dnd_chat": {

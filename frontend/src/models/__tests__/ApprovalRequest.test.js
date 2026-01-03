@@ -21,8 +21,7 @@ describe('ApprovalRequest', () => {
     subjectTitle: 'Test Step',
     plannedActions: ['action1', 'action2'],
     estimatedChanges: { files_to_create: 1 },
-    createdAt: new Date().toISOString(),
-    timeoutSeconds: 300
+    createdAt: new Date().toISOString()
   });
 
   describe('inheritance', () => {
@@ -99,24 +98,6 @@ describe('ApprovalRequest', () => {
       expect(() => new ApprovalRequest(params))
         .toThrow('subjectTitle must be a non-empty string');
     });
-
-    it('throws TypeError for invalid timeoutSeconds', () => {
-      const params = validParams();
-      params.timeoutSeconds = -1;
-
-      expect(() => new ApprovalRequest(params))
-        .toThrow(TypeError);
-      expect(() => new ApprovalRequest(params))
-        .toThrow('timeoutSeconds must be a positive integer');
-    });
-
-    it('throws TypeError for non-integer timeoutSeconds', () => {
-      const params = validParams();
-      params.timeoutSeconds = 3.14;
-
-      expect(() => new ApprovalRequest(params))
-        .toThrow(TypeError);
-    });
   });
 
   describe('immutability', () => {
@@ -176,13 +157,6 @@ describe('ApprovalRequest', () => {
       expect(approval.isRejected()).toBe(true);
     });
 
-    it('isTimeout returns true for timeout status', () => {
-      const params = validParams();
-      params.status = 'timeout';
-      const approval = new ApprovalRequest(params);
-      expect(approval.isTimeout()).toBe(true);
-    });
-
     it('isResolved returns true for non-pending status', () => {
       const params = validParams();
       params.status = 'approved';
@@ -200,20 +174,6 @@ describe('ApprovalRequest', () => {
       params.type = 'milestone';
       const approval = new ApprovalRequest(params);
       expect(approval.isMilestone()).toBe(true);
-    });
-
-    it('isExpired returns true when past timeout', () => {
-      const params = validParams();
-      params.createdAt = new Date(Date.now() - 400000).toISOString(); // 400s ago
-      params.timeoutSeconds = 300; // 5 min timeout
-      
-      const approval = new ApprovalRequest(params);
-      expect(approval.isExpired()).toBe(true);
-    });
-
-    it('isExpired returns false when within timeout', () => {
-      const approval = new ApprovalRequest(validParams());
-      expect(approval.isExpired()).toBe(false);
     });
   });
 
@@ -292,29 +252,6 @@ describe('ApprovalRequest', () => {
           .toThrow('Cannot reject non-pending approval');
       });
     });
-
-    describe('markTimeout()', () => {
-      it('creates new timeout instance', () => {
-        const approval = new ApprovalRequest(validParams());
-        const timeout = approval.markTimeout();
-
-        expect(timeout).not.toBe(approval);
-        expect(timeout.isTimeout()).toBe(true);
-        expect(timeout.resolvedBy).toBe('system_timeout');
-        expect(timeout.resolvedAt).toBeDefined();
-      });
-
-      it('throws Error for non-pending approval', () => {
-        const params = validParams();
-        params.status = 'timeout';
-        const approval = new ApprovalRequest(params);
-
-        expect(() => approval.markTimeout())
-          .toThrow(Error);
-        expect(() => approval.markTimeout())
-          .toThrow('Cannot timeout non-pending approval');
-      });
-    });
   });
 
   describe('serialization', () => {
@@ -334,7 +271,6 @@ describe('ApprovalRequest', () => {
       expect(json.planned_actions).toEqual(params.plannedActions);
       expect(json.estimated_changes).toEqual(params.estimatedChanges);
       expect(json.created_at).toBe(params.createdAt);
-      expect(json.timeout_seconds).toBe(params.timeoutSeconds);
     });
 
     describe('fromJSON', () => {
@@ -348,8 +284,7 @@ describe('ApprovalRequest', () => {
           subject_title: 'Test Step',
           planned_actions: ['action1'],
           estimated_changes: { files_to_create: 1 },
-          created_at: new Date().toISOString(),
-          timeout_seconds: 300
+          created_at: new Date().toISOString()
         };
 
         const approval = ApprovalRequest.fromJSON(json);
@@ -410,52 +345,6 @@ describe('ApprovalRequest', () => {
     it('assertIsInstance throws for null', () => {
       expect(() => ApprovalRequest.assertIsInstance(null))
         .toThrow(TypeError);
-    });
-  });
-
-  describe('timeout calculations', () => {
-    speedProfile('fast'); // Date math, no I/O
-
-    it('getTimeoutAt returns correct timeout date', () => {
-      const now = Date.now();
-      const params = validParams();
-      params.createdAt = new Date(now).toISOString();
-      params.timeoutSeconds = 300;
-
-      const approval = new ApprovalRequest(params);
-      const timeoutAt = approval.getTimeoutAt();
-
-      expect(timeoutAt.getTime()).toBeGreaterThanOrEqual(now + 299000);
-      expect(timeoutAt.getTime()).toBeLessThanOrEqual(now + 301000);
-    });
-
-    it('getRemainingSeconds returns correct value', () => {
-      const params = validParams();
-      params.timeoutSeconds = 300;
-      params.createdAt = new Date(Date.now() - 100000).toISOString(); // 100s ago
-
-      const approval = new ApprovalRequest(params);
-      const remaining = approval.getRemainingSeconds();
-
-      expect(remaining).toBeGreaterThan(195); // ~200s remaining
-      expect(remaining).toBeLessThan(205);
-    });
-
-    it('getRemainingSeconds returns 0 for expired approval', () => {
-      const params = validParams();
-      params.createdAt = new Date(Date.now() - 400000).toISOString();
-      params.timeoutSeconds = 300;
-
-      const approval = new ApprovalRequest(params);
-      expect(approval.getRemainingSeconds()).toBe(0);
-    });
-
-    it('getRemainingSeconds returns 0 for resolved approval', () => {
-      const params = validParams();
-      params.status = 'approved';
-
-      const approval = new ApprovalRequest(params);
-      expect(approval.getRemainingSeconds()).toBe(0);
     });
   });
 });

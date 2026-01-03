@@ -20,7 +20,7 @@ Rails.application.routes.draw do
     end
 
     # Agent configuration routes
-    namespace :agent do
+    scope :agent do
       get "config", to: "agent_config#show"
       post "config/validate", to: "agent_config#validate"
       post "config/test", to: "agent_config#test"

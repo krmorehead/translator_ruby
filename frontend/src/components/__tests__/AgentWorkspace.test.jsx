@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { speed_profile } from "../../test/speedProfile";
 import AgentWorkspace from "../AgentWorkspace";
 import { useAgentStore } from "../../store/agentStore";
+import { ApprovalRequestFactory } from "../../factories/approvalRequestFactory";
 
 describe("AgentWorkspace", () => {
   beforeEach(() => {
@@ -543,24 +544,21 @@ describe("AgentWorkspace", () => {
   });
 
   speed_profile("fast")("shows approval modal when pending approval exists", () => {
-    const mockApproval = {
-      id: "approval-1",
-      type: "step",
-      status: "pending",
-      subjectTitle: "Test Step",
-      isPending: () => true,
-    };
+    // Use real ApprovalRequest class instance, not mock object
+    const pendingApproval = ApprovalRequestFactory.buildStep({
+      subjectTitle: "Test Step"
+    });
 
     useAgentStore.setState({
       sisyphus: {
         ...useAgentStore.getState().sisyphus,
-        pendingApproval: mockApproval,
+        pendingApproval: pendingApproval,
       },
     });
 
     render(<AgentWorkspace />);
 
-    // ApprovalModal should render
+    // ApprovalModal should render with the real domain object
     // Note: Actual text depends on ApprovalModal implementation
   });
 });
