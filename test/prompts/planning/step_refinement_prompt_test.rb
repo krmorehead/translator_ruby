@@ -17,7 +17,7 @@ require "test_helper"
 # - Request refined step with same structure
 # - Output JSON matching PlanStep structure
 class Planning::StepRefinementPromptTest < ActiveSupport::TestCase
-  speed_profile :fast
+    speed_profile :fast
   test "placeholder for future StepRefinementPrompt implementation" do
     # This test serves as a marker that Step Refinement is intentionally not implemented yet.
     # Remove this test when actual implementation begins.
