@@ -336,3 +336,9 @@ class CheckpointRegistryTest < ActiveSupport::TestCase
 end
 
 
+
+
+
+
+
+

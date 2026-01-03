@@ -1,25 +1,21 @@
 # frozen_string_literal: true
 
 # Persistence layer for Sisyphus execution states.
-# Uses Redis for fast, in-memory storage with TTL support.
+# Uses MemoryStore for storage.
 #
 # This store manages ExecutionState objects, providing CRUD operations
 # and list functionality for the ExecutionOrchestrationService.
 #
 # Follows OOP patterns with strict validation and clear error handling.
 class ExecutionStateStore
-  # Default TTL for execution states (7 days)
-  DEFAULT_TTL = 7 * 24 * 60 * 60
-
-  # Redis key prefix for execution states
+  # Key prefix for execution states
   KEY_PREFIX = "sisyphus:execution:"
 
-  # Redis key for the sorted set of execution IDs (sorted by start time)
+  # Key for the sorted set of execution IDs (sorted by start time)
   LIST_KEY = "sisyphus:executions:list"
 
-  def initialize(redis: nil, ttl: DEFAULT_TTL)
-    @redis = redis || Redis.current
-    @ttl = ttl
+  def initialize(store: nil)
+    @store = store || MemoryStore.instance
   end
 
   # Store an execution state
@@ -29,21 +25,17 @@ class ExecutionStateStore
   def save(state)
     validate_state!(state)
 
-    key = redis_key(state.execution_id)
+    key = store_key(state.execution_id)
     serialized = state.to_h.to_json
 
-    # Store the state with TTL
-    @redis.setex(key, @ttl, serialized)
+    @store.set(key, serialized)
 
     # Add to sorted set (score = timestamp for ordering)
     timestamp = Time.parse(state.started_at).to_i
-    @redis.zadd(LIST_KEY, timestamp, state.execution_id)
-
-    # Set TTL on the list as well
-    @redis.expire(LIST_KEY, @ttl)
+    @store.zadd(LIST_KEY, timestamp, state.execution_id)
 
     true
-  rescue Redis::BaseError => e
+  rescue StandardError => e
     Rails.logger.error "Failed to save execution state: #{e.message}"
     false
   end
@@ -55,16 +47,13 @@ class ExecutionStateStore
   def get(execution_id)
     validate_execution_id!(execution_id)
 
-    key = redis_key(execution_id)
-    serialized = @redis.get(key)
+    key = store_key(execution_id)
+    serialized = @store.get(key)
 
     return nil if serialized.nil?
 
     hash = JSON.parse(serialized)
     Execution::ExecutionState.from_h(hash)
-  rescue Redis::BaseError => e
-    Rails.logger.error "Failed to get execution state: #{e.message}"
-    nil
   rescue JSON::ParserError => e
     Rails.logger.error "Failed to parse execution state: #{e.message}"
     nil
@@ -76,13 +65,10 @@ class ExecutionStateStore
   # @return [Array<Execution::ExecutionState>] Array of execution states
   def list(limit: 50)
     # Get execution IDs from sorted set (descending order = most recent first)
-    execution_ids = @redis.zrevrange(LIST_KEY, 0, limit - 1)
+    execution_ids = @store.zrevrange(LIST_KEY, 0, limit - 1)
 
     # Fetch each execution state
     execution_ids.map { |id| get(id) }.compact
-  rescue Redis::BaseError => e
-    Rails.logger.error "Failed to list executions: #{e.message}"
-    []
   end
 
   # Delete an execution state
@@ -92,16 +78,13 @@ class ExecutionStateStore
   def delete(execution_id)
     validate_execution_id!(execution_id)
 
-    key = redis_key(execution_id)
-    result = @redis.del(key)
+    key = store_key(execution_id)
+    result = @store.del(key)
 
     # Remove from sorted set
-    @redis.zrem(LIST_KEY, execution_id)
+    @store.zrem(LIST_KEY, execution_id)
 
     result > 0
-  rescue Redis::BaseError => e
-    Rails.logger.error "Failed to delete execution state: #{e.message}"
-    false
   end
 
   # Check if an execution state exists
@@ -111,11 +94,8 @@ class ExecutionStateStore
   def exists?(execution_id)
     validate_execution_id!(execution_id)
 
-    key = redis_key(execution_id)
-    @redis.exists?(key)
-  rescue Redis::BaseError => e
-    Rails.logger.error "Failed to check execution existence: #{e.message}"
-    false
+    key = store_key(execution_id)
+    @store.exists?(key)
   end
 
   # Update execution state
@@ -139,7 +119,7 @@ class ExecutionStateStore
   #
   # @return [Integer] Number of states cleared
   def clear_all
-    execution_ids = @redis.zrange(LIST_KEY, 0, -1)
+    execution_ids = @store.zrange(LIST_KEY, 0, -1)
 
     count = 0
     execution_ids.each do |id|
@@ -147,17 +127,14 @@ class ExecutionStateStore
     end
 
     # Clear the list itself
-    @redis.del(LIST_KEY)
+    @store.del(LIST_KEY)
 
     count
-  rescue Redis::BaseError => e
-    Rails.logger.error "Failed to clear execution states: #{e.message}"
-    0
   end
 
   private
 
-  def redis_key(execution_id)
+  def store_key(execution_id)
     "#{KEY_PREFIX}#{execution_id}"
   end
 
@@ -172,5 +149,3 @@ class ExecutionStateStore
     raise ArgumentError, "execution_id cannot be empty" if execution_id.strip.empty?
   end
 end
-
-

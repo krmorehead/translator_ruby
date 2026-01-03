@@ -249,3 +249,9 @@ end
 - OpenAI Embeddings API: text-embedding-3-small
 
 
+
+
+
+
+
+

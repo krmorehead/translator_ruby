@@ -187,3 +187,9 @@ class ChatMessageTest < ActiveSupport::TestCase
 end
 
 
+
+
+
+
+
+

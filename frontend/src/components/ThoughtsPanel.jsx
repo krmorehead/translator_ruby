@@ -141,3 +141,9 @@ const ThoughtsPanel = () => {
 export default ThoughtsPanel;
 
 
+
+
+
+
+
+

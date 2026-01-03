@@ -1011,3 +1011,9 @@ export const ProjectBrowserContainer = () => {
 - **Test everything**: Backend follows TDD, frontend tests all components
 
 
+
+
+
+
+
+

@@ -2,6 +2,13 @@
 
 FactoryBot.define do
   # Factory for Execution::ApprovalRequest
+  #
+  # Approvals have three statuses only:
+  # - :pending - waiting for user action
+  # - :approved - user approved
+  # - :rejected - user rejected
+  #
+  # There is NO timeout status. Approvals wait forever for user action.
   factory :approval_request, class: "Execution::ApprovalRequest" do
     skip_create
 
@@ -14,7 +21,6 @@ FactoryBot.define do
       step_title { "Test Step #{SecureRandom.hex(2)}" }
       actions { [] }
       changes { {} }
-      timeout { 300 }
     end
 
     initialize_with do
@@ -27,8 +33,7 @@ FactoryBot.define do
         subject_title: step_title,
         planned_actions: actions,
         estimated_changes: changes,
-        created_at: Time.now.utc.iso8601,
-        timeout_seconds: timeout
+        created_at: Time.now.utc.iso8601
       )
     end
 
@@ -60,7 +65,7 @@ FactoryBot.define do
         approval_status { :approved }
       end
 
-      after(:build) do |request, evaluator|
+      after(:build) do |request, _evaluator|
         # Return an approved version
         request.approve(resolved_by: "test_user")
       end
@@ -71,20 +76,9 @@ FactoryBot.define do
         approval_status { :rejected }
       end
 
-      after(:build) do |request, evaluator|
+      after(:build) do |request, _evaluator|
         # Return a rejected version
         request.reject(resolved_by: "test_user")
-      end
-    end
-
-    trait :timeout do
-      transient do
-        approval_status { :timeout }
-      end
-
-      after(:build) do |request, evaluator|
-        # Return a timed out version
-        request.mark_timeout
       end
     end
 
@@ -119,49 +113,6 @@ FactoryBot.define do
       with_estimated_changes
     end
 
-    # Timing traits
-    trait :expired do
-      transient do
-        timeout { 300 }
-      end
-
-      initialize_with do
-        new(
-          id: request_id,
-          execution_id: exec_id,
-          type: approval_type,
-          status: approval_status,
-          subject_id: step_id,
-          subject_title: step_title,
-          planned_actions: actions,
-          estimated_changes: changes,
-          created_at: (Time.now.utc - 400).iso8601, # Created 400s ago
-          timeout_seconds: timeout # Timeout is 300s, so it's expired
-        )
-      end
-    end
-
-    trait :about_to_expire do
-      transient do
-        timeout { 300 }
-      end
-
-      initialize_with do
-        new(
-          id: request_id,
-          execution_id: exec_id,
-          type: approval_type,
-          status: approval_status,
-          subject_id: step_id,
-          subject_title: step_title,
-          planned_actions: actions,
-          estimated_changes: changes,
-          created_at: (Time.now.utc - 280).iso8601, # 20 seconds remaining
-          timeout_seconds: timeout
-        )
-      end
-    end
-
     # Convenience combined traits
     trait :step_approval_with_details do
       step
@@ -174,4 +125,3 @@ FactoryBot.define do
     end
   end
 end
-

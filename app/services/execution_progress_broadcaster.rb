@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Service for broadcasting worker execution progress events.
-# Uses Redis pub/sub to enable real-time updates to connected clients.
+# Uses in-memory pub/sub to enable real-time updates to connected clients.
 #
 # This is a general-purpose broadcaster that can be used by any worker
 # (SisyphusWorker, DaedalusWorker, ProjectPlannerWorker, etc.) to publish
@@ -10,10 +10,11 @@
 #
 # Follows OOP patterns with strict validation.
 class ExecutionProgressBroadcaster
-  # Redis channel prefix for execution events
+  # Channel prefix for execution events
   CHANNEL_PREFIX = "worker:progress:"
 
   # Event types
+  # NOTE: There is NO approval_timeout event - approvals wait forever
   EVENT_TYPES = %i[
     started
     milestone_started
@@ -29,11 +30,41 @@ class ExecutionProgressBroadcaster
     approval_required
     approval_approved
     approval_rejected
-    approval_timeout
   ].freeze
 
-  def initialize(redis: nil)
-    @redis = redis || Redis.current
+  # In-memory subscribers (class-level for sharing across instances)
+  @subscribers = {}
+  @mutex = Mutex.new
+
+  class << self
+    attr_reader :subscribers, :mutex
+
+    def add_subscriber(channel, callback)
+      @mutex.synchronize do
+        @subscribers[channel] ||= []
+        @subscribers[channel] << callback
+      end
+    end
+
+    def remove_subscriber(channel, callback)
+      @mutex.synchronize do
+        @subscribers[channel]&.delete(callback)
+      end
+    end
+
+    def publish(channel, message)
+      callbacks = @mutex.synchronize { @subscribers[channel]&.dup || [] }
+      callbacks.each { |cb| cb.call(message) }
+      callbacks.size
+    end
+
+    def clear_subscribers
+      @mutex.synchronize { @subscribers.clear }
+    end
+  end
+
+  def initialize
+    # No external dependencies needed
   end
 
   # Broadcast a progress event
@@ -46,7 +77,7 @@ class ExecutionProgressBroadcaster
     validate_params!(execution_id, event_type)
 
     channel = channel_name(execution_id)
-    
+
     event = {
       execution_id: execution_id,
       event_type: event_type,
@@ -56,9 +87,9 @@ class ExecutionProgressBroadcaster
 
     serialized = event.to_json
 
-    # Publish to Redis channel
-    @redis.publish(channel, serialized)
-  rescue Redis::BaseError => e
+    # Publish to channel
+    self.class.publish(channel, serialized)
+  rescue StandardError => e
     Rails.logger.error "Failed to broadcast progress event: #{e.message}"
     0
   end
@@ -74,16 +105,26 @@ class ExecutionProgressBroadcaster
 
     channel = channel_name(execution_id)
 
-    @redis.subscribe(channel) do |on|
-      on.message do |_channel, message|
-        event = JSON.parse(message).deep_symbolize_keys
-        block.call(event)
-      end
+    callback = lambda do |message|
+      event = JSON.parse(message).deep_symbolize_keys
+      block.call(event)
+    rescue JSON::ParserError => e
+      Rails.logger.error "Failed to parse progress event: #{e.message}"
     end
-  rescue Redis::BaseError => e
-    Rails.logger.error "Failed to subscribe to progress events: #{e.message}"
-  rescue JSON::ParserError => e
-    Rails.logger.error "Failed to parse progress event: #{e.message}"
+
+    self.class.add_subscriber(channel, callback)
+
+    # Return the callback so it can be removed later
+    callback
+  end
+
+  # Unsubscribe from progress events
+  #
+  # @param execution_id [String] The execution identifier
+  # @param callback [Proc] The callback that was returned from subscribe
+  def unsubscribe(execution_id:, callback:)
+    channel = channel_name(execution_id)
+    self.class.remove_subscriber(channel, callback)
   end
 
   # Broadcast execution started event
@@ -291,4 +332,3 @@ class ExecutionProgressBroadcaster
     end
   end
 end
-
