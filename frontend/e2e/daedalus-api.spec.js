@@ -1,5 +1,4 @@
 import { expect, slow } from "./base-test";
-import * as path from "path";
 
 /**
  * Daedalus Plan Generation E2E Tests
@@ -10,8 +9,8 @@ import * as path from "path";
  * CRITICAL: Timeout = FAILURE (not expected)
  */
 
-const PROJECT_ROOT = path.resolve(process.cwd(), "..");
-const EXAMPLE_CODEBASE_PATH = path.join(PROJECT_ROOT, "test/fixtures/example_codebase");
+// Use absolute path - the Rails project root
+const EXAMPLE_CODEBASE_PATH = "/home/kyle/Side_Projects/translator_ruby/test/fixtures/example_codebase";
 
 slow("daedalus-api - should generate simple plan with real LLM", async ({ request }) => {
   const response = await request.post("http://localhost:4000/daedalus/create", {
