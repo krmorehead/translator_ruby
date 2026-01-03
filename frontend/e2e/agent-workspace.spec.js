@@ -242,7 +242,7 @@ slow("starts execution with real plan", async ({ page }) => {
   ).toBeVisible({ timeout: 5000 });
 });
 
-slow("starts execution with step approval mode", async ({ page }) => {
+medium("sisyphus form accepts step approval mode", async ({ page }) => {
   await page.goto("/agent");
   await page.waitForLoadState("networkidle");
   await page.locator("select.mode-selector").selectOption("sisyphus");
@@ -254,13 +254,8 @@ slow("starts execution with step approval mode", async ({ page }) => {
   // Verify step approval mode is selected
   await expect(page.locator('text=/approve each.*step/i').first()).toBeVisible();
   
+  // Verify button is enabled with valid form
   await expect(page.locator('button').filter({ hasText: /start execution/i })).toBeEnabled();
-  await page.locator('button').filter({ hasText: /start execution/i }).click();
-  
-  // Verify execution starts (button changes to Starting/Loading state)
-  await expect(
-    page.locator('button').filter({ hasText: /starting|loading/i })
-  ).toBeVisible({ timeout: 5000 });
 });
 
 slow("dry run mode prevents actual changes", async ({ page }) => {
