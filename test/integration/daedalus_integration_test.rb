@@ -93,7 +93,7 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
     assert metadata[:step_count] > 0
 
     Rails.logger.info("✅ Complete Daedalus workflow executed successfully")
-    Rails.logger.info("   Final state: #{worker.state}")
+    Rails.logger.info("   Final state: #{worker.current_state}")
     Rails.logger.info("   Milestones: #{execution_plan.milestone_count}")
     Rails.logger.info("   Steps: #{execution_plan.step_count}")
     Rails.logger.info("   Plan file: #{paths[:plan_path]}")
