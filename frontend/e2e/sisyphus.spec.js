@@ -21,7 +21,7 @@ medium("sisyphus - should load Sisyphus workspace", async ({ page }) => {
   
   await ensureSisyphusMode(page);
   
-  await expect(page.locator("h1").filter({ hasText: /sisyphus/i })).toBeVisible({ timeout: 5000 });
+  await expect(page.locator("h1").filter({ hasText: /sisyphus/i })).toBeVisible();
 });
 
 medium("sisyphus - should show execution controls", async ({ page }) => {
