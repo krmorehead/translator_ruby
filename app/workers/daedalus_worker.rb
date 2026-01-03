@@ -21,7 +21,7 @@
 #   puts result[:output_paths][:plan_path]
 #
 class DaedalusWorker < BaseWorker
-  attr_reader :research_memory, :analysis_results, :execution_plan, :output_paths
+  attr_reader :research_memory, :analysis_results, :execution_plan, :output_paths, :path
 
   # Register workflows this worker uses
   register_workflow CodebaseAnalysisWorkflow
@@ -51,8 +51,9 @@ class DaedalusWorker < BaseWorker
   # @param context [Hash] Optional hints/context
   def initialize(goal:, path:, context:, **options)
     validate_init_params!(goal, path)
-    super(goal: goal, path: path, context: context, **options)
+    super(goal: goal, context: context, **options)
 
+    @path = path
     @research_memory = nil
     @analysis_results = nil
     @execution_plan = nil

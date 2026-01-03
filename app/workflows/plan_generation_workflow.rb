@@ -59,8 +59,8 @@ class PlanGenerationWorkflow < BaseWorkflow
     trigger(:generated)
     parse_plan
 
-    # Complete
-    mark_complete(@execution_plan)
+    # Complete - mark with hash representation for memory
+    mark_complete(@execution_plan.to_h)
     @execution_plan
   rescue => e
     mark_failed("Plan generation failed: #{e.message}")
