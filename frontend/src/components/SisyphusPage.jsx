@@ -1,5 +1,6 @@
 import React from "react";
 import { useSisyphusStore } from "../store/sisyphusStore";
+import ApprovalModal from "./ApprovalModal";
 import "./chat.css";
 
 /**
@@ -25,8 +26,12 @@ function SisyphusPage() {
     // Project state
     projectPath,
     planPath,
+    dryRun,
+    approvalMode,
     setProjectPath,
     setPlanPath,
+    setDryRun,
+    setApprovalMode,
 
     // Actions
     startExecution,
@@ -41,7 +46,18 @@ function SisyphusPage() {
 
     // Config state
     config,
-    configLoading
+    configLoading,
+
+    // Approval state
+    pendingApproval,
+    approvalLoading,
+    approvalError,
+    fetchPendingApproval,
+    approveRequest,
+    rejectRequest,
+    startApprovalPolling,
+    stopApprovalPolling,
+    clearApproval
   } = useSisyphusStore();
 
   const [initialized, setInitialized] = React.useState(false);
@@ -55,12 +71,58 @@ function SisyphusPage() {
     }
   }, [initialized, fetchExecutions, loadConfig]);
 
+  // Cleanup polling on unmount
+  React.useEffect(() => {
+    return () => {
+      stopApprovalPolling();
+    };
+  }, [stopApprovalPolling]);
+
   const handleStartExecution = async () => {
     if (!planPath || !projectPath) {
       alert("Please specify both plan path and project path");
       return;
     }
-    await startExecution(planPath, projectPath);
+    
+    try {
+      const options = {
+        dry_run: dryRun,
+        approval_mode: approvalMode
+      };
+      
+      const result = await startExecution(planPath, projectPath, options);
+      
+      // Start polling for approval requests if execution started successfully
+      // (only needed if approval mode is not autonomous)
+      if (result && result.execution_id && approvalMode !== "autonomous") {
+        startApprovalPolling(result.execution_id);
+      }
+    } catch (error) {
+      console.error("Failed to start execution:", error);
+      // Error is already set in store
+    }
+  };
+
+  const handleApprove = async (requestId) => {
+    try {
+      await approveRequest(requestId);
+    } catch (error) {
+      console.error("Failed to approve:", error);
+      alert(`Failed to approve: ${error.message}`);
+    }
+  };
+
+  const handleReject = async (requestId) => {
+    try {
+      await rejectRequest(requestId);
+    } catch (error) {
+      console.error("Failed to reject:", error);
+      alert(`Failed to reject: ${error.message}`);
+    }
+  };
+
+  const handleCloseApprovalModal = () => {
+    clearApproval();
   };
 
   const handleBrowseProject = async () => {
@@ -74,6 +136,17 @@ function SisyphusPage() {
   return (
     <div className="chat-page">
       <div className="chat-container">
+        {/* Approval Modal */}
+        {pendingApproval && (
+          <ApprovalModal
+            approval={pendingApproval}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onClose={handleCloseApprovalModal}
+            loading={approvalLoading}
+          />
+        )}
+
         {/* Header */}
         <div style={{ padding: "1rem", borderBottom: "1px solid #ccc" }}>
           <h1>Sisyphus Agent Worker</h1>
@@ -131,6 +204,83 @@ function SisyphusPage() {
                   borderRadius: "4px"
                 }}
               />
+            </div>
+
+            {/* Execution Options */}
+            <div style={{
+              marginBottom: "1rem",
+              padding: "1rem",
+              background: "#f5f5f5",
+              borderRadius: "4px",
+              border: "1px solid #ddd"
+            }}>
+              <div style={{ fontWeight: "bold", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
+                Execution Options
+              </div>
+
+              {/* Dry Run Toggle */}
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label style={{
+                  display: "flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  fontSize: "0.9rem"
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={dryRun}
+                    onChange={(e) => setDryRun(e.target.checked)}
+                    style={{ marginRight: "0.5rem", cursor: "pointer" }}
+                  />
+                  <span>
+                    Dry Run Mode
+                    {dryRun && (
+                      <span style={{
+                        marginLeft: "0.5rem",
+                        padding: "0.125rem 0.5rem",
+                        background: "#FF9800",
+                        color: "white",
+                        borderRadius: "8px",
+                        fontSize: "0.7rem",
+                        fontWeight: "bold"
+                      }}>
+                        PREVIEW ONLY
+                      </span>
+                    )}
+                  </span>
+                </label>
+                <div style={{ fontSize: "0.75rem", color: "#666", marginLeft: "1.5rem", marginTop: "0.25rem" }}>
+                  {dryRun ? "Changes will be simulated, not executed" : "Changes will be executed for real"}
+                </div>
+              </div>
+
+              {/* Approval Mode Selector */}
+              <div>
+                <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: "bold" }}>
+                  Approval Mode
+                </label>
+                <select
+                  value={approvalMode}
+                  onChange={(e) => setApprovalMode(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem",
+                    border: "1px solid #ccc",
+                    borderRadius: "4px",
+                    fontSize: "0.85rem",
+                    cursor: "pointer"
+                  }}
+                >
+                  <option value="autonomous">Autonomous (No approvals)</option>
+                  <option value="step">Step (Approve each step)</option>
+                  <option value="milestone">Milestone (Approve each milestone)</option>
+                </select>
+                <div style={{ fontSize: "0.75rem", color: "#666", marginTop: "0.25rem" }}>
+                  {approvalMode === "autonomous" && "Execution runs automatically"}
+                  {approvalMode === "step" && "You'll approve each individual step"}
+                  {approvalMode === "milestone" && "You'll approve each milestone (group of steps)"}
+                </div>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -231,6 +381,22 @@ function SisyphusPage() {
 
             {currentExecution ? (
               <div>
+                {/* Dry Run Warning Banner */}
+                {dryRun && (
+                  <div style={{
+                    padding: "1rem",
+                    marginBottom: "1rem",
+                    background: "#fff3cd",
+                    border: "2px solid #ffc107",
+                    borderRadius: "4px",
+                    color: "#856404",
+                    fontWeight: "bold",
+                    textAlign: "center"
+                  }}>
+                    🔍 DRY RUN MODE - Changes are simulated, not executed
+                  </div>
+                )}
+
                 <div style={{ marginBottom: "1rem" }}>
                   <div style={{ fontWeight: "bold", marginBottom: "0.5rem" }}>
                     Execution ID
@@ -257,6 +423,20 @@ function SisyphusPage() {
                   }}>
                     {currentExecution.status.toUpperCase()}
                   </div>
+                  {pendingApproval && (
+                    <div style={{
+                      display: "inline-block",
+                      marginLeft: "0.5rem",
+                      padding: "0.25rem 0.75rem",
+                      background: "#FF9800",
+                      color: "white",
+                      borderRadius: "12px",
+                      fontSize: "0.85rem",
+                      fontWeight: "bold"
+                    }}>
+                      ⏸️ AWAITING APPROVAL
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ marginBottom: "1rem" }}>

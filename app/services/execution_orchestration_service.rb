@@ -5,7 +5,12 @@
 #
 # This service wraps SisyphusWorker and provides a stateless API
 # for starting, querying, and managing autonomous execution workers.
+#
+# Uses ExecutionStateStore for persistent state tracking.
 class ExecutionOrchestrationService
+  def initialize(state_store: nil)
+    @state_store = state_store || ExecutionStateStore.new
+  end
   # Starts a new Sisyphus execution
   #
   # @param plan_path [String] Path to the execution plan markdown file
@@ -26,9 +31,15 @@ class ExecutionOrchestrationService
       started_at: Time.now.utc.iso8601
     )
 
+    # Persist the initial state
+    unless @state_store.save(state)
+      return {
+        success: false,
+        error: "Failed to persist execution state"
+      }
+    end
+
     # Start SisyphusWorker asynchronously
-    # Note: In a real implementation, this would use background jobs
-    # For now, we return the state and let the worker run
     begin
       # Try to enqueue with Sidekiq, but don't fail if Sidekiq isn't running
       begin
@@ -38,10 +49,20 @@ class ExecutionOrchestrationService
         Rails.logger.warn "Sidekiq not available: #{e.message}"
       end
 
+      # Update state to RUNNING
+      running_state = Execution::ExecutionState.new(
+        execution_id: execution_id,
+        plan_path: plan_path,
+        project_path: project_path,
+        status: Execution::ExecutionState::RUNNING,
+        started_at: state.started_at
+      )
+      @state_store.save(running_state)
+
       {
         success: true,
         execution_id: execution_id,
-        state: state.to_h,
+        state: running_state.to_h,
         message: "Execution started successfully"
       }
     rescue StandardError => e
@@ -60,13 +81,14 @@ class ExecutionOrchestrationService
     validate_execution_id!(execution_id)
 
     begin
-      # Query the worker status from Sidekiq
-      # This is a simplified implementation
-      # In production, you'd query Sidekiq's job status API
+      state = @state_store.get(execution_id)
 
-      # For now, return a mock state
-      # Real implementation would track state in Redis or database
-      state = build_execution_state(execution_id)
+      if state.nil?
+        return {
+          success: false,
+          error: "Execution not found: #{execution_id}"
+        }
+      end
 
       {
         success: true,
@@ -86,14 +108,12 @@ class ExecutionOrchestrationService
   # @return [Hash] Result with array of execution states
   def list_executions(limit: 50)
     begin
-      # In a real implementation, this would query a database
-      # or Redis for tracked executions
-      # For now, return empty array
+      executions = @state_store.list(limit: limit)
 
       {
         success: true,
-        executions: [],
-        count: 0
+        executions: executions.map(&:to_h),
+        count: executions.size
       }
     rescue StandardError => e
       {
@@ -111,13 +131,44 @@ class ExecutionOrchestrationService
     validate_execution_id!(execution_id)
 
     begin
-      # Find and stop the Sidekiq job
-      # This is a simplified implementation
-      # Real implementation would use Sidekiq API
+      # Get current state
+      state = @state_store.get(execution_id)
+
+      if state.nil?
+        return {
+          success: false,
+          error: "Execution not found: #{execution_id}"
+        }
+      end
+
+      # Can only cancel running or pending executions
+      unless state.running? || state.pending?
+        return {
+          success: false,
+          error: "Cannot cancel execution with status: #{state.status}"
+        }
+      end
+
+      # Update state to FAILED with cancellation message
+      cancelled_state = Execution::ExecutionState.new(
+        execution_id: state.execution_id,
+        plan_path: state.plan_path,
+        project_path: state.project_path,
+        status: Execution::ExecutionState::FAILED,
+        started_at: state.started_at,
+        completed_at: Time.now.utc.iso8601,
+        error: "Execution cancelled by user"
+      )
+
+      @state_store.save(cancelled_state)
+
+      # Note: Actual Sidekiq job cancellation would happen here
+      # For now, we just mark as failed in the store
 
       {
         success: true,
-        message: "Execution cancelled successfully"
+        message: "Execution cancelled successfully",
+        state: cancelled_state.to_h
       }
     rescue StandardError => e
       {
@@ -147,19 +198,6 @@ class ExecutionOrchestrationService
   def validate_execution_id!(execution_id)
     raise ArgumentError, "execution_id must be a String" unless execution_id.is_a?(String)
     raise ArgumentError, "execution_id cannot be empty" if execution_id.strip.empty?
-  end
-
-  def build_execution_state(execution_id)
-    # This is a simplified implementation
-    # Real implementation would query actual state from storage
-    Execution::ExecutionState.new(
-      execution_id: execution_id,
-      plan_path: "unknown",
-      project_path: "unknown",
-      status: Execution::ExecutionState::RUNNING,
-      progress_percentage: 0.0,
-      started_at: Time.now.utc.iso8601
-    )
   end
 end
 

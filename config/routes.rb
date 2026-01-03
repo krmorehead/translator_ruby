@@ -51,8 +51,15 @@ Rails.application.routes.draw do
   # Sisyphus API routes
   post "/api/sisyphus/executions", to: "sisyphus#create_execution"
   get "/api/sisyphus/executions", to: "sisyphus#list_executions"
+  get "/api/sisyphus/executions/:execution_id/stream", to: "sisyphus#stream_execution"
   get "/api/sisyphus/executions/:execution_id", to: "sisyphus#show_execution"
   delete "/api/sisyphus/executions/:execution_id", to: "sisyphus#cancel_execution"
+  
+  # Approval routes
+  get "/api/sisyphus/approvals/pending", to: "sisyphus#pending_approvals"
+  get "/api/sisyphus/approvals/:request_id", to: "sisyphus#show_approval"
+  post "/api/sisyphus/approvals/:request_id/approve", to: "sisyphus#approve_request"
+  post "/api/sisyphus/approvals/:request_id/reject", to: "sisyphus#reject_request"
   
   # File system operations
   get "/api/sisyphus/filesystem/tree", to: "sisyphus#file_tree"
@@ -63,7 +70,7 @@ Rails.application.routes.draw do
   get "/api/sisyphus/config", to: "sisyphus#show_config"
   post "/api/sisyphus/config/validate", to: "sisyphus#validate_config"
   post "/api/sisyphus/config/test", to: "sisyphus#test_connection"
-
+  
   # React SPA entry (built frontend/dist)
   root to: "dnd_chat#spa"
   get "/inspector", to: "dnd_chat#spa"

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import * as sisyphusApi from "../api/sisyphusApi";
+import { ApprovalRequest } from "../models/ApprovalRequest";
 
 export const useSisyphusStore = create((set, get) => ({
   executions: [],
@@ -22,6 +23,16 @@ export const useSisyphusStore = create((set, get) => ({
   searchLoading: false,
   projectPath: "",
   planPath: "",
+  
+  // Execution options
+  dryRun: false,
+  approvalMode: "autonomous",
+  
+  // Approval state - stores ApprovalRequest instances, not raw JSON
+  pendingApproval: null, // ApprovalRequest instance or null
+  approvalLoading: false,
+  approvalError: "",
+  approvalPollingInterval: null,
 
   startExecution: async (planPath, projectPath, options = {}) => {
     set({ executionLoading: true, executionError: "" });
@@ -29,8 +40,10 @@ export const useSisyphusStore = create((set, get) => ({
       const result = await sisyphusApi.createExecution({ planPath, projectPath, options });
       set({ currentExecution: result.state, executionLoading: false });
       get().addExecution(result.state);
+      return result; // Return the full result including execution_id
     } catch (error) {
       set({ executionError: error.message, executionLoading: false });
+      throw error;
     }
   },
 
@@ -153,35 +166,199 @@ export const useSisyphusStore = create((set, get) => ({
 
   setProjectPath: (path) => set({ projectPath: path }),
   setPlanPath: (path) => set({ planPath: path }),
+  setDryRun: (enabled) => set({ dryRun: enabled }),
+  setApprovalMode: (mode) => set({ approvalMode: mode }),
 
-  reset: () => set({
-    executions: [],
-    currentExecution: null,
-    executionLoading: false,
-    executionError: "",
-    currentPath: "",
-    fileTree: null,
-    selectedFile: null,
-    fileContent: "",
-    fileLoading: false,
-    fileError: "",
-    config: null,
-    configLoading: false,
-    configError: "",
-    testResults: {},
-    searchPattern: "",
-    searchPath: "",
-    searchResults: null,
-    searchLoading: false,
-    projectPath: "",
-    planPath: ""
-  }),
+  // Approval actions - work with ApprovalRequest objects
 
-  resetExecution: () => set({
-    currentExecution: null,
-    executionLoading: false,
-    executionError: ""
-  }),
+  /**
+   * Fetch pending approval for an execution
+   * @param {string} executionId - Execution ID
+   * @returns {Promise<ApprovalRequest|null>} ApprovalRequest instance or null
+   */
+  fetchPendingApproval: async (executionId) => {
+    if (!executionId || typeof executionId !== "string") {
+      const error = "executionId must be a non-empty string";
+      set({ approvalError: error, pendingApproval: null });
+      throw new Error(error);
+    }
+
+    try {
+      // API returns ApprovalRequest instance or null
+      const approval = await sisyphusApi.getPendingApproval(executionId);
+      
+      // Validate if approval returned
+      if (approval !== null && !(approval instanceof ApprovalRequest)) {
+        throw new Error("API must return ApprovalRequest instance or null - got: " + typeof approval);
+      }
+      
+      set({ pendingApproval: approval, approvalError: "" });
+      return approval;
+    } catch (error) {
+      set({ approvalError: error.message, pendingApproval: null });
+      throw error;
+    }
+  },
+
+  /**
+   * Approve a request
+   * @param {string} requestId - Request ID
+   * @returns {Promise<boolean>} Success status
+   */
+  approveRequest: async (requestId) => {
+    if (!requestId || typeof requestId !== "string") {
+      const error = "requestId must be a non-empty string";
+      set({ approvalError: error });
+      throw new Error(error);
+    }
+
+    set({ approvalLoading: true, approvalError: "" });
+    try {
+      // API returns updated ApprovalRequest instance
+      const updatedApproval = await sisyphusApi.approveRequest(requestId, "user");
+      
+      // Validate returned instance
+      if (!(updatedApproval instanceof ApprovalRequest)) {
+        throw new Error("API must return ApprovalRequest instance - got: " + typeof updatedApproval);
+      }
+      
+      if (!updatedApproval.isApproved()) {
+        throw new Error("Approval request was not marked as approved");
+      }
+      
+      set({ 
+        pendingApproval: null, 
+        approvalLoading: false 
+      });
+      return true;
+    } catch (error) {
+      set({ approvalError: error.message, approvalLoading: false });
+      throw error;
+    }
+  },
+
+  /**
+   * Reject a request
+   * @param {string} requestId - Request ID
+   * @returns {Promise<boolean>} Success status
+   */
+  rejectRequest: async (requestId) => {
+    if (!requestId || typeof requestId !== "string") {
+      const error = "requestId must be a non-empty string";
+      set({ approvalError: error });
+      throw new Error(error);
+    }
+
+    set({ approvalLoading: true, approvalError: "" });
+    try {
+      // API returns updated ApprovalRequest instance
+      const updatedApproval = await sisyphusApi.rejectRequest(requestId, "user");
+      
+      // Validate returned instance
+      if (!(updatedApproval instanceof ApprovalRequest)) {
+        throw new Error("API must return ApprovalRequest instance - got: " + typeof updatedApproval);
+      }
+      
+      if (!updatedApproval.isRejected()) {
+        throw new Error("Approval request was not marked as rejected");
+      }
+      
+      set({ 
+        pendingApproval: null, 
+        approvalLoading: false 
+      });
+      return true;
+    } catch (error) {
+      set({ approvalError: error.message, approvalLoading: false });
+      throw error;
+    }
+  },
+
+  startApprovalPolling: (executionId, intervalMs = 2000) => {
+    // Clear any existing interval
+    const state = get();
+    if (state.approvalPollingInterval) {
+      clearInterval(state.approvalPollingInterval);
+    }
+
+    // Start polling
+    const interval = setInterval(async () => {
+      const approval = await get().fetchPendingApproval(executionId);
+      
+      // Stop polling if execution is complete or failed
+      const currentExec = get().currentExecution;
+      if (currentExec && ["complete", "failed", "cancelled"].includes(currentExec.status)) {
+        get().stopApprovalPolling();
+      }
+    }, intervalMs);
+
+    set({ approvalPollingInterval: interval });
+  },
+
+  stopApprovalPolling: () => {
+    const state = get();
+    if (state.approvalPollingInterval) {
+      clearInterval(state.approvalPollingInterval);
+      set({ approvalPollingInterval: null });
+    }
+  },
+
+  clearApproval: () => {
+    set({ pendingApproval: null, approvalError: "" });
+  },
+
+  reset: () => {
+    const state = get();
+    if (state.approvalPollingInterval) {
+      clearInterval(state.approvalPollingInterval);
+    }
+    
+    set({
+      executions: [],
+      currentExecution: null,
+      executionLoading: false,
+      executionError: "",
+      currentPath: "",
+      fileTree: null,
+      selectedFile: null,
+      fileContent: "",
+      fileLoading: false,
+      fileError: "",
+      config: null,
+      configLoading: false,
+      configError: "",
+      testResults: {},
+      searchPattern: "",
+      searchPath: "",
+      searchResults: null,
+      searchLoading: false,
+      projectPath: "",
+      planPath: "",
+      dryRun: false,
+      approvalMode: "autonomous",
+      pendingApproval: null,
+      approvalLoading: false,
+      approvalError: "",
+      approvalPollingInterval: null
+    });
+  },
+
+  resetExecution: () => {
+    const state = get();
+    if (state.approvalPollingInterval) {
+      clearInterval(state.approvalPollingInterval);
+    }
+    
+    set({
+      currentExecution: null,
+      executionLoading: false,
+      executionError: "",
+      pendingApproval: null,
+      approvalLoading: false,
+      approvalError: "",
+      approvalPollingInterval: null
+    });
+  },
 
   resetFileBrowser: () => set({
     currentPath: "",

@@ -44,6 +44,9 @@ gem "llm_client", "~> 0.1"
 # ISO 639 language codes
 gem "iso639"
 
+# Browser automation for testing
+gem "ferrum", "~> 0.15"
+
 # Load environment variables from .env file
 gem "dotenv-rails", groups: [ :development, :test ]
 

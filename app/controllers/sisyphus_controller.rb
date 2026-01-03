@@ -4,8 +4,11 @@
 # Provides RESTful API endpoints for execution management,
 # configuration, and file system operations.
 #
+# Includes ActionController::Live and StreamableExecution for SSE support.
 # Follows the same patterns as DndChatController and ProjectPlanningController.
 class SisyphusController < ApplicationController
+  include ActionController::Live
+  include StreamableExecution
   # Serve the Sisyphus SPA from the built React app
   def index
     public_index = Rails.root.join("public", "index.html")
@@ -74,6 +77,12 @@ class SisyphusController < ApplicationController
     render json: { error: "Internal server error" }, status: :internal_server_error
   end
 
+  # GET /api/sisyphus/executions/:execution_id/stream
+  # Stream execution progress via Server-Sent Events (SSE)
+  def stream_execution
+    stream_execution_progress(params[:execution_id])
+  end
+
   # DELETE /api/sisyphus/executions/:execution_id
   # Cancel an execution
   def cancel_execution
@@ -88,6 +97,79 @@ class SisyphusController < ApplicationController
     end
   rescue StandardError => e
     Rails.logger.error "Failed to cancel execution: #{e.message}"
+    render json: { error: "Internal server error" }, status: :internal_server_error
+  end
+
+  # Approval endpoints
+
+  # GET /api/sisyphus/approvals/pending
+  # Get pending approval requests
+  def pending_approvals
+    execution_id = params[:execution_id]
+
+    if execution_id
+      # Get pending approval for specific execution
+      request = approval_store.get_pending_for_execution(execution_id)
+      render json: { approval: request&.to_h }
+    else
+      # Get all pending approvals (future enhancement)
+      render json: { error: "execution_id parameter required" }, status: :bad_request
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to get pending approvals: #{e.message}"
+    render json: { error: "Internal server error" }, status: :internal_server_error
+  end
+
+  # POST /api/sisyphus/approvals/:request_id/approve
+  # Approve an approval request
+  def approve_request
+    request_id = params[:request_id]
+    resolved_by = params[:resolved_by] || "user"
+
+    request = approval_store.approve(request_id: request_id, resolved_by: resolved_by)
+
+    if request
+      render json: { success: true, approval: request.to_h }
+    else
+      render json: { error: "Approval request not found" }, status: :not_found
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to approve request: #{e.message}"
+    render json: { error: "Internal server error" }, status: :internal_server_error
+  end
+
+  # POST /api/sisyphus/approvals/:request_id/reject
+  # Reject an approval request
+  def reject_request
+    request_id = params[:request_id]
+    resolved_by = params[:resolved_by] || "user"
+
+    request = approval_store.reject(request_id: request_id, resolved_by: resolved_by)
+
+    if request
+      render json: { success: true, approval: request.to_h }
+    else
+      render json: { error: "Approval request not found" }, status: :not_found
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to reject request: #{e.message}"
+    render json: { error: "Internal server error" }, status: :internal_server_error
+  end
+
+  # GET /api/sisyphus/approvals/:request_id
+  # Get approval request status
+  def show_approval
+    request_id = params[:request_id]
+
+    request = approval_store.get(request_id)
+
+    if request
+      render json: { approval: request.to_h }
+    else
+      render json: { error: "Approval request not found" }, status: :not_found
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to get approval status: #{e.message}"
     render json: { error: "Internal server error" }, status: :internal_server_error
   end
 
@@ -202,6 +284,10 @@ class SisyphusController < ApplicationController
 
   def config_service
     @config_service ||= ConfigurationService.new
+  end
+
+  def approval_store
+    @approval_store ||= ApprovalRequestStore.new
   end
 
   def file_tree_options

@@ -224,7 +224,7 @@ class SisyphusWorker < BaseWorker
     Rails.logger.warn "[SisyphusWorker] Checkpoint service unavailable: #{e.message}"
     nil
   end
-  
+
   # Build SisyphusContext for current execution state
   # Creates proper Context object (not hash) for workflows
   # @return [Contexts::SisyphusContext] Context with current execution state
@@ -446,14 +446,14 @@ class SisyphusWorker < BaseWorker
     
         # Build proper SisyphusContext for evaluation
         sisyphus_context = build_sisyphus_context
-        
-        evaluation_workflow.setup(
-          step: step,
-          step_result: step_result,
-          path: @path,
+    
+    evaluation_workflow.setup(
+      step: step,
+      step_result: step_result,
+      path: @path,
           context: sisyphus_context,
-          system_prompt: nil
-        )
+      system_prompt: nil
+    )
     
     evaluation_workflow.execute
   rescue StandardError => e

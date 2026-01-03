@@ -202,7 +202,7 @@ module Execution
       # Fallback: extract data from context.to_h
       context_data = @execution_context.to_h
       sisyphus_data = context_data[:sisyphus_context] || {}
-      
+
       parts = []
       parts << "**Codebase**: #{sisyphus_data[:codebase_path]}" if sisyphus_data[:codebase_path]
       parts << "**Goal**: #{sisyphus_data[:plan_goal]}" if sisyphus_data[:plan_goal]

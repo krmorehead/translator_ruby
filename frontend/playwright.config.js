@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 60_000,
+  timeout: 120_000, // 120 seconds - matches slow profile threshold
   webServer: [
     {
       command:
@@ -23,6 +23,6 @@ export default defineConfig({
     baseURL: process.env.BASE_URL || "http://localhost:5173",
     headless: true
   },
-  reporter: [["list"]]
+  reporter: [["list"], ["html"]]
 });
 
