@@ -251,8 +251,8 @@ medium("sisyphus form accepts step approval mode", async ({ page }) => {
   await page.locator('#planPath').fill("/home/kyle/Side_Projects/translator_ruby/test/fixtures/simple_plan.md");
   await page.locator('#approvalMode').selectOption("step");
   
-  // Verify step approval mode is selected
-  await expect(page.locator('text=/approve each.*step/i').first()).toBeVisible();
+  // Verify step approval mode help text is visible
+  await expect(page.locator('p').filter({ hasText: /approve.*individual.*step/i })).toBeVisible();
   
   // Verify button is enabled with valid form
   await expect(page.locator('button').filter({ hasText: /start execution/i })).toBeEnabled();
