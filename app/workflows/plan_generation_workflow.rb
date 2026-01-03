@@ -97,12 +97,11 @@ class PlanGenerationWorkflow < BaseWorkflow
       }
     )
 
-    # Call LLM with planning prompt
+    # Execute prompt - it handles LLM call and response parsing
     # The prompt instructs LLM to use tools (file_tree, grep, read_file) to explore
-    result = GenericLlmClient.call(
-      system: prompt.system_message,
-      user: prompt.user_message,
-      response_format: { type: "json_object" }
+    result = prompt.execute(
+      prompt: prompt.user_message,
+      context: nil  # Context is already embedded in the prompt
     )
 
     @raw_plan_response = result[:content]
@@ -110,14 +109,15 @@ class PlanGenerationWorkflow < BaseWorkflow
     record_decision(
       decision: "Received plan from LLM",
       rationale: "Successfully generated plan structure",
-      context: { response_length: @raw_plan_response.length }
+      context: { response_length: @raw_plan_response.to_s.length }
     )
   end
 
   # Parse LLM response into ExecutionPlan object
   def parse_plan
-    # Parse JSON response
-    plan_data = JSON.parse(@raw_plan_response, symbolize_names: true)
+    # If response is already a hash (from JSON parsing), use it directly
+    # Otherwise parse as JSON string
+    plan_data = @raw_plan_response.is_a?(Hash) ? @raw_plan_response : JSON.parse(@raw_plan_response, symbolize_names: true)
 
     # Convert to ExecutionPlan object
     @execution_plan = Planning::ExecutionPlan.from_h(plan_data)
