@@ -150,10 +150,10 @@ class PlanGenerationWorkflow < BaseWorkflow
     return nil unless @context
     
     # Get all entries with "hint" or "additional_context" topics
-    hint_entries = @context.find_by_topic("hint") + @context.find_by_topic("additional_context")
+    hint_entries = @context.by_topic("hint") + @context.by_topic("additional_context")
     return nil if hint_entries.empty?
     
     # Combine all hint content
-    hint_entries.map { |entry| entry[:content] }.join("\n")
+    hint_entries.map(&:content).join("\n")
   end
 end
