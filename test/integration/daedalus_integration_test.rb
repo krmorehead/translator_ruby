@@ -88,7 +88,7 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
     # Verify metadata
     assert result.key?(:metadata), "Result should contain metadata"
     metadata = result[:metadata]
-    assert_equal "complete", metadata[:final_state]
+    assert_equal :complete, metadata[:final_state]
     assert metadata[:milestone_count] > 0
     assert metadata[:step_count] > 0
 
