@@ -1,90 +1,88 @@
 # frozen_string_literal: true
 
 # Daedalus - The master architect and planner of Greek mythology.
-# This worker analyzes user requests and generates structured execution plans.
+# This worker generates structured execution plans by exploring the codebase.
 # Named after Daedalus, the legendary craftsman who built the Labyrinth and
 # designed wings that could fly - a fitting symbol for careful planning and execution.
 #
-# Inspired by Cline's "Plan Mode" but adapted to our OOP architecture.
+# Inspired by Cline's "Plan Mode" - tools are used directly during planning
+# rather than in a separate analysis phase.
 #
-# Flow:
-# 1. Analyze codebase (CodebaseAnalysisWorkflow)
-# 2. Generate plan (PlanGenerationWorkflow)
-# 3. Write output files (PlanOutputService)
+# Flow (following Cline pattern):
+# 1. Generate plan with embedded codebase exploration
+# 2. Write output files (PlanOutputService)
 #
 # @example
 #   worker = DaedalusWorker.new(
 #     goal: "Create a new feature",
-#     path: "/path/to/codebase"
+#     path: "/path/to/codebase",
+#     context: Contexts::BaseContext.new
 #   )
 #   result = worker.execute
 #   puts result[:output_paths][:plan_path]
 #
 class DaedalusWorker < BaseWorker
-  attr_reader :research_memory, :analysis_results, :execution_plan, :output_paths, :path
+  attr_reader :research_memory, :execution_plan, :output_paths, :path
 
   # Register workflows this worker uses
-  register_workflow CodebaseAnalysisWorkflow
   register_workflow PlanGenerationWorkflow
+
+  # Register tools for direct codebase exploration (Cline pattern)
+  # Daedalus uses tools directly rather than delegating to workflows
+  register_tool FileTreeTool
+  register_tool GrepTool
+  register_tool ReadFileTool
 
   # Plan-specific states (extends base worker)
   initial_state :pending
 
   state :pending,     description: "Worker created"
   state :running,     description: "Initializing"
-  state :analyzing,   description: "Analyzing codebase"
-  state :planning,    description: "Generating plan"
+  state :planning,    description: "Generating plan with codebase exploration"
   state :writing,     description: "Writing output files"
   state :complete,    description: "Completed"
   state :failed,      description: "Failed"
 
   transition from: :pending, to: :running, on: :start
-  transition from: :running, to: :analyzing, on: :initialized
-  transition from: :analyzing, to: :planning, on: :analyzed
+  transition from: :running, to: :planning, on: :initialized
   transition from: :planning, to: :writing, on: :planned
   transition from: :writing, to: :complete, on: :finish
-  transition from: [:running, :analyzing, :planning, :writing], to: :failed, on: :fail
+  transition from: [:running, :planning, :writing], to: :failed, on: :fail
   transition from: :failed, to: :pending, on: :retry
 
   # @param goal [String] What to accomplish
   # @param path [String] Codebase root
-  # @param context [Hash] Optional hints/context
+  # @param context [Contexts::BaseContext] Context for planning
   def initialize(goal:, path:, context:, **options)
     validate_init_params!(goal, path)
     super(goal: goal, context: context, **options)
 
     @path = path
     @research_memory = nil
-    @analysis_results = nil
     @execution_plan = nil
     @output_paths = nil
   end
 
   # Execute the full planning pipeline
-  # @return [Hash] Result with execution_plan, output_paths, analysis_summary, metadata
+  # Following Cline: tools are used directly during planning
+  # @return [Hash] Result with execution_plan, output_paths, metadata
   def execute
     trigger(:start)
     initialize_worker
 
-    # Phase 1: Analyze codebase
+    # Phase 1: Generate plan (with embedded codebase exploration)
     trigger(:initialized)
-    run_analysis
-
-    # Phase 2: Generate plan
-    trigger(:analyzed)
     run_planning
 
-    # Phase 3: Write output files
+    # Phase 2: Write output files
     trigger(:planned)
     write_output_files
 
-    # Complete and build result
+    # Complete
     trigger(:finish)
     build_result
   rescue => e
-    mark_failed("DaedalusWorker failed: #{e.message}")
-    Rails.logger.error("DaedalusWorker error: #{e.message}\n#{e.backtrace.join("\n")}")
-    { error: e.message }
+    handle_error(e)
   end
 
   # Initialize worker memory
@@ -93,38 +91,22 @@ class DaedalusWorker < BaseWorker
     @research_memory = ResearchMemoryStore.new(path: store_path, owner_id: @owner_id)
     # Store goal in research_goal section (it's an array)
     @research_memory.set_section(:research_goal, [goal])
+
+    Rails.logger.info("DaedalusWorker: Initialized with goal: #{goal}")
   end
 
   private
 
-  # Run codebase analysis workflow
-  def run_analysis
-    workflow = CodebaseAnalysisWorkflow.new(
-      goal: goal,
-      path: path,
-      owner_id: owner_id,
-      parent_memory: @research_memory
-    )
-
-    @analysis_results = workflow.execute
-
-    # Store analysis results in findings
-    @research_memory.update_section(
-      name: :findings,
-      content: @analysis_results
-    )
-
-    Rails.logger.info("DaedalusWorker: Analysis found #{@analysis_results[:relevant_files].size} relevant files")
-  end
-
-  # Run plan generation workflow
+  # Generate plan using PlanGenerationWorkflow
+  # Following Cline: workflow uses tools directly to explore codebase as needed
+  # No separate analysis phase - exploration happens during planning
   def run_planning
     workflow = PlanGenerationWorkflow.new(
       goal: goal,
-      analysis_results: @analysis_results,
+      path: @path,  # Pass path for codebase exploration
       owner_id: owner_id,
       parent_memory: @research_memory,
-      context: context  # Pass BaseContext object directly
+      context: context
     )
 
     @execution_plan = workflow.execute
@@ -161,11 +143,6 @@ class DaedalusWorker < BaseWorker
     @result = {
       execution_plan: @execution_plan,
       output_paths: @output_paths,
-      analysis_summary: {
-        relevant_files: @analysis_results[:relevant_files],
-        patterns: @analysis_results[:patterns],
-        constraints: @analysis_results[:constraints]
-      },
       metadata: {
         goal: goal,
         path: path,
@@ -179,6 +156,13 @@ class DaedalusWorker < BaseWorker
     # Update metadata with final state
     @result[:metadata][:final_state] = current_state
     @result
+  end
+
+  # Handle errors during execution
+  def handle_error(error)
+    mark_failed("DaedalusWorker failed: #{error.message}")
+    Rails.logger.error("DaedalusWorker error: #{error.message}\n#{error.backtrace.join("\n")}")
+    { error: error.message }
   end
 
   # Mark worker as failed

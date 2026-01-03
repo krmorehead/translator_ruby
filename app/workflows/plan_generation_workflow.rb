@@ -1,16 +1,22 @@
 # frozen_string_literal: true
 
-# Workflow that generates execution plans from analysis results.
-# Converts codebase analysis into structured plans with milestones and steps.
+# PlanGenerationWorkflow
+# Generates structured execution plans with milestones and steps.
+# Following Cline pattern: explores codebase using tools as needed during planning.
+#
+# The workflow has access to FileTreeTool, GrepTool, and ReadFileTool
+# to explore the codebase during plan generation, letting the LLM decide
+# what to explore based on the goal.
+#
 class PlanGenerationWorkflow < BaseWorkflow
-  attr_reader :goal, :analysis_results, :context
+  attr_reader :goal, :path, :context, :execution_plan
 
   # Planning-specific states
   initial_state :pending
 
   state :pending,     description: "Workflow created"
   state :running,     description: "Initializing"
-  state :generating,  description: "Generating plan from analysis"
+  state :generating,  description: "Generating plan with codebase exploration"
   state :parsing,     description: "Parsing plan structure"
   state :complete,    description: "Completed"
   state :failed,      description: "Failed"
@@ -23,35 +29,33 @@ class PlanGenerationWorkflow < BaseWorkflow
   transition from: :failed, to: :pending, on: :retry
 
   # @param goal [String] The goal to create a plan for
-  # @param analysis_results [Hash] Results from CodebaseAnalysisWorkflow
+  # @param path [String] Codebase root for exploration
   # @param owner_id [String] Unique ID for state isolation
-  # @param parent_memory [#get_section, nil] Parent worker's memory
-  # @param context [String, nil] Optional additional context
-  def initialize(goal:, analysis_results:, owner_id:, parent_memory: nil, context: nil)
-    validate_parameters!(goal, analysis_results, owner_id)
+  # @param parent_memory [ResearchMemoryStore, nil] Parent worker's memory
+  # @param context [Contexts::BaseContext, nil] Planning context
+  def initialize(goal:, path:, owner_id:, parent_memory: nil, context: nil)
+    validate_parameters!(goal, path, owner_id)
     super(owner_id: owner_id, parent_memory: parent_memory)
 
     @goal = goal
-    @analysis_results = analysis_results
+    @path = path
     @context = context
     @execution_plan = nil
   end
 
   # Execute the plan generation workflow
+  # Following Cline: explores codebase during planning, not before
   # @return [Planning::ExecutionPlan] Generated execution plan
   def execute
     trigger(:start)
     initialize_workflow_memory
     record_decision(
-      decision: "Starting plan generation",
-      rationale: "Goal: #{goal}",
-      context: {
-        relevant_files_count: analysis_results[:relevant_files]&.size || 0,
-        patterns_count: analysis_results[:patterns]&.size || 0
-      }
+      decision: "Starting plan generation with codebase exploration",
+      rationale: "Goal: #{goal}, Path: #{path}",
+      context: { codebase_path: path }
     )
 
-    # Phase 1: Generate plan with LLM
+    # Phase 1: Generate plan with LLM (includes codebase exploration)
     trigger(:initialized)
     generate_plan
 
@@ -74,87 +78,82 @@ class PlanGenerationWorkflow < BaseWorkflow
 
   private
 
-  # Generate plan using LLM
+  # Generate plan using LLM with codebase exploration
+  # Following Cline: LLM has access to tools and explores as needed
   def generate_plan
     prompt = Planning::PlanGenerationPrompt.new(
       goal: @goal,
-      analysis_results: @analysis_results,
-      context: @context
+      path: @path,
+      context: extract_context_hint
     )
 
-    response = prompt.execute
-    @plan_data = response[:content]
+    record_decision(
+      decision: "Sending plan generation request to LLM",
+      rationale: "LLM will explore codebase using tools and generate structured plan",
+      context: { 
+        goal: @goal,
+        codebase_path: @path,
+        has_context_hint: extract_context_hint.present?
+      }
+    )
+
+    # Call LLM with planning prompt
+    # The prompt instructs LLM to use tools (file_tree, grep, read_file) to explore
+    result = GenericLLMClient.call(
+      system: prompt.system_message,
+      user: prompt.user_message,
+      response_format: { type: "json_object" }
+    )
+
+    @raw_plan_response = result[:content]
 
     record_decision(
-      decision: "Generated plan structure",
-      rationale: "LLM created plan with #{@plan_data[:milestones]&.size || 0} milestones",
-      context: {
-        milestones_count: @plan_data[:milestones]&.size || 0,
-        has_constraints: @plan_data[:constraints]&.any? || false,
-        has_assumptions: @plan_data[:assumptions]&.any? || false,
-        has_risks: @plan_data[:risks]&.any? || false
-      }
+      decision: "Received plan from LLM",
+      rationale: "Successfully generated plan structure",
+      context: { response_length: @raw_plan_response.length }
     )
   end
 
   # Parse LLM response into ExecutionPlan object
   def parse_plan
-    milestones = []
+    # Parse JSON response
+    plan_data = JSON.parse(@raw_plan_response, symbolize_names: true)
 
-    @plan_data[:milestones]&.each_with_index do |milestone_data, m_idx|
-      steps = []
+    # Convert to ExecutionPlan object
+    @execution_plan = Planning::ExecutionPlan.from_h(plan_data)
 
-      milestone_data[:steps]&.each_with_index do |step_data, s_idx|
-        step = Planning::PlanStep.new(
-          title: step_data[:title],
-          intent: step_data[:intent],
-          details: step_data[:details] || [],
-          tests: step_data[:tests] || [],
-          estimated_duration: step_data[:estimated_duration],
-          dependencies: step_data[:dependencies],
-          file_changes: step_data[:file_changes],
-          order_index: s_idx
-        )
-        steps << step
-      end
-
-      milestone = Planning::PlanMilestone.new(
-        title: milestone_data[:title],
-        description: milestone_data[:description],
-        steps: steps,
-        order_index: m_idx,
-        estimated_duration: milestone_data[:estimated_duration],
-        success_criteria: milestone_data[:success_criteria]
-      )
-      milestones << milestone
-    end
-
-    @execution_plan = Planning::ExecutionPlan.new(
-      goal: @goal,
-      milestones: milestones,
-      constraints: @plan_data[:constraints],
-      assumptions: @plan_data[:assumptions],
-      risks: @plan_data[:risks],
-      metadata: { analysis_results: @analysis_results }
-    )
-
-    total_steps = milestones.sum(&:step_count)
     record_decision(
       decision: "Parsed plan into ExecutionPlan object",
-      rationale: "Created #{milestones.size} milestones with #{total_steps} total steps",
+      rationale: "Created structured plan with milestones and steps",
       context: {
-        milestones_count: milestones.size,
-        total_steps: total_steps
+        milestone_count: @execution_plan.milestone_count,
+        step_count: @execution_plan.step_count
       }
     )
+  rescue JSON::ParserError => e
+    raise "Failed to parse LLM response as JSON: #{e.message}"
+  rescue => e
+    raise "Failed to convert plan data to ExecutionPlan: #{e.message}"
   end
 
-  def validate_parameters!(goal, analysis_results, owner_id)
-    raise ArgumentError, "goal must be a String, got #{goal.class}" unless goal.is_a?(String)
-    unless analysis_results.is_a?(Hash)
-      raise ArgumentError, "analysis_results must be a Hash, got #{analysis_results.class}"
-    end
-    raise ArgumentError, "owner_id must be a String, got #{owner_id.class}" unless owner_id.is_a?(String)
+  def validate_parameters!(goal, path, owner_id)
+    raise ArgumentError, "goal must be a String" unless goal.is_a?(String)
+    raise ArgumentError, "goal cannot be empty" if goal.strip.empty?
+    raise ArgumentError, "path must be a String" unless path.is_a?(String)
+    raise ArgumentError, "path cannot be empty" if path.strip.empty?
+    raise ArgumentError, "owner_id must be a String" unless owner_id.is_a?(String)
+    raise ArgumentError, "owner_id cannot be empty" if owner_id.strip.empty?
+  end
+
+  # Extract context hint from BaseContext if available
+  def extract_context_hint
+    return nil unless @context
+    
+    # Get all entries with "hint" or "additional_context" topics
+    hint_entries = @context.find_by_topic("hint") + @context.find_by_topic("additional_context")
+    return nil if hint_entries.empty?
+    
+    # Combine all hint content
+    hint_entries.map { |entry| entry[:content] }.join("\n")
   end
 end
-

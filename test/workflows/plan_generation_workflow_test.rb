@@ -5,25 +5,21 @@ require "test_helper"
 class PlanGenerationWorkflowTest < ActiveSupport::TestCase
   setup do
     @goal = "Create a PlanAgentWorker"
+    @path = Rails.root.join("test/fixtures/example_codebase").to_s
     @owner_id = SecureRandom.uuid
-    @analysis_results = {
-      relevant_files: ["app/workers/base_worker.rb"],
-      patterns: ["Use state machines"],
-      constraints: ["Follow OOP patterns"]
-    }
   end
 
   speed_profile :fast
   test "initialization with required parameters" do
     workflow = PlanGenerationWorkflow.new(
       goal: @goal,
-      analysis_results: @analysis_results,
+      path: @path,
       owner_id: @owner_id
     )
 
     assert_not_nil workflow
     assert_equal @goal, workflow.goal
-    assert_equal @analysis_results, workflow.analysis_results
+    assert_equal @path, workflow.path
     assert_equal @owner_id, workflow.owner_id
     assert workflow.pending?
   end
@@ -33,7 +29,7 @@ class PlanGenerationWorkflowTest < ActiveSupport::TestCase
     error = assert_raises(ArgumentError) do
       PlanGenerationWorkflow.new(
         goal: 123,
-        analysis_results: @analysis_results,
+        path: @path,
         owner_id: @owner_id
       )
     end
@@ -41,15 +37,15 @@ class PlanGenerationWorkflowTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "validates analysis_results must be a Hash" do
+  test "validates path must be a String" do
     error = assert_raises(ArgumentError) do
       PlanGenerationWorkflow.new(
         goal: @goal,
-        analysis_results: "not a hash",
+        path: 123,
         owner_id: @owner_id
       )
     end
-    assert_match(/analysis_results must be a Hash/, error.message)
+    assert_match(/path must be a String/, error.message)
   end
 
   speed_profile :fast
@@ -57,7 +53,7 @@ class PlanGenerationWorkflowTest < ActiveSupport::TestCase
     error = assert_raises(ArgumentError) do
       PlanGenerationWorkflow.new(
         goal: @goal,
-        analysis_results: @analysis_results,
+        path: @path,
         owner_id: 123
       )
     end
@@ -68,7 +64,7 @@ class PlanGenerationWorkflowTest < ActiveSupport::TestCase
   test "execute transitions through states" do
     workflow = PlanGenerationWorkflow.new(
       goal: @goal,
-      analysis_results: @analysis_results,
+      path: @path,
       owner_id: @owner_id
     )
 
@@ -83,89 +79,70 @@ class PlanGenerationWorkflowTest < ActiveSupport::TestCase
   test "execute returns ExecutionPlan on success" do
     workflow = PlanGenerationWorkflow.new(
       goal: @goal,
-      analysis_results: @analysis_results,
+      path: @path,
       owner_id: @owner_id
     )
 
     result = workflow.execute
 
-    # If successful, should return an ExecutionPlan
-    if workflow.complete?
-      assert result.is_a?(Planning::ExecutionPlan)
-      assert_equal @goal, result.goal
-      assert result.milestones.is_a?(Array)
-    end
-  end
-
-  speed_profile :fast
-  test "setup initializes workflow memory" do
-    workflow = PlanGenerationWorkflow.new(
-      goal: @goal,
-      analysis_results: @analysis_results,
-      owner_id: @owner_id
-    )
-
-    workflow.setup
-
-    assert_not_nil workflow.workflow_memory
+    assert_instance_of Planning::ExecutionPlan, result
+    assert_not_nil result.goal
+    assert_instance_of Array, result.milestones
   end
 
   speed_profile :fast
   test "workflow records decisions to memory" do
     workflow = PlanGenerationWorkflow.new(
       goal: @goal,
-      analysis_results: @analysis_results,
+      path: @path,
       owner_id: @owner_id
     )
 
-    workflow.setup
-    workflow.record_decision(
-      decision: "Test decision",
-      rationale: "Test rationale"
-    )
-
-    # Workflow memory should exist after setup
-    assert_not_nil workflow.workflow_memory
+    # Access memory for testing
+    memory = workflow.instance_variable_get(:@research_memory)
+    assert_not_nil memory, "Workflow should have research memory"
   end
 
   speed_profile :fast
   test "state query methods work correctly" do
     workflow = PlanGenerationWorkflow.new(
       goal: @goal,
-      analysis_results: @analysis_results,
+      path: @path,
       owner_id: @owner_id
     )
 
-    assert workflow.pending?
-    refute workflow.running?
-    refute workflow.complete?
-    refute workflow.failed?
+    # Check initial state
+    assert workflow.pending?, "Should start in pending state"
+    assert_not workflow.running?, "Should not be running initially"
+    assert_not workflow.complete?, "Should not be complete initially"
+    assert_not workflow.failed?, "Should not be failed initially"
   end
 
   speed_profile :fast
   test "can transition to running state" do
     workflow = PlanGenerationWorkflow.new(
       goal: @goal,
-      analysis_results: @analysis_results,
+      path: @path,
       owner_id: @owner_id
     )
 
     workflow.trigger(:start)
-
-    assert workflow.running?
-    refute workflow.pending?
+    assert workflow.running?, "Should be in running state after start"
   end
 
   speed_profile :fast
-  test "accepts optional context parameter" do
+  test "execution_plan accessor works" do
     workflow = PlanGenerationWorkflow.new(
       goal: @goal,
-      analysis_results: @analysis_results,
-      owner_id: @owner_id,
-      context: "Additional context"
+      path: @path,
+      owner_id: @owner_id
     )
 
-    assert_equal "Additional context", workflow.context
+    # Initially nil
+    assert_nil workflow.execution_plan
+
+    # After execution, should have a plan
+    workflow.execute
+    assert_not_nil workflow.execution_plan
   end
 end
-

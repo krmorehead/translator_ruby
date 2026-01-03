@@ -39,11 +39,6 @@ class DaedalusController < ApplicationController
   #       "json_path": "string",
   #       "metadata_path": "string"
   #     },
-  #     "analysis_summary": {
-  #       "relevant_files": ["array"],
-  #       "patterns": ["array"],
-  #       "constraints": ["array"]
-  #     },
   #     "metadata": { ... }
   #   }
   def create

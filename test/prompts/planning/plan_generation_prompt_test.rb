@@ -4,32 +4,29 @@ require "test_helper"
 
 module Planning
   class PlanGenerationPromptTest < ActiveSupport::TestCase
+    setup do
+      @goal = "Create a PlanAgentWorker"
+      @path = Rails.root.join("test/fixtures/example_codebase").to_s
+    end
+
     speed_profile :fast
     test "initialization with required parameters" do
-      analysis_results = {
-        relevant_files: ["app/workers/base_worker.rb"],
-        patterns: ["Use state machines"],
-        constraints: ["Follow OOP"]
-      }
-
       prompt = PlanGenerationPrompt.new(
-        goal: "Create a PlanAgentWorker",
-        analysis_results: analysis_results
+        goal: @goal,
+        path: @path
       )
 
       assert_not_nil prompt
-      assert_equal "Create a PlanAgentWorker", prompt.goal
-      assert_equal analysis_results, prompt.analysis_results
+      assert_equal @goal, prompt.goal
+      assert_equal @path, prompt.path
       assert_nil prompt.context
     end
 
     speed_profile :fast
     test "initialization with optional context" do
-      analysis_results = { relevant_files: [] }
-      
       prompt = PlanGenerationPrompt.new(
-        goal: "Create a PlanAgentWorker",
-        analysis_results: analysis_results,
+        goal: @goal,
+        path: @path,
         context: "Additional context info"
       )
 
@@ -41,185 +38,125 @@ module Planning
       error = assert_raises(ArgumentError) do
         PlanGenerationPrompt.new(
           goal: 123,
-          analysis_results: {}
+          path: @path
         )
       end
       assert_match(/goal must be a String/, error.message)
     end
 
     speed_profile :fast
-    test "validates analysis_results must be a Hash" do
+    test "validates path must be a String" do
       error = assert_raises(ArgumentError) do
         PlanGenerationPrompt.new(
-          goal: "Test goal",
-          analysis_results: "not a hash"
+          goal: @goal,
+          path: 123
         )
       end
-      assert_match(/analysis_results must be a Hash/, error.message)
+      assert_match(/path must be a String/, error.message)
     end
 
     speed_profile :fast
-    test "system_prompt includes plan structure guidance" do
+    test "system_message includes codebase exploration guidance" do
       prompt = PlanGenerationPrompt.new(
-        goal: "Test goal",
-        analysis_results: {}
+        goal: @goal,
+        path: @path
       )
 
-      system_msg = prompt.system_prompt
+      system_msg = prompt.system_message
 
-      assert_includes system_msg, "execution plan"
-      assert_includes system_msg, "milestone"
-      assert_includes system_msg, "step"
+      assert_includes system_msg, "explore"
+      assert_includes system_msg, "codebase"
+      assert_includes system_msg, "tools"
     end
 
     speed_profile :fast
-    test "system_prompt emphasizes small testable incremental steps" do
+    test "system_message mentions available tools" do
       prompt = PlanGenerationPrompt.new(
-        goal: "Test goal",
-        analysis_results: {}
+        goal: @goal,
+        path: @path
       )
 
-      system_msg = prompt.system_prompt
+      system_msg = prompt.system_message
 
-      assert_includes system_msg.downcase, "small"
-      assert_includes system_msg.downcase, "testable"
-      assert_includes system_msg.downcase, "incremental"
+      assert_includes system_msg, "file_tree"
+      assert_includes system_msg, "grep"
+      assert_includes system_msg, "read_file"
     end
 
     speed_profile :fast
-    test "build_user_message includes goal" do
+    test "system_message emphasizes exploring before planning" do
       prompt = PlanGenerationPrompt.new(
-        goal: "Create a PlanAgentWorker",
-        analysis_results: {}
+        goal: @goal,
+        path: @path
       )
 
-      user_msg = prompt.build_user_message
+      system_msg = prompt.system_message
 
-      assert_includes user_msg, "Create a PlanAgentWorker"
+      assert_includes system_msg.downcase, "explore"
+      assert_includes system_msg.downcase, "understand"
     end
 
     speed_profile :fast
-    test "build_user_message includes analysis results" do
-      analysis_results = {
-        relevant_files: ["app/workers/base_worker.rb", "app/workflows/base_workflow.rb"],
-        patterns: ["Use state machines", "Follow OOP patterns"],
-        constraints: ["Must write tests first"]
-      }
-
+    test "user_message includes goal" do
       prompt = PlanGenerationPrompt.new(
-        goal: "Create a PlanAgentWorker",
-        analysis_results: analysis_results
+        goal: @goal,
+        path: @path
       )
 
-      user_msg = prompt.build_user_message
+      user_msg = prompt.user_message
 
-      assert_includes user_msg, "app/workers/base_worker.rb"
-      assert_includes user_msg, "app/workflows/base_workflow.rb"
-      assert_includes user_msg, "Use state machines"
-      assert_includes user_msg, "Follow OOP patterns"
-      assert_includes user_msg, "Must write tests first"
+      assert_includes user_msg, @goal
     end
 
     speed_profile :fast
-    test "build_user_message includes optional context when provided" do
+    test "user_message includes path" do
       prompt = PlanGenerationPrompt.new(
-        goal: "Create a PlanAgentWorker",
-        analysis_results: {},
+        goal: @goal,
+        path: @path
+      )
+
+      user_msg = prompt.user_message
+
+      assert_includes user_msg, @path
+    end
+
+    speed_profile :fast
+    test "user_message includes optional context when provided" do
+      prompt = PlanGenerationPrompt.new(
+        goal: @goal,
+        path: @path,
         context: "This is additional context"
       )
 
-      user_msg = prompt.build_user_message
+      user_msg = prompt.user_message
 
       assert_includes user_msg, "This is additional context"
     end
 
     speed_profile :fast
-    test "build_user_message works without optional context" do
+    test "user_message works without optional context" do
       prompt = PlanGenerationPrompt.new(
-        goal: "Create a PlanAgentWorker",
-        analysis_results: {}
+        goal: @goal,
+        path: @path
       )
 
-      user_msg = prompt.build_user_message
+      user_msg = prompt.user_message
 
       assert_not_nil user_msg
       assert user_msg.length > 0
     end
 
     speed_profile :fast
-    test "response_schema specifies json_object format" do
+    test "user_message instructs to explore then plan" do
       prompt = PlanGenerationPrompt.new(
-        goal: "Test goal",
-        analysis_results: {}
+        goal: @goal,
+        path: @path
       )
 
-      schema = prompt.response_schema
+      user_msg = prompt.user_message
 
-      assert_not_nil schema
-      assert_equal "object", schema[:type]
-    end
-
-    speed_profile :fast
-    test "response_schema requires milestones array" do
-      prompt = PlanGenerationPrompt.new(
-        goal: "Test goal",
-        analysis_results: {}
-      )
-
-      schema = prompt.response_schema
-
-      assert_includes schema[:required], "milestones"
-      assert_equal "array", schema[:properties][:milestones][:type]
-    end
-
-    speed_profile :fast
-    test "response_schema defines milestone structure" do
-      prompt = PlanGenerationPrompt.new(
-        goal: "Test goal",
-        analysis_results: {}
-      )
-
-      schema = prompt.response_schema
-      milestone_schema = schema[:properties][:milestones][:items]
-
-      assert_equal "object", milestone_schema[:type]
-      assert_includes milestone_schema[:required], "title"
-      assert_includes milestone_schema[:required], "description"
-      assert_includes milestone_schema[:required], "steps"
-    end
-
-    speed_profile :fast
-    test "response_schema defines step structure" do
-      prompt = PlanGenerationPrompt.new(
-        goal: "Test goal",
-        analysis_results: {}
-      )
-
-      schema = prompt.response_schema
-      milestone_schema = schema[:properties][:milestones][:items]
-      step_schema = milestone_schema[:properties][:steps][:items]
-
-      assert_equal "object", step_schema[:type]
-      assert_includes step_schema[:required], "title"
-      assert_includes step_schema[:required], "intent"
-      assert_includes step_schema[:required], "details"
-      assert_includes step_schema[:required], "tests"
-    end
-
-    speed_profile :fast
-    test "response_schema includes optional fields" do
-      prompt = PlanGenerationPrompt.new(
-        goal: "Test goal",
-        analysis_results: {}
-      )
-
-      schema = prompt.response_schema
-
-      # Optional top-level fields
-      assert schema[:properties].key?(:constraints)
-      assert schema[:properties].key?(:assumptions)
-      assert schema[:properties].key?(:risks)
+      assert_includes user_msg.downcase, "explore"
+      assert_includes user_msg.downcase, "plan"
     end
   end
 end
-
