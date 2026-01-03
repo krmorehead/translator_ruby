@@ -9,6 +9,10 @@ export default defineConfig({
       "/dnd_chat": {
         target: "http://localhost:4000",
         changeOrigin: true
+      },
+      "/daedalus": {
+        target: "http://localhost:4000",
+        changeOrigin: true
       }
     }
   },
