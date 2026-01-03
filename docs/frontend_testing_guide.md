@@ -567,4 +567,214 @@ describe("DaedalusPage", () => {
 - [Vitest Docs](https://vitest.dev/)
 - [Testing Library Best Practices](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
 - Backend Testing: `docs/test_speed_profiling_quick_reference.md`
+- Frontend NO MOCKING: `docs/frontend_testing_no_mocking.md`
+- Frontend Speed Profiling: `docs/frontend_test_speed_profiling.md`
+- OOP Patterns: `docs/references/oop-patterns.md`
 
+---
+
+## UPDATE (January 2026): NO MOCKING POLICY
+
+**IMPORTANT:** This guide's mocking sections are **DEPRECATED**. We now follow a strict NO MOCKING policy across all tests.
+
+### What Changed
+
+❌ **OLD APPROACH (Deprecated)**:
+```javascript
+vi.mock("../../store/myStore");
+
+useMyStore.mockImplementation((selector) => {
+  const state = { value: "mocked" };
+  return selector(state);
+});
+```
+
+✅ **NEW APPROACH (Current)**:
+```javascript
+// NO mocking - use real store
+import { useMyStore } from "../../store/myStore";
+
+beforeEach(() => {
+  useMyStore.getState().reset();
+});
+
+// Use real store
+const state = useMyStore.getState();
+expect(state.value).toBe("real value");
+```
+
+### Why We Changed
+
+**Problems with Mocking:**
+1. Mocks hide integration issues
+2. Mocks drift from real implementations
+3. Tests pass with mocks but fail with real code
+4. More code to maintain (mock setup)
+5. False confidence in test coverage
+
+**Benefits of Real Implementations:**
+1. Tests verify actual behavior
+2. Refactoring safety (real tests fail when contracts break)
+3. Simpler tests (less code)
+4. True integration testing
+5. Fail fast with real errors
+
+### Migration Guide
+
+If you're updating old tests that use mocks:
+
+**Step 1:** Remove all `vi.mock()` calls
+```javascript
+// DELETE THIS
+vi.mock("../../store/daedalusStore");
+```
+
+**Step 2:** Remove mock function declarations
+```javascript
+// DELETE THIS
+const mockSetGoal = vi.fn();
+const mockCreatePlan = vi.fn();
+```
+
+**Step 3:** Use real store with `getState()` and `setState()`
+```javascript
+// ADD THIS
+beforeEach(() => {
+  useDaedalusStore.getState().reset();
+});
+
+// IN TESTS: Use real store
+const state = useDaedalusStore.getState();
+expect(state.goal).toBe("Test goal");
+```
+
+**Step 4:** Add speed profiling
+```javascript
+import { speedProfile } from '../utils/testProfile';
+
+describe('MyComponent', () => {
+  speedProfile('fast'); // or 'medium' or 'slow'
+  
+  // tests...
+});
+```
+
+### Updated Test Pattern
+
+```javascript
+import { describe, test, expect, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { speedProfile } from "../../utils/testProfile";
+import DaedalusPage from "../DaedalusPage";
+import { useDaedalusStore } from "../../store/daedalusStore";
+
+describe("DaedalusPage", () => {
+  speedProfile('fast'); // Declare speed profile
+  
+  beforeEach(() => {
+    // Reset real store before each test
+    useDaedalusStore.getState().reset();
+  });
+
+  test("renders form with inputs", () => {
+    render(<DaedalusPage />);
+    
+    expect(screen.getByLabelText(/goal/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /generate/i })).toBeInTheDocument();
+  });
+
+  test("updates store on input change", () => {
+    render(<DaedalusPage />);
+    
+    const goalInput = screen.getByLabelText(/goal/i);
+    fireEvent.change(goalInput, { target: { value: "Test goal" } });
+    
+    // Verify REAL store updated
+    const state = useDaedalusStore.getState();
+    expect(state.goal).toBe("Test goal");
+  });
+
+  test("displays error from store", () => {
+    // Set real store state
+    useDaedalusStore.setState({ error: "Test error message" });
+    
+    render(<DaedalusPage />);
+    expect(screen.getByText(/test error message/i)).toBeInTheDocument();
+  });
+});
+```
+
+### E2E Tests with Real LLM
+
+For comprehensive E2E tests, use real endpoints and real LLM:
+
+```javascript
+import { test, expect } from "@playwright/test";
+
+const E2E_TEST_TIMEOUT = 120000; // 120 seconds max
+test.setTimeout(E2E_TEST_TIMEOUT);
+
+test.describe("Approval Flow - Real LLM", () => {
+  let testProjectPath;
+  
+  test.beforeEach(async () => {
+    // Create unique test directory
+    testProjectPath = `/tmp/e2e-test-${Date.now()}`;
+    // Setup minimal test plan
+  });
+  
+  test.afterEach(async () => {
+    // Clean up test files
+    // Cancel any running executions
+  });
+  
+  test("approves step with real LLM", async ({ page }) => {
+    // Uses REAL execution service
+    // Uses REAL LLM to parse plan
+    // Uses REAL approval flow
+    
+    await page.goto("http://localhost:5173/sisyphus");
+    
+    // Fill form with real test data
+    await page.getByPlaceholder("/path/to/project").fill(testProjectPath);
+    // ...
+    
+    // Wait for REAL LLM to process
+    const modal = page.getByRole("heading", { name: /Approval Required/i });
+    await modal.waitFor({ state: 'visible', timeout: 60000 });
+    
+    // Approve and verify execution continues
+    await page.getByRole("button", { name: /Approve/i }).click();
+    // ...
+  });
+});
+```
+
+### Key Principles (Updated)
+
+**DO:**
+- ✅ Use real Zustand stores (no mocks)
+- ✅ Use real API clients (or skip if too slow)
+- ✅ Test user-visible behavior
+- ✅ Add speed profiling to all tests
+- ✅ Use factories for test data
+- ✅ Reset stores between tests
+- ✅ Use real LLM in E2E tests (slow profile)
+
+**DON'T:**
+- ❌ Mock stores with `vi.mock()`
+- ❌ Create fake functions with `vi.fn()`
+- ❌ Mock what you're testing
+- ❌ Test implementation details
+- ❌ Skip speed profiling
+- ❌ Create test-only endpoints
+
+### Further Reading
+
+See `docs/frontend_testing_no_mocking.md` for complete details on our NO MOCKING policy and migration guide.
+
+See `docs/frontend_test_speed_profiling.md` for speed profiling requirements and real-world examples.
+
+See `docs/references/oop-patterns.md` for OOP principles that apply to all test code.
+
+---

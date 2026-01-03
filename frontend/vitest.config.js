@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
-    setupFiles: ['./test/setup.js'],
+    setupFiles: ['./src/test/setup.js'],
     globals: true,
     // Speed profiling enforcement
     testTimeout: 120000, // 120 seconds max for any test (slow threshold)

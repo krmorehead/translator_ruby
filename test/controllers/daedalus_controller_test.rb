@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "test_helper"
+
 class DaedalusControllerTest < ActionDispatch::IntegrationTest
   speed_profile :fast
   test "should validate goal is present" do
