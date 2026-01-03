@@ -145,62 +145,87 @@ function AgentWorkspace() {
   };
 
   const renderMilestone = (milestone, index) => {
+    if (!milestone) return null;
+    
+    const steps = milestone.steps || [];
+    const successCriteria = milestone.success_criteria || [];
+    
     return (
-      <div key={milestone.id} className="milestone-card">
+      <div key={milestone.id || index} className="milestone-card">
         <div className="milestone-header">
           <h3>
-            Milestone {index + 1}: {milestone.title}
+            Milestone {index + 1}: {milestone.title || "Untitled"}
           </h3>
         </div>
-        <p className="milestone-description">{milestone.description}</p>
+        {milestone.description && (
+          <p className="milestone-description">{milestone.description}</p>
+        )}
 
-        <p className="milestone-duration">
-          <strong>Estimated Duration:</strong> {milestone.estimated_duration}
-        </p>
+        {milestone.estimated_duration && (
+          <p className="milestone-duration">
+            <strong>Estimated Duration:</strong> {milestone.estimated_duration}
+          </p>
+        )}
 
-        <div className="success-criteria">
-          <strong>Success Criteria:</strong>
-          <ul>
-            {milestone.success_criteria.map((criteria, i) => (
-              <li key={i}>{criteria}</li>
-            ))}
-          </ul>
-        </div>
+        {successCriteria.length > 0 && (
+          <div className="success-criteria">
+            <strong>Success Criteria:</strong>
+            <ul>
+              {successCriteria.map((criteria, i) => (
+                <li key={i}>{criteria}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-        <div className="steps-section">
-          <h4>Steps ({milestone.steps.length})</h4>
-          {milestone.steps.map((step) => (
-            <div key={step.id} className="step-card">
-              <div className="step-header">
-                <h5>
-                  Step {step.milestone_number}.{step.step_number}: {step.title}
-                </h5>
-              </div>
+        {steps.length > 0 && (
+          <div className="steps-section">
+            <h4>Steps ({steps.length})</h4>
+            {steps.map((step, stepIndex) => {
+              if (!step) return null;
+              const details = step.details || [];
+              const tests = step.tests || [];
+              
+              return (
+                <div key={step.id || stepIndex} className="step-card">
+                  <div className="step-header">
+                    <h5>
+                      Step {step.milestone_number || index + 1}.{step.step_number || stepIndex + 1}: {step.title || "Untitled"}
+                    </h5>
+                  </div>
 
-              <p className="step-intent">
-                <strong>Intent:</strong> {step.intent}
-              </p>
+                  {step.intent && (
+                    <p className="step-intent">
+                      <strong>Intent:</strong> {step.intent}
+                    </p>
+                  )}
 
-              <div className="step-details">
-                <strong>Details:</strong>
-                <ul>
-                  {step.details.map((detail, i) => (
-                    <li key={i}>{detail}</li>
-                  ))}
-                </ul>
-              </div>
+                  {details.length > 0 && (
+                    <div className="step-details">
+                      <strong>Details:</strong>
+                      <ul>
+                        {details.map((detail, i) => (
+                          <li key={i}>{detail}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-              <div className="step-tests">
-                <strong>Tests:</strong>
-                <ul>
-                  {step.tests.map((test, i) => (
-                    <li key={i}>{test}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
+                  {tests.length > 0 && (
+                    <div className="step-tests">
+                      <strong>Tests:</strong>
+                      <ul>
+                        {tests.map((test, i) => (
+                          <li key={i}>{test}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
