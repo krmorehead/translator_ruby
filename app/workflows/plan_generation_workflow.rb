@@ -99,7 +99,7 @@ class PlanGenerationWorkflow < BaseWorkflow
 
     # Call LLM with planning prompt
     # The prompt instructs LLM to use tools (file_tree, grep, read_file) to explore
-    result = GenericLLMClient.call(
+    result = GenericLlmClient.call(
       system: prompt.system_message,
       user: prompt.user_message,
       response_format: { type: "json_object" }
