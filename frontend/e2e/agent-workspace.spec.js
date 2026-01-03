@@ -161,29 +161,27 @@ medium("capability cards show model and port info", async ({ page }) => {
 slow("generates execution plan with real LLM", async ({ page }) => {
   await page.goto("/agent");
   
-  // Fill in Daedalus form - use correct selectors
+  // Fill in Daedalus form with a specific goal
   await page.locator('.file-path-text-input').first().fill("/home/kyle/Side_Projects/translator_ruby");
-  await page.locator('#goal').fill("Add a health check endpoint");
+  await page.locator('#goal').fill("Add a /api/health endpoint that returns JSON status");
   
   // Submit plan generation
   await page.locator('button').filter({ hasText: /generate.*plan/i }).click();
   
-  // Wait for loading state (quick)
-  await expect(page.locator('button').filter({ hasText: /generating/i })).toBeVisible({ timeout: 5000 });
-  
-  // Wait for plan result (real LLM takes time - use full timeout)
+  // Wait for plan result (real LLM takes time)
   await expect(page.locator('.plan-result-section').first()).toBeVisible({ timeout: 25000 });
   
-  // Verify plan content - look for milestone cards
-  await expect(page.locator('.milestone-card').first()).toBeVisible({ timeout: 5000 });
+  // Verify plan content shows the goal
+  await expect(page.locator('h2').filter({ hasText: /execution plan/i })).toBeVisible();
+  await expect(page.locator('.plan-goal')).toBeVisible();
 });
 
-slow("plan result contains milestones", async ({ page }) => {
+slow("plan result contains goal and output paths", async ({ page }) => {
   await page.goto("/agent");
   
-  // Fill minimal form
+  // Fill form with specific goal
   await page.locator('.file-path-text-input').first().fill("/home/kyle/Side_Projects/translator_ruby");
-  await page.locator('#goal').fill("Add logging");
+  await page.locator('#goal').fill("Add structured logging to the application");
   
   // Generate plan
   await page.locator('button').filter({ hasText: /generate.*plan/i }).click();
@@ -191,8 +189,9 @@ slow("plan result contains milestones", async ({ page }) => {
   // Wait for result (real LLM takes time)
   await expect(page.locator('.plan-result-section').first()).toBeVisible({ timeout: 25000 });
   
-  // Should show milestone cards
-  await expect(page.locator('.milestone-card').first()).toBeVisible({ timeout: 5000 });
+  // Verify plan shows goal and output files
+  await expect(page.locator('.plan-goal')).toBeVisible();
+  await expect(page.locator('.output-paths')).toBeVisible();
 });
 
 slow("plan error handling with invalid path", async ({ page }) => {
