@@ -47,9 +47,11 @@ class DaedalusController < ApplicationController
   #     "metadata": { ... }
   #   }
   def create
-    goal = params[:goal]
-    path = params[:path]
-    context = params[:context] || {}
+    # Extract values from parameters
+    goal = params.fetch(:goal, nil)
+    path = params.fetch(:path, nil)
+    context_hint = params.dig(:context, :hint)
+    additional_context = params.dig(:context, :additional_context)
 
     # Validate required parameters
     unless goal.present?
@@ -66,14 +68,17 @@ class DaedalusController < ApplicationController
       return render json: { success: false, error: "path does not exist or is not readable" }, status: :unprocessable_entity
     end
 
-    # Normalize context keys to symbols
-    normalized_context = normalize_context(context)
+    # Create Contexts::BaseContext object (translation at API boundary)
+    base_context = build_context(
+      hint: context_hint,
+      additional_context: additional_context
+    )
 
     # Execute Daedalus worker
     result = execute_daedalus(
       goal: goal,
       path: expanded_path,
-      context: normalized_context
+      context: base_context
     )
 
     # Check if worker completed successfully
@@ -98,10 +103,33 @@ class DaedalusController < ApplicationController
 
   private
 
-  def normalize_context(context)
-    return {} if context.blank?
-
-    context.to_h.deep_symbolize_keys
+  # Build Contexts::BaseContext from extracted parameter values
+  # Translation at API boundary - converts request params to domain object
+  # ALWAYS returns a BaseContext object (no fallbacks, no optionals)
+  def build_context(hint:, additional_context:)
+    base_context = Contexts::BaseContext.new
+    
+    # Add hint if provided
+    if hint.present?
+      base_context.add(
+        content: hint,
+        topics: ["planning", "context"],
+        source: "user_input",
+        metadata: { type: "hint" }
+      )
+    end
+    
+    # Add additional_context if provided
+    if additional_context.present?
+      base_context.add(
+        content: additional_context,
+        topics: ["planning", "context"],
+        source: "user_input",
+        metadata: { type: "additional_context" }
+      )
+    end
+    
+    base_context
   end
 
   # Execute Daedalus worker

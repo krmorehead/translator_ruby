@@ -119,15 +119,12 @@ class DaedalusWorker < BaseWorker
 
   # Run plan generation workflow
   def run_planning
-    # Extract additional context if context is a hash-like structure
-    additional_context = context.is_a?(Hash) ? context[:additional_context] : nil
-    
     workflow = PlanGenerationWorkflow.new(
       goal: goal,
       analysis_results: @analysis_results,
       owner_id: owner_id,
       parent_memory: @research_memory,
-      context: additional_context
+      context: context  # Pass BaseContext object directly
     )
 
     @execution_plan = workflow.execute
