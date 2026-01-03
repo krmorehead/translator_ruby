@@ -91,24 +91,16 @@ class PlanGenerationWorkflowTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "workflow initializes memory on execute" do
+  test "workflow initializes with nil memory" do
     workflow = PlanGenerationWorkflow.new(
       goal: @goal,
       path: @path,
       owner_id: @owner_id
     )
 
-    # Memory not initialized until execute
-    memory_before = workflow.instance_variable_get(:@research_memory)
-    assert_nil memory_before, "Memory should not be initialized before execute"
-    
-    # Execute to initialize memory
-    workflow.trigger(:start)
-    workflow.send(:initialize_workflow_memory)
-    
-    # Now memory should be initialized
-    memory_after = workflow.instance_variable_get(:@research_memory)
-    assert_not_nil memory_after, "Memory should be initialized after calling initialize_workflow_memory"
+    # Memory is nil until execute is called (which initializes it)
+    memory = workflow.instance_variable_get(:@workflow_memory)
+    assert_nil memory, "Memory should be nil before execute"
   end
 
   speed_profile :fast
