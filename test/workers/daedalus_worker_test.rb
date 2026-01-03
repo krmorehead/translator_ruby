@@ -141,22 +141,6 @@ class DaedalusWorkerTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "has registered codebase exploration tools" do
-    worker = DaedalusWorker.new(
-      goal: @goal,
-      path: @temp_path,
-      context: daedalus_context
-    )
-
-    tools = DaedalusWorker.registered_tools
-
-    # Cline pattern: tools for direct codebase exploration
-    assert tools.include?(FileTreeTool)
-    assert tools.include?(GrepTool)
-    assert tools.include?(ReadFileTool)
-  end
-
-  speed_profile :fast
   test "initializes memory store" do
     worker = DaedalusWorker.new(
       goal: @goal,

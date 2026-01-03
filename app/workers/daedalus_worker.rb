@@ -27,11 +27,8 @@ class DaedalusWorker < BaseWorker
   # Register workflows this worker uses
   register_workflow PlanGenerationWorkflow
 
-  # Register tools for direct codebase exploration (Cline pattern)
-  # Daedalus uses tools directly rather than delegating to workflows
-  register_tool FileTreeTool
-  register_tool GrepTool
-  register_tool ReadFileTool
+  # Following Cline pattern: Tools are used by LLM during planning
+  # No need to register them at worker level - they're accessed via GenericLLMClient
 
   # Plan-specific states (extends base worker)
   initial_state :pending

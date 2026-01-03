@@ -90,17 +90,27 @@ class PlanGenerationWorkflowTest < ActiveSupport::TestCase
     assert_instance_of Array, result.milestones
   end
 
-  speed_profile :fast
-  test "workflow initializes with nil memory" do
+  speed_profile :slow
+  test "workflow initializes memory on execute" do
     workflow = PlanGenerationWorkflow.new(
       goal: @goal,
       path: @path,
       owner_id: @owner_id
     )
 
-    # Memory is nil until execute is called (which initializes it)
-    memory = workflow.instance_variable_get(:@workflow_memory)
-    assert_nil memory, "Memory should be nil before execute"
+    # Memory is nil before execute
+    memory_before = workflow.workflow_memory
+    assert_nil memory_before, "Memory should be nil before execute"
+    
+    # Execute initializes memory (this hits LLM, so it's slow)
+    result = workflow.execute
+    
+    # After execute, memory should be initialized
+    memory_after = workflow.workflow_memory
+    assert_not_nil memory_after, "Memory should be initialized after execute"
+    
+    # Verify result
+    assert_instance_of Planning::ExecutionPlan, result
   end
 
   speed_profile :fast
