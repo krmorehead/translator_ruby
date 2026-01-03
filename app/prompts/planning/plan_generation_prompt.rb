@@ -131,6 +131,77 @@ module Planning
       message
     end
 
+    def response_schema
+      {
+        type: "object",
+        properties: {
+          goal: { type: "string" },
+          milestones: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                success_criteria: { type: "string" },
+                steps: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      intent: { type: "string" },
+                      details: {
+                        type: "array",
+                        items: { type: "string" }
+                      },
+                      tests: {
+                        type: "array",
+                        items: { type: "string" }
+                      },
+                      file_changes: {
+                        type: "array",
+                        items: { type: "string" }
+                      },
+                      estimated_duration: { type: "string" }
+                    },
+                    required: ["title", "intent", "details", "tests"]
+                  }
+                }
+              },
+              required: ["title", "description", "steps"]
+            }
+          },
+          constraints: {
+            type: "array",
+            items: { type: "string" }
+          },
+          assumptions: {
+            type: "array",
+            items: { type: "string" }
+          },
+          risks: {
+            type: "array",
+            items: { type: "string" }
+          },
+          metadata: {
+            type: "object",
+            properties: {
+              files_explored: {
+                type: "array",
+                items: { type: "string" }
+              },
+              patterns_found: {
+                type: "array",
+                items: { type: "string" }
+              }
+            }
+          }
+        },
+        required: ["goal", "milestones"]
+      }
+    end
+
     private
 
     def validate_params!(goal, path)
