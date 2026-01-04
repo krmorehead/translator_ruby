@@ -4,7 +4,7 @@ require "test_helper"
 
 class BrowserToolTest < ActiveSupport::TestCase
   def setup
-    @tool = ::Tools::Sisyphus::BrowserTool.new
+    @tool = Sisyphus::BrowserTool.new
     cleanup_browser
   end
 
@@ -15,13 +15,13 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Metadata tests
   speed_profile :fast
   test "metadata includes correct tool name" do
-    metadata = ::Tools::Sisyphus::BrowserTool.metadata
+    metadata = Sisyphus::BrowserTool.metadata
     assert_equal "browser", metadata[:name]
   end
 
   speed_profile :fast
   test "metadata includes all actions" do
-    metadata = ::Tools::Sisyphus::BrowserTool.metadata
+    metadata = Sisyphus::BrowserTool.metadata
     actions = metadata[:parameters][:properties][:action][:enum]
     
     expected_actions = %w[launch navigate click type screenshot get_content evaluate_js wait_for close]
@@ -30,7 +30,7 @@ class BrowserToolTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "metadata includes required parameters" do
-    metadata = ::Tools::Sisyphus::BrowserTool.metadata
+    metadata = Sisyphus::BrowserTool.metadata
     required = metadata[:parameters][:required]
     
     assert_includes required, "action"
@@ -339,8 +339,8 @@ class BrowserToolTest < ActiveSupport::TestCase
 
   def cleanup_browser
     # Close browser between tests - let it fail loudly if there's an issue
-    ::Tools::Sisyphus::BrowserTool.browser.quit
-    ::Tools::Sisyphus::BrowserTool.instance_variable_set(:@browser, nil)
+    Sisyphus::BrowserTool.browser.quit
+    Sisyphus::BrowserTool.instance_variable_set(:@browser, nil)
   end
 
   def skip_if_no_browser

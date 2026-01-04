@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-module Tools
-  module Sisyphus
-    # BrowserTool - Automate browser interactions for web testing and scraping
+module Sisyphus
+  # BrowserTool - Automate browser interactions for web testing and scraping
     #
     # This tool enables Sisyphus to:
     # - Launch and control browser instances (Chrome/Chromium)
@@ -496,5 +495,4 @@ module Tools
       class ToolError < StandardError; end
     end
   end
-end
 

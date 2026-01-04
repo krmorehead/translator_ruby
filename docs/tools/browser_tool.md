@@ -65,7 +65,7 @@ The BrowserTool supports 9 core actions:
 ### Tool Metadata
 
 ```ruby
-Tools::Sisyphus::BrowserTool.metadata
+Sisyphus::BrowserTool.metadata
 # =>
 # {
 #   name: "browser",
@@ -99,7 +99,7 @@ Start a browser instance.
 
 **Example**:
 ```ruby
-tool = Tools::Sisyphus::BrowserTool.new
+tool = Sisyphus::BrowserTool.new
 result = tool.execute(action: "launch", headless: true)
 
 # Result:
@@ -434,7 +434,7 @@ result = tool.execute(action: "close")
 ### Privacy-Focused Search with DuckDuckGo
 
 ```ruby
-tool = Tools::Sisyphus::BrowserTool.new
+tool = Sisyphus::BrowserTool.new
 
 # Launch browser
 tool.execute(action: "launch")
@@ -470,7 +470,7 @@ tool.execute(action: "close")
 ### Test a Login Flow
 
 ```ruby
-tool = Tools::Sisyphus::BrowserTool.new
+tool = Sisyphus::BrowserTool.new
 
 # Launch browser
 tool.execute(action: "launch")
@@ -504,7 +504,7 @@ tool.execute(action: "close")
 ### Scrape Data from a Page
 
 ```ruby
-tool = Tools::Sisyphus::BrowserTool.new
+tool = Sisyphus::BrowserTool.new
 
 # Launch and navigate
 tool.execute(action: "launch")
@@ -534,7 +534,7 @@ tool.execute(action: "close")
 ### Test Form Submission
 
 ```ruby
-tool = Tools::Sisyphus::BrowserTool.new
+tool = Sisyphus::BrowserTool.new
 
 tool.execute(action: "launch")
 tool.execute(action: "navigate", url: "http://localhost:3000/contact")
@@ -569,7 +569,7 @@ available_tools = [
   Tools::Sisyphus::WriteFileTool,
   Tools::Sisyphus::ReadFileTool,
   Tools::Sisyphus::BashTool,
-  Tools::Sisyphus::BrowserTool  # <-- Add here
+  Sisyphus::BrowserTool  # <-- Add here
 ]
 ```
 

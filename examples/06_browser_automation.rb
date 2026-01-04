@@ -23,7 +23,7 @@ puts "=" * 80
 puts
 
 # Initialize the browser tool
-tool = Tools::Sisyphus::BrowserTool.new
+tool = Sisyphus::BrowserTool.new
 
 begin
   # Step 1: Launch browser
