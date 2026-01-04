@@ -3,20 +3,13 @@
 require "test_helper"
 
 # Test suite for ExecutionStateStore
-# Tests Redis-backed persistence of execution states
-#
-# Note: These tests require Redis to be running
-# Skip if Redis is not available
+# Tests SessionCache-backed persistence of execution states
+# Uses real SessionCache instance, no mocking
 class ExecutionStateStoreTest < ActiveSupport::TestCase
   def setup
-    # Check if Redis is available
-    begin
-      Redis.current.ping
-    rescue Redis::CannotConnectError, Redis::BaseConnectionError
-      skip "Redis is not available - skipping ExecutionStateStore tests"
-    end
-
-    @store = ExecutionStateStore.new(ttl: 3600)
+    # Use fresh session cache for each test
+    @cache = SessionCache.new
+    @store = ExecutionStateStore.new(store: @cache, ttl: 3600)
 
     # Create sample execution state
     @state = Execution::ExecutionState.new(
@@ -30,38 +23,42 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
 
   def teardown
     # Clean up test data
-    if @state && @store
-      @store.delete(@state.execution_id) rescue nil
-    end
+    @cache.flushall if @cache
   end
 
   # Initialization tests
 
-  test "initializes with default Redis connection" do
+  speed_profile :fast
+  speed_profile :fast
+  test "initializes with default SessionCache connection" do
     store = ExecutionStateStore.new
     assert_not_nil store
   end
 
-  test "initializes with custom Redis connection" do
-    custom_redis = MockRedis.new
-    store = ExecutionStateStore.new(redis: custom_redis)
+  speed_profile :fast
+  test "initializes with custom cache" do
+    custom_cache = SessionCache.new
+    store = ExecutionStateStore.new(store: custom_cache)
     assert_not_nil store
   end
 
+  speed_profile :fast
   test "initializes with custom TTL" do
-    store = ExecutionStateStore.new(redis: @redis, ttl: 7200)
+    store = ExecutionStateStore.new(store: @cache, ttl: 7200)
     assert_not_nil store
   end
 
   # Save tests
 
-  test "save stores execution state in Redis" do
+  speed_profile :fast
+  test "save stores execution state in cache" do
     result = @store.save(@state)
 
     assert result, "Should return true on successful save"
     assert @store.exists?(@state.execution_id), "Execution should exist after save"
   end
 
+  speed_profile :fast
   test "save persists execution state" do
     @store.save(@state)
 
@@ -69,6 +66,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
     assert_not_nil retrieved, "Should be able to retrieve saved state"
   end
 
+  speed_profile :fast
   test "save allows retrieving list of executions" do
     @store.save(@state)
 
@@ -76,6 +74,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
     assert executions.any? { |e| e.execution_id == @state.execution_id }, "Saved execution should appear in list"
   end
 
+  speed_profile :fast
   test "save validates state parameter" do
     error = assert_raises(TypeError) do
       @store.save("not a state")
@@ -86,6 +85,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
 
   # Get tests
 
+  speed_profile :fast
   test "get retrieves stored execution state" do
     @store.save(@state)
 
@@ -96,12 +96,14 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
     assert_equal @state.status, retrieved.status
   end
 
+  speed_profile :fast
   test "get returns nil for non-existent execution" do
     retrieved = @store.get("non-existent-#{SecureRandom.hex(4)}")
 
     assert_nil retrieved
   end
 
+  speed_profile :fast
   test "get validates execution_id parameter" do
     assert_raises(ArgumentError) do
       @store.get(nil)
@@ -112,6 +114,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
     end
   end
 
+  speed_profile :fast
   test "get deserializes state correctly" do
     @store.save(@state)
 
@@ -125,12 +128,14 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
 
   # List tests
 
+  speed_profile :fast
   test "list returns empty array when no executions" do
     executions = @store.list
 
     assert_equal [], executions
   end
 
+  speed_profile :fast
   test "list returns stored executions" do
     # Save multiple executions
     state1 = Execution::ExecutionState.new(
@@ -157,6 +162,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
     assert_equal 2, executions.size
   end
 
+  speed_profile :fast
   test "list returns executions in descending order (most recent first)" do
     # Save multiple executions with different timestamps
     oldest_id = "exec-oldest-#{SecureRandom.hex(4)}"
@@ -200,6 +206,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
     assert_equal oldest_id, executions.last.execution_id
   end
 
+  speed_profile :fast
   test "list respects limit parameter" do
     # Save 5 executions
     ids = []
@@ -227,6 +234,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
 
   # Delete tests
 
+  speed_profile :fast
   test "delete removes execution from store" do
     @store.save(@state)
 
@@ -238,12 +246,14 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
     assert_nil retrieved, "State should no longer exist"
   end
 
+  speed_profile :fast
   test "delete returns false for non-existent execution" do
     result = @store.delete("non-existent-#{SecureRandom.hex(4)}")
 
     assert_equal false, result
   end
 
+  speed_profile :fast
   test "delete validates execution_id parameter" do
     assert_raises(ArgumentError) do
       @store.delete(nil)
@@ -256,16 +266,19 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
 
   # Exists tests
 
+  speed_profile :fast
   test "exists? returns true for stored execution" do
     @store.save(@state)
 
     assert @store.exists?(@state.execution_id)
   end
 
+  speed_profile :fast
   test "exists? returns false for non-existent execution" do
     refute @store.exists?("non-existent-#{SecureRandom.hex(4)}")
   end
 
+  speed_profile :fast
   test "exists? validates execution_id parameter" do
     assert_raises(ArgumentError) do
       @store.exists?(nil)
@@ -278,6 +291,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
 
   # Update tests
 
+  speed_profile :fast
   test "update modifies existing execution state" do
     @store.save(@state)
 
@@ -296,6 +310,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
     assert_equal :complete, updated.status
   end
 
+  speed_profile :fast
   test "update returns nil for non-existent execution" do
     updated = @store.update("non-existent-#{SecureRandom.hex(4)}") do |_state|
       # This block should not be called
@@ -307,6 +322,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
 
   # Integration tests
 
+  speed_profile :fast
   test "complete workflow: save, get, update, delete" do
     # Save initial state
     @store.save(@state)

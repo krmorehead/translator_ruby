@@ -9,10 +9,16 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
     @step = create_test_step
     @successful_result = create_successful_step_result
     @failed_result = create_failed_step_result
+    @context = create_test_context
   end
 
   def teardown
     FileUtils.rm_rf(@path) if @path && File.exist?(@path)
+  end
+
+  # Helper to create test context
+  def create_test_context
+    Contexts::BaseContext.new
   end
 
   # Helper to create a test step
@@ -105,6 +111,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
 
     result = workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path,
@@ -124,6 +131,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
 
     error = assert_raises(TypeError) do
       workflow.setup(
+      context: @context,
         step: "not a step",
         step_result: @successful_result,
         path: @path
@@ -139,6 +147,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
 
     error = assert_raises(TypeError) do
       workflow.setup(
+      context: @context,
         step: @step,
         step_result: "not a hash",
         path: @path
@@ -154,6 +163,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
 
     error = assert_raises(ArgumentError) do
       workflow.setup(
+      context: @context,
         step: @step,
         step_result: { success: true },
         path: @path
@@ -169,6 +179,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
 
     error = assert_raises(ArgumentError) do
       workflow.setup(
+      context: @context,
         step: @step,
         step_result: @successful_result,
         path: ""
@@ -184,6 +195,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
 
     error = assert_raises(ArgumentError) do
       workflow.setup(
+      context: @context,
         step: @step,
         step_result: @successful_result,
         path: "/nonexistent/path"
@@ -197,6 +209,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "setup initializes workflow memory" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path
@@ -220,6 +233,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "transitions through evaluation phases" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path
@@ -242,6 +256,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "can transition to failed from evaluation phases" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path
@@ -261,6 +276,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "execute evaluates successful step result" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: ENV.fetch("AGENT_DATA_PATH", ".")
@@ -282,6 +298,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "execute evaluates failed step result" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @failed_result,
       path: @path
@@ -301,6 +318,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "execute returns complete evaluation structure" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path
@@ -325,6 +343,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "execute records decisions to workflow memory" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path
@@ -346,6 +365,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "execute handles errors gracefully" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path
@@ -371,6 +391,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "basic_evaluation passes for successful execution" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path
@@ -392,6 +413,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "basic_evaluation fails for failed execution" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @failed_result,
       path: @path
@@ -415,6 +437,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
 
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: result_without_outputs,
       path: @path
@@ -436,6 +459,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
 
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: result_no_files,
       path: @path
@@ -456,6 +480,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "build_evaluation_result includes all required fields" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path
@@ -480,6 +505,7 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
   test "build_evaluation_result includes metadata about execution" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
+      context: @context,
       step: @step,
       step_result: @successful_result,
       path: @path
