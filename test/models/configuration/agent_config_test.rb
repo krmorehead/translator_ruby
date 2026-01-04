@@ -7,7 +7,8 @@ module Configuration
     def setup
       @cap1 = CapabilityConfig.new(
         name: :general_llm,
-        model_name: "model1",
+        model: "model1",
+        provider: "vllm",
         port: 8001,
         max_context: 1000,
         base_url: "URL1"
@@ -15,7 +16,8 @@ module Configuration
 
       @cap2 = CapabilityConfig.new(
         name: :tool_calling,
-        model_name: "model2",
+        model: "model2",
+        provider: "vllm",
         port: 8002,
         max_context: 2000,
         base_url: "URL2"
@@ -123,7 +125,8 @@ module Configuration
         capabilities: {
           general_llm: {
             name: :general_llm,
-            model_name: "model1",
+            model: "model1",
+            provider: "vllm",
             port: 8001,
             max_context: 1000,
             base_url: "URL1"
@@ -144,7 +147,8 @@ module Configuration
         "capabilities" => {
           "general_llm" => {
             "name" => "general_llm",
-            "model_name" => "model1",
+            "model" => "model1",
+            "provider" => "vllm",
             "port" => 8001,
             "max_context" => 1000,
             "base_url" => "URL1"
@@ -176,7 +180,7 @@ module Configuration
         rest_cap = restored.capability(name)
 
         assert_equal orig_cap.name, rest_cap.name
-        assert_equal orig_cap.model_name, rest_cap.model_name
+        assert_equal orig_cap.model, rest_cap.model
         assert_equal orig_cap.port, rest_cap.port
       end
     end
