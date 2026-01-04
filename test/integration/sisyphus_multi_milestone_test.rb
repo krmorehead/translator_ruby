@@ -210,10 +210,10 @@ class SisyphusMultiMilestoneTest < ActiveSupport::TestCase
     
     # Add step results
     execution_record.add_step_result(step_result1)
-    execution_record.mark_milestone_completed(1)
+    execution_record.mark_milestone_completed("1")
     
     execution_record.add_step_result(step_result2)
-    execution_record.mark_milestone_completed(2)
+    execution_record.mark_milestone_completed("2")
     
     # Mark as complete
     execution_record.update_status(:complete)
