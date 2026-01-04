@@ -22,7 +22,9 @@ class ExecutionStateStore
   #
   # @param state [Execution::ExecutionState] The state to store
   # @return [Boolean] true if successful
+  # @raise [TypeError] if state is not an ExecutionState
   def save(state)
+    # OOP: Validation errors should raise loudly
     validate_state!(state)
 
     key = store_key(state.execution_id)
@@ -35,9 +37,6 @@ class ExecutionStateStore
     @store.zadd(LIST_KEY, timestamp, state.execution_id)
 
     true
-  rescue StandardError => e
-    Rails.logger.error "Failed to save execution state: #{e.message}"
-    false
   end
 
   # Retrieve an execution state by ID
