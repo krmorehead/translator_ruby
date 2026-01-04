@@ -340,7 +340,8 @@ class Api::V1::TranslationControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     result = JSON.parse(response.body)
-    assert_match(/bonjour|matin/i, result["translation"])
+    # OOP: Accept any valid French greeting (LLM may vary)
+    assert_match(/bonjour|matin|journée|salut/i, result["translation"], "Should contain French greeting words")
 
     # Test German
     post "/api/v1/translate_text",
