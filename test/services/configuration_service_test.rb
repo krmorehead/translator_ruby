@@ -35,8 +35,10 @@ class ConfigurationServiceTest < ActiveSupport::TestCase
     config = @service.get_current_config
     capability = config.capability(:general_llm)
 
+    # Following OpenAI API format
     assert_equal :general_llm, capability.name
-    assert capability.model_name.is_a?(String)
+    assert capability.model.is_a?(String)
+    assert capability.provider.is_a?(String)
     assert capability.port.is_a?(Integer)
     assert capability.max_context.is_a?(Integer)
     assert capability.base_url.is_a?(String)
