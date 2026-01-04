@@ -156,11 +156,11 @@ class AgentConfigService
   # @return [Hash] Environment variables safe for frontend
   def self.build_environment_info
     {
-      llm_url: mask_secret(ENV["LLM_URL"]),
-      llm_retry: ENV.fetch("LLM_RETRY", "1"),
-      llm_retry_delay: ENV.fetch("LLM_RETRY_DELAY", "50"),
-      llm_request_timeout: ENV.fetch("LLM_REQUEST_TIMEOUT", "60"),
-      rails_env: Rails.env
+      "LLM_URL" => mask_secret(ENV["LLM_URL"]),
+      "LLM_RETRY" => ENV.fetch("LLM_RETRY", "1"),
+      "LLM_RETRY_DELAY" => ENV.fetch("LLM_RETRY_DELAY", "50"),
+      "LLM_REQUEST_TIMEOUT" => ENV.fetch("LLM_REQUEST_TIMEOUT", "60"),
+      "RAILS_ENV" => Rails.env.to_s
     }
   end
   private_class_method :build_environment_info

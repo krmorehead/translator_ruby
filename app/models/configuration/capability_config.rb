@@ -33,6 +33,17 @@ module Configuration
       @base_url = base_url
     end
 
+    # Alias for model_name (for API compatibility)
+    def model
+      @model_name
+    end
+
+    # Provider extracted from model_name
+    # For vLLM models, this returns "vllm"
+    def provider
+      "vllm" # All current capabilities use vLLM
+    end
+
     # Serialize to hash
     # @return [Hash] Serialized capability configuration
     def to_h
