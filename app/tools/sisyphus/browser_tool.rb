@@ -56,6 +56,13 @@ module Sisyphus
 
       class << self
         attr_reader :browser, :browser_mutex
+
+        # Cleanup browser instance - idempotent, safe to call multiple times
+        # Encapsulates cleanup logic following OOP principles  
+        def cleanup
+          @browser&.quit
+          @browser = nil
+        end
       end
 
       def initialize

@@ -5,7 +5,6 @@ require "test_helper"
 class BrowserToolTest < ActiveSupport::TestCase
   def setup
     @tool = Sisyphus::BrowserTool.new
-    cleanup_browser
   end
 
   def teardown
@@ -338,9 +337,8 @@ class BrowserToolTest < ActiveSupport::TestCase
   private
 
   def cleanup_browser
-    # Close browser between tests - let it fail loudly if there's an issue
-    Sisyphus::BrowserTool.browser.quit
-    Sisyphus::BrowserTool.instance_variable_set(:@browser, nil)
+    # Use class method for cleanup - encapsulates cleanup logic
+    Sisyphus::BrowserTool.cleanup
   end
 
   def skip_if_no_browser
