@@ -90,9 +90,11 @@ class ConfigurationServiceTest < ActiveSupport::TestCase
   # validate_capability tests
   speed_profile :fast
   test "validate_capability returns valid for correct configuration" do
+    # Following OpenAI API format
     config_hash = {
       name: :test_capability,
-      model_name: "test_model",
+      model: "test_model",
+      provider: "vllm",
       port: 8000,
       max_context: 1000,
       base_url: "TEST_URL"
@@ -106,9 +108,11 @@ class ConfigurationServiceTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "validate_capability returns errors for invalid port" do
+    # Following OpenAI API format
     config_hash = {
       name: :test,
-      model_name: "model",
+      model: "model",
+      provider: "vllm",
       port: 70000,
       max_context: 1000,
       base_url: "url"
