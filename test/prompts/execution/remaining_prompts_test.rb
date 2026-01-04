@@ -40,7 +40,14 @@ module Execution
     test "initializes and validates parameters" do
       step = Planning::Step.new(milestone_number: 1, step_number: 1, title: "Test", intent: "Test", details: ["d"], tests: ["t"])
       result = { step_id: "1.1", success: true, actions_taken: [], files_changed: [], diffs: {} }
-      prompt = StepEvaluationPrompt.new(step: step, step_result: result, context: {})
+      # Create real context object (no hashes!)
+      context = Contexts::SisyphusContext.new(
+        codebase_path: Dir.pwd,
+        plan_goal: "Test goal",
+        plan_id: SecureRandom.uuid,
+        execution_id: SecureRandom.uuid
+      )
+      prompt = StepEvaluationPrompt.new(step: step, step_result: result, context: context)
       assert_not_nil prompt.system_prompt
       assert_not_nil prompt.response_schema
     end
