@@ -137,9 +137,13 @@ module Sisyphus
       # @raise [ArgumentError] if params invalid
       # @raise [TypeError] if param types incorrect
       def execute(params)
-        # OOP Pattern: Fail-fast validation raises immediately for invalid inputs
-        validate_params!(params)
-        validate_action!(params[:action])
+        # OOP Pattern: Fail-fast validation raises immediately for structural errors
+        validate_params!(params)  # Raises if params is not a hash or missing required fields
+
+        # Invalid action names return error results (operational error, not structural)
+        unless valid_action?(params[:action])
+          return error_result("Invalid action '#{params[:action]}'. Must be one of: #{ACTIONS.join(", ")}")
+        end
 
         action = params[:action].to_sym
 
@@ -463,12 +467,15 @@ module Sisyphus
       # Validate action is supported
       #
       # OOP Pattern: Fail-fast validation
+      # Check if an action is valid (soft check for error results)
+      def valid_action?(action)
+        return false if action.nil?
+        ACTIONS.include?(action.to_sym)
+      end
+
+      # Strict validation (raises for missing params)
       def validate_action!(action)
-        action_sym = action.to_sym
-        
-        unless ACTIONS.include?(action_sym)
-          raise ArgumentError, "Invalid action '#{action}'. Must be one of: #{ACTIONS.join(', ')}"
-        end
+        raise ArgumentError, "Action parameter is required" if action.nil? || action.to_s.strip.empty?
       end
 
       # Format success result
