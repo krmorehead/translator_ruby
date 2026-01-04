@@ -12,6 +12,16 @@ alwaysApply: true
   - All new tests MUST declare speed_profile (:fast, :medium, or :slow)
   - Tests MUST NOT exceed their speed profile SLA (fast: 10s, medium: 60s, slow: 120s)
 
+[TEST][!BACKEND-UNIT] Run backend unit tests correctly to avoid hangs:
+  - FAST tests: TEST_SPEED_FILTER=fast bundle exec rails test
+  - MEDIUM tests: TEST_SPEED_FILTER=medium bundle exec rails test
+  - SLOW tests: TEST_SPEED_FILTER=slow bundle exec rails test
+  - ALL tests: bundle exec rails test
+  - For CI/parsing: Save output to file first (> /tmp/test_output.txt) then parse safely
+  - NEVER pipe large test output through grep/awk directly - it will hang
+  - Use file-based workflow: run test → save to file → grep from file
+  - All tests enforce SLA via timeout threads - tests cannot hang indefinitely
+
 [DOC][!NO-PHASES] Never mention phases or milestones in coding or documentation. Always use informative names while staying DRY.
 
 [LINT][!RUBOCOP] Always use rubocop with autofix enabled, then handle other violations manually.

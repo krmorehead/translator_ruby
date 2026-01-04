@@ -32,6 +32,19 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     )
   end
 
+  # Helper to create a test context
+  def create_test_context(codebase_path: @path)
+    Contexts::SisyphusContext.new(
+      codebase_path: codebase_path,
+      plan_goal: "Test execution goal",
+      plan_id: SecureRandom.uuid,
+      execution_id: SecureRandom.uuid,
+      current_milestone: { number: 1, title: "Test Milestone" },
+      current_step: { number: 1, title: "Test Step", intent: "Test intent" },
+      execution_metadata: { test: "metadata" }
+    )
+  end
+
   # ===== Initialization Tests =====
   speed_profile :fast
   test "initializes with owner_id" do
@@ -80,18 +93,19 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :fast
   test "setup accepts valid parameters" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    test_context = create_test_context
 
     result = workflow.setup(
       step: @step,
       path: @path,
-      context: { test: "context" },
+      context: test_context,
       system_prompt: "test prompt"
     )
 
     assert_equal workflow, result # Returns self for chaining
     assert_equal @step, workflow.step
     assert_equal @path, workflow.path
-    assert_equal({ test: "context" }, workflow.context)
+    assert_equal test_context, workflow.context
     assert_equal "test prompt", workflow.system_prompt
   end
 
