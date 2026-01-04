@@ -32,6 +32,7 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
   test "each capability has required fields" do
     config = @service.get_config
     
+    # Following OpenAI API format
     config.capabilities.each do |name, capability|
       assert capability.model.present?, "#{name} missing model"
       assert capability.provider.present?, "#{name} missing provider"

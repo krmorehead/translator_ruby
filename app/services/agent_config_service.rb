@@ -138,12 +138,14 @@ class AgentConfigService
   end
 
   # Build capabilities hash from GenericLlmClient
+  # Following OpenAI API format - no aliases, just standard fields
   # @return [Hash<Symbol, Configuration::CapabilityConfig>]
   def self.build_capabilities_from_client
     GenericLlmClient::CAPABILITIES.transform_values do |config|
       Configuration::CapabilityConfig.new(
         name: config[:model_name].split("/").last.to_sym,
-        model_name: config[:model_name],
+        model: config[:model_name],  # OpenAI API format
+        provider: "vllm",  # All current capabilities use vLLM
         port: config[:port],
         max_context: config[:max_context],
         base_url: config[:base_url]

@@ -37,8 +37,9 @@ module Api
       json = JSON.parse(response.body)
       capabilities = json.fetch("config").fetch("capabilities")
       
+      # Following OpenAI API format - model (not model_name)
       capabilities.each do |name, config|
-        assert config.key?("model") || config.key?("model_name"), "#{name} missing model"
+        assert config.key?("model"), "#{name} missing model"
         assert config.key?("provider"), "#{name} missing provider"
         assert config.key?("base_url"), "#{name} missing base_url"
       end

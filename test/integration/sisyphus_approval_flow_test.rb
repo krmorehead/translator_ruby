@@ -35,9 +35,7 @@ class SisyphusApprovalFlowTest < ActionDispatch::IntegrationTest
     PLAN
 
     SessionCache.instance.flushall
-
     @approval_store = ApprovalRequestStore.new
-
     @created_approval_ids = []
   end
 
