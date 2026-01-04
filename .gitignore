@@ -50,6 +50,7 @@ node_modules/
 
 #agent artifacts
 .agents/
+.agents-test/
 # Workflow memory and state files
 *_memory.json
 sisyphus_memory.json

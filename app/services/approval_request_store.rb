@@ -15,7 +15,7 @@ class ApprovalRequestStore
   LIST_KEY_PREFIX = "approval:execution:"
 
   def initialize(store: nil)
-    @store = store || MemoryStore.instance
+    @store = store || SessionCache.instance
   end
 
   # Store an approval request

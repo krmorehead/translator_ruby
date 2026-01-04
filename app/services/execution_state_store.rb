@@ -15,7 +15,7 @@ class ExecutionStateStore
   LIST_KEY = "sisyphus:executions:list"
 
   def initialize(store: nil)
-    @store = store || MemoryStore.instance
+    @store = store || SessionCache.instance
   end
 
   # Store an execution state

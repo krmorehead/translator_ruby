@@ -34,10 +34,10 @@ class SisyphusApprovalFlowTest < ActionDispatch::IntegrationTest
       - Step 3: Run the code
     PLAN
 
-    # Clear the global memory store before each test
-    MemoryStore.instance.flushall
+    # Clear the global session cache before each test
+    SessionCache.instance.flushall
 
-    # Use the same store as the controller (MemoryStore.instance)
+    # Use the same cache as the controller (SessionCache.instance)
     @approval_store = ApprovalRequestStore.new
 
     # Track created approval IDs for cleanup
@@ -55,7 +55,7 @@ class SisyphusApprovalFlowTest < ActionDispatch::IntegrationTest
   def create_approval(execution_id:, type: :step, subject_id: nil, subject_title: "Test Step", planned_actions: [], estimated_changes: {})
     approval_id = "approval-#{SecureRandom.hex(8)}"
     subject_id ||= "#{type}-#{SecureRandom.hex(4)}"
-
+    
     request = Execution::ApprovalRequest.new(
       id: approval_id,
       execution_id: execution_id,
@@ -185,7 +185,7 @@ class SisyphusApprovalFlowTest < ActionDispatch::IntegrationTest
   speed_profile :fast
   test "pending approvals returns nil when no pending approvals" do
     execution_id = "exec-no-approvals-#{SecureRandom.hex(8)}"
-
+    
     get "/api/sisyphus/approvals/pending", params: { execution_id: execution_id }
 
     assert_response :success
@@ -256,7 +256,7 @@ class SisyphusApprovalFlowTest < ActionDispatch::IntegrationTest
     assert_response :success
     body = JSON.parse(response.body)
     approval = body["approval"]
-
+    
     assert_equal approval_id, approval["id"]
     assert_equal execution_id, approval["execution_id"]
     assert_equal "milestone", approval["type"]

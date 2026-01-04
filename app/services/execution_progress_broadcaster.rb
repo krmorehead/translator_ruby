@@ -77,7 +77,7 @@ class ExecutionProgressBroadcaster
     validate_params!(execution_id, event_type)
 
     channel = channel_name(execution_id)
-
+    
     event = {
       execution_id: execution_id,
       event_type: event_type,
@@ -106,10 +106,10 @@ class ExecutionProgressBroadcaster
     channel = channel_name(execution_id)
 
     callback = lambda do |message|
-      event = JSON.parse(message).deep_symbolize_keys
-      block.call(event)
-    rescue JSON::ParserError => e
-      Rails.logger.error "Failed to parse progress event: #{e.message}"
+        event = JSON.parse(message).deep_symbolize_keys
+        block.call(event)
+  rescue JSON::ParserError => e
+    Rails.logger.error "Failed to parse progress event: #{e.message}"
     end
 
     self.class.add_subscriber(channel, callback)

@@ -187,28 +187,28 @@ function AgentWorkspace() {
           </h3>
         </div>
         {milestone.description && (
-          <p className="milestone-description">{milestone.description}</p>
+        <p className="milestone-description">{milestone.description}</p>
         )}
 
         {milestone.estimated_duration && (
-          <p className="milestone-duration">
-            <strong>Estimated Duration:</strong> {milestone.estimated_duration}
-          </p>
+        <p className="milestone-duration">
+          <strong>Estimated Duration:</strong> {milestone.estimated_duration}
+        </p>
         )}
 
         {successCriteria.length > 0 && (
-          <div className="success-criteria">
-            <strong>Success Criteria:</strong>
-            <ul>
+        <div className="success-criteria">
+          <strong>Success Criteria:</strong>
+          <ul>
               {successCriteria.map((criteria, i) => (
-                <li key={i}>{criteria}</li>
-              ))}
-            </ul>
-          </div>
+              <li key={i}>{criteria}</li>
+            ))}
+          </ul>
+        </div>
         )}
 
         {steps.length > 0 && (
-          <div className="steps-section">
+        <div className="steps-section">
             <h4>Steps ({steps.length})</h4>
             {steps.map((step, stepIndex) => {
               if (!step) return null;
@@ -217,43 +217,43 @@ function AgentWorkspace() {
               
               return (
                 <div key={step.id || stepIndex} className="step-card">
-                  <div className="step-header">
-                    <h5>
+              <div className="step-header">
+                <h5>
                       Step {step.milestone_number || index + 1}.{step.step_number || stepIndex + 1}: {step.title || "Untitled"}
-                    </h5>
-                  </div>
+                </h5>
+              </div>
 
                   {step.intent && (
-                    <p className="step-intent">
-                      <strong>Intent:</strong> {step.intent}
-                    </p>
+              <p className="step-intent">
+                <strong>Intent:</strong> {step.intent}
+              </p>
                   )}
 
                   {details.length > 0 && (
-                    <div className="step-details">
-                      <strong>Details:</strong>
-                      <ul>
+              <div className="step-details">
+                <strong>Details:</strong>
+                <ul>
                         {details.map((detail, i) => (
-                          <li key={i}>{detail}</li>
-                        ))}
-                      </ul>
-                    </div>
+                    <li key={i}>{detail}</li>
+                  ))}
+                </ul>
+              </div>
                   )}
 
                   {tests.length > 0 && (
-                    <div className="step-tests">
-                      <strong>Tests:</strong>
-                      <ul>
+              <div className="step-tests">
+                <strong>Tests:</strong>
+                <ul>
                         {tests.map((test, i) => (
-                          <li key={i}>{test}</li>
-                        ))}
-                      </ul>
-                    </div>
+                    <li key={i}>{test}</li>
+                  ))}
+                </ul>
+              </div>
                   )}
-                </div>
+            </div>
               );
             })}
-          </div>
+        </div>
         )}
       </div>
     );

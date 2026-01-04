@@ -13,13 +13,13 @@ import { expect, fast, medium } from "./base-test";
 fast("checkpoint - displays checkpoint manager UI", async ({ page }) => {
   await page.goto("/checkpoints");
   await expect(page.locator("h1")).toContainText("Git Checkpoint Manager");
-});
+    });
 
 fast("checkpoint - requires repository path before showing checkpoints", async ({ page }) => {
   await page.goto("/checkpoints");
   await expect(page.locator(".path-setup")).toBeVisible();
   await expect(page.locator("h2")).toContainText("Set Repository Path");
-});
+    });
 
 // =============================================================================
 // Repository Path Input - FAST
@@ -30,13 +30,13 @@ fast("checkpoint - can enter text in repository path input", async ({ page }) =>
   const pathInput = page.locator(".path-input");
   await pathInput.fill("/test/repo/path");
   await expect(pathInput).toHaveValue("/test/repo/path");
-});
+    });
 
 fast("checkpoint - set path button exists", async ({ page }) => {
   await page.goto("/checkpoints");
   const setPathButton = page.getByRole("button", { name: /set path/i });
   await expect(setPathButton).toBeVisible();
-});
+    });
 
 fast("checkpoint - does not submit empty path", async ({ page }) => {
   await page.goto("/checkpoints");
@@ -45,10 +45,10 @@ fast("checkpoint - does not submit empty path", async ({ page }) => {
   
   const setPathButton = page.getByRole("button", { name: /set path/i });
   await setPathButton.click();
-  
+      
   // Should still show path setup (not advance)
   await expect(page.locator(".path-setup")).toBeVisible();
-});
+    });
 
 // =============================================================================
 // Create Checkpoint Dialog - MEDIUM (may involve API)
@@ -67,7 +67,7 @@ medium("checkpoint - create checkpoint button exists after path is set", async (
   
   const createButton = page.getByRole("button", { name: /create checkpoint/i });
   await expect(createButton).toBeVisible({ timeout: 10000 });
-});
+  });
 
 medium("checkpoint - shows metadata form when create dialog opens", async ({ page }) => {
   await page.goto("/checkpoints");
@@ -92,7 +92,7 @@ medium("checkpoint - shows metadata form when create dialog opens", async ({ pag
       await expect(dialogOrForm.first()).toBeVisible();
     }
   }
-});
+  });
 
 // =============================================================================
 // UI Component Structure - FAST
@@ -101,17 +101,17 @@ medium("checkpoint - shows metadata form when create dialog opens", async ({ pag
 fast("checkpoint - has path input component", async ({ page }) => {
   await page.goto("/checkpoints");
   await expect(page.locator(".path-input")).toBeVisible();
-});
+    });
 
 fast("checkpoint - has set path button", async ({ page }) => {
   await page.goto("/checkpoints");
   await expect(page.getByRole("button", { name: /set path/i })).toBeVisible();
-});
+    });
 
 fast("checkpoint - shows path setup instructions", async ({ page }) => {
   await page.goto("/checkpoints");
   await expect(page.locator("h2")).toContainText("Set Repository Path");
-});
+    });
 
 // =============================================================================
 // Form Validation - FAST
@@ -122,12 +122,12 @@ fast("checkpoint - path input accepts keyboard input", async ({ page }) => {
   const pathInput = page.locator(".path-input");
   await pathInput.type("/test/path", { delay: 10 });
   await expect(pathInput).toHaveValue("/test/path");
-});
+    });
 
 fast("checkpoint - path input can be cleared", async ({ page }) => {
   await page.goto("/checkpoints");
   const pathInput = page.locator(".path-input");
   await pathInput.fill("/some/path");
-  await pathInput.clear();
+      await pathInput.clear();
   await expect(pathInput).toHaveValue("");
 });
