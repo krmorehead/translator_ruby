@@ -79,11 +79,18 @@ class ExecutionOrchestrationServiceTest < ActiveSupport::TestCase
   # get_execution_state tests
   speed_profile :fast
   test "get_execution_state returns success with state" do
-    result = @service.get_execution_state(execution_id: "test-123")
+    # OOP: Create a real execution state first
+    start_result = @service.start_execution(
+      plan_path: @test_plan,
+      project_path: @test_project
+    )
+    execution_id = start_result[:execution_id]
+
+    result = @service.get_execution_state(execution_id: execution_id)
 
     assert result[:success]
     assert result[:state]
-    assert result[:state][:execution_id]
+    assert_equal execution_id, result[:state][:execution_id]
   end
 
   speed_profile :fast
@@ -120,7 +127,14 @@ class ExecutionOrchestrationServiceTest < ActiveSupport::TestCase
   # cancel_execution tests
   speed_profile :fast
   test "cancel_execution returns success" do
-    result = @service.cancel_execution(execution_id: "test-123")
+    # OOP: Create a real execution state first
+    start_result = @service.start_execution(
+      plan_path: @test_plan,
+      project_path: @test_project
+    )
+    execution_id = start_result[:execution_id]
+
+    result = @service.cancel_execution(execution_id: execution_id)
 
     assert result[:success]
     assert result[:message]

@@ -184,7 +184,8 @@ class SisyphusController < ApplicationController
     )
 
     if result[:success]
-      render json: { data: result[:result] }
+      # ToolExecutionService returns standardized response with :data key
+      render json: { data: result[:data] }
     else
       render json: { error: result[:error] }, status: :bad_request
     end
@@ -199,7 +200,8 @@ class SisyphusController < ApplicationController
     result = tool_service.read_file(path: params[:path])
 
     if result[:success]
-      render json: { data: result[:result] }
+      # ToolExecutionService returns standardized response with :data key
+      render json: { data: result[:data] }
     else
       render json: { error: result[:error] }, status: :bad_request
     end
@@ -218,7 +220,8 @@ class SisyphusController < ApplicationController
     )
 
     if result[:success]
-      render json: { data: result[:result] }
+      # ToolExecutionService returns standardized response with :data key
+      render json: { data: result[:data] }
     else
       render json: { error: result[:error] }, status: :bad_request
     end

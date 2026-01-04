@@ -221,7 +221,8 @@ class SisyphusMultiMilestoneTest < ActiveSupport::TestCase
     # Verify aggregation
     assert_equal 2, execution_record.completed_steps, "Should have 2 completed steps"
     assert_equal 2, execution_record.total_files_changed, "Should have changed 2 files total"
-    assert_equal [1, 2], execution_record.milestones_completed, "Should have completed milestones 1 and 2"
+    # OOP: milestone_id is stored as String per ExecutionRecord#mark_milestone_completed
+    assert_equal ["1", "2"], execution_record.milestones_completed, "Should have completed milestones 1 and 2"
     assert_equal :complete, execution_record.status, "Status should be complete"
     
     # Verify serialization preserves all data
