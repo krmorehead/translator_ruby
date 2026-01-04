@@ -68,7 +68,8 @@ class LeafSynthesisPromptTest < ActiveSupport::TestCase
   # Edge Case Test - Minimal LLM call
   # ============================================================================
 
-  speed_profile :fast
+  # OOP: LLM calls require medium profile (>10s)
+  speed_profile :medium
   test "handles empty findings gracefully" do
     result = prompt.synthesize_leaf(
       sub_question: "What does empty code do?",

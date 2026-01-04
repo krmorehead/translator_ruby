@@ -272,7 +272,8 @@ class StepEvaluationWorkflowTest < ActiveSupport::TestCase
 
   # ===== Execute Method Tests =====
 
-  speed_profile :fast
+  # OOP: LLM evaluation requires medium profile for reliable results
+  speed_profile :medium
   test "execute evaluates successful step result" do
     workflow = StepEvaluationWorkflow.new(owner_id: @owner_id)
     workflow.setup(
