@@ -112,9 +112,10 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :fast
   test "setup validates step is a Planning::Step" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    test_context = create_test_context
 
     error = assert_raises(TypeError) do
-      workflow.setup(step: "not a step", path: @path)
+      workflow.setup(step: "not a step", path: @path, context: test_context)
     end
 
     assert_match(/step must be a Planning::Step/, error.message)
@@ -123,9 +124,10 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :fast
   test "setup validates path is a non-empty string" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    test_context = create_test_context
 
     error = assert_raises(ArgumentError) do
-      workflow.setup(step: @step, path: "")
+      workflow.setup(step: @step, path: "", context: test_context)
     end
 
     assert_match(/path must be a non-empty String/, error.message)
@@ -134,9 +136,10 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :fast
   test "setup validates path is an existing directory" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    test_context = create_test_context
 
     error = assert_raises(ArgumentError) do
-      workflow.setup(step: @step, path: "/nonexistent/path")
+      workflow.setup(step: @step, path: "/nonexistent/path", context: test_context)
     end
 
     assert_match(/path must be an existing directory/, error.message)
