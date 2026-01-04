@@ -13,11 +13,13 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Metadata tests
+  speed_profile :fast
   test "metadata includes correct tool name" do
     metadata = Tools::Sisyphus::BrowserTool.metadata
     assert_equal "browser", metadata[:name]
   end
 
+  speed_profile :fast
   test "metadata includes all actions" do
     metadata = Tools::Sisyphus::BrowserTool.metadata
     actions = metadata[:parameters][:properties][:action][:enum]
@@ -26,6 +28,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert_equal expected_actions.sort, actions.sort
   end
 
+  speed_profile :fast
   test "metadata includes required parameters" do
     metadata = Tools::Sisyphus::BrowserTool.metadata
     required = metadata[:parameters][:required]
@@ -34,6 +37,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Parameter validation tests
+  speed_profile :fast
   test "execute raises error when params is not a hash" do
     error = assert_raises(ArgumentError) do
       @tool.execute("not a hash")
@@ -41,6 +45,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert_match(/must be a Hash/, error.message)
   end
 
+  speed_profile :fast
   test "execute raises error when action is missing" do
     error = assert_raises(ArgumentError) do
       @tool.execute({})
@@ -48,6 +53,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert_match(/Action parameter is required/, error.message)
   end
 
+  speed_profile :fast
   test "execute returns error for invalid action" do
     result = @tool.execute(action: "invalid_action")
     
@@ -56,6 +62,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Launch action tests
+  speed_profile :medium
   test "launch action creates browser instance" do
     skip_if_no_browser
     
@@ -66,6 +73,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert result[:data][:headless]
   end
 
+  speed_profile :medium
   test "launch action works in non-headless mode" do
     skip_if_no_browser
     skip "Non-headless mode requires display" if ENV["CI"]
@@ -77,6 +85,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Navigate action tests
+  speed_profile :medium
   test "navigate action requires URL parameter" do
     skip_if_no_browser
     
@@ -87,6 +96,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert_match(/URL is required/, result[:error])
   end
 
+  speed_profile :medium
   test "navigate action navigates to URL" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
@@ -100,6 +110,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Click action tests
+  speed_profile :medium
   test "click action requires selector parameter" do
     skip_if_no_browser
     
@@ -110,6 +121,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert_match(/Selector is required/, result[:error])
   end
 
+  speed_profile :medium
   test "click action returns error for non-existent element" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
@@ -124,6 +136,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Type action tests
+  speed_profile :medium
   test "type action requires selector and text parameters" do
     skip_if_no_browser
     
@@ -141,6 +154,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Screenshot action tests
+  speed_profile :medium
   test "screenshot action captures page screenshot" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
@@ -160,6 +174,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     FileUtils.rm_f(screenshot_path) if screenshot_path
   end
 
+  speed_profile :medium
   test "screenshot action uses default filename when path not provided" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
@@ -176,6 +191,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Get content action tests
+  speed_profile :medium
   test "get_content action returns page body" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
@@ -189,6 +205,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert result[:data][:content_length] > 0
   end
 
+  speed_profile :medium
   test "get_content action can get element content" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
@@ -202,6 +219,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Evaluate JS action tests
+  speed_profile :medium
   test "evaluate_js action requires script parameter" do
     skip_if_no_browser
     
@@ -212,6 +230,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert_match(/Script is required/, result[:error])
   end
 
+  speed_profile :medium
   test "evaluate_js action executes JavaScript" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
@@ -225,6 +244,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Wait for action tests
+  speed_profile :medium
   test "wait_for action requires selector parameter" do
     skip_if_no_browser
     
@@ -235,6 +255,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert_match(/Selector is required/, result[:error])
   end
 
+  speed_profile :medium
   test "wait_for action waits for element" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
@@ -248,6 +269,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert result[:data][:wait_duration_seconds] >= 0
   end
 
+  speed_profile :medium
   test "wait_for action times out for non-existent element" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
@@ -262,6 +284,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Close action tests
+  speed_profile :medium
   test "close action closes browser instance" do
     skip_if_no_browser
     
@@ -272,6 +295,7 @@ class BrowserToolTest < ActiveSupport::TestCase
     assert_equal "Browser closed successfully", result[:data][:message]
   end
 
+  speed_profile :medium
   test "close action handles already closed browser gracefully" do
     skip_if_no_browser
     
@@ -282,6 +306,7 @@ class BrowserToolTest < ActiveSupport::TestCase
   end
 
   # Integration tests
+  speed_profile :medium
   test "browser can handle multiple actions in sequence" do
     skip_if_no_browser
     skip "Requires test server" unless test_server_running?
