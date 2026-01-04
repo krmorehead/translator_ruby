@@ -47,6 +47,7 @@ class DaedalusController < ApplicationController
     path = params.fetch(:path, nil)
     context_hint = params.dig(:context, :hint)
     additional_context = params.dig(:context, :additional_context)
+    persistent_context = params.dig(:context, :persistent)
 
     # Validate required parameters
     unless goal.present?
@@ -66,7 +67,8 @@ class DaedalusController < ApplicationController
     # Create Contexts::BaseContext object (translation at API boundary)
     base_context = build_context(
       hint: context_hint,
-      additional_context: additional_context
+      additional_context: additional_context,
+      persistent_context: persistent_context
     )
 
     # Execute Daedalus worker
@@ -101,8 +103,19 @@ class DaedalusController < ApplicationController
   # Build Contexts::BaseContext from extracted parameter values
   # Translation at API boundary - converts request params to domain object
   # ALWAYS returns a BaseContext object (no fallbacks, no optionals)
-  def build_context(hint:, additional_context:)
+  def build_context(hint:, additional_context:, persistent_context: nil)
     base_context = Contexts::BaseContext.new
+    
+    # Add persistent context FIRST (highest priority, never condensed)
+    if persistent_context.present?
+      Rails.logger.info("Adding persistent context to Daedalus plan generation")
+      base_context.add(
+        content: persistent_context,
+        topics: ["persistent", "style", "guidelines"],
+        source: "user_input",
+        metadata: { type: "persistent_context", priority: "high", condensable: false }
+      )
+    end
     
     # Add hint if provided
     if hint.present?

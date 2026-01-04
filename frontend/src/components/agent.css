@@ -462,3 +462,15 @@
   border-radius: 0.375rem;
   font-size: 0.9rem;
 }
+
+/* Persistent Context Container */
+.persistent-context-container {
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+[data-theme="dark"] .persistent-context-container {
+  background: #111827;
+  border-bottom-color: #374151;
+}

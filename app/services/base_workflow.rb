@@ -132,9 +132,9 @@ class BaseWorkflow
   def initialize_workflow_memory
     parent_id = @parent_memory ? @parent_memory.id : @owner_id
     
-    # Create path under AGENT_DATA_PATH
+    # Create path under AgentConfig.data_path
     memory_path = File.join(
-      ENV.fetch("AGENT_DATA_PATH", "."),
+      AgentConfig.data_path,
       @owner_id,
       "workflows",
       "workflow_#{@workflow_id}_memory.json"

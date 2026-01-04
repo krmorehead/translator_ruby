@@ -44,7 +44,7 @@ export const useAgentStore = create((set, get) => ({
     })),
 
   createPlan: async () => {
-    const { daedalus, projectPath } = get();
+    const { daedalus, projectPath, persistentContext } = get();
     set({
       daedalus: {
         ...daedalus,
@@ -55,7 +55,10 @@ export const useAgentStore = create((set, get) => ({
     });
 
     try {
-      const context = { hint: daedalus.contextHint };
+      const context = { 
+        hint: daedalus.contextHint,
+        persistent: persistentContext || null
+      };
       const response = await daedalusApi.createPlan({
         goal: daedalus.goal,
         path: projectPath,
@@ -131,7 +134,7 @@ export const useAgentStore = create((set, get) => ({
     })),
 
   startExecution: async (planPath, projectPath, options = {}) => {
-    const { sisyphus } = get();
+    const { sisyphus, persistentContext } = get();
     set({
       sisyphus: {
         ...sisyphus,
@@ -143,7 +146,10 @@ export const useAgentStore = create((set, get) => ({
       const result = await sisyphusApi.createExecution({
         planPath,
         projectPath,
-        options,
+        options: {
+          ...options,
+          persistent_context: persistentContext || null
+        },
       });
       set({
         sisyphus: {
@@ -710,6 +716,16 @@ export const useAgentStore = create((set, get) => ({
   sessionError: "",
 
   // ============================================================================
+  // PERSISTENT CONTEXT - Sent with every request
+  // ============================================================================
+  persistentContext: localStorage.getItem("persistentContext") || "",
+  
+  setPersistentContext: (context) => {
+    localStorage.setItem("persistentContext", context);
+    set({ persistentContext: context });
+  },
+
+  // ============================================================================
   // COMPUTED ACCESSORS - Components use these, not raw state
   // NO optional checks - objects are ALWAYS valid
   // ============================================================================
@@ -809,15 +825,20 @@ export const useAgentStore = create((set, get) => ({
 
   // Send message
   sendMessage: async (content) => {
-    const { currentSessionId } = get();
+    const { currentSessionId, persistentContext } = get();
     if (!currentSessionId) return;
 
     console.log("[sendMessage] Sending message for session:", currentSessionId);
+    console.log("[sendMessage] Including persistent context:", persistentContext ? "YES" : "NO");
     try {
       const response = await fetch(`/api/agent_sessions/${currentSessionId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: "user", content }),
+        body: JSON.stringify({ 
+          role: "user", 
+          content,
+          persistent_context: persistentContext || null
+        }),
       });
       const data = await response.json();
       

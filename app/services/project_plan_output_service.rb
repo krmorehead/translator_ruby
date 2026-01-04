@@ -20,7 +20,7 @@ class ProjectPlanOutputService
   # @param project_name [String] Name of the project (will be slugified)
   # @param base_path [String] Path to the codebase (for context)
   # @param output_base [String] Base output directory (default: docs/projects/)
-  def initialize(project_name:, output_base: ENV.fetch("AGENT_DATA_PATH"))
+  def initialize(project_name:, output_base: AgentConfig.data_path)
     @project_name = project_name
     @output_base = output_base
   end

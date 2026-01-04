@@ -96,6 +96,124 @@
   word-wrap: break-word;
 }
 
+/* Markdown rendering styles */
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+}
+
+.message-content h1 {
+  font-size: 1.5em;
+}
+
+.message-content h2 {
+  font-size: 1.3em;
+}
+
+.message-content h3 {
+  font-size: 1.1em;
+}
+
+.message-content p {
+  margin: 8px 0;
+}
+
+.message-content ul,
+.message-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.message-content li {
+  margin: 4px 0;
+}
+
+.message-content a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.user-message .message-content a {
+  color: white;
+}
+
+.message-content blockquote {
+  margin: 12px 0;
+  padding-left: 16px;
+  border-left: 3px solid #d1d5db;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.user-message .message-content blockquote {
+  border-left-color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Code styling */
+.message-content .inline-code {
+  background: rgba(0, 0, 0, 0.08);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 0.9em;
+}
+
+.user-message .message-content .inline-code {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.message-content .code-block {
+  margin: 12px 0;
+  background: #1e1e1e;
+  border-radius: 6px;
+  overflow-x: auto;
+  padding: 12px;
+}
+
+.message-content .code-block code {
+  color: #d4d4d4;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  display: block;
+}
+
+.user-message .message-content .code-block {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.user-message .message-content .code-block code {
+  color: white;
+}
+
+/* Syntax highlighting for code blocks */
+.message-content .code-block code .keyword {
+  color: #c586c0;
+}
+
+.message-content .code-block code .string {
+  color: #ce9178;
+}
+
+.message-content .code-block code .comment {
+  color: #6a9955;
+  font-style: italic;
+}
+
+.message-content .code-block code .function {
+  color: #dcdcaa;
+}
+
+.message-content .code-block code .number {
+  color: #b5cea8;
+}
+
 .message-thoughts {
   margin-top: 12px;
   padding: 8px;

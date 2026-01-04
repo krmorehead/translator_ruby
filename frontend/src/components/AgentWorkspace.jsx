@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAgentStore } from "../store/agentStore";
+import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
+import ErrorBoundary from "./ErrorBoundary";
 import FilePathSelector from "./FilePathSelector";
 import ConfigurationPanel from "./ConfigurationPanel";
 import ApprovalModal from "./ApprovalModal";
@@ -9,11 +11,14 @@ import ThoughtsPanel from "./ThoughtsPanel";
 import MemoryInspector from "./MemoryInspector";
 import ContextManager from "./ContextManager";
 import TimelineView from "./TimelineView";
+import UserPreferencesPanel from "./UserPreferencesPanel";
+import PersistentContext from "./PersistentContext";
 import "./agent.css";
 
 // AgentWorkspace - Unified interface for Daedalus (planning) and Sisyphus (execution)
 function AgentWorkspace() {
   const [showConfig, setShowConfig] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [activeTab, setActiveTab] = useState("chat"); // chat, thoughts, memory, context, timeline
 
@@ -27,6 +32,30 @@ function AgentWorkspace() {
   // Session state
   const sessionId = useAgentStore((state) => state.currentSessionId);
   const initializeSession = useAgentStore((state) => state.initializeSession);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    focusChatInput: () => {
+      if (sessionId && activeTab === 'chat') {
+        const input = document.querySelector('.chat-input');
+        input?.focus();
+      }
+    },
+    toggleConfig: () => setShowConfig(!showConfig),
+    switchTab: (tab) => {
+      if (sessionId) {
+        setActiveTab(tab);
+      }
+    },
+    initializeSession: () => {
+      if (!sessionId) {
+        handleInitializeSession();
+      }
+    },
+    closeModal: () => {
+      // Approval modal handles its own escape
+    },
+  });
 
   // Daedalus state
   const daedalus = useAgentStore((state) => state.daedalus);
@@ -288,6 +317,13 @@ function AgentWorkspace() {
               >
                 ⚙️
               </button>
+              <button
+                onClick={() => setShowPreferences(!showPreferences)}
+                className="btn-icon"
+                aria-label="User preferences"
+              >
+                👤
+              </button>
             </div>
           </div>
         </div>
@@ -295,6 +331,11 @@ function AgentWorkspace() {
           <LoadingIndicator />
         )}
       </header>
+
+      {/* User Preferences Modal */}
+      {showPreferences && (
+        <UserPreferencesPanel onClose={() => setShowPreferences(false)} />
+      )}
 
       <main className="agent-main">
         {/* Configuration Panel (collapsible) */}
@@ -305,6 +346,13 @@ function AgentWorkspace() {
         )}
 
         <div className="agent-content">
+          {/* Persistent Context (Always visible when session active) */}
+          {sessionId && (
+            <div className="persistent-context-container">
+              <PersistentContext compact={true} />
+            </div>
+          )}
+
           {/* Tab Navigation for Chat/Thoughts/Memory/Context */}
           {sessionId && (
             <div className="agent-tabs">
@@ -349,11 +397,31 @@ function AgentWorkspace() {
           {/* Tab Content */}
           {sessionId && (
             <div className="tab-content">
-              {activeTab === "chat" && <ChatPanel />}
-              {activeTab === "thoughts" && <ThoughtsPanel />}
-              {activeTab === "memory" && <MemoryInspector />}
-              {activeTab === "context" && <ContextManager />}
-              {activeTab === "timeline" && <TimelineView />}
+              {activeTab === "chat" && (
+                <ErrorBoundary showDetails={false}>
+                  <ChatPanel />
+                </ErrorBoundary>
+              )}
+              {activeTab === "thoughts" && (
+                <ErrorBoundary showDetails={false}>
+                  <ThoughtsPanel />
+                </ErrorBoundary>
+              )}
+              {activeTab === "memory" && (
+                <ErrorBoundary showDetails={false}>
+                  <MemoryInspector />
+                </ErrorBoundary>
+              )}
+              {activeTab === "context" && (
+                <ErrorBoundary showDetails={false}>
+                  <ContextManager />
+                </ErrorBoundary>
+              )}
+              {activeTab === "timeline" && (
+                <ErrorBoundary showDetails={false}>
+                  <TimelineView />
+                </ErrorBoundary>
+              )}
             </div>
           )}
           

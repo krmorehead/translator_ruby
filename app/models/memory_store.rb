@@ -15,7 +15,7 @@ class MemoryStore
     raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
 
     @owner_id = owner_id.to_s
-    @path = File.join(ENV.fetch("AGENT_DATA_PATH"), @owner_id, "memory.json")
+    @path = File.join(AgentConfig.data_path, @owner_id, "memory.json")
     @id = SecureRandom.uuid
     @sections = load_sections
     @section_contexts = {}

@@ -121,7 +121,7 @@ class DaedalusWorker < BaseWorker
   def write_output_files
     service = PlanOutputService.new(
       execution_plan: @execution_plan,
-      base_path: ENV.fetch("AGENT_DATA_PATH", ".")
+      base_path: AgentConfig.data_path
     )
 
     @output_paths = service.write

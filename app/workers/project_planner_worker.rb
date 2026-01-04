@@ -197,7 +197,7 @@ class ProjectPlannerWorker < BaseWorker
 
     output_service = ProjectPlanOutputService.new(
       project_name: project_name,
-      output_base: ENV.fetch("AGENT_DATA_PATH", ".")
+      output_base: AgentConfig.data_path
     )
 
     output_paths = output_service.write(

@@ -616,7 +616,7 @@ class SisyphusWorker < BaseWorker
       workflow_name: self.class.worker_name,
       parent_id: "root",
       owner_id: @owner_id,
-      path: File.join(ENV.fetch("AGENT_DATA_PATH"), @owner_id, "workflows", "sisyphus_memory.json")
+      path: File.join(AgentConfig.data_path, @owner_id, "workflows", "sisyphus_memory.json")
     )
   end
 

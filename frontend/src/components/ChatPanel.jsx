@@ -1,10 +1,13 @@
 import React from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useAgentStore } from "../store/agentStore";
 import "./ChatPanel.css";
 
 /**
  * ChatPanel displays conversation history with the agent.
  * Shows user and agent messages with timestamps and thoughts.
+ * Renders agent messages with markdown for better code display.
  */
 const ChatPanel = () => {
   const [inputMessage, setInputMessage] = React.useState("");
@@ -39,6 +42,7 @@ const ChatPanel = () => {
   const renderMessage = (message, index) => {
     const isUser = message.role === "user";
     const isSystem = message.role === "system";
+    const isAgent = message.role === "agent";
 
     return (
       <div
@@ -55,7 +59,32 @@ const ChatPanel = () => {
             {message.getFormattedTimestamp()}
           </span>
         </div>
-        <div className="message-content">{message.content}</div>
+        <div className="message-content">
+          {isAgent ? (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({ node, inline, className, children, ...props }) {
+                  return inline ? (
+                    <code className="inline-code" {...props}>
+                      {children}
+                    </code>
+                  ) : (
+                    <pre className="code-block">
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    </pre>
+                  );
+                },
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          ) : (
+            message.content
+          )}
+        </div>
         {message.hasThoughts() && (
           <details className="message-thoughts">
             <summary>💭 Agent Reasoning</summary>

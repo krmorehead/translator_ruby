@@ -34,7 +34,7 @@ class ResearchMemoryStore
   # List all owner IDs that have research memory stores
   # @return [Array<String>] Array of owner IDs
   def self.list_owners
-    base_path = ENV.fetch("AGENT_DATA_PATH", ".")
+    base_path = AgentConfig.data_path
     return [] unless Dir.exist?(base_path)
     Dir.entries(base_path)
        .select { |entry| File.directory?(File.join(base_path, entry)) && !entry.start_with?('.') }

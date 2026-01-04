@@ -93,6 +93,7 @@ module Api
       session_id = params[:session_id]
       role = params[:role] || "user"
       content = params[:content]
+      persistent_context = params[:persistent_context]
 
       unless [ChatMessage::ROLE_USER, ChatMessage::ROLE_AGENT, ChatMessage::ROLE_SYSTEM].include?(role)
         return render json: {
@@ -113,6 +114,15 @@ module Api
         # Get conversation history for context
         conversation = @service.get_conversation(session_id: session_id)
         messages = conversation.map { |msg| { role: msg.role, content: msg.content } }
+
+        # Prepend persistent context as a system message if provided
+        if persistent_context && !persistent_context.empty?
+          Rails.logger.info("Including persistent context in LLM request")
+          messages.unshift({
+            role: "system",
+            content: "PERSISTENT CONTEXT (always apply): #{persistent_context}"
+          })
+        end
 
         # Send to real LLM
         Rails.logger.info("Sending to LLM with #{messages.size} messages")

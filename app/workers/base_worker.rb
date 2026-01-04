@@ -74,12 +74,12 @@ class BaseWorker
 
   # Path for storing worker state files
   def state_path
-    File.join(File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_STATE_PATH), owner_id)
+    File.join(File.join(AgentConfig.data_path, DEFAULT_STATE_PATH), owner_id)
   end
 
   # Path for writing output files
   def output_path
-    File.join(ENV.fetch("AGENT_DATA_PATH", "."), DEFAULT_OUTPUT_PATH)
+    File.join(AgentConfig.data_path, DEFAULT_OUTPUT_PATH)
   end
 
   # Get compressed context summary for passing to workflows/prompts

@@ -40,8 +40,10 @@ module Actions
     end
     
     # Get the working directory path from agent
+    # Note: This is the working directory (where agent investigates/modifies),
+    # NOT the storage directory (which is always AgentConfig.data_path)
     def path
-      @agent.respond_to?(:path) ? @agent.path : ENV.fetch("AGENT_DATA_PATH", ".")
+      @agent.respond_to?(:path) ? @agent.path : AgentConfig.data_path
     end
     
     # List files in a directory using FileTreeTool
