@@ -99,6 +99,7 @@ class ConfigurationService
   private
 
   # Build capabilities hash from GenericLlmClient
+  # Following OpenAI API format
   # @return [Hash] Hash of capability_name => CapabilityConfig
   def build_capabilities_from_generic_client
     capabilities = {}
@@ -106,7 +107,8 @@ class ConfigurationService
     GenericLlmClient::CAPABILITIES.each do |name, config|
       capabilities[name] = Configuration::CapabilityConfig.new(
         name: name,
-        model_name: config[:model_name],
+        model: config[:model_name],  # OpenAI API format
+        provider: "vllm",  # All current capabilities use vLLM
         port: config[:port],
         max_context: config[:max_context],
         base_url: config[:base_url]
