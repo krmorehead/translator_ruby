@@ -38,7 +38,8 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Parameter validation tests
   speed_profile :fast
   test "execute raises error when params is not a hash" do
-    error = assert_raises(ArgumentError) do
+    # OOP: Type errors raise TypeError, not ArgumentError
+    error = assert_raises(TypeError) do
       @tool.execute("not a hash")
     end
     assert_match(/must be a Hash/, error.message)
