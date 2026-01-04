@@ -24,10 +24,10 @@ module Api
       json = JSON.parse(response.body)
       capabilities = json.fetch("config").fetch("capabilities")
       
-      # Should have at least planner, executor, and researcher
-      assert capabilities.key?("planner") || capabilities.key?(:planner)
-      assert capabilities.key?("executor") || capabilities.key?(:executor)
-      assert capabilities.key?("researcher") || capabilities.key?(:researcher)
+      # Check for actual capabilities from GenericLlmClient::CAPABILITIES
+      assert capabilities.key?("general_llm") || capabilities.key?(:general_llm), "missing general_llm"
+      assert capabilities.key?("tool_calling") || capabilities.key?(:tool_calling), "missing tool_calling"
+      assert capabilities.key?("embeddings") || capabilities.key?(:embeddings), "missing embeddings"
     end
 
     speed_profile :fast
@@ -59,7 +59,8 @@ module Api
     speed_profile :fast
     test "POST /api/agent/config/validate with valid capability returns success" do
       service = AgentConfigService.new
-      result = service.validate_capability("planner")
+      # Use actual capability name from GenericLlmClient::CAPABILITIES
+      result = service.validate_capability("general_llm")
       
       assert result.fetch(:valid)
       assert_nil result.fetch(:error)
@@ -86,7 +87,8 @@ module Api
     speed_profile :slow
     test "POST /api/agent/config/test with valid capability connects to LLM" do
       service = AgentConfigService.new
-      result = service.test_connection("planner")
+      # Use actual capability name from GenericLlmClient::CAPABILITIES
+      result = service.test_connection("general_llm")
       
       assert result.fetch(:success)
       assert result.fetch(:connected)

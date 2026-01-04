@@ -22,9 +22,10 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
   test "get_config includes all standard capabilities" do
     config = @service.get_config
     
-    assert config.capability?(:planner)
-    assert config.capability?(:executor)
-    assert config.capability?(:researcher)
+    # Check for actual capabilities defined in GenericLlmClient
+    assert config.capability?(:general_llm), "missing general_llm capability"
+    assert config.capability?(:tool_calling), "missing tool_calling capability"
+    assert config.capability?(:embeddings), "missing embeddings capability"
   end
 
   speed_profile :fast
@@ -48,7 +49,8 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "validate_capability returns true for valid capability" do
-    result = @service.validate_capability("planner")
+    # Use actual capability name from GenericLlmClient::CAPABILITIES
+    result = @service.validate_capability("general_llm")
     
     assert result[:valid]
     assert_nil result[:error]

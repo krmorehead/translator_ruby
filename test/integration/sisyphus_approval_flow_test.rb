@@ -34,13 +34,10 @@ class SisyphusApprovalFlowTest < ActionDispatch::IntegrationTest
       - Step 3: Run the code
     PLAN
 
-    # Clear the global session cache before each test
     SessionCache.instance.flushall
 
-    # Use the same cache as the controller (SessionCache.instance)
     @approval_store = ApprovalRequestStore.new
 
-    # Track created approval IDs for cleanup
     @created_approval_ids = []
   end
 
