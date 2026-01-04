@@ -9,7 +9,7 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
   def setup
     # Use fresh session cache for each test
     @cache = SessionCache.new
-    @store = ExecutionStateStore.new(store: @cache, ttl: 3600)
+    @store = ExecutionStateStore.new(store: @cache)
 
     # Create sample execution state
     @state = Execution::ExecutionState.new(
@@ -43,8 +43,9 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
   end
 
   speed_profile :fast
-  test "initializes with custom TTL" do
-    store = ExecutionStateStore.new(store: @cache, ttl: 7200)
+  test "initializes with custom cache instance" do
+    custom_cache = SessionCache.new
+    store = ExecutionStateStore.new(store: custom_cache)
     assert_not_nil store
   end
 
