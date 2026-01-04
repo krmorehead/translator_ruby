@@ -4,7 +4,8 @@ require "test_helper"
 
 class BrowserToolTest < ActiveSupport::TestCase
   def setup
-    Rails.application.eager_load! unless Rails.application.config.eager_load
+    # Explicitly require the tool file to ensure module is loaded
+    require Rails.root.join("app/tools/sisyphus/browser_tool")
     @tool = Tools::Sisyphus::BrowserTool.new
     cleanup_browser
   end
