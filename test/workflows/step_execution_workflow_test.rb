@@ -145,7 +145,8 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :fast
   test "setup initializes workflow memory" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    test_context = create_test_context
+    workflow.setup(step: @step, path: @path, context: test_context)
 
     assert_not_nil workflow.workflow_memory
     assert_instance_of WorkflowMemoryStore, workflow.workflow_memory
@@ -164,7 +165,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :fast
   test "transitions through execution phases" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     # pending → running
     workflow.trigger(:start)
@@ -198,7 +199,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :fast
   test "can transition to failed from any execution phase" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
     workflow.trigger(:initialized)
@@ -214,7 +215,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "execute runs through all phases successfully" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     result = workflow.execute
 
@@ -228,7 +229,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "execute returns step result structure" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     result = workflow.execute
 
@@ -248,7 +249,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "execute records decisions to workflow memory" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.execute
 
@@ -268,7 +269,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "execute handles errors gracefully" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     # Force an error by stubbing a method
     workflow.define_singleton_method(:assemble_context) do
@@ -289,7 +290,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "assemble_context records decision" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
     workflow.trigger(:initialized)
@@ -305,7 +306,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "assemble_context populates assembled_context" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
     workflow.trigger(:initialized)
@@ -323,7 +324,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "plan_tool_sequence records decision" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
     workflow.trigger(:initialized)
@@ -343,7 +344,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "validate_tools records decision" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
     workflow.trigger(:initialized)
@@ -365,7 +366,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "execute_tools records decision" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
     workflow.trigger(:initialized)
@@ -389,7 +390,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "record_results builds complete result structure" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
     workflow.trigger(:initialized)
@@ -417,7 +418,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   speed_profile :slow
   test "record_results includes metadata about execution" do
     workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
-    workflow.setup(step: @step, path: @path)
+    workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
     workflow.trigger(:initialized)

@@ -137,19 +137,22 @@ module Sisyphus
       # @raise [ArgumentError] if params invalid
       # @raise [TypeError] if param types incorrect
       def execute(params)
-        # OOP Pattern: Fail-fast validation with descriptive errors
-        validate_params!(params)
-        validate_action!(params[:action])
-
-        action = params[:action].to_sym
-
         begin
+          # OOP Pattern: Fail-fast validation with descriptive errors
+          validate_params!(params)
+          validate_action!(params[:action])
+
+          action = params[:action].to_sym
+
           # OOP Pattern: Use real browser instances, no mocks
           result = send("action_#{action}", params)
           success_result(result)
+        rescue ArgumentError => e
+          # Return validation errors as error results
+          error_result(e.message, error: e)
         rescue StandardError => e
           # OOP Pattern: Descriptive error messages
-          error_result("Browser action '#{action}' failed: #{e.message}", error: e)
+          error_result("Browser action failed: #{e.message}", error: e)
         end
       end
 
