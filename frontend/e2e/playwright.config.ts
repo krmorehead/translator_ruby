@@ -20,7 +20,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Limit workers to prevent overwhelming LLM server (tests should handle 3-4 parallel)
+  workers: process.env.TEST_SPEED_FILTER === 'slow' ? 3 : (process.env.CI ? 1 : undefined),
   
   /* Reporter to use */
   reporter: [

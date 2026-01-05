@@ -714,6 +714,7 @@ export const useAgentStore = create((set, get) => ({
   
   sessionLoading: false,
   sessionError: "",
+  chatLoading: false,
 
   // ============================================================================
   // PERSISTENT CONTEXT - Sent with every request
@@ -828,6 +829,7 @@ export const useAgentStore = create((set, get) => ({
     const { currentSessionId, persistentContext } = get();
     if (!currentSessionId) return;
 
+    set({ chatLoading: true });
     console.log("[sendMessage] Sending message for session:", currentSessionId);
     console.log("[sendMessage] Including persistent context:", persistentContext ? "YES" : "NO");
     try {
@@ -849,9 +851,13 @@ export const useAgentStore = create((set, get) => ({
         // Reload conversation to get updated history
         console.log("[sendMessage] Message sent successfully, reloading conversation");
         await get().loadConversationHistory();
+      } else {
+        console.error("[sendMessage] API returned error:", data.error);
       }
     } catch (error) {
       console.error("Failed to send message:", error);
+    } finally {
+      set({ chatLoading: false });
     }
   },
 
