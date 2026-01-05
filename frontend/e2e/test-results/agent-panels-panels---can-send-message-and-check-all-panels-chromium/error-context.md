@@ -7,7 +7,7 @@
       - generic [ref=e7]:
         - heading "🏛️ Daedalus - Master Architect" [level=1] [ref=e8]
         - paragraph [ref=e9]: Generate detailed execution plans from codebase analysis
-        - paragraph [ref=e10]: "Session: 0ad58359-7cc2-46d7-a930-6e132762f96d"
+        - paragraph [ref=e10]: "Session: fad75c26-ddee-47fc-9f88-994b87b9a77f"
       - generic [ref=e11]:
         - combobox "Agent Mode" [ref=e12] [cursor=pointer]:
           - option "Daedalus (Planning)" [selected]
@@ -20,7 +20,7 @@
         - generic [ref=e20]: ▶
         - generic [ref=e21]: 📌 Persistent Context
       - generic [ref=e22]:
-        - button "Chat" [ref=e23] [cursor=pointer]: 💬 Chat
+        - button "Chat" [active] [ref=e23] [cursor=pointer]: 💬 Chat
         - button "Thoughts" [ref=e24] [cursor=pointer]: 💭 Thoughts
         - button "Memory" [ref=e25] [cursor=pointer]: 🧠 Memory
         - button "Context" [ref=e26] [cursor=pointer]: 📁 Context
@@ -28,11 +28,14 @@
       - generic [ref=e29]:
         - generic [ref=e30]:
           - heading "💬 Conversation" [level=3] [ref=e31]
-          - generic [ref=e32]: "Session: 0ad58359..."
-        - paragraph [ref=e35]: No messages yet. Start the conversation!
-        - generic [ref=e36]:
-          - textbox "Message input" [ref=e37]:
+          - generic [ref=e32]: "Session: fad75c26..."
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]: 👤 You
+            - generic [ref=e37]: 10:38:28 PM
+          - generic [ref=e38]: What is Ruby?
+        - generic [ref=e39]:
+          - textbox "Message input" [ref=e40]:
             - /placeholder: Type your message...
-            - text: What is Ruby?
-          - button "Send message" [active] [ref=e38] [cursor=pointer]: 📤 Send
+          - button "Send message" [disabled] [ref=e41]: 📤 Send
 ```
