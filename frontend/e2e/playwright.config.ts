@@ -42,6 +42,18 @@ export default defineConfig({
     
     /* Video on failure */
     video: 'retain-on-failure',
+    
+    /* Default action and navigation timeout - will be overridden per test by speed profile */
+    actionTimeout: 0, // Disable default, let speed profile handle it
+    navigationTimeout: 0, // Disable default, let speed profile handle it
+  },
+  
+  /* Global expect timeout - set based on test speed filter */
+  expect: {
+    timeout: process.env.E2E_TEST_SPEED_FILTER === 'fast' ? 5000 :
+             process.env.E2E_TEST_SPEED_FILTER === 'medium' ? 15000 :
+             process.env.E2E_TEST_SPEED_FILTER === 'slow' ? 30000 :
+             30000, // Default to slow for safety
   },
 
   /* Configure projects for major browsers */
