@@ -1,0 +1,92 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - heading "🏛️ Daedalus - Master Architect" [level=1] [ref=e8]
+        - paragraph [ref=e9]: Generate detailed execution plans from codebase analysis
+      - generic [ref=e10]:
+        - button "Initialize agent session" [ref=e11] [cursor=pointer]: Initialize Session
+        - combobox "Agent Mode" [ref=e12] [cursor=pointer]:
+          - option "Daedalus (Planning)" [selected]
+          - option "Sisyphus (Execution)"
+        - button "Toggle configuration panel" [active] [ref=e13] [cursor=pointer]: ⚙️
+        - button "User preferences" [ref=e14] [cursor=pointer]: 👤
+  - main [ref=e15]:
+    - complementary [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - heading "LLM Configuration" [level=3] [ref=e19]
+          - button "Refresh configuration" [ref=e20] [cursor=pointer]: 🔄
+        - generic [ref=e21]:
+          - heading "Capabilities" [level=4] [ref=e22]
+          - generic [ref=e23]:
+            - strong [ref=e25]: general_llm
+            - generic [ref=e26]:
+              - generic [ref=e27]: "Model:"
+              - generic [ref=e28]: Port:52003
+              - generic [ref=e29]:
+                - text: "Max Context:"
+                - generic [ref=e30]: 64000 tokens
+              - generic [ref=e31]: Base URL:SISYPHUS_LLM_URL
+            - button "Test Connection" [ref=e32] [cursor=pointer]
+          - generic [ref=e33]:
+            - strong [ref=e35]: tool_calling
+            - generic [ref=e36]:
+              - generic [ref=e37]: "Model:"
+              - generic [ref=e38]: Port:52003
+              - generic [ref=e39]:
+                - text: "Max Context:"
+                - generic [ref=e40]: 64000 tokens
+              - generic [ref=e41]: Base URL:LLM_URL
+            - button "Test Connection" [ref=e42] [cursor=pointer]
+          - generic [ref=e43]:
+            - strong [ref=e45]: embeddings
+            - generic [ref=e46]:
+              - generic [ref=e47]: "Model:"
+              - generic [ref=e48]: Port:52005
+              - generic [ref=e49]:
+                - text: "Max Context:"
+                - generic [ref=e50]: 8191 tokens
+              - generic [ref=e51]: Base URL:LLM_URL
+            - button "Test Connection" [ref=e52] [cursor=pointer]
+        - generic [ref=e53]:
+          - heading "Environment" [level=4] [ref=e54]
+          - generic [ref=e55]:
+            - generic [ref=e56]:
+              - generic [ref=e57]: "LLM_URL:"
+              - text: "***host"
+            - generic [ref=e58]:
+              - generic [ref=e59]: "LLM_RETRY:"
+              - text: "5"
+            - generic [ref=e60]:
+              - generic [ref=e61]: "LLM_RETRY_DELAY:"
+              - text: "50"
+            - generic [ref=e62]:
+              - generic [ref=e63]: "LLM_REQUEST_TIMEOUT:"
+              - text: "60"
+            - generic [ref=e64]:
+              - generic [ref=e65]: "RAILS_ENV:"
+              - text: test
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]: Goal
+        - textbox "Goal" [ref=e71]:
+          - /placeholder: Describe what you want to accomplish (e.g., 'Add user authentication system')...
+      - generic [ref=e72]:
+        - text: Codebase Path
+        - generic [ref=e73]:
+          - textbox "Codebase Path" [ref=e74]:
+            - /placeholder: /path/to/your/codebase
+          - button "Browse" [ref=e75]
+      - generic [ref=e76]:
+        - generic [ref=e77]: Context Hint (Optional)
+        - textbox "Context Hint (Optional)" [ref=e78]:
+          - /placeholder: E.g., 'Look at existing authentication patterns'
+        - generic [ref=e79]: Optional hint to guide the analysis
+      - generic [ref=e80]:
+        - button "Generate Execution Plan" [disabled] [ref=e81]
+        - button "Reset" [ref=e82] [cursor=pointer]
+```
