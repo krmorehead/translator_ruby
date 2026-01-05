@@ -180,7 +180,7 @@ slow("generates execution plan with real LLM", async ({ page }) => {
   // Wait for result - either success or error
   await expect(
     page.locator('.plan-result-section, .banner-error').first()
-  ).toBeVisible({ timeout: 25000 });
+  ).toBeVisible();
     
   // Check if we got a plan (not error)
   const planSection = page.locator('.plan-result-section');
@@ -199,8 +199,14 @@ slow("plan result contains goal and output paths", async ({ page }) => {
     // Generate plan
     await page.locator('button').filter({ hasText: /generate.*plan/i }).click();
     
-  // Wait for result (real LLM takes time)
-  await expect(page.locator('.plan-result-section').first()).toBeVisible({ timeout: 25000 });
+  // Wait for result - either success or error (proper error handling)
+  await expect(
+    page.locator('.plan-result-section, .banner-error').first()
+  ).toBeVisible();
+  
+  // Verify we got a plan (not error)
+  const planSection = page.locator('.plan-result-section');
+  await expect(planSection).toBeVisible();
     
   // Verify plan shows goal and output files
   await expect(page.locator('.plan-goal')).toBeVisible();
@@ -217,8 +223,8 @@ slow("plan error handling with invalid path", async ({ page }) => {
     // Submit
     await page.locator('button').filter({ hasText: /generate.*plan/i }).click();
     
-  // Should show error banner (may take time for backend to respond)
-  await expect(page.locator('.banner-error').first()).toBeVisible({ timeout: 15000 });
+  // Should show error banner
+  await expect(page.locator('.banner-error').first()).toBeVisible();
   });
 
 slow("starts execution with real plan", async ({ page }) => {
@@ -239,7 +245,7 @@ slow("starts execution with real plan", async ({ page }) => {
   // Should show execution in progress (loading state or monitor update)
   await expect(
     page.locator('text=/starting|running|executing|in progress/i').first()
-  ).toBeVisible({ timeout: 5000 });
+  ).toBeVisible();
   });
 
 fast("sisyphus form accepts step approval mode", async ({ page }) => {
@@ -278,7 +284,7 @@ slow("dry run mode prevents actual changes", async ({ page }) => {
   // Should show execution starting or in progress
   await expect(
     page.locator('text=/starting|running|in progress/i').first()
-  ).toBeVisible({ timeout: 15000 });
+  ).toBeVisible();
 });
 
 slow("creates plan in Daedalus then switches to Sisyphus", async ({ page }) => {
@@ -293,7 +299,7 @@ slow("creates plan in Daedalus then switches to Sisyphus", async ({ page }) => {
   // Wait for plan result (success or error)
   await expect(
     page.locator('.plan-result-section, .banner-error').first()
-  ).toBeVisible({ timeout: 25000 });
+  ).toBeVisible();
     
   // Verify plan shows goal
   await expect(page.locator('.plan-goal')).toBeVisible();

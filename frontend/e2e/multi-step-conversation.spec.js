@@ -17,7 +17,7 @@ slow("multi-step - complex conversation with 5+ turns", async ({ page }) => {
   // Initialize session
   console.log("\nStep 1: Initialize session");
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   console.log("✓ Session initialized");
   
   const messageInput = page.locator('input.chat-input, .chat-input input').first();
@@ -27,8 +27,8 @@ slow("multi-step - complex conversation with 5+ turns", async ({ page }) => {
   console.log("\nTurn 1: Introduction");
   await messageInput.fill("Hi! I'm working on a Ruby project.");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').first()).toBeVisible({ timeout: 30000 });
-  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').first()).toBeVisible();
+  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible();
   console.log("✓ Turn 1 complete (greeting)");
   
   await page.waitForTimeout(1000);
@@ -37,7 +37,7 @@ slow("multi-step - complex conversation with 5+ turns", async ({ page }) => {
   console.log("\nTurn 2: Ask about Ruby feature");
   await messageInput.fill("Can you explain what Ruby modules are?");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(3)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(3)).toBeVisible();
   console.log("✓ Turn 2 complete (module explanation)");
   
   await page.waitForTimeout(1000);
@@ -46,7 +46,7 @@ slow("multi-step - complex conversation with 5+ turns", async ({ page }) => {
   console.log("\nTurn 3: Follow-up question (context test)");
   await messageInput.fill("Can you show me an example?");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(5)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(5)).toBeVisible();
   console.log("✓ Turn 3 complete (example - agent should remember we're talking about modules)");
   
   await page.waitForTimeout(1000);
@@ -55,7 +55,7 @@ slow("multi-step - complex conversation with 5+ turns", async ({ page }) => {
   console.log("\nTurn 4: Different topic with context");
   await messageInput.fill("My project is called 'translator_ruby'. What should I know about it?");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(7)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(7)).toBeVisible();
   console.log("✓ Turn 4 complete (project discussion)");
   
   await page.waitForTimeout(1000);
@@ -64,7 +64,7 @@ slow("multi-step - complex conversation with 5+ turns", async ({ page }) => {
   console.log("\nTurn 5: Reference earlier context");
   await messageInput.fill("Should I use modules in translator_ruby?");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(9)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(9)).toBeVisible();
   console.log("✓ Turn 5 complete (combining context from turns 2, 3, and 4)");
   
   // Verify message count
@@ -89,7 +89,7 @@ slow("multi-step - conversation with code examples", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   const messageInput = page.locator('input.chat-input, .chat-input input').first();
   const sendBtn = page.locator('button.chat-send-button, .chat-send-button').first();
@@ -98,7 +98,7 @@ slow("multi-step - conversation with code examples", async ({ page }) => {
   console.log("\nTurn 1: Request code example");
   await messageInput.fill("Show me a Ruby class example");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible();
   
   // Check for code block rendering
   const hasCodeBlock = await page.locator('.code-block').count() > 0;
@@ -114,7 +114,7 @@ slow("multi-step - conversation with code examples", async ({ page }) => {
   console.log("\nTurn 2: Ask about the code");
   await messageInput.fill("Can you explain the initialize method?");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(3)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(3)).toBeVisible();
   console.log("✓ Agent explained code (context maintained)");
   
   const finalCount = await page.locator('.chat-message, .message').count();
@@ -130,7 +130,7 @@ slow("multi-step - error recovery in conversation", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   const messageInput = page.locator('input.chat-input, .chat-input input').first();
   const sendBtn = page.locator('button.chat-send-button, .chat-send-button').first();
@@ -139,7 +139,7 @@ slow("multi-step - error recovery in conversation", async ({ page }) => {
   console.log("\nTurn 1: Normal message");
   await messageInput.fill("Hello");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible();
   console.log("✓ First message successful");
   
   await page.waitForTimeout(1000);
@@ -156,7 +156,7 @@ slow("multi-step - error recovery in conversation", async ({ page }) => {
   console.log("\nTurn 3: Continue with valid message");
   await messageInput.fill("What is Ruby?");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(3)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(3)).toBeVisible();
   console.log("✓ Conversation continued after error handling");
   
   const finalCount = await page.locator('.chat-message, .message').count();
@@ -172,7 +172,7 @@ slow("multi-step - tab switching during conversation", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   const messageInput = page.locator('input.chat-input, .chat-input input').first();
   const sendBtn = page.locator('button.chat-send-button, .chat-send-button').first();
@@ -181,7 +181,7 @@ slow("multi-step - tab switching during conversation", async ({ page }) => {
   console.log("\nSend message 1");
   await messageInput.fill("Tell me about Ruby");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible();
   console.log("✓ Message 1 sent");
   
   // Switch to Thoughts
@@ -205,7 +205,7 @@ slow("multi-step - tab switching during conversation", async ({ page }) => {
   console.log("\nSend message 2 after tab switch");
   await messageInput.fill("What about Python?");
   await sendBtn.click();
-  await expect(page.locator('.chat-message, .message').nth(3)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(3)).toBeVisible();
   console.log("✓ Message 2 sent successfully");
   
   const finalCount = await page.locator('.chat-message, .message').count();
@@ -222,14 +222,14 @@ slow("multi-step - keyboard shortcut navigation", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   const messageInput = page.locator('input.chat-input, .chat-input input').first();
   
   // Send message
   await messageInput.fill("Hello Agent");
   await page.keyboard.press('Enter');
-  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible();
   console.log("✓ Sent message with Enter key");
   
   await page.waitForTimeout(1000);

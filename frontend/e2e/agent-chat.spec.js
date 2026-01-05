@@ -21,7 +21,7 @@ medium("initializes agent session and shows chat interface", async ({ page }) =>
   
   // Wait for tabs to appear
   console.log("Step 2: Waiting for agent interface to load...");
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   console.log("✓ Agent tabs loaded");
   
   // Verify all tabs are present
@@ -52,7 +52,7 @@ slow("sends message and receives LLM response", async ({ page }) => {
   // Initialize session
   console.log("Step 1: Initializing session...");
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   console.log("✓ Session initialized");
   
   // Ensure we're on chat tab
@@ -76,7 +76,7 @@ slow("sends message and receives LLM response", async ({ page }) => {
   
   // Wait for messages to appear (longer timeout for LLM)
   console.log("Step 3: Waiting for conversation to update...");
-  await expect(page.locator('.chat-message, .message').first()).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').first()).toBeVisible();
   console.log("✓ Messages displayed");
   
   // Count messages
@@ -109,7 +109,7 @@ slow("maintains conversation context across multiple messages", async ({ page })
   // Initialize session
   console.log("Step 1: Initializing session...");
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.chat-panel')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.chat-panel')).toBeVisible();
   
   const messageInput = page.locator('.chat-input');
   const sendBtn = page.locator('.chat-send-button');
@@ -118,7 +118,7 @@ slow("maintains conversation context across multiple messages", async ({ page })
   console.log("Step 2: Sending first message...");
   await messageInput.fill("My name is Test User");
   await sendBtn.click();
-  await expect(page.locator('.chat-message').nth(1)).toBeVisible({ timeout: 25000 });
+  await expect(page.locator('.chat-message').nth(1)).toBeVisible();
   console.log("✓ First exchange complete");
   
   // Wait a moment
@@ -130,7 +130,7 @@ slow("maintains conversation context across multiple messages", async ({ page })
   await sendBtn.click();
   
   // Wait for response
-  await expect(page.locator('.chat-message').nth(3)).toBeVisible({ timeout: 25000 });
+  await expect(page.locator('.chat-message').nth(3)).toBeVisible();
   console.log("✓ Second exchange complete");
   
   // Check if agent remembers
@@ -158,7 +158,7 @@ medium("switches between chat and thoughts tabs", async ({ page }) => {
   
   // Initialize session
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   console.log("✓ Session initialized");
   
   // Chat tab should be active
@@ -199,7 +199,7 @@ medium("shows session ID in chat panel", async ({ page }) => {
   
   // Initialize session
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.chat-panel')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.chat-panel')).toBeVisible();
   
   // Look for session ID display
   const sessionDisplay = page.locator('text=/session.*:/i');

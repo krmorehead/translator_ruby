@@ -63,9 +63,9 @@ medium("checkpoint - create checkpoint button exists after path is set", async (
   const setPathButton = page.getByRole("button", { name: /set path/i });
   await setPathButton.click();
   
-  // Wait for API response instead of networkidle
+  // Wait for API response
   const createButton = page.getByRole("button", { name: /create checkpoint/i });
-  await expect(createButton).toBeVisible({ timeout: 12000 });
+  await expect(createButton).toBeVisible();
   });
 
 medium("checkpoint - shows metadata form when create dialog opens", async ({ page }) => {
@@ -79,14 +79,14 @@ medium("checkpoint - shows metadata form when create dialog opens", async ({ pag
   
   // Wait for API response
   const createButton = page.getByRole("button", { name: /create checkpoint/i });
-  await expect(createButton).toBeVisible({ timeout: 12000 });
+  await expect(createButton).toBeVisible();
   
   if (await createButton.isVisible().catch(() => false)) {
     await createButton.click();
     
     // Look for dialog or form elements
     const dialogOrForm = page.locator("dialog, [role='dialog'], form.checkpoint-form");
-    const visible = await dialogOrForm.isVisible({ timeout: 5000 }).catch(() => false);
+    const visible = await dialogOrForm.isVisible().catch(() => false);
     
     if (visible) {
       await expect(dialogOrForm.first()).toBeVisible();

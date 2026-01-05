@@ -7,7 +7,7 @@ async function initializeAgentSession(page) {
   await page.goto("/agent");
   await page.waitForLoadState("networkidle");
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: UI_TIMEOUT });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
 }
 
 medium("displays persistent context UI when session active", async ({ page }) => {
@@ -17,7 +17,7 @@ medium("displays persistent context UI when session active", async ({ page }) =>
   
   // Check for persistent context toggle
   const contextToggle = page.locator('.persistent-context-toggle');
-  await expect(contextToggle).toBeVisible({ timeout: UI_TIMEOUT });
+  await expect(contextToggle).toBeVisible();
   console.log("✓ Persistent context toggle visible");
   
   // Check toggle text
@@ -29,7 +29,7 @@ medium("displays persistent context UI when session active", async ({ page }) =>
   await page.waitForTimeout(300); // Animation
   
   // Check for empty state
-  await expect(page.locator('.context-empty')).toBeVisible({ timeout: UI_TIMEOUT });
+  await expect(page.locator('.context-empty')).toBeVisible();
   await expect(page.locator('text=No persistent context set')).toBeVisible();
   console.log("✓ Empty state displayed correctly");
   
@@ -51,7 +51,7 @@ medium("can add and save persistent context", async ({ page }) => {
   
   // Wait for textarea
   const textarea = page.locator('textarea.context-textarea');
-  await expect(textarea).toBeVisible({ timeout: UI_TIMEOUT });
+  await expect(textarea).toBeVisible();
   console.log("✓ Editor textarea visible");
   
   // Type persistent context
@@ -136,7 +136,7 @@ medium("can clear persistent context", async ({ page }) => {
   console.log("✓ Clicked clear (confirmed)");
   
   // Verify empty state is back
-  await expect(page.locator('.context-empty')).toBeVisible({ timeout: UI_TIMEOUT });
+  await expect(page.locator('.context-empty')).toBeVisible();
   await expect(page.locator('text=No persistent context set')).toBeVisible();
   console.log("✓ Empty state restored");
   
@@ -172,7 +172,7 @@ slow("persistent context is sent with chat messages", async ({ page }) => {
   console.log("✓ Message sent");
   
   // Wait for agent response
-  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible({ timeout: LLM_TIMEOUT });
+  await expect(page.locator('.chat-message, .message').nth(1)).toBeVisible();
   console.log("✓ Agent responded");
   
   // Get agent response text
@@ -208,7 +208,7 @@ medium("persistent context persists across page refresh", async ({ page }) => {
   
   // Initialize new session
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: UI_TIMEOUT });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   console.log("✓ New session initialized");
   
   // Expand persistent context

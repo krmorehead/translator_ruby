@@ -39,7 +39,7 @@ slow("MANUAL: Complete Daedalus workflow", async ({ page }) => {
   console.log("Step 4: Waiting for plan result (may take 10-20s)...");
   await expect(
     page.locator('.plan-result-section, .banner-error').first()
-  ).toBeVisible({ timeout: 25000 });
+  ).toBeVisible();
   
   // Check if we got a plan or error
   const planSection = page.locator('.plan-result-section');

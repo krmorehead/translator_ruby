@@ -17,7 +17,7 @@ medium("thoughts - displays thoughts panel UI", async ({ page }) => {
   
   // Initialize session
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   // Click Thoughts tab
   const thoughtsTab = page.locator('button[aria-label="Thoughts"]');
@@ -40,7 +40,7 @@ medium("thoughts - auto-refresh toggle works", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   await page.locator('button[aria-label="Thoughts"]').click();
   
@@ -60,7 +60,7 @@ medium("thoughts - filter dropdown works", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   await page.locator('button[aria-label="Thoughts"]').click();
   
@@ -89,7 +89,7 @@ medium("memory - displays memory inspector UI", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   // Click Memory tab
   const memoryTab = page.locator('button[aria-label="Memory"]');
@@ -108,7 +108,7 @@ medium("memory - shows empty state initially", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   await page.locator('button[aria-label="Memory"]').click();
   
@@ -124,7 +124,7 @@ medium("memory - refresh button works", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   await page.locator('button[aria-label="Memory"]').click();
   
@@ -149,7 +149,7 @@ medium("context - displays context manager UI", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   // Click Context tab
   const contextTab = page.locator('button[aria-label="Context"]');
@@ -168,7 +168,7 @@ medium("context - add entry form appears on button click", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   await page.locator('button[aria-label="Context"]').click();
   
@@ -188,7 +188,7 @@ medium("context - can add context entry", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   await page.locator('button[aria-label="Context"]').click();
   
@@ -213,7 +213,7 @@ medium("context - shows entry count", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   await page.locator('button[aria-label="Context"]').click();
   
@@ -240,7 +240,7 @@ medium("timeline - displays timeline view UI", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   // Click Timeline tab
   const timelineTab = page.locator('button[aria-label="Timeline"]');
@@ -259,7 +259,7 @@ medium("timeline - filter dropdown has options", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   await page.locator('button[aria-label="Timeline"]').click();
   
@@ -282,7 +282,7 @@ medium("timeline - shows empty state initially", async ({ page }) => {
   await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   await page.locator('button[aria-label="Timeline"]').click();
   
@@ -305,7 +305,7 @@ slow("panels - can send message and check all panels", async ({ page }) => {
   
   // Initialize session
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   
   // Send a message
   const messageInput = page.locator('input.chat-input, .chat-input input').first();
@@ -315,7 +315,7 @@ slow("panels - can send message and check all panels", async ({ page }) => {
   await sendBtn.click();
   
   // Wait for response
-  await expect(page.locator('.chat-message, .message').first()).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').first()).toBeVisible();
   console.log("✓ Message sent and response received");
   
   // Check Thoughts tab

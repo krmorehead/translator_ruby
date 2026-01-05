@@ -21,7 +21,7 @@ slow("DEMO: Part 1 - Conversational AI with Context", async ({ page }) => {
   console.log("✓ Loaded /agent workspace");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   console.log("✓ Agent session initialized");
   console.log("✓ Session tabs visible: Chat, Thoughts, Memory, Context, Timeline");
   
@@ -45,7 +45,7 @@ slow("DEMO: Part 1 - Conversational AI with Context", async ({ page }) => {
   console.log("💬 User: 'Explain what a Ruby module is'");
   await sendBtn.click();
   
-  await expect(page.locator('.chat-message, .message').first()).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.chat-message, .message').first()).toBeVisible();
   const response1 = await page.locator('.chat-message, .message').nth(1).textContent();
   console.log(`🤖 Agent: ${response1.substring(0, 150)}...`);
   console.log("✓ First conversation complete");
@@ -76,7 +76,7 @@ slow("DEMO: Part 2 - Tab Navigation and Code Assistance", async ({ page }) => {
   await page.goto("/agent");
   await page.waitForLoadState("networkidle");
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
-  await expect(page.locator('.agent-tabs')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.agent-tabs')).toBeVisible();
   console.log("✓ Session initialized");
   
   const chatTab = page.locator('button[aria-label="Chat"]');

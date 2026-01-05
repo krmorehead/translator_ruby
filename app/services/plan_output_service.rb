@@ -48,13 +48,11 @@ class PlanOutputService
   end
 
   # Generate directory name with timestamp and sanitized goal
-  # Format: MM-DD-YYYY_sanitized_goal_UUID
-  # UUID ensures uniqueness even with identical goals on same day (OOP pattern)
+  # Format: MM-DD-YYYY_sanitized_goal
   def directory_name
     timestamp = Time.now.strftime("%m-%d-%Y")
     sanitized_goal = sanitize_goal(execution_plan.goal)
-    unique_id = SecureRandom.uuid.split('-').first # Short UUID suffix (8 chars)
-    "#{timestamp}_#{sanitized_goal}_#{unique_id}"
+    "#{timestamp}_#{sanitized_goal}"
   end
 
   # Sanitize goal for use in directory name
