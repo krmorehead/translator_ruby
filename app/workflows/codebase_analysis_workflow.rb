@@ -32,11 +32,11 @@ class CodebaseAnalysisWorkflow < BaseWorkflow
   # @param goal [String] The goal to analyze the codebase for
   # @param path [String] Root directory path
   # @param owner_id [String] Unique ID for state isolation
-  # @param parent_memory [#get_section, nil] Parent worker's memory
+  # @param parent_id [String] Parent workflow ID for graph linking
   # @param max_files [Integer] Maximum files to include in analysis
-  def initialize(goal:, path:, owner_id:, parent_memory: nil, max_files: DEFAULT_MAX_FILES)
+  def initialize(goal:, path:, owner_id:, parent_id:, max_files: DEFAULT_MAX_FILES)
     validate_parameters!(goal, path, owner_id)
-    super(owner_id: owner_id, parent_memory: parent_memory)
+    super(owner_id: owner_id, parent_id: parent_id)
 
     @goal = goal
     @path = path

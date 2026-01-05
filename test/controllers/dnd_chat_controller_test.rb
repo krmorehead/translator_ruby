@@ -16,14 +16,14 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
     DndSessionService.clear_cache
   end
 
-  speed_profile :fast
+  speed_profile :medium
   test "messages contract returns yaml" do
     get "/dnd_chat/messages/contract"
     assert_response :success
     assert_includes response.media_type, "yaml"
   end
 
-  speed_profile :fast
+  speed_profile :medium
   test "agent contract returns yaml" do
     get "/dnd_chat/agent/contract"
     assert_response :success
@@ -59,7 +59,8 @@ class DndChatControllerTest < ActionDispatch::IntegrationTest
     assert_equal @session_id, body["session_id"]
   end
 
-  speed_profile :fast
+  # OOP: This test creates a DndSession which calls LLM during initialization for scenario generation
+  speed_profile :medium
   test "create session endpoint creates new session" do
     post "/dnd_chat/sessions"
     assert_response :created

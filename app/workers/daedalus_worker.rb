@@ -84,8 +84,12 @@ class DaedalusWorker < BaseWorker
 
   # Initialize worker memory
   def initialize_worker
-    store_path = File.join(state_path, "plan_memory.json")
-    @research_memory = ResearchMemoryStore.new(path: store_path, owner_id: @owner_id)
+    @research_memory = ResearchMemoryStore.new(
+      workflow_id: @owner_id,
+      workflow_name: "daedalus_worker",
+      parent_id: @owner_id,  # Workers are root, so parent is self
+      owner_id: @owner_id
+    )
     # Store goal in research_goal section (it's an array)
     @research_memory.set_section(:research_goal, [goal])
 
@@ -102,7 +106,7 @@ class DaedalusWorker < BaseWorker
       goal: goal,
       path: @path,  # Pass path for codebase exploration
       owner_id: owner_id,
-      parent_memory: @research_memory,
+      parent_id: @research_memory.workflow_id,
       context: context
     )
 

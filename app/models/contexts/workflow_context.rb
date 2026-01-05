@@ -36,12 +36,14 @@ module Contexts
 
     def load_from_graph
       service = ContextGraphService.instance
+      vectorization_service = VectorizationService.new
+      goal_embedding = vectorization_service.vectorize(text: @goal)
 
       # Query for decisions (prior reasoning and choices)
       decision_results = service.query(
         id: @id,
         context_type: :decision,
-        query_vector: @goal,
+        query_embedding: goal_embedding,
         threshold: 0.6,
         limit: 3
       )
@@ -59,7 +61,7 @@ module Contexts
       goal_results = service.query(
         id: @id,
         context_type: :research_goal,
-        query_vector: @goal,
+        query_embedding: goal_embedding,
         threshold: 0.7,
         limit: 2
       )
@@ -77,7 +79,7 @@ module Contexts
       finding_results = service.query(
         id: @id,
         context_type: :findings,
-        query_vector: "findings relevant to #{@goal}",
+        query_embedding: vectorization_service.vectorize(text: "findings relevant to #{@goal}"),
         threshold: 0.6,
         limit: 2
       )

@@ -29,9 +29,9 @@ module Execution
                 :planned_actions, :estimated_changes, :created_at, :resolved_at,
                 :resolved_by
 
-    # Initialize an ApprovalRequest
+    # Initialize a NEW ApprovalRequest
+    # NEVER pass an id - it's generated automatically
     #
-    # @param id [String] Unique approval request identifier
     # @param execution_id [String] Associated execution identifier
     # @param type [Symbol] Type of approval (:step, :milestone)
     # @param status [Symbol] Current status (:pending, :approved, :rejected)
@@ -39,26 +39,24 @@ module Execution
     # @param subject_title [String] Title of the step/milestone
     # @param planned_actions [Array<Hash>] Array of planned tool calls
     # @param estimated_changes [Hash] Estimated file changes
-    # @param created_at [String] ISO8601 timestamp when request created
-    # @param resolved_at [String, nil] ISO8601 timestamp when resolved
-    # @param resolved_by [String, nil] Who resolved it (user ID, etc.)
-    def initialize(id:, execution_id:, type:, status:, subject_id:, subject_title:,
-                   planned_actions: [], estimated_changes: {}, created_at:,
-                   resolved_at: nil, resolved_by: nil)
-      validate_params!(id, execution_id, type, status, subject_id, subject_title,
-                       planned_actions, estimated_changes, created_at)
+    def initialize(execution_id:, type:, subject_id:, subject_title:,
+                   planned_actions: [], estimated_changes: {})
+      # Generate ID automatically - NEVER accept it as a parameter
+      @id = SecureRandom.uuid
+      @created_at = Time.now.utc.iso8601
+      @status = PENDING # New approvals are always pending
+      @resolved_at = nil
+      @resolved_by = nil
+      
+      validate_params!(execution_id, type, subject_id, subject_title,
+                       planned_actions, estimated_changes)
 
-      @id = id
       @execution_id = execution_id
       @type = type
-      @status = status
       @subject_id = subject_id
       @subject_title = subject_title
       @planned_actions = planned_actions.freeze
       @estimated_changes = estimated_changes.freeze
-      @created_at = created_at
-      @resolved_at = resolved_at
-      @resolved_by = resolved_by
     end
 
     # Check if approval is pending
@@ -94,7 +92,7 @@ module Execution
     # @param resolved_by [String] Who approved it
     # @return [ApprovalRequest] New instance with approved status
     def approve(resolved_by:)
-      self.class.new(
+      self.class.send(:reconstruct,
         id: @id,
         execution_id: @execution_id,
         type: @type,
@@ -114,7 +112,7 @@ module Execution
     # @param resolved_by [String] Who rejected it
     # @return [ApprovalRequest] New instance with rejected status
     def reject(resolved_by:)
-      self.class.new(
+      self.class.send(:reconstruct,
         id: @id,
         execution_id: @execution_id,
         type: @type,
@@ -148,7 +146,7 @@ module Execution
       }
     end
 
-    # Deserialize from hash
+    # Deserialize from hash (for loading from storage)
     #
     # @param hash [Hash]
     # @return [ApprovalRequest]
@@ -164,7 +162,7 @@ module Execution
       status = symbolized[:status]
       status = status.to_sym if status.is_a?(String)
 
-      new(
+      reconstruct(
         id: symbolized[:id],
         execution_id: symbolized[:execution_id],
         type: type,
@@ -181,12 +179,28 @@ module Execution
 
     private
 
-    def validate_params!(id, execution_id, type, status, subject_id, subject_title,
-                         planned_actions, estimated_changes, created_at)
-      # Validate id
-      raise ArgumentError, "id must be a String" unless id.is_a?(String)
-      raise ArgumentError, "id cannot be empty" if id.strip.empty?
+    # Private constructor for deserialization and state changes
+    # Only used by from_h, approve, and reject
+    def self.reconstruct(id:, execution_id:, type:, status:, subject_id:, subject_title:,
+                         planned_actions:, estimated_changes:, created_at:,
+                         resolved_at: nil, resolved_by: nil)
+      instance = allocate
+      instance.instance_variable_set(:@id, id)
+      instance.instance_variable_set(:@execution_id, execution_id)
+      instance.instance_variable_set(:@type, type)
+      instance.instance_variable_set(:@status, status)
+      instance.instance_variable_set(:@subject_id, subject_id)
+      instance.instance_variable_set(:@subject_title, subject_title)
+      instance.instance_variable_set(:@planned_actions, planned_actions.freeze)
+      instance.instance_variable_set(:@estimated_changes, estimated_changes.freeze)
+      instance.instance_variable_set(:@created_at, created_at)
+      instance.instance_variable_set(:@resolved_at, resolved_at)
+      instance.instance_variable_set(:@resolved_by, resolved_by)
+      instance
+    end
 
+    def validate_params!(execution_id, type, subject_id, subject_title,
+                         planned_actions, estimated_changes)
       # Validate execution_id
       raise ArgumentError, "execution_id must be a String" unless execution_id.is_a?(String)
       raise ArgumentError, "execution_id cannot be empty" if execution_id.strip.empty?
@@ -195,12 +209,6 @@ module Execution
       raise ArgumentError, "type must be a Symbol" unless type.is_a?(Symbol)
       unless TYPES.include?(type)
         raise ArgumentError, "Invalid type: #{type}. Must be one of: #{TYPES.join(', ')}"
-      end
-
-      # Validate status
-      raise ArgumentError, "status must be a Symbol" unless status.is_a?(Symbol)
-      unless STATUSES.include?(status)
-        raise ArgumentError, "Invalid status: #{status}. Must be one of: #{STATUSES.join(', ')}"
       end
 
       # Validate subject_id
@@ -216,10 +224,6 @@ module Execution
 
       # Validate estimated_changes
       raise ArgumentError, "estimated_changes must be a Hash" unless estimated_changes.is_a?(Hash)
-
-      # Validate created_at
-      raise ArgumentError, "created_at must be a String" unless created_at.is_a?(String)
-      raise ArgumentError, "created_at cannot be empty" if created_at.strip.empty?
     end
   end
 end

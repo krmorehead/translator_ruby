@@ -7,21 +7,24 @@ module ResearchTestFactory
 
   # Create a research workflow with sensible defaults
   # @param goal [String] Research goal
-  # @param owner_id [String] Owner ID (auto-generated if nil)
+  # @param owner_id [String] Owner ID (required)
+  # @param parent_id [String] Parent ID (required)
   # @param max_depth [Integer] Maximum decomposition depth
   # @param output_modes [Array<Symbol>] Output modes
   # @param research_path [String] Path to research
   # @return [ResearchWorkflow]
   def build_workflow(
     goal: "How does Calculator work?",
-    owner_id: nil,
+    owner_id:,
+    parent_id:,
     max_depth: 1,
     output_modes: [:report],
     research_path: FIXTURE_PATH
   )
     ResearchWorkflow.new(
       goal: goal,
-      owner_id: owner_id || SecureRandom.uuid,
+      owner_id: owner_id,
+      parent_id: parent_id,
       research_path: research_path,
       max_depth: max_depth,
       output_modes: output_modes
@@ -95,8 +98,13 @@ module ResearchTestFactory
   # @return [ResearchMemoryStore]
   def build_memory_store(owner_id: nil, temp_path: nil)
     owner = owner_id || SecureRandom.uuid
-    path = temp_path || Rails.root.join("tmp", "test_memory_#{owner}.json").to_s
-    ResearchMemoryStore.new(path: path, owner_id: owner)
+    # ResearchMemoryStore now requires workflow_id, workflow_name, parent_id (path is auto-calculated)
+    ResearchMemoryStore.new(
+      workflow_id: SecureRandom.uuid,
+      workflow_name: "test_research",
+      parent_id: "root",
+      owner_id: owner
+    )
   end
 
   # Memoization helper for let()-style usage

@@ -116,7 +116,8 @@ class DaedalusIntegrationTest < ActiveSupport::TestCase
       goal: worker.goal,
       path: worker.path,
       owner_id: worker.owner_id,
-      parent_memory: worker.research_memory
+      parent_id: worker.research_memory&.id || "root",
+      context: integration_context
     )
 
     # THIS HITS THE LLM FOR REAL - explores codebase during planning

@@ -29,8 +29,11 @@ class ProjectPlanningWorkflow < BaseWorkflow
              to: :failed, on: :fail
   transition from: :failed, to: :pending, on: :retry
 
-  def initialize(goal:, project_name:, owner_id:, research_results:, parent_memory: nil, output_path: nil)
-    super(owner_id: owner_id, parent_memory: parent_memory)
+  def initialize(goal:, project_name:, owner_id:, research_results:, parent_id: "root", parent_memory: nil, output_path: nil)
+    # BaseWorkflow requires owner_id and parent_id
+    # If parent_memory is provided, use its ID; otherwise use parent_id parameter
+    actual_parent_id = parent_memory&.id || parent_id
+    super(owner_id: owner_id, parent_id: actual_parent_id)
     @goal = goal
     @project_name = project_name
     @research_results = research_results || {}

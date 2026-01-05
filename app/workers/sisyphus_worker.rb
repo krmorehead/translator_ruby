@@ -44,6 +44,7 @@ class SisyphusWorker < BaseWorker
   transition from: :executing, to: :evaluating, on: :executed
   transition from: :evaluating, to: :executing, on: :continue
   transition from: :evaluating, to: :checkpoint_created, on: :checkpoint
+  transition from: :executing, to: :checkpoint_created, on: :checkpoint # Allow checkpoint from executing (for dry-run)
   transition from: :checkpoint_created, to: :executing, on: :next_milestone
   transition from: :checkpoint_created, to: :complete, on: :finish
   transition from: [:executing, :evaluating], to: :error_recovery, on: :error
@@ -527,6 +528,7 @@ class SisyphusWorker < BaseWorker
   # Create initial checkpoint before execution starts
   def create_initial_checkpoint
     return unless checkpoint_service_available?
+    return if @config.dry_run # Skip checkpoints in dry run mode
     
     checkpoint = @checkpoint_service.create_checkpoint(
       "Execution start: #{@execution_plan.goal}",
@@ -559,7 +561,11 @@ class SisyphusWorker < BaseWorker
   def create_milestone_checkpoint(milestone)
     return unless checkpoint_service_available?
     
+    # Trigger state transition (needed for state machine flow)
     trigger(:checkpoint)
+    
+    # Skip actual checkpoint creation in dry run mode
+    return if @config.dry_run
     
     checkpoint = @checkpoint_service.create_checkpoint(
       "#{milestone.title} - Complete",
@@ -615,8 +621,7 @@ class SisyphusWorker < BaseWorker
       workflow_id: SecureRandom.uuid,
       workflow_name: self.class.worker_name,
       parent_id: "root",
-      owner_id: @owner_id,
-      path: File.join(AgentConfig.data_path, @owner_id, "workflows", "sisyphus_memory.json")
+      owner_id: @owner_id
     )
   end
 
@@ -654,7 +659,10 @@ class SisyphusWorker < BaseWorker
     
     {
       success: true,
+      status: :complete,
       execution_record: @execution_record,
+      plan_id: @execution_plan.id,
+      step_results: @execution_record&.step_results || [],
       execution_plan_goal: @execution_plan.goal,
       execution_plan_name: @execution_plan.project_name,
       milestones_completed: @current_milestone_index + 1,
@@ -663,6 +671,7 @@ class SisyphusWorker < BaseWorker
       metadata: {
         worker_id: @owner_id,
         config: @config,
+        dry_run: @config.dry_run,
         started_at: @execution_record&.started_at || Time.now.utc.iso8601,
         completed_at: Time.now.utc.iso8601,
         final_state: nil # Will be set after state transition

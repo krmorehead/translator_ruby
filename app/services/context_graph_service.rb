@@ -105,13 +105,20 @@ class ContextGraphService
   # @param edge_types [Array<Symbol>, nil] Filter to specific edge types (nil = all)
   # @param limit [Integer, nil] Max results to return (nil = all)
   # @return [Array<Hash>] Array of {memory:, similarity:, final_score:, path_distance:, source:, path:}
-  def query(id:, context_type:, query_vector:, threshold: 0.7, edge_types: nil, limit: nil)
+  # Query the graph for relevant context
+  # @param id [String] Starting node ID
+  # @param context_type [Symbol] Type of context to query
+  # @param query_embedding [Embedding] Query embedding (required, must be Embedding object)
+  # @param threshold [Float] Similarity threshold
+  # @param edge_types [Array<Symbol>, nil] Optional edge type filters
+  # @param limit [Integer, nil] Optional result limit
+  # @return [Array<Hash>] Relevant context entries
+  def query(id:, context_type:, query_embedding:, threshold: 0.7, edge_types: nil, limit: nil)
+    raise TypeError, "query_embedding must be an Embedding, got #{query_embedding.class}" unless query_embedding.is_a?(Embedding)
+    
     @mutex.synchronize do
       node = @nodes[id.to_s]
       return [] unless node
-
-      # Convert query to embedding if needed
-      query_embedding = ensure_embedding(query_vector)
 
       # Find shortest paths using Dijkstra with optional edge filtering
       shortest_paths = dijkstra_shortest_paths(
@@ -248,13 +255,4 @@ class ContextGraphService
     return Float::INFINITY if threshold <= 0.0
     ((1.0 / threshold - 1.0) / 0.3).ceil
   end
-
-  # Convert query vector to Embedding if it's a string
-  # @param query_vector [Embedding, String] Vector or text to search with
-  # @return [Embedding] Embedding object
-  def ensure_embedding(query_vector)
-    return query_vector if query_vector.is_a?(Embedding)
-    VectorizationService.new.vectorize(text: query_vector)
-  end
 end
-

@@ -28,16 +28,16 @@ class GoalDecompositionWorkflow < BaseWorkflow
 
   # @param goal [String] The goal to decompose
   # @param owner_id [String] Unique ID for state isolation
+  # @param parent_id [String] Parent ID for memory hierarchy
   # @param context [Hash] Seed context for decomposition
   #   - codebase_summary [String] High-level description of the codebase
   #   - focus_areas [Array<String>] Areas to prioritize in decomposition
   #   - known_files [Array<String>] Files already known to be relevant
   #   - prior_findings [String] Previous findings to build on
   #   - constraints [Hash] Constraints on decomposition
-  # @param parent_memory [#get_section, nil] Parent memory for context queries
   # @param max_depth [Integer] Maximum decomposition depth
-  def initialize(goal:, owner_id:, context: {}, parent_memory: nil, max_depth: DEFAULT_MAX_DEPTH)
-    super(owner_id: owner_id, parent_memory: parent_memory)
+  def initialize(goal:, owner_id:, parent_id:, context: {}, max_depth: DEFAULT_MAX_DEPTH)
+    super(owner_id: owner_id, parent_id: parent_id)
     @goal = goal
     @context = context || {}
     @max_depth = max_depth

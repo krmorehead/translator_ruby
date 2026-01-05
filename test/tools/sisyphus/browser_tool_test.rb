@@ -64,19 +64,19 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Launch action tests
   speed_profile :medium
   test "launch action creates browser instance" do
-    skip_if_no_browser
-    
     result = @tool.execute(action: "launch", headless: true)
     
     assert result[:success]
-    assert_equal "Browser launched successfully", result[:data][:message]
+    # OOP: BrowserTool now provides more detailed launch message
+    assert_match(/Browser launched successfully/, result[:data][:message])
     assert result[:data][:headless]
   end
 
   speed_profile :medium
   test "launch action works in non-headless mode" do
-    skip_if_no_browser
-    skip "Non-headless mode requires display" if ENV["CI"]
+    ensure_browser_available!
+    # OOP: Fail loudly if no display (no skip)
+    raise "Non-headless mode requires DISPLAY environment variable" if ENV["CI"] && !ENV["DISPLAY"]
     
     result = @tool.execute(action: "launch", headless: false)
     
@@ -87,19 +87,18 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Navigate action tests
   speed_profile :medium
   test "navigate action requires URL parameter" do
-    skip_if_no_browser
-    
     @tool.execute(action: "launch")
     result = @tool.execute(action: "navigate")
     
     refute result[:success]
-    assert_match(/URL is required/, result[:error])
+    # OOP: BrowserTool now returns more specific error messages
+    assert_match(/URL must be a non-empty String/, result[:error])
   end
 
   speed_profile :medium
   test "navigate action navigates to URL" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     @tool.execute(action: "launch")
     result = @tool.execute(action: "navigate", url: "http://localhost:#{test_server_port}")
@@ -112,19 +111,18 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Click action tests
   speed_profile :medium
   test "click action requires selector parameter" do
-    skip_if_no_browser
-    
     @tool.execute(action: "launch")
     result = @tool.execute(action: "click")
     
     refute result[:success]
-    assert_match(/Selector is required/, result[:error])
+    # OOP: BrowserTool now returns more specific error messages
+    assert_match(/Selector must be a non-empty String/, result[:error])
   end
 
   speed_profile :medium
   test "click action returns error for non-existent element" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     @tool.execute(action: "launch")
     @tool.execute(action: "navigate", url: "http://localhost:#{test_server_port}")
@@ -138,26 +136,26 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Type action tests
   speed_profile :medium
   test "type action requires selector and text parameters" do
-    skip_if_no_browser
-    
     @tool.execute(action: "launch")
     
     # Missing text
     result = @tool.execute(action: "type", selector: "#input")
     refute result[:success]
-    assert_match(/Text is required/, result[:error])
+    # OOP: BrowserTool now returns more specific error messages
+    assert_match(/Text must be a String/, result[:error])
     
     # Missing selector
     result = @tool.execute(action: "type", text: "hello")
     refute result[:success]
-    assert_match(/Selector is required/, result[:error])
+    # OOP: BrowserTool now returns more specific error messages
+    assert_match(/Selector must be a non-empty String/, result[:error])
   end
 
   # Screenshot action tests
   speed_profile :medium
   test "screenshot action captures page screenshot" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     screenshot_path = Rails.root.join("tmp/test_screenshot.png").to_s
     FileUtils.rm_f(screenshot_path)
@@ -176,8 +174,8 @@ class BrowserToolTest < ActiveSupport::TestCase
 
   speed_profile :medium
   test "screenshot action uses default filename when path not provided" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     @tool.execute(action: "launch")
     @tool.execute(action: "navigate", url: "http://localhost:#{test_server_port}")
@@ -193,8 +191,8 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Get content action tests
   speed_profile :medium
   test "get_content action returns page body" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     @tool.execute(action: "launch")
     @tool.execute(action: "navigate", url: "http://localhost:#{test_server_port}")
@@ -207,8 +205,8 @@ class BrowserToolTest < ActiveSupport::TestCase
 
   speed_profile :medium
   test "get_content action can get element content" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     @tool.execute(action: "launch")
     @tool.execute(action: "navigate", url: "http://localhost:#{test_server_port}")
@@ -221,8 +219,6 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Evaluate JS action tests
   speed_profile :medium
   test "evaluate_js action requires script parameter" do
-    skip_if_no_browser
-    
     @tool.execute(action: "launch")
     result = @tool.execute(action: "evaluate_js")
     
@@ -232,8 +228,8 @@ class BrowserToolTest < ActiveSupport::TestCase
 
   speed_profile :medium
   test "evaluate_js action executes JavaScript" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     @tool.execute(action: "launch")
     @tool.execute(action: "navigate", url: "http://localhost:#{test_server_port}")
@@ -246,19 +242,18 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Wait for action tests
   speed_profile :medium
   test "wait_for action requires selector parameter" do
-    skip_if_no_browser
-    
     @tool.execute(action: "launch")
     result = @tool.execute(action: "wait_for")
     
     refute result[:success]
-    assert_match(/Selector is required/, result[:error])
+    # OOP: BrowserTool returns specific error for wait_for action
+    assert_match(/Selector is required for wait_for/, result[:error])
   end
 
   speed_profile :medium
   test "wait_for action waits for element" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     @tool.execute(action: "launch")
     @tool.execute(action: "navigate", url: "http://localhost:#{test_server_port}")
@@ -271,8 +266,8 @@ class BrowserToolTest < ActiveSupport::TestCase
 
   speed_profile :medium
   test "wait_for action times out for non-existent element" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     @tool.execute(action: "launch")
     @tool.execute(action: "navigate", url: "http://localhost:#{test_server_port}")
@@ -286,8 +281,6 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Close action tests
   speed_profile :medium
   test "close action closes browser instance" do
-    skip_if_no_browser
-    
     @tool.execute(action: "launch")
     result = @tool.execute(action: "close")
     
@@ -297,8 +290,6 @@ class BrowserToolTest < ActiveSupport::TestCase
 
   speed_profile :medium
   test "close action handles already closed browser gracefully" do
-    skip_if_no_browser
-    
     result = @tool.execute(action: "close")
     
     assert result[:success]
@@ -308,8 +299,8 @@ class BrowserToolTest < ActiveSupport::TestCase
   # Integration tests
   speed_profile :medium
   test "browser can handle multiple actions in sequence" do
-    skip_if_no_browser
-    skip "Requires test server" unless test_server_running?
+    ensure_browser_available!
+    ensure_test_server_available!
     
     # Launch
     result = @tool.execute(action: "launch")
@@ -338,12 +329,10 @@ class BrowserToolTest < ActiveSupport::TestCase
   private
 
   def cleanup_browser
-    # Use class method for cleanup - encapsulates cleanup logic
     Sisyphus::BrowserTool.cleanup
   end
 
-  def skip_if_no_browser
-    # Check if Chrome/Chromium is available
+  def ensure_browser_available!
     chrome_paths = %w[
       /usr/bin/google-chrome
       /usr/bin/chromium-browser
@@ -351,22 +340,39 @@ class BrowserToolTest < ActiveSupport::TestCase
       /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome
     ]
     
-    unless chrome_paths.any? { |path| File.exist?(path) }
-      skip "Chrome/Chromium not found. Install Chrome to run browser tests."
-    end
+    return if chrome_paths.any? { |path| File.exist?(path) }
+    
+    # OOP: Fail loudly with clear instructions
+    raise RuntimeError, <<~ERROR
+      Chrome/Chromium not found. Browser tests require Chrome.
+      
+      Install Chrome/Chromium:
+        Ubuntu/Debian: sudo apt-get install chromium-browser
+        Fedora: sudo dnf install chromium
+        Mac: brew install --cask google-chrome
+    ERROR
   end
 
-  def test_server_running?
-    # Check if test server is running on port 3001
+  def ensure_test_server_available!
+    port = test_server_port
+    
     require "socket"
-    TCPSocket.new("localhost", test_server_port).close
+    TCPSocket.new("localhost", port).close
     true
   rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH
-    false
+    raise RuntimeError, <<~ERROR
+      Test server not running on port #{port} (CHROMIUM_BROWSER_PORT=#{ENV['CHROMIUM_BROWSER_PORT']}).
+      
+      Browser tests require a running test server.
+      Start it in another terminal:
+        cd test/fixtures/test_server && python3 -m http.server #{port}
+      
+      The port is configured in .env.test via CHROMIUM_BROWSER_PORT.
+    ERROR
   end
 
   def test_server_port
-    ENV.fetch("TEST_SERVER_PORT", "3001").to_i
+    ENV.fetch("CHROMIUM_BROWSER_PORT").to_i
   end
 end
 

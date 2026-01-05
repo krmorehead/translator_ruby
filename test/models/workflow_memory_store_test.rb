@@ -19,8 +19,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
         owner_id: nil,
         workflow_id: SecureRandom.uuid,
         workflow_name: "test",
-        parent_id: parent_memory.id,
-        path: File.join(temp_dir, "test.json")
+        parent_id: parent_memory.id
       )
     end
   end
@@ -32,8 +31,7 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
         owner_id: parent_memory.owner_id,
         workflow_id: nil,
         workflow_name: "test",
-        parent_id: parent_memory.id,
-        path: File.join(temp_dir, "test.json")
+        parent_id: parent_memory.id
       )
     end
   end
@@ -147,13 +145,11 @@ class WorkflowMemoryStoreTest < ActiveSupport::TestCase
     store.record_state_transition(from: :pending, to: :running, event: :start)
     store.record_decision(decision: "test", rationale: "rationale")
 
-    # Create new store with same path using existing parent_memory
-    reloaded = WorkflowMemoryStore.new(
+    # Load existing store from disk using load_from_disk class method
+    reloaded = WorkflowMemoryStore.load_from_disk(
       owner_id: store.owner_id,
       workflow_id: store.workflow_id,
-      workflow_name: store.workflow_name,
-      parent_id: parent_memory.id,
-      path: store.path
+      workflow_name: store.workflow_name
     )
 
     # JSON doesn't preserve symbols, so compare as strings

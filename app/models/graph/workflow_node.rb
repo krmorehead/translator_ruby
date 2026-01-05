@@ -5,6 +5,9 @@
 module Graph
   class WorkflowNode < Node
     attr_accessor :workflow_memory
+    
+    # Alias for compatibility with code expecting memory_store
+    alias_method :memory_store, :workflow_memory
 
     # @param id [String] Unique identifier (typically workflow_id)
     # @param metadata [Hash] Additional metadata

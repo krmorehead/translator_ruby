@@ -76,7 +76,8 @@ class PlanningPromptsTest < ActiveSupport::TestCase
     assert prompt.system_prompt.present?
   end
 
-  speed_profile :medium
+  # OOP: Shared LLM call via shared_milestone_execution can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "MilestoneConsensusPrompt returns milestones" do
     result = shared_milestone_execution
     content = get_val(result, :content)
@@ -88,7 +89,8 @@ class PlanningPromptsTest < ActiveSupport::TestCase
     assert milestones.any?, "Should have at least one milestone"
   end
 
-  speed_profile :medium
+  # OOP: Shared LLM call via shared_milestone_execution can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "MilestoneConsensusPrompt milestones have title and description" do
     result = shared_milestone_execution
     content = get_val(result, :content)
@@ -109,7 +111,8 @@ class PlanningPromptsTest < ActiveSupport::TestCase
     assert Planning::StepBreakdownPrompt < Planning::BasePlanningPrompt
   end
 
-  speed_profile :medium
+  # OOP: Shared LLM call via shared_step_execution can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "StepBreakdownPrompt returns steps" do
     result = shared_step_execution
     content = get_val(result, :content)
@@ -120,7 +123,8 @@ class PlanningPromptsTest < ActiveSupport::TestCase
     assert_kind_of Array, steps
   end
 
-  speed_profile :medium
+  # OOP: Shared LLM call via shared_step_execution can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "StepBreakdownPrompt steps have title and intent" do
     result = shared_step_execution
     content = get_val(result, :content)
@@ -141,7 +145,8 @@ class PlanningPromptsTest < ActiveSupport::TestCase
     assert Planning::StepDetailPrompt < Planning::BasePlanningPrompt
   end
 
-  speed_profile :medium
+  # OOP: Shared LLM call via shared_detail_execution can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "StepDetailPrompt returns details and tests" do
     result = shared_detail_execution
     content = get_val(result, :content)

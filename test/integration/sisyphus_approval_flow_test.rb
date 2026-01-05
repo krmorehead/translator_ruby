@@ -47,24 +47,21 @@ class SisyphusApprovalFlowTest < ActionDispatch::IntegrationTest
 
   # Helper to create approval requests through the domain model
   # (like the execution workflow would)
+  # Uses factory - new() generates UUID automatically (OOP pattern)
   def create_approval(execution_id:, type: :step, subject_id: nil, subject_title: "Test Step", planned_actions: [], estimated_changes: {})
-    approval_id = "approval-#{SecureRandom.hex(8)}"
     subject_id ||= "#{type}-#{SecureRandom.hex(4)}"
     
-    request = Execution::ApprovalRequest.new(
-      id: approval_id,
-      execution_id: execution_id,
-      type: type,
-      status: :pending,
-      subject_id: subject_id,
-      subject_title: subject_title,
-      planned_actions: planned_actions,
-      estimated_changes: estimated_changes,
-      created_at: Time.now.utc.iso8601
+    request = build(:approval_request,
+      exec_id: execution_id,
+      approval_type: type,
+      step_id: subject_id,
+      step_title: subject_title,
+      actions: planned_actions,
+      changes: estimated_changes
     )
     @approval_store.save(request)
-    @created_approval_ids << approval_id
-    approval_id
+    @created_approval_ids << request.id
+    request.id
   end
 
   # Test approval endpoints directly with real ApprovalRequest objects

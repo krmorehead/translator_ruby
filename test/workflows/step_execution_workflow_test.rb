@@ -5,6 +5,7 @@ require "test_helper"
 class StepExecutionWorkflowTest < ActiveSupport::TestCase
   def setup
     @owner_id = SecureRandom.uuid
+    @parent_id = SecureRandom.uuid
     @path = Dir.mktmpdir
     @step = create_test_step
   end
@@ -48,7 +49,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
   # ===== Initialization Tests =====
   speed_profile :fast
   test "initializes with owner_id" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
 
     assert_equal @owner_id, workflow.owner_id
     assert_not_nil workflow.workflow_id
@@ -61,13 +62,14 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     parent_workflow = ResearchWorkflow.new(
       goal: "parent workflow goal",
       research_path: @path,
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @owner_id  # Root workflow - parent_id == owner_id
     )
     parent_memory = parent_workflow.workflow_memory
 
     workflow = StepExecutionWorkflow.new(
       owner_id: @owner_id,
-      parent_memory: parent_memory
+      parent_id: parent_memory.id
     )
 
     assert_equal parent_memory, workflow.parent_memory
@@ -75,7 +77,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "initializes state variables" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
 
     assert_nil workflow.step
     assert_nil workflow.path
@@ -92,7 +94,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "setup accepts valid parameters" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     test_context = create_test_context
 
     result = workflow.setup(
@@ -111,7 +113,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "setup validates step is a Planning::Step" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     test_context = create_test_context
 
     error = assert_raises(TypeError) do
@@ -123,7 +125,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "setup validates path is a non-empty string" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     test_context = create_test_context
 
     error = assert_raises(ArgumentError) do
@@ -135,7 +137,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "setup validates path is an existing directory" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     test_context = create_test_context
 
     error = assert_raises(ArgumentError) do
@@ -147,7 +149,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "setup initializes workflow memory" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     test_context = create_test_context
     workflow.setup(step: @step, path: @path, context: test_context)
 
@@ -159,7 +161,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "starts in pending state" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
 
     assert workflow.pending?
     assert_equal :pending, workflow.current_state
@@ -167,7 +169,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "transitions through execution phases" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     # pending → running
@@ -201,7 +203,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "can transition to failed from any execution phase" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
@@ -217,7 +219,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "execute runs through all phases successfully" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     result = workflow.execute
@@ -231,7 +233,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "execute returns step result structure" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     result = workflow.execute
@@ -251,7 +253,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "execute records decisions to workflow memory" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.execute
@@ -271,7 +273,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "execute handles errors gracefully" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     # Force an error by stubbing a method
@@ -292,7 +294,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "assemble_context records decision" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
@@ -300,15 +302,15 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     workflow.send(:assemble_context)
 
     decisions = workflow.workflow_memory.get_section(:decisions)
-    context_decision = decisions.find { |d| d[:decision] == "assemble_context" }
+    context_decision = decisions.find { |d| d.decision == "assemble_context" }
 
     assert_not_nil context_decision
-    assert_includes context_decision[:rationale], "Create User Model"
+    assert_includes context_decision.rationale, "Create User Model"
   end
 
   speed_profile :slow
   test "assemble_context populates assembled_context" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
@@ -326,7 +328,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "plan_tool_sequence records decision" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
@@ -336,17 +338,17 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     workflow.send(:plan_tool_sequence)
 
     decisions = workflow.workflow_memory.get_section(:decisions)
-    planning_decision = decisions.find { |d| d[:decision] == "plan_tool_sequence" }
+    planning_decision = decisions.find { |d| d.decision == "plan_tool_sequence" }
 
     assert_not_nil planning_decision
-    assert_includes planning_decision[:rationale], "Planning tool calls"
+    assert_includes planning_decision.rationale, "Planning tool calls"
   end
 
   # ===== Validation Phase Tests =====
 
   speed_profile :slow
   test "validate_tools records decision" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
@@ -358,17 +360,17 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     workflow.send(:validate_tools)
 
     decisions = workflow.workflow_memory.get_section(:decisions)
-    validation_decision = decisions.find { |d| d[:decision] == "validate_tools" }
+    validation_decision = decisions.find { |d| d.decision == "validate_tools" }
 
     assert_not_nil validation_decision
-    assert_includes validation_decision[:rationale], "Validating"
+    assert_includes validation_decision.rationale, "Validating"
   end
 
   # ===== Execution Phase Tests =====
 
   speed_profile :slow
   test "execute_tools records decision" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
@@ -382,17 +384,17 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
     workflow.send(:execute_tools)
 
     decisions = workflow.workflow_memory.get_section(:decisions)
-    execution_decision = decisions.find { |d| d[:decision] == "execute_tools" }
+    execution_decision = decisions.find { |d| d.decision == "execute_tools" }
 
     assert_not_nil execution_decision
-    assert_includes execution_decision[:rationale], "Executing tools"
+    assert_includes execution_decision.rationale, "Executing tools"
   end
 
   # ===== Recording Phase Tests =====
 
   speed_profile :slow
   test "record_results builds complete result structure" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)
@@ -420,7 +422,7 @@ class StepExecutionWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "record_results includes metadata about execution" do
-    workflow = StepExecutionWorkflow.new(owner_id: @owner_id)
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: @step, path: @path, context: create_test_context)
 
     workflow.trigger(:start)

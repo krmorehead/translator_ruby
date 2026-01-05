@@ -10,14 +10,14 @@ class DndChatWorkflowTest < ActiveSupport::TestCase
   end
   speed_profile :fast
   test "inherits base workflow and exposes workflow_name" do
-    workflow = DndChatWorkflow.new(owner_id: @owner_id, parent_memory: @parent_memory)
+    workflow = DndChatWorkflow.new(owner_id: @owner_id, parent_id: @parent_memory.id)
     assert_kind_of BaseWorkflow, workflow
     assert_equal "dnd_chat", DndChatWorkflow.workflow_name
   end
 
   speed_profile :medium
   test "workflow executes and returns narrative" do
-    workflow = DndChatWorkflow.new(owner_id: @owner_id, parent_memory: @parent_memory)
+    workflow = DndChatWorkflow.new(owner_id: @owner_id, parent_id: @parent_memory.id)
     conversation = Conversation.new(messages: [ Message.new(source: "user", target: "assistant", message: "Start the adventure") ])
 
     workflow.setup(prompt: "Search the room", conversation: conversation)

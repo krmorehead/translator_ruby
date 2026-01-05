@@ -10,18 +10,26 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
     dir
   end
 
-  let(:owner_id) { SecureRandom.uuid }
+  let(:owner_id) { "test-owner-research-memory" }
+  let(:workflow_id) { "test-workflow-#{Process.pid}-#{Thread.current.object_id}" }
+  let(:parent_id) { "test-parent-research-memory" }
+  let(:workflow_name) { "test_research_workflow" }
   let(:store_path) { File.join(temp_dir, owner_id, "research_memory.json") }
 
   # Required by ContextLeakTests - uses factory
-  let(:memory) { build(:research_memory_store, owner_id: owner_id) }
+  let(:memory) { build(:research_memory_store, owner_id: owner_id, workflow_id: workflow_id, parent_id: parent_id) }
 
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
   end
   speed_profile :fast
   test "creates with default sections" do
-    store = ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
+    store = ResearchMemoryStore.new(
+      workflow_id: workflow_id,
+      workflow_name: workflow_name,
+      parent_id: parent_id,
+      owner_id: owner_id
+    )
 
     assert_kind_of String, store.id
     assert_includes store.list_sections, :research_goal
@@ -34,51 +42,40 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "stores have unique IDs" do
-    store1 = ResearchMemoryStore.new(path: File.join(temp_dir, "store1.json"), owner_id: owner_id)
-    store2 = ResearchMemoryStore.new(path: File.join(temp_dir, "store2.json"), owner_id: SecureRandom.uuid)
+    store1 = ResearchMemoryStore.new(
+      workflow_id: "store1-#{workflow_id}",
+      workflow_name: workflow_name,
+      parent_id: parent_id,
+      owner_id: owner_id
+    )
+    store2 = ResearchMemoryStore.new(
+      workflow_id: "store2-#{workflow_id}",
+      workflow_name: workflow_name,
+      parent_id: "parent2",
+      owner_id: "owner2"
+    )
     
     assert_not_equal store1.id, store2.id
   end
 
-  speed_profile :fast
-  test "find_by_path loads existing store" do
-    # Create and persist a store
-    store1 = ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
-    store1.set_section(:research_goal, [{ text: "Test goal", timestamp: Time.now.utc.iso8601 }])
+  # REMOVED: find_by_path is not part of the new OOP design
+  # ResearchMemoryStore now uses from_h for deserialization
+  # speed_profile :fast
+  # test "find_by_path loads existing store" do
+  #   ...
+  # end
 
-    # Load it using find_by_path
-    store2 = ResearchMemoryStore.find_by_path(store_path)
+  # REMOVED: find_by_owner is not part of the new OOP design  
+  # speed_profile :fast
+  # test "find_by_owner returns nil for non-existent owner" do
+  #   ...
+  # end
 
-    assert_not_nil store2
-    goal = store2.get_section(:research_goal).first
-    assert_equal "Test goal", goal[:text]
-  end
-
-  speed_profile :fast
-  test "find_by_owner returns nil for non-existent owner" do
-    store = ResearchMemoryStore.find_by_owner("nonexistent-#{SecureRandom.uuid}", base_path: temp_dir)
-    assert_nil store
-  end
-
-  speed_profile :fast
-  test "list_owners returns all session IDs" do
-    # Create multiple stores using factories
-    other_owner1 = SecureRandom.uuid
-    other_owner2 = SecureRandom.uuid
-
-    store1 = build(:research_memory_store, owner_id: other_owner1)
-    store1.set_section(:research_goal, [{ text: "Goal 1" }])
-    store1.save!
-
-    store2 = build(:research_memory_store, owner_id: other_owner2)
-    store2.set_section(:research_goal, [{ text: "Goal 2" }])
-    store2.save!
-
-    owners = ResearchMemoryStore.list_owners
-
-    assert_includes owners, other_owner1
-    assert_includes owners, other_owner2
-  end
+  # REMOVED: list_owners is not part of the new OOP design
+  # speed_profile :fast
+  # test "list_owners returns all session IDs" do
+  #   ...
+  # end
 
   speed_profile :fast
   test "push_context and pop_context work correctly" do
@@ -133,8 +130,26 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
     memory.update_section(name: :sub_questions, content: { text: "Q1" })
     memory.update_section(name: :sub_questions, content: { text: "Q2" })
     memory.update_section(name: :discovered_files, content: { path: "file1.rb" })
-    memory.update_section(name: :findings, content: { text: "Finding 1" })
-    memory.update_section(name: :findings, content: { text: "Finding 2" })
+    
+    # Create Finding objects, not hashes
+    finding1 = WorkflowMemories::Finding.new(
+      id: SecureRandom.uuid,
+      text: "Finding 1",
+      relevance: "direct",
+      confidence: 0.9,
+      file_path: "file1.rb",
+      pass_number: 1
+    )
+    finding2 = WorkflowMemories::Finding.new(
+      id: SecureRandom.uuid,
+      text: "Finding 2",
+      relevance: "direct",
+      confidence: 0.8,
+      file_path: "file1.rb",
+      pass_number: 1
+    )
+    memory.update_section(name: :findings, content: finding1)
+    memory.update_section(name: :findings, content: finding2)
 
     summary = memory.summarize_findings
 
@@ -148,12 +163,18 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "persistence to file" do
-    store1 = ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
+    store1 = ResearchMemoryStore.new(
+      workflow_id: workflow_id,
+      workflow_name: workflow_name,
+      parent_id: parent_id,
+      owner_id: owner_id
+    )
     store1.set_section(:research_goal, [{ text: "Persistent goal", timestamp: Time.now.utc.iso8601 }])
     store1.next_iteration!
 
-    # Load from file
-    store2 = ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
+    # Load from file using from_h (OOP deserialization pattern)
+    saved_data = JSON.parse(File.read(store1.path), symbolize_names: true)
+    store2 = ResearchMemoryStore.from_h(saved_data)
 
     goal = store2.get_section(:research_goal).first
     assert_equal "Persistent goal", goal[:text]
@@ -183,8 +204,24 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "update_section appends by default" do
-    memory.update_section(name: :findings, content: { text: "Finding 1" })
-    memory.update_section(name: :findings, content: { text: "Finding 2" })
+    finding1 = WorkflowMemories::Finding.new(
+      id: SecureRandom.uuid,
+      text: "Finding 1",
+      relevance: "direct",
+      confidence: 0.9,
+      file_path: "test.rb",
+      pass_number: 1
+    )
+    finding2 = WorkflowMemories::Finding.new(
+      id: SecureRandom.uuid,
+      text: "Finding 2",
+      relevance: "direct",
+      confidence: 0.8,
+      file_path: "test.rb",
+      pass_number: 1
+    )
+    memory.update_section(name: :findings, content: finding1)
+    memory.update_section(name: :findings, content: finding2)
 
     findings = memory.get_section(:findings)
     assert_equal 2, findings.size
@@ -192,12 +229,28 @@ class ResearchMemoryStoreTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "update_section replaces when append is false" do
-    memory.update_section(name: :findings, content: { text: "Finding 1" })
-    memory.update_section(name: :findings, content: { text: "Finding 2" }, append: false)
+    finding1 = WorkflowMemories::Finding.new(
+      id: SecureRandom.uuid,
+      text: "Finding 1",
+      relevance: "direct",
+      confidence: 0.9,
+      file_path: "test.rb",
+      pass_number: 1
+    )
+    finding2 = WorkflowMemories::Finding.new(
+      id: SecureRandom.uuid,
+      text: "Finding 2",
+      relevance: "direct",
+      confidence: 0.8,
+      file_path: "test.rb",
+      pass_number: 1
+    )
+    memory.update_section(name: :findings, content: finding1)
+    memory.update_section(name: :findings, content: finding2, append: false)
 
     findings = memory.get_section(:findings)
     assert_equal 1, findings.size
-    assert_equal "Finding 2", findings.first[:text]
+    assert_equal "Finding 2", findings.first.text
   end
 
   # Test factory traits

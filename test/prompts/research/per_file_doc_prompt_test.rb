@@ -90,7 +90,8 @@ class PerFileDocPromptTest < ActiveSupport::TestCase
     assert result[:content][:external_references].is_a?(Array)
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "shared: has methods array" do
     result = shared_analysis
     assert result[:content][:methods].is_a?(Array)

@@ -40,6 +40,8 @@ class ExecutionOrchestrationService
     end
 
     # Start SisyphusWorker asynchronously
+    # OOP: The worker will manage its own state transitions (pending → running → executing, etc.)
+    # The orchestration service is only responsible for creating the initial state
     begin
       # Try to enqueue with Sidekiq, but don't fail if Sidekiq isn't running
       begin
@@ -49,21 +51,13 @@ class ExecutionOrchestrationService
         Rails.logger.warn "Sidekiq not available: #{e.message}"
       end
 
-      # Update state to RUNNING
-      running_state = Execution::ExecutionState.new(
-        execution_id: execution_id,
-        plan_path: plan_path,
-        project_path: project_path,
-        status: Execution::ExecutionState::RUNNING,
-        started_at: state.started_at
-      )
-      @state_store.save(running_state)
-
+      # Return the initial PENDING state
+      # The worker will transition to RUNNING when it actually starts
       {
         success: true,
         execution_id: execution_id,
-        state: running_state.to_h,
-        message: "Execution started successfully"
+        state: state.to_h,
+        message: "Execution enqueued successfully"
       }
     rescue StandardError => e
       {

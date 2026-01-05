@@ -85,7 +85,8 @@ class TopicDecompositionPromptTest < ActiveSupport::TestCase
     assert result[:content][:questions].any?, "Should have at least one question"
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "specific: may mark questions as leaf" do
     result = specific_decomposition
 

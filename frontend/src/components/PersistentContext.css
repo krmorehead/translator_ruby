@@ -1,0 +1,380 @@
+/* Compact View (for sidebar/header) */
+.persistent-context-compact {
+  margin-bottom: 16px;
+}
+
+.persistent-context-toggle {
+  width: 100%;
+  padding: 10px 12px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.persistent-context-toggle:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.toggle-icon {
+  font-size: 10px;
+  transition: transform 0.2s;
+  color: #6b7280;
+}
+
+.toggle-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.toggle-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.context-indicator {
+  color: #10b981;
+  font-size: 8px;
+}
+
+.persistent-context-content {
+  margin-top: 8px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Full Panel View */
+.persistent-context-panel {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.persistent-context-header {
+  margin-bottom: 20px;
+}
+
+.persistent-context-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.context-description {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.context-description strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Display Mode */
+.context-display {
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.context-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #374151;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin-bottom: 12px;
+}
+
+.context-text-full {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #1f2937;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 16px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border-left: 4px solid #3b82f6;
+}
+
+.context-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.context-actions-full {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-edit,
+.btn-clear {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.btn-clear:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Empty State */
+.context-empty {
+  text-align: center;
+  padding: 20px;
+}
+
+.context-empty p {
+  margin: 0 0 12px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.context-empty-full {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.context-empty-full p {
+  margin: 0 0 12px 0;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+.context-hint {
+  font-size: 14px !important;
+  color: #9ca3af !important;
+}
+
+.btn-add,
+.btn-add-large {
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-add:hover,
+.btn-add-large:hover {
+  background: #2563eb;
+}
+
+.btn-add-large {
+  padding: 12px 24px;
+  font-size: 15px;
+}
+
+/* Editor Mode */
+.context-editor,
+.context-editor-full {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.context-editor-full label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.context-textarea,
+.context-textarea-full {
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.context-textarea:focus,
+.context-textarea-full:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.context-textarea::placeholder,
+.context-textarea-full::placeholder {
+  color: #9ca3af;
+}
+
+.character-count {
+  text-align: right;
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: -8px;
+}
+
+.editor-actions,
+.editor-actions-full {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-save,
+.btn-cancel,
+.btn-save-large,
+.btn-cancel-large {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save,
+.btn-save-large {
+  background: #10b981;
+  color: white;
+}
+
+.btn-save:hover,
+.btn-save-large:hover {
+  background: #059669;
+}
+
+.btn-save:disabled,
+.btn-save-large:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.btn-cancel,
+.btn-cancel-large {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover,
+.btn-cancel-large:hover {
+  background: #e5e7eb;
+}
+
+.btn-save-large,
+.btn-cancel-large {
+  padding: 10px 20px;
+  font-size: 15px;
+}
+
+/* Info Box */
+.context-info {
+  margin-top: 16px;
+  padding: 12px;
+  background: #eff6ff;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.info-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.info-text {
+  font-size: 13px;
+  color: #1e40af;
+  line-height: 1.5;
+}
+
+/* Dark theme support */
+[data-theme="dark"] .persistent-context-toggle {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .persistent-context-toggle:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+[data-theme="dark"] .persistent-context-panel {
+  background: #1f2937;
+}
+
+[data-theme="dark"] .persistent-context-header h3 {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .context-description {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .context-text-full {
+  background: #111827;
+  color: #e5e7eb;
+  border-left-color: #3b82f6;
+}
+
+[data-theme="dark"] .context-textarea,
+[data-theme="dark"] .context-textarea-full {
+  background: #111827;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .context-info {
+  background: #1e3a8a;
+  border-color: #1e40af;
+}
+
+[data-theme="dark"] .info-text {
+  color: #93c5fd;
+}
+

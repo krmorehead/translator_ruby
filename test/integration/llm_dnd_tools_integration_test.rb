@@ -6,11 +6,10 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
     FileUtils.mkdir_p(@sandbox_path)
     @inventory_path = File.join(@sandbox_path, "inventory.json")
     @memory_path = File.join(@sandbox_path, "memory.json")
-    %w[dice_roll_tool skill_check_tool inventory_tool memory_tool memory_summarize_tool].each do |file|
-      require Rails.root.join("app", "tools", file)
-    rescue LoadError
-      # already loaded
-    end
+    
+    # Force-load tool classes to ensure they're registered
+    # Referencing the class triggers Zeitwerk autoload and registration
+    [DiceRollTool, SkillCheckTool, InventoryTool, MemoryTool, MemorySummarizeTool]
   end
 
   def teardown
@@ -18,7 +17,10 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
   end
 
   def workflow
-    @workflow ||= DndChatWorkflow.new
+    @workflow ||= DndChatWorkflow.new(
+      owner_id: "llm_dnd_tools_test",
+      parent_id: "root"
+    )
   end
 
   def tools
@@ -26,13 +28,29 @@ class LlmDndToolsIntegrationTest < ActiveSupport::TestCase
   end
 
   def perform_chat(user_content)
-    params = workflow.chat_parameters(user_prompt: user_content, tools: tools)
-    BasePrompt.new.send(:default_client).chat(parameters: params)
+    # Use ToolCallPrompt to make LLM call with tools (OOP pattern)
+    prompt = ToolCallPrompt.new(tools: tools)
+    
+    # Build messages for the chat
+    messages = [
+      { role: "system", content: "You are a helpful assistant that can use tools. Always use the appropriate tool to accomplish the task." },
+      { role: "user", content: user_content }
+    ]
+    
+    # Build parameters with tools
+    params = {
+      model: prompt.model,
+      messages: messages,
+      tools: prompt.serialize_tools
+    }
+    
+    # Make the LLM call
+    prompt.send(:default_client).chat(parameters: params)
   end
 
   # Require that the LLM returns structured content.
-  def parsed_tool_response(prompt)
-    response = perform_chat(prompt)
+  def parsed_tool_response(prompt_text)
+    response = perform_chat(prompt_text)
     message = response.dig("choices", 0, "message") || {}
     content = message["content"]
 

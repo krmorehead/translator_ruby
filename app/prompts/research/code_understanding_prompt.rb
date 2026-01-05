@@ -148,23 +148,28 @@ module Research
       prompt_parts << "File: #{file_path}" if file_path
 
       if previous_context
-        # Include prior relevant findings from research context
-        if previous_context[:prior_context].present?
+        # Previous context is now expected to be pre-formatted by the context system
+        # If it's a string, use it directly; if it's a hash, extract intelligently
+        if previous_context.is_a?(String)
+          prompt_parts << "\nPrior Context:\n#{previous_context}"
+        elsif previous_context[:prior_context].present?
           prompt_parts << "\nRelevant Prior Findings:"
           prompt_parts << previous_context[:prior_context]
-        end
-
-        # Include findings from earlier passes on THIS file
-        if previous_context[:key_findings].present?
-          prompt_parts << "\nFindings from Previous Pass on This File:"
-          prompt_parts << previous_context[:key_findings].to_s
+        elsif previous_context[:key_findings].present?
+          # Format findings list intelligently
+          findings = Array(previous_context[:key_findings]).first(3)
+          if findings.any?
+            prompt_parts << "\nFindings from Previous Pass:"
+            findings.each { |f| prompt_parts << "- #{f}" }
+          end
         end
       end
 
-      # Truncate content if too long
-      truncated = content.lines.first(500).join
-      if content.lines.size > 500
-        truncated += "\n... (#{content.lines.size - 500} more lines truncated)"
+      # Limit code to 300 lines (structural limit, not arbitrary truncation)
+      lines = content.lines
+      truncated = lines.first(300).join
+      if lines.size > 300
+        truncated += "\n... (#{lines.size - 300} more lines omitted)"
       end
 
       prompt_parts << "\nCode to Analyze:\n```\n#{truncated}\n```"

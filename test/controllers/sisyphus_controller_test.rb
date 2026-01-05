@@ -162,26 +162,16 @@ class SisyphusControllerTest < ActionDispatch::IntegrationTest
 
   speed_profile :fast
   test "pending_approvals returns pending approval for execution" do
-    # Create a pending approval
-    approval = Execution::ApprovalRequest.new(
-      id: "approval-123",
-      execution_id: "exec-123",
-      type: :step,
-      status: :pending,
-      subject_id: "step-1",
-      subject_title: "Test Step",
-      planned_actions: ["Create file", "Write content"],
-      estimated_changes: { files_to_create: 1 },
-      created_at: Time.now.utc.iso8601
-    )
+    # Use factory to create real instance with auto-generated UUIDs (OOP pattern)
+    approval = build(:approval_request, :step, :pending)
     @approval_store.save(approval)
 
-    get "/api/sisyphus/approvals/pending", params: { execution_id: "exec-123" }
+    get "/api/sisyphus/approvals/pending", params: { execution_id: approval.execution_id }
 
     assert_response :success
     body = JSON.parse(response.body)
     assert body["approval"]
-    assert_equal "approval-123", body["approval"]["id"]
+    assert_equal approval.id, body["approval"]["id"]
     assert_equal "step", body["approval"]["type"]
     assert_equal "pending", body["approval"]["status"]
   end
@@ -207,26 +197,16 @@ class SisyphusControllerTest < ActionDispatch::IntegrationTest
 
   speed_profile :fast
   test "show_approval returns approval request" do
-    # Create an approval
-    approval = Execution::ApprovalRequest.new(
-      id: "approval-show-123",
-      execution_id: "exec-123",
-      type: :milestone,
-      status: :pending,
-      subject_id: "milestone-1",
-      subject_title: "Test Milestone",
-      planned_actions: [],
-      estimated_changes: {},
-      created_at: Time.now.utc.iso8601
-    )
+    # Use factory - new() generates UUID automatically (OOP pattern)
+    approval = build(:approval_request, :milestone)
     @approval_store.save(approval)
 
-    get "/api/sisyphus/approvals/approval-show-123"
+    get "/api/sisyphus/approvals/#{approval.id}"
 
     assert_response :success
     body = JSON.parse(response.body)
     assert body["approval"]
-    assert_equal "approval-show-123", body["approval"]["id"]
+    assert_equal approval.id, body["approval"]["id"]
     assert_equal "milestone", body["approval"]["type"]
   end
 
@@ -242,21 +222,11 @@ class SisyphusControllerTest < ActionDispatch::IntegrationTest
 
   speed_profile :fast
   test "approve_request approves pending request" do
-    # Create a pending approval
-    approval = Execution::ApprovalRequest.new(
-      id: "approval-approve-123",
-      execution_id: "exec-123",
-      type: :step,
-      status: :pending,
-      subject_id: "step-1",
-      subject_title: "Test Step",
-      planned_actions: [],
-      estimated_changes: {},
-      created_at: Time.now.utc.iso8601
-    )
+    # Use factory - new() generates UUID automatically (OOP pattern)
+    approval = build(:approval_request, :step)
     @approval_store.save(approval)
 
-    post "/api/sisyphus/approvals/approval-approve-123/approve", params: {
+    post "/api/sisyphus/approvals/#{approval.id}/approve", params: {
       resolved_by: "test_user"
     }, as: :json
 
@@ -279,21 +249,11 @@ class SisyphusControllerTest < ActionDispatch::IntegrationTest
 
   speed_profile :fast
   test "reject_request rejects pending request" do
-    # Create a pending approval
-    approval = Execution::ApprovalRequest.new(
-      id: "approval-reject-123",
-      execution_id: "exec-123",
-      type: :step,
-      status: :pending,
-      subject_id: "step-1",
-      subject_title: "Test Step",
-      planned_actions: [],
-      estimated_changes: {},
-      created_at: Time.now.utc.iso8601
-    )
+    # Use factory - new() generates UUID automatically (OOP pattern)
+    approval = build(:approval_request, :step)
     @approval_store.save(approval)
 
-    post "/api/sisyphus/approvals/approval-reject-123/reject", params: {
+    post "/api/sisyphus/approvals/#{approval.id}/reject", params: {
       resolved_by: "test_user"
     }, as: :json
 

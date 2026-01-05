@@ -16,14 +16,20 @@ class BaseWorkflowTest < ActiveSupport::TestCase
       mark_failed("boom")
     end
   end
+
+  def setup
+    @owner_id = "test-owner-base-workflow"
+    @parent_id = "test-parent-base-workflow"
+  end
+
   speed_profile :fast
   test "execute is abstract on base class" do
-    assert_raises(NotImplementedError) { BaseWorkflow.new.execute }
+    assert_raises(NotImplementedError) { BaseWorkflow.new(owner_id: @owner_id, parent_id: @parent_id).execute }
   end
 
   speed_profile :fast
   test "setup stores prompt and conversation" do
-    workflow = SampleWorkflow.new
+    workflow = SampleWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     conversation = Object.new
     result = workflow.setup(prompt: "hi", conversation: conversation)
 
@@ -39,7 +45,7 @@ class BaseWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "marks complete with result" do
-    workflow = SampleWorkflow.new
+    workflow = SampleWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(prompt: "hi", conversation: nil)
     workflow.execute
 
@@ -51,7 +57,7 @@ class BaseWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "marks failed with error" do
-    workflow = FailingWorkflow.new
+    workflow = FailingWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(prompt: "oops", conversation: nil)
     workflow.execute
 

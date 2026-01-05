@@ -44,6 +44,7 @@ class ResearchComparisonTest < ActiveSupport::TestCase
       worker = CodebaseResearcher.new(
         goal: "How does Calculator work? What is the relationship between Formatter and Calculator? How does MathService use both?",
         path: FIXTURE_PATH,
+        context: Contexts::BaseContext.new,
         output_modes: [:report, :documentation]
       )
 

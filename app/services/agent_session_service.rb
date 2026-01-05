@@ -146,6 +146,25 @@ class AgentSessionService
     []
   end
 
+  # Update config overrides for a session
+  # @param session_id [String] Session identifier
+  # @param config_overrides [Hash] LLM configuration overrides
+  # @return [AgentSession] Updated session
+  def update_config_overrides(session_id:, config_overrides:)
+    raise ArgumentError, "session_id is required" if session_id.nil? || session_id.to_s.empty?
+    raise ArgumentError, "config_overrides must be a Hash" unless config_overrides.is_a?(Hash)
+    
+    @@lock.synchronize do
+      session = @@sessions[session_id]
+      raise ArgumentError, "Session not found: #{session_id}" unless session
+      
+      # Create new session with updated config (immutable)
+      updated_session = session.with_config_overrides(config_overrides)
+      @@sessions[session_id] = updated_session
+      updated_session
+    end
+  end
+
   private
 
   # Update session activity timestamp

@@ -14,10 +14,14 @@
 # This workflow maintains its own WorkflowMemoryStore and can query
 # the parent worker's memory for context.
 class ResearchWorkflow < BaseWorkflow
-  attr_reader :goal, :research_path, :research_memory, :context, :output_modes
+  # Use ResearchMemoryStore instead of WorkflowMemoryStore
+  MEMORY_STORE = ResearchMemoryStore
+  
+  attr_reader :goal, :research_path, :context, :output_modes
 
   # Number of parallel analysis passes for cross-validation
-  PARALLEL_PASSES = 3
+  # Reduced to 1 for performance - single focused analysis is sufficient
+  PARALLEL_PASSES = 1
 
   # Stop if this many consecutive leaves find no new files
   MAX_EMPTY_LEAVES = 3
@@ -57,15 +61,20 @@ class ResearchWorkflow < BaseWorkflow
   # @param parent_memory [#get_section, nil] Parent worker's memory for context queries
   # @param max_depth [Integer] Maximum goal decomposition depth
   # @param output_modes [Array<Symbol>] Output modes to generate (default: [:report, :documentation])
-  def initialize(goal:, owner_id:, research_path:, context: {}, parent_memory: nil, max_depth: 20, output_modes: [:report, :documentation])
-    super(owner_id: owner_id, parent_memory: parent_memory)
+  def initialize(goal:, owner_id:, research_path:, parent_id:, context: {}, max_depth: 20, output_modes: [:report, :documentation])
+    raise ArgumentError, "parent_id is required" if parent_id.nil? || parent_id.to_s.empty?
+    
     @goal = goal
     @research_path = research_path
     @context = context || {}
     @max_depth = max_depth
     @output_modes = Array(output_modes).map(&:to_sym) & VALID_OUTPUT_MODES
     @output_modes = [:report] if @output_modes.empty? # Default fallback
-    @research_memory = nil
+    
+    # Initialize base workflow (creates workflow_memory using MEMORY_STORE constant)
+    super(owner_id: owner_id, parent_id: parent_id)
+    
+    # Initialize research-specific data structures
     @research_context = Contexts::ResearchContext.new(research_goal: goal)
     @goal_tree = nil
     @all_findings = []
@@ -74,19 +83,39 @@ class ResearchWorkflow < BaseWorkflow
     @explored_files = Set.new
     @relevant_files = []  # Files that scored high relevance for the research goal
     @sub_questions = []
+    
+    # Set research-specific sections in memory
+    workflow_memory.set_section(:research_goal, [
+      { text: goal, status: "active", context: context, timestamp: Time.now.utc.iso8601 }
+    ])
+    
+    # Store any known files from context
+    if context[:known_files]&.any?
+      context[:known_files].each do |file_path|
+        Memories::Research::DiscoveredFilesMemory.add_file(
+          store: workflow_memory,
+          path: file_path,
+          relevance_score: 1.0,
+          reasoning: "Provided in seed context"
+        )
+      end
+    end
+    
+    # Store prior findings as initial context
+    if context[:prior_findings].present?
+      workflow_memory.push_context(
+        sub_question: "[Seed context]",
+        key_insights: context[:prior_findings]
+      )
+    end
   end
 
-  # Setup for compatibility with BaseWorkflow
-  def setup(prompt: nil, conversation: nil)
-    super
-    self
-  end
 
   # Execute the full research workflow
   # Produces outputs based on output_modes array
   def execute
     trigger(:start)
-    initialize_memory
+    
     record_decision(
       decision: "Starting research workflow",
       rationale: "Goal: #{goal}, Output modes: #{output_modes.join(', ')}",
@@ -112,6 +141,7 @@ class ResearchWorkflow < BaseWorkflow
     # Phase 5: Synthesize findings into report
     trigger(:analyzed)
     synthesis_result = synthesize_findings
+    memory_summary = workflow_memory.summarize_findings
 
     mark_complete({
       goal: goal,
@@ -123,12 +153,14 @@ class ResearchWorkflow < BaseWorkflow
       output_modes: output_modes,
       relevant_files: @relevant_files,
       relevant_files_tree: generate_relevant_files_tree,
-      memory_summary: @research_memory.summarize_findings,
+      memory_summary: memory_summary,
       workflow_memory_summary: memory_summary
     })
 
     result
   rescue StandardError => e
+    Rails.logger.error "[ResearchWorkflow] Execute failed: #{e.class.name} - #{e.message}"
+    Rails.logger.error e.backtrace[0..10].join("\n")
     mark_failed(e.message)
     nil
   end
@@ -138,7 +170,7 @@ class ResearchWorkflow < BaseWorkflow
     leaves = collect_leaves(@goal_tree)
 
     leaves.each do |leaf|
-      @research_memory.next_iteration!
+      workflow_memory.next_iteration!
       discovered = discover_files(leaf[:text])
 
       # Track which sub-questions each file answers
@@ -155,48 +187,33 @@ class ResearchWorkflow < BaseWorkflow
     )
   end
 
-  # Analyze discovered files with parallel execution
-  # Files are analyzed in parallel, with sequential passes per file for cross-validation
+  # Analyze discovered files in batches for performance
+  # Files are analyzed in batches to reduce LLM calls
   def analyze_discovered_files
-    return if @explored_files.empty?
-
     files_to_analyze = @explored_files.select { |f| File.exist?(f) }
     return if files_to_analyze.empty?
 
-    # Analyze files sequentially to avoid overwhelming the LLM
-    # Parallelism can cause truncated responses with limited context models
-    mutex = Mutex.new
-    files_to_analyze.each do |file_path|
-      analyze_single_file(file_path, mutex)
+    # Batch files to reduce LLM calls (max 10 files per batch for quality)
+    files_to_analyze.each_slice(10) do |batch|
+      analyze_file_batch(batch)
     end
   end
 
-  # Analyze a single file with multiple passes
-  # @param file_path [String] Path to the file
-  # @param mutex [Mutex] Mutex for thread-safe access to shared state
-  def analyze_single_file(file_path, mutex)
-    content = File.read(file_path) rescue return
+  # Analyze a batch of files together for efficiency
+  # @param file_paths [Array<String>] Paths to the files to analyze
+  def analyze_file_batch(file_paths)
+    return if file_paths.empty?
+
     prompt = Research::CodeUnderstandingPrompt.new
-    file_findings = []
 
-    # Get relevant context for this file from the shared research context
-    # This provides findings from related files/questions without unbounded growth
-    relevant_context = mutex.synchronize do
-      @research_context.format_for_analysis(goal)
-    end
+    file_paths.each do |file_path|
+      content = File.read(file_path) rescue next
+      
+      # Get relevant context for this file
+      relevant_context = @research_context.format_for_analysis(goal)
+      previous_context = relevant_context.present? ? { prior_context: relevant_context } : nil
 
-    # Run sequential passes for cross-validation within this file
-    PARALLEL_PASSES.times do |pass_num|
-      # Context includes: 1) relevant prior context, 2) findings from THIS file's earlier passes
-      previous_context = if pass_num > 0
-        {
-          key_findings: file_findings.last(3).map { |f| f[:text] },
-          prior_context: relevant_context
-        }
-      elsif relevant_context.present?
-        { prior_context: relevant_context }
-      end
-
+      # Single focused analysis per file (PARALLEL_PASSES = 1)
       result = prompt.analyze(
         content: content,
         goal: goal,
@@ -204,42 +221,38 @@ class ResearchWorkflow < BaseWorkflow
         previous_context: previous_context
       )
 
-      if result[:content]
-        result[:content][:insights]&.each do |insight|
-          finding = {
-            id: SecureRandom.uuid,
-            text: insight[:finding],
-            relevance: insight[:relevance],
-            confidence: insight[:confidence],
-            file_path: file_path,
-            pass_number: pass_num + 1
-          }
-          file_findings << finding
-        end
-      end
-    end
+      next unless result[:content]
 
-    # Thread-safe update of shared state
-    mutex.synchronize do
-      @all_findings.concat(file_findings)
+      file_findings = []
+      result[:content][:insights]&.each do |insight|
+        finding = WorkflowMemories::Finding.new(
+          text: insight[:finding],
+          file_path: file_path,
+          confidence: insight[:confidence],
+          pass_number: 1,
+          sub_question_id: goal,
+          relevance: insight[:relevance]
+        )
+        file_findings << finding
 
-      file_findings.each do |finding|
+        @all_findings << finding
+
         # Add to legacy memory store
         Memories::Research::FindingsMemory.add_finding(
-          store: @research_memory,
-          text: finding[:text],
+          store: workflow_memory,
+          text: finding.text,
           sub_question_id: goal,
           file_path: file_path,
-          confidence: finding[:confidence],
-          pass_number: finding[:pass_number]
+          confidence: finding.confidence,
+          pass_number: 1
         )
 
         # Add to research context for relevance-aware retrieval
         @research_context.add_finding(
-          finding: finding[:text],
+          finding: finding.text,
           file_path: file_path,
           sub_question: goal,
-          confidence: finding[:confidence]
+          confidence: finding.confidence
         )
       end
 
@@ -251,99 +264,64 @@ class ResearchWorkflow < BaseWorkflow
     end
   end
 
-  # Document files in parallel
+  # Document files in batches for efficiency
   def document_files
     files_to_document = @explored_files.select { |f| File.exist?(f) }
     return if files_to_document.empty?
 
-    # Document files sequentially to avoid overwhelming the LLM
-    mutex = Mutex.new
-    files_to_document.each do |file_path|
-      document_single_file(file_path, mutex)
+    # Process files in smaller batches (max 10 per batch)
+    files_to_document.each_slice(10) do |batch|
+      document_file_batch(batch)
     end
 
     record_decision(
       decision: "Documented #{@file_analyses.size} files",
-      rationale: "Per-file documentation generated sequentially",
+      rationale: "Per-file documentation generated in batches",
       context: { documented_count: @file_analyses.size }
     )
   end
 
-  # Document a single file
-  # @param file_path [String] Path to the file
-  # @param mutex [Mutex] Mutex for thread-safe access to shared state
-  def document_single_file(file_path, mutex)
-    content = File.read(file_path) rescue return
+  # Document a batch of files for efficiency
+  # @param file_paths [Array<String>] Paths to the files to document
+  def document_file_batch(file_paths)
+    return if file_paths.empty?
+
     prompt = Research::PerFileDocPrompt.new
 
-    # Get relevant context for documenting this file
-    relevant_context = mutex.synchronize do
-      @research_context.for_file(file_path, limit: 3)
-    end
+    file_paths.each do |file_path|
+      content = File.read(file_path) rescue next
 
-    prior_context_str = relevant_context.any? ? relevant_context.map(&:content).join("\n") : nil
+      # Get relevant context for documenting this file
+      relevant_context = @research_context.for_file(file_path, limit: 3)
+      prior_context_str = relevant_context.any? ? relevant_context.map(&:content).join("\n") : nil
 
-    result = prompt.analyze(
-      content: content,
-      file_path: file_path,
-      goal_context: goal,
-      sub_questions: @sub_questions,
-      prior_context: prior_context_str
-    )
+      result = prompt.analyze(
+        content: content,
+        file_path: file_path,
+        goal_context: goal,
+        sub_questions: @sub_questions,
+        prior_context: prior_context_str
+      )
 
-    if result[:content]
-      mutex.synchronize do
-        @file_analyses << result[:content]
+      next unless result[:content]
 
-        # Also create findings for synthesis
-        summary = result[:content][:summary]
-        @all_findings << {
-          id: SecureRandom.uuid,
-          text: summary,
-          file_path: file_path,
-          type: :file_summary
-        }
+      @file_analyses << result[:content]
 
-        # Add file summary to research context
-        methods = (result[:content][:methods] || []).map { |m| m[:name] || m["name"] }
-        @research_context.add_file_summary(
-          file_path: file_path,
-          summary: summary,
-          methods: methods
-        )
-      end
-    end
-  end
+      # Also create findings for synthesis
+      summary = result[:content][:summary]
+      @all_findings << {
+        id: SecureRandom.uuid,
+        text: summary,
+        file_path: file_path,
+        type: :file_summary
+      }
 
-  
-  def initialize_memory
-    store_path = File.join(
-      ENV["AGENT_STATE_PATH"] || File.join(research_path, ".agents", "state"),
-      owner_id,
-      "research_memory.json"
-    )
-    @research_memory = ResearchMemoryStore.new(path: store_path, owner_id: owner_id)
-    @research_memory.set_section(:research_goal, [
-      { text: goal, status: "active", context: context, timestamp: Time.now.utc.iso8601 }
-    ])
-
-    # Store any known files from context
-    if context[:known_files]&.any?
-      context[:known_files].each do |file_path|
-        Memories::Research::DiscoveredFilesMemory.add_file(
-          store: @research_memory,
-          path: file_path,
-          relevance_score: 1.0,
-          reasoning: "Provided in seed context"
-        )
-      end
-    end
-
-    # Store prior findings as initial context
-    if context[:prior_findings].present?
-      @research_memory.push_context(
-        sub_question: "[Seed context]",
-        key_insights: context[:prior_findings]
+      # Add file summary to research context
+      methods = (result[:content][:methods] || []).map { |m| m[:name] || m["name"] }
+      @research_context.add_file_summary(
+        file_path: file_path,
+        summary: summary,
+        methods: methods
       )
     end
   end
@@ -359,8 +337,8 @@ class ResearchWorkflow < BaseWorkflow
     decomposition = GoalDecompositionWorkflow.new(
       goal: goal,
       owner_id: owner_id,
+      parent_id: @workflow_id,  # This workflow is the parent
       context: decomposition_context,
-      parent_memory: @research_memory, # Child workflow can query our memory
       max_depth: @max_depth
     )
     decomposition.setup
@@ -372,7 +350,7 @@ class ResearchWorkflow < BaseWorkflow
       # Store sub-questions in memory and research context
       decomposition.leaf_goals.each do |leaf|
         Memories::Research::SubQuestionsMemory.add_question(
-          store: @research_memory,
+          store: workflow_memory,
           question: leaf[:text],
           is_leaf: true,
           priority: leaf[:priority] || 1,
@@ -426,7 +404,7 @@ class ResearchWorkflow < BaseWorkflow
     consecutive_empty = 0
 
     leaves.each do |leaf|
-      @research_memory.next_iteration!
+      workflow_memory.next_iteration!
 
       # Discover relevant files (filters out already-explored files)
       discovered = discover_files(leaf[:text])
@@ -458,7 +436,7 @@ class ResearchWorkflow < BaseWorkflow
       @leaf_syntheses << leaf_synthesis
 
       # Chain the summary (not raw findings) to next iteration
-      @research_memory.push_context(
+      workflow_memory.push_context(
         sub_question: leaf[:text],
         key_insights: leaf_synthesis[:summary] || findings.first(3).map { |f| f[:text] }.join("; ")
       )
@@ -575,7 +553,7 @@ class ResearchWorkflow < BaseWorkflow
       .sort_by { |e| -e[:relevance_score] }
       .each do |eval|
         Memories::Research::DiscoveredFilesMemory.add_file(
-          store: @research_memory,
+          store: workflow_memory,
           path: eval[:file_path],
           relevance_score: eval[:relevance_score],
           reasoning: eval[:reasoning]
@@ -606,37 +584,47 @@ class ResearchWorkflow < BaseWorkflow
     PARALLEL_PASSES.times do |pass_num|
       pass_findings = []
 
-      discovered_files.first(5).each do |file_eval|
+      # Analyze only 3 files per leaf (reduced from 5) to control LLM context
+      discovered_files.first(3).each do |file_eval|
         file_path = file_eval[:file_path]
         next unless File.exist?(file_path)
 
         content = File.read(file_path) rescue next
 
+        # Only pass very limited context from first pass (prevent exponential growth)
+        prior_context = if pass_num > 0 && pass_findings.any?
+          {
+            key_findings: pass_findings.first(3).map(&:text) # Limit to 3 most recent
+          }
+        else
+          nil
+        end
+
         result = prompt.analyze(
           content: content,
           goal: question,
           file_path: file_path,
-          previous_context: pass_num > 0 ? { key_findings: pass_findings.map { |f| f[:text] } } : nil
+          previous_context: prior_context
         )
 
         if result[:content]
           result[:content][:insights]&.each do |insight|
-            finding = {
-              id: SecureRandom.uuid,
+            finding = WorkflowMemories::Finding.new(
               text: insight[:finding],
-              relevance: insight[:relevance],
-              confidence: insight[:confidence],
               file_path: file_path,
-              pass_number: pass_num + 1
-            }
+              confidence: insight[:confidence],
+              pass_number: pass_num + 1,
+              sub_question_id: question,
+              relevance: insight[:relevance]
+            )
             pass_findings << finding
 
             Memories::Research::FindingsMemory.add_finding(
-              store: @research_memory,
-              text: insight[:finding],
+              store: workflow_memory,
+              text: finding.text,
               sub_question_id: question,
               file_path: file_path,
-              confidence: insight[:confidence],
+              confidence: finding.confidence,
               pass_number: pass_num + 1
             )
           end

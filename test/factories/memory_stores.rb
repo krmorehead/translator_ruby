@@ -46,9 +46,6 @@ FactoryBot.define do
     end
     
     initialize_with do
-      workflow_path = File.join(ENV.fetch("AGENT_DATA_PATH"), owner, "workflows", "#{workflow_name_value}_#{workflow_id_value}.json")
-      # Don't create directory here - let WorkflowMemoryStore.save! handle it
-      
       # Always create a real parent instance if not provided
       parent_instance = parent || begin
         MemoryStore.new(owner_id: owner)
@@ -58,8 +55,7 @@ FactoryBot.define do
         workflow_id: workflow_id_value,
         workflow_name: workflow_name_value,
         owner_id: owner,
-        parent_id: parent_instance.id,
-        path: workflow_path
+        parent_id: parent_instance.id
       )
     end
 

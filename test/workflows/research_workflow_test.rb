@@ -7,26 +7,23 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
   def setup
     @output_path = Rails.root.join("tmp", "research_workflow_test_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(@output_path)
-
-    @original_state_path = ENV["AGENT_STATE_PATH"]
-    ENV["AGENT_STATE_PATH"] = @output_path
+    
+    # Use deterministic IDs for consistent caching across test runs
+    @owner_id = "test-owner-research-workflow"
+    @parent_id = "test-parent-research-workflow"
   end
 
   def teardown
     FileUtils.rm_rf(@output_path) if @output_path && File.exist?(@output_path)
-
-    if @original_state_path
-      ENV["AGENT_STATE_PATH"] = @original_state_path
-    else
-      ENV.delete("AGENT_STATE_PATH")
-    end
   end
 
   # Memoized workflow - using let() style
   def workflow
     @workflow ||= build_workflow(
       goal: "How does the calculator work?",
-      max_depth: 1
+      max_depth: 1,
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
   end
 
@@ -35,7 +32,7 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
   # ============================================================================
   speed_profile :fast
   test "initialization with factory defaults" do
-    wf = build_workflow
+    wf = build_workflow(owner_id: @owner_id, parent_id: @parent_id)
     assert_equal "How does Calculator work?", wf.goal
     assert_equal FIXTURE_PATH, wf.research_path
     assert_equal 1, wf.instance_variable_get(:@max_depth)
@@ -43,32 +40,33 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "initialization with custom goal" do
-    wf = build_workflow(goal: "Custom research goal")
+    wf = build_workflow(goal: "Custom research goal", owner_id: @owner_id, parent_id: @parent_id)
     assert_equal "Custom research goal", wf.goal
   end
 
   speed_profile :fast
   test "initialization with output modes" do
-    wf = build_workflow(output_modes: [:documentation])
+    wf = build_workflow(output_modes: [:documentation], owner_id: @owner_id, parent_id: @parent_id)
     assert_equal [:documentation], wf.output_modes
   end
 
   speed_profile :fast
   test "initialization creates research context" do
-    wf = build_workflow
+    wf = build_workflow(owner_id: @owner_id, parent_id: @parent_id)
     assert_not_nil wf.instance_variable_get(:@research_context)
     assert_kind_of Contexts::ResearchContext, wf.instance_variable_get(:@research_context)
   end
 
   speed_profile :fast
   test "initial state is pending" do
-    wf = build_workflow
+    wf = build_workflow(owner_id: @owner_id, parent_id: @parent_id)
     assert_equal :pending, wf.current_state
   end
 
   speed_profile :fast
-  test "PARALLEL_PASSES constant is 3" do
-    assert_equal 3, ResearchWorkflow::PARALLEL_PASSES
+  test "PARALLEL_PASSES constant is 1" do
+    # Optimized to 1 pass for performance while maintaining quality
+    assert_equal 1, ResearchWorkflow::PARALLEL_PASSES
   end
 
   speed_profile :fast
@@ -96,7 +94,9 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
     wf = build_workflow(
       goal: "How does Calculator work?",
       max_depth: 1,
-      output_modes: [:report]
+      output_modes: [:report],
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
     wf.setup()
     wf.execute
@@ -132,8 +132,8 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
   test "shared: workflow creates research memory" do
     data = shared_execution_result
     wf = data[:workflow]
-    assert wf.research_memory, "Should have research_memory"
-    assert_kind_of ResearchMemoryStore, wf.research_memory
+    assert wf.workflow_memory, "Should have workflow_memory"
+    assert_kind_of ResearchMemoryStore, wf.workflow_memory
   end
 
   speed_profile :slow
@@ -164,7 +164,7 @@ class ResearchWorkflowTest < ActiveSupport::TestCase
     FileUtils.mkdir_p(empty_dir)
 
     begin
-      wf = build_workflow(research_path: empty_dir)
+      wf = build_workflow(research_path: empty_dir, owner_id: @owner_id, parent_id: @parent_id)
       wf.execute
 
       assert wf.complete? || wf.failed?, "Should complete or fail gracefully"

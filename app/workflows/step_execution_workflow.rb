@@ -55,8 +55,8 @@ class StepExecutionWorkflow < BaseWorkflow
   # Initialize the workflow
   # @param owner_id [String] Parent worker's owner ID
   # @param parent_memory [WorkflowMemoryStore] Parent memory store
-  def initialize(owner_id:, parent_memory: nil)
-    super(owner_id: owner_id, parent_memory: parent_memory)
+  def initialize(owner_id:, parent_id:)
+    super(owner_id: owner_id, parent_id: parent_id)
     
     @step = nil
     @path = nil
@@ -82,9 +82,6 @@ class StepExecutionWorkflow < BaseWorkflow
     @path = path
     @context = context
     @system_prompt = system_prompt
-
-    # Initialize workflow memory
-    initialize_workflow_memory if @owner_id
 
     self
   end
@@ -508,6 +505,8 @@ class StepExecutionWorkflow < BaseWorkflow
       Sisyphus::BashTool
     when "read_file"
       Sisyphus::ReadFileTool
+    when "grep"
+      Sisyphus::GrepTool
     else
       raise ArgumentError, "Unknown Sisyphus tool: #{tool_name}"
     end

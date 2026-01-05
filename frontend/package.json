@@ -8,8 +8,16 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "vitest",
-    "e2e": "playwright test"
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:fast": "TEST_SPEED_FILTER=fast vitest --run",
+    "test:medium": "TEST_SPEED_FILTER=medium vitest --run",
+    "test:slow": "TEST_SPEED_FILTER=slow vitest --run",
+    "test:all": "npm run test:fast && npm run test:medium && npm run test:slow",
+    "e2e": "playwright test",
+    "e2e:fast": "TEST_SPEED_FILTER=fast playwright test",
+    "e2e:medium": "TEST_SPEED_FILTER=medium playwright test",
+    "e2e:slow": "TEST_SPEED_FILTER=slow playwright test"
   },
   "dependencies": {
     "react": "^18.3.1",

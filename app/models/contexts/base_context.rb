@@ -109,23 +109,37 @@ module Contexts
     end
 
     # Format relevant context for inclusion in a prompt
+    # Uses intelligent selection, not truncation
     # @param question [String] The question to find relevant context for
-    # @param format [Symbol] Output format (:brief, :detailed)
+    # @param format [Symbol] Output format (:brief, :detailed, :compact)
+    # @param max_tokens [Integer] Approximate token budget (1 token ≈ 4 chars)
     # @return [String] Formatted context string
-    def format_for_prompt(question, format: :brief)
+    def format_for_prompt(question, format: :brief, max_tokens: 500)
       relevant = relevant_to(question)
       return "" if relevant.empty?
 
       case format
+      when :compact
+        # Compact format: most relevant entries, intelligently compressed
+        format_compact(relevant, max_tokens)
       when :brief
-        relevant.map { |e| "- #{e.content}" }.join("\n")
+        # Brief format: simple list, respects token budget
+        format_brief(relevant, max_tokens)
       when :detailed
-        relevant.map do |e|
-          "Source: #{e.source}\nTopics: #{e.topics.join(', ')}\n#{e.content}"
-        end.join("\n\n")
+        # Detailed format: full context with metadata, may exceed budget
+        format_detailed(relevant, max_tokens)
       else
         relevant.map(&:content).join("\n")
       end
+    end
+
+    # Generate prompt-ready text with automatic size management
+    # This is the primary interface for prompts to consume context
+    # @param question [String] The question/goal for relevance filtering
+    # @param max_tokens [Integer] Token budget for the output
+    # @return [String] Intelligently formatted context text
+    def to_prompt_text(question:, max_tokens: 500)
+      format_for_prompt(question, format: :compact, max_tokens: max_tokens)
     end
 
     # Get a compressed summary of all context
@@ -404,6 +418,88 @@ module Contexts
       return text if text.length <= max_length
 
       text[0, max_length - 3] + "..."
+    end
+
+    # Format entries in compact mode: semantic compression, not truncation
+    # Intelligently reduces size while preserving meaning
+    def format_compact(entries, max_tokens)
+      budget = max_tokens * 4 # Approximate chars
+      lines = []
+      used = 0
+
+      entries.each do |entry|
+        # Extract key phrases from content using keyword extraction
+        keywords = extract_keywords(entry.content)
+        compressed = if keywords.any?
+          # Use keywords to create compressed version
+          keywords.first(5).join(", ")
+        else
+          # Fall back to first sentence
+          first_sentence(entry.content)
+        end
+
+        line = "- #{compressed}"
+        line_size = line.length
+        
+        break if used + line_size > budget && lines.any?
+        
+        lines << line
+        used += line_size
+      end
+
+      lines.join("\n")
+    end
+
+    # Format entries in brief mode: simple list with smart sizing
+    def format_brief(entries, max_tokens)
+      budget = max_tokens * 4
+      lines = []
+      used = 0
+
+      entries.each do |entry|
+        # Use first sentence or truncate intelligently
+        content = first_sentence(entry.content)
+        line = "- #{content}"
+        line_size = line.length
+        
+        break if used + line_size > budget && lines.any?
+        
+        lines << line
+        used += line_size
+      end
+
+      lines.join("\n")
+    end
+
+    # Format entries in detailed mode: full information with metadata
+    def format_detailed(entries, max_tokens)
+      budget = max_tokens * 4
+      sections = []
+      used = 0
+
+      entries.each do |entry|
+        section = "Source: #{entry.source}\nTopics: #{entry.topics.join(', ')}\n#{entry.content}"
+        section_size = section.length
+        
+        break if used + section_size > budget && sections.any?
+        
+        sections << section
+        used += section_size
+      end
+
+      sections.join("\n\n")
+    end
+
+    # Extract first complete sentence from text
+    def first_sentence(text)
+      return text if text.length <= 100
+      
+      # Find first sentence boundary
+      match = text.match(/^(.{10,100}?[.!?])\s/)
+      return match[1] if match
+      
+      # No sentence boundary found, take first 100 chars at word boundary
+      text[0...100].sub(/\s+\w+$/, '...')
     end
   end
 end

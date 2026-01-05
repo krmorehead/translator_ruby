@@ -25,30 +25,53 @@ class BaseWorkflow
     record_state_to_memory(from, to, event, payload) if respond_to?(:workflow_memory, true)
   end
 
+  # Memory store class to use (override in subclasses)
+  MEMORY_STORE = WorkflowMemoryStore
+
   attr_reader :prompt, :conversation, :result, :error,
-              :workflow_id, :owner_id, :workflow_memory, :parent_memory
+              :workflow_id, :owner_id, :workflow_memory, :parent_id
 
   def self.workflow_name
     name.demodulize.underscore
   end
+  
+  # Lazy-load parent memory via graph lookup
+  # @return [WorkflowMemoryStore, MemoryStore, nil] Parent memory store or nil if parent not found
+  def parent_memory
+    return nil if is_root?
+    service = ContextGraphService.instance
+    parent_node = service.find_by_id(@parent_id)
+    # Both WorkerNode and WorkflowNode have memory_store (WorkflowNode aliases it to workflow_memory)
+    parent_node&.memory_store
+  end
 
-  # @param owner_id [String, nil] Parent worker's owner ID for memory isolation
-  # @param parent_memory [#get_section, nil] Parent memory store for context queries
-  def initialize(owner_id: nil, parent_memory: nil)
+  def is_root?
+    @parent_id == @owner_id
+  end
+
+  # @param owner_id [String] Owner ID for memory isolation (required)
+  # @param parent_id [String] Parent ID for memory hierarchy (required)
+  def initialize(owner_id:, parent_id:)
+    raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
+    raise ArgumentError, "parent_id is required" if parent_id.nil? || parent_id.to_s.empty?
+    
     initialize_state_machine
+    
+    # Initialize ID first (standard OOP)
     @workflow_id = SecureRandom.uuid
-    @owner_id = owner_id || SecureRandom.uuid
-    @parent_memory = parent_memory
+    @owner_id = owner_id
+    @parent_id = parent_id
     @result = nil
     @error = nil
-    @workflow_memory = nil
+
+    # Initialize memory store as part of initialization (standard OOP)
+    @workflow_memory = initialize_memory_store
   end
 
   # Stores incoming context; returns self for chaining.
   def setup(prompt: nil, conversation: nil)
     @prompt = prompt
     @conversation = conversation
-    initialize_workflow_memory
     self
   end
 
@@ -128,24 +151,17 @@ class BaseWorkflow
     trigger(:fail)
   end
 
-  
-  def initialize_workflow_memory
-    parent_id = @parent_memory ? @parent_memory.id : @owner_id
-    
-    # Create path under AgentConfig.data_path
-    memory_path = File.join(
-      AgentConfig.data_path,
-      @owner_id,
-      "workflows",
-      "workflow_#{@workflow_id}_memory.json"
-    )
-    
-    @workflow_memory = WorkflowMemoryStore.new(
+  # Initialize memory store using the MEMORY_STORE constant
+  # Subclasses can override MEMORY_STORE to use a different store class
+  # Can be overridden by subclasses to add additional initialization
+  def initialize_memory_store
+    # Use the MEMORY_STORE constant from this class (allows inheritance)
+    # Path is calculated automatically inside the memory store
+    self.class::MEMORY_STORE.new(
       workflow_id: @workflow_id,
       workflow_name: self.class.workflow_name,
-      parent_id: parent_id,
-      owner_id: @owner_id,
-      path: memory_path
+      parent_id: @parent_id,
+      owner_id: @owner_id
     )
   end
 

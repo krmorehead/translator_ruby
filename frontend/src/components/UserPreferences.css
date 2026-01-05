@@ -1,0 +1,324 @@
+.user-preferences-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.user-preferences-panel {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.preferences-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.preferences-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.close-button:hover {
+  color: #1f2937;
+}
+
+.preferences-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.preference-section {
+  margin-bottom: 32px;
+}
+
+.preference-section:last-child {
+  margin-bottom: 0;
+}
+
+.preference-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.preference-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.radio-option:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.radio-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.radio-option input[type="radio"]:checked + span {
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.radio-option span {
+  font-size: 16px;
+  color: #374151;
+}
+
+/* Font size previews */
+.font-preview-small {
+  font-size: 12px;
+}
+
+.font-preview-medium {
+  font-size: 14px;
+}
+
+.font-preview-large {
+  font-size: 16px;
+}
+
+.font-preview-xlarge {
+  font-size: 18px;
+}
+
+/* Keyboard Shortcuts */
+.show-shortcuts-btn {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.show-shortcuts-btn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.shortcuts-list {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+}
+
+.shortcut-keys {
+  background: white;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.shortcut-action {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Backup Actions */
+.backup-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.export-btn,
+.import-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-align: center;
+}
+
+.export-btn:hover,
+.import-btn:hover {
+  background: #2563eb;
+}
+
+.import-btn-label {
+  flex: 1;
+  cursor: pointer;
+}
+
+/* Footer */
+.preferences-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.done-button {
+  padding: 10px 24px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.done-button:hover {
+  background: #059669;
+}
+
+/* Dark theme support */
+[data-theme="dark"] .user-preferences-panel {
+  background: #1f2937;
+}
+
+[data-theme="dark"] .preferences-header {
+  border-bottom-color: #374151;
+}
+
+[data-theme="dark"] .preferences-header h2 {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .close-button {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .close-button:hover {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .preference-section h3 {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .radio-option {
+  border-color: #374151;
+  background: #111827;
+}
+
+[data-theme="dark"] .radio-option:hover {
+  border-color: #3b82f6;
+  background: #1e3a8a;
+}
+
+[data-theme="dark"] .radio-option span {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .show-shortcuts-btn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .show-shortcuts-btn:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+[data-theme="dark"] .shortcuts-list {
+  background: #111827;
+}
+
+[data-theme="dark"] .shortcut-keys {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .shortcut-action {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .preferences-footer {
+  border-top-color: #374151;
+}
+

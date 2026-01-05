@@ -61,7 +61,7 @@ class BasePromptTest < ActiveSupport::TestCase
     assert_includes formatted, "Forest"  # Compressed summary uses location name
   end
 
-  speed_profile :fast
+  speed_profile :medium
   test "execute returns structured json when schema provided" do
     prompt = OutcomePrompt.new
     context = Contexts::DndChatContext.new
@@ -81,7 +81,7 @@ class BasePromptTest < ActiveSupport::TestCase
     assert result[:content][:consequence].is_a?(String)
   end
 
-  speed_profile :fast
+  speed_profile :medium
   test "execute returns freeform text when no schema" do
     prompt = NarrativePrompt.new
     context = Contexts::DndChatContext.new
@@ -97,7 +97,7 @@ class BasePromptTest < ActiveSupport::TestCase
     refute_includes result[:content].downcase, "tool"
   end
 
-  speed_profile :fast
+  speed_profile :medium
   test "execute includes thoughts field" do
     prompt = OutcomePrompt.new
     context = Contexts::DndChatContext.new

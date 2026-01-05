@@ -42,6 +42,11 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   let(:temp_dir) { create_temp_git_repo }
 
+  def setup
+    @owner_id = "test-owner-workflow-state"
+    @parent_id = "test-parent-workflow-state"
+  end
+
   def teardown
     FileUtils.rm_rf(temp_dir) if temp_dir && File.exist?(temp_dir)
   end
@@ -49,7 +54,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Basic state machine inheritance tests
   speed_profile :fast
   test "workflow inherits base states from BaseWorkflow" do
-    workflow = TestWorkflow.new
+    workflow = TestWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     assert workflow.pending?
     refute workflow.running?
     refute workflow.complete?
@@ -57,7 +62,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "workflow can transition through states" do
-    workflow = TestWorkflow.new
+    workflow = TestWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup()
     workflow.execute
 
@@ -68,7 +73,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Custom workflow with overridden states
   speed_profile :fast
   test "custom workflow overrides parent transitions" do
-    workflow = CustomStateWorkflow.new
+    workflow = CustomStateWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup()
     workflow.execute
 
@@ -78,7 +83,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "custom workflow has correct phases" do
-    workflow = CustomStateWorkflow.new
+    workflow = CustomStateWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
 
     assert_nil workflow.current_phase
 
@@ -92,7 +97,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Workflow memory tests
   speed_profile :fast
   test "workflow creates workflow_memory when setup is called with owner_id" do
-    workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
+    workflow = TestWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup()
 
     assert_not_nil workflow.workflow_memory
@@ -101,7 +106,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "workflow memory records state transitions" do
-    workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
+    workflow = TestWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup()
     workflow.execute
 
@@ -119,8 +124,8 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   test "workflow can get parent context" do
     parent_memory = build(:memory_store)
     workflow = TestWorkflow.new(
-      owner_id: SecureRandom.uuid,
-      parent_memory: parent_memory
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
     workflow.setup()
 
@@ -135,7 +140,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Decision recording tests
   speed_profile :fast
   test "workflow can record decisions to memory" do
-    workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
+    workflow = TestWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup()
 
     workflow.record_decision(
@@ -153,7 +158,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
   # Memory summary tests
   speed_profile :fast
   test "memory_summary returns workflow metadata" do
-    workflow = TestWorkflow.new(owner_id: SecureRandom.uuid)
+    workflow = TestWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup()
     workflow.execute
 
@@ -175,7 +180,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "failing workflow transitions to failed state" do
-    workflow = FailingWorkflow.new(owner_id: SecureRandom.uuid)
+    workflow = FailingWorkflow.new(owner_id: SecureRandom.uuid, parent_id: "root")
     workflow.setup()
     workflow.execute
 
@@ -185,7 +190,7 @@ class WorkflowStateMachineTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "failing workflow records error to memory" do
-    workflow = FailingWorkflow.new(owner_id: SecureRandom.uuid)
+    workflow = FailingWorkflow.new(owner_id: SecureRandom.uuid, parent_id: "root")
     workflow.setup()
     workflow.execute
 

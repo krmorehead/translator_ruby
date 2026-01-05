@@ -9,7 +9,7 @@ module Api
     # GET /api/agent/config
     # Retrieve current agent configuration
     def show
-      config = AgentConfigService.get_config
+      config = AgentConfigService.get_config(nil)
       
       render json: {
         success: true,

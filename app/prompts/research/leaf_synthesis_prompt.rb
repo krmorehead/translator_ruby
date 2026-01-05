@@ -103,15 +103,15 @@ module Research
 
       prompt_parts << "\n## Findings from Analysis Passes:"
 
-      # Group findings by pass number
-      by_pass = findings.group_by { |f| f[:pass_number] || 1 }
+      # Group findings by pass number - findings must ALWAYS Find objects
+      by_pass = findings.group_by(&:pass_number)
 
       by_pass.each do |pass_num, pass_findings|
         prompt_parts << "\n### Pass #{pass_num}:"
-        pass_findings.each do |finding|
-          text = finding[:text] || finding[:finding] || finding.to_s
-          file = finding[:file_path] ? " (#{finding[:file_path]})" : ""
-          prompt_parts << "- #{text}#{file}"
+        # Take top 5 findings per pass (structural limit)
+        pass_findings.first(5).each do |finding|
+          file = File.basename(finding.file_path)
+          prompt_parts << "- #{finding.text} (#{file})"
         end
       end
 

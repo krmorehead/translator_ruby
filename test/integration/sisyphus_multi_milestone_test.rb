@@ -11,6 +11,8 @@ class SisyphusMultiMilestoneTest < ActiveSupport::TestCase
   def setup
     # Create temp directory for test execution
     @temp_dir = Dir.mktmpdir("sisyphus_multi_milestone")
+    @owner_id = "multi_milestone_test"
+    @parent_id = "multi_milestone_parent"
     
     # Initialize git repo for checkpoint testing
     Dir.chdir(@temp_dir) do
@@ -99,7 +101,7 @@ class SisyphusMultiMilestoneTest < ActiveSupport::TestCase
     puts "\n=== Executing Milestone 1: #{@milestone1.title} ==="
     
     milestone1_step = @milestone1.steps.first
-    execution_workflow1 = StepExecutionWorkflow.new(owner_id: "multi_milestone_test")
+    execution_workflow1 = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     execution_workflow1.setup(step: milestone1_step, path: @temp_dir, context: context)
     
     step_result1 = execution_workflow1.execute
@@ -111,8 +113,7 @@ class SisyphusMultiMilestoneTest < ActiveSupport::TestCase
     checkpoint_service = CheckpointService.new(path: @temp_dir)
     checkpoint1 = checkpoint_service.create_checkpoint(
       "Sisyphus: Completed #{@milestone1.title}",
-      milestone_id: @milestone1.id,
-      milestone_number: @milestone1.number
+      milestone_id: @milestone1.id
     )
     
     assert_not_nil checkpoint1, "Checkpoint should be created after Milestone 1"
@@ -132,7 +133,7 @@ class SisyphusMultiMilestoneTest < ActiveSupport::TestCase
     )
     
     milestone2_step = @milestone2.steps.first
-    execution_workflow2 = StepExecutionWorkflow.new(owner_id: "multi_milestone_test")
+    execution_workflow2 = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     execution_workflow2.setup(step: milestone2_step, path: @temp_dir, context: context2)
     
     step_result2 = execution_workflow2.execute
@@ -143,8 +144,7 @@ class SisyphusMultiMilestoneTest < ActiveSupport::TestCase
     # Create checkpoint after milestone 2
     checkpoint2 = checkpoint_service.create_checkpoint(
       "Sisyphus: Completed #{@milestone2.title}",
-      milestone_id: @milestone2.id,
-      milestone_number: @milestone2.number
+      milestone_id: @milestone2.id
     )
     
     assert_not_nil checkpoint2, "Checkpoint should be created after Milestone 2"

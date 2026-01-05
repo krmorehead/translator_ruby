@@ -31,84 +31,118 @@ class WorkflowMemoryStore
     checkpoints: []
   }
 
-  attr_reader :workflow_id, :workflow_name, :parent_id, :path, :owner_id
+  attr_reader :workflow_id, :workflow_name, :parent_id, :path, :owner_id, :id
 
   # @param workflow_id [String] Unique ID for this workflow instance
   # @param workflow_name [String] Name of the workflow class
   # @param parent_id [String] ID of parent workflow or worker
   # @param path [String] Path for persistence (REQUIRED for checkpoint tracking)
   # @param owner_id [String] Owner ID for isolation
-  def initialize(workflow_id:, workflow_name:, path:, parent_id:, owner_id:)
+  def initialize(workflow_id:, workflow_name:, parent_id:, owner_id:)
+    raise ArgumentError, "workflow_id is required" if workflow_id.nil? || workflow_id.to_s.empty?
     raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
     raise ArgumentError, "parent_id is required" if parent_id.nil? || parent_id.to_s.empty?
+    raise ArgumentError, "workflow_name is required" if workflow_name.nil? || workflow_name.to_s.empty?
 
     @workflow_id = workflow_id
     @workflow_name = workflow_name
     @parent_id = parent_id.to_s
     @owner_id = owner_id.to_s
-    @path = path
+    @id = @workflow_id # Set @id for GraphNode
     
-    # Load from disk if file exists, otherwise initialize fresh
-    if File.exist?(path) && File.size(path) > 0
-      data = JSON.parse(File.read(path), symbolize_names: true)
-      @started_at = Time.parse(data[:started_at])
-      @last_transition_at = Time.parse(data[:last_transition_at])
-      @sections = {
-        state_transitions: self.class.deserialize_array(data: data[:sections][:state_transitions], klass: WorkflowMemories::StateTransition),
-        workflow_context: self.class.deserialize_array(data: data[:sections][:workflow_context], klass: WorkflowMemories::Context),
-        decisions: self.class.deserialize_array(data: data[:sections][:decisions], klass: WorkflowMemories::Decision),
-        errors: self.class.deserialize_array(data: data[:sections][:errors], klass: WorkflowMemories::Error),
-        outputs: self.class.deserialize_array(data: data[:sections][:outputs], klass: WorkflowMemories::Output),
-        checkpoints: data[:sections][:checkpoints]
-      }
-    else
-      # Create fresh sections - each instance gets its own arrays
-      @sections = {
-        state_transitions: [],
-        workflow_context: [],
-        decisions: [],
-        errors: [],
-        outputs: [],
-        checkpoints: []
-      }
-      @started_at = Time.now.utc
-      @last_transition_at = Time.now.utc
-    end
+    # Calculate path automatically - NOT configurable
+    @path = calculate_memory_path
+    
+    # Initialize default workflow sections
+    # Child classes set @sections BEFORE calling super
+    @sections ||= {}
+    @sections[:state_transitions] = []
+    @sections[:workflow_context] = []
+    @sections[:decisions] = []
+    @sections[:errors] = []
+    @sections[:outputs] = []
+    @sections[:checkpoints] = []
+    
+    @started_at = Time.now.utc
+    @last_transition_at = Time.now.utc
+    
+    save! # Save initial state
   end
-
+  
+  # Calculate the deterministic path for this memory store
+  # Based on ENV configuration + workflow structure
+  # NOT configurable - internal mechanism
+  def calculate_memory_path
+    File.join(
+      AgentConfig.data_path,
+      @owner_id,
+      "workflows",
+      "#{@workflow_name}_#{@workflow_id}_memory.json"
+    )
+  end
+  
   # Load WorkflowMemoryStore from disk
-  # @param path [String] Path to the JSON file
+  # @param workflow_id [String] Workflow ID to load
+  # @param owner_id [String] Owner ID
   # @return [WorkflowMemoryStore] Loaded memory store
-  def self.from_h(workflow_id:, workflow_name:, path:, sections:, started_at:, last_transition_at:, parent_id:, owner_id:)
-    store = allocate
-    store.instance_variable_set(:@workflow_id, workflow_id)
-    store.instance_variable_set(:@workflow_name, workflow_name)
-    store.instance_variable_set(:@parent_id, parent_id)
-    store.instance_variable_set(:@owner_id, owner_id)
-    store.instance_variable_set(:@path, path)
-    store.instance_variable_set(:@started_at, Time.parse(started_at))
-    store.instance_variable_set(:@last_transition_at, Time.parse(last_transition_at))
+  def self.load_from_disk(workflow_id:, workflow_name:, owner_id:)
+    raise ArgumentError, "workflow_id is required" if workflow_id.nil? || workflow_id.to_s.empty?
+    raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
+    raise ArgumentError, "workflow_name is required" if workflow_name.nil? || workflow_name.to_s.empty?
     
-    # Deserialize sections
-    deserialized_sections = {
-      state_transitions: WorkflowMemoryStore.deserialize_array(data: sections[:state_transitions], klass: WorkflowMemories::StateTransition),
-      workflow_context: WorkflowMemoryStore.deserialize_array(data: sections[:workflow_context], klass: WorkflowMemories::Context),
-      decisions: WorkflowMemoryStore.deserialize_array(data: sections[:decisions], klass: WorkflowMemories::Decision),
-      errors: WorkflowMemoryStore.deserialize_array(data: sections[:errors], klass: WorkflowMemories::Error),
-      outputs: WorkflowMemoryStore.deserialize_array(data: sections[:outputs], klass: WorkflowMemories::Output),
+    # Calculate deterministic path
+    path = File.join(
+      AgentConfig.data_path,
+      owner_id.to_s,
+      "workflows",
+      "#{workflow_name}_#{workflow_id}_memory.json"
+    )
+    
+    raise Errno::ENOENT, "File not found: #{path}" unless File.exist?(path)
+    
+    data = JSON.parse(File.read(path), symbolize_names: true)
+    from_h(data)
+  end
+  
+  # Reconstruct WorkflowMemoryStore from hash
+  # @param hash [Hash] Serialized data
+  # @return [WorkflowMemoryStore] Reconstructed memory store
+  def self.from_h(hash)
+    raise TypeError, "hash must be a Hash, got #{hash.class}" unless hash.is_a?(Hash)
+    raise ArgumentError, "workflow_id is required" unless hash[:workflow_id]
+    raise ArgumentError, "sections is required" unless hash[:sections]
+    
+    store = allocate
+    store.instance_variable_set(:@workflow_id, hash[:workflow_id])
+    store.instance_variable_set(:@workflow_name, hash[:workflow_name])
+    store.instance_variable_set(:@parent_id, hash[:parent_id].to_s)
+    store.instance_variable_set(:@owner_id, hash[:owner_id].to_s)
+    store.instance_variable_set(:@id, hash[:workflow_id])
+    
+    # Calculate path automatically
+    path = File.join(
+      AgentConfig.data_path,
+      hash[:owner_id].to_s,
+      "workflows",
+      "#{hash[:workflow_name]}_#{hash[:workflow_id]}_memory.json"
+    )
+    store.instance_variable_set(:@path, path)
+    
+    store.instance_variable_set(:@started_at, Time.parse(hash[:started_at]))
+    store.instance_variable_set(:@last_transition_at, Time.parse(hash[:last_transition_at]))
+    
+    # Deserialize sections using from_h on each memory class
+    sections = hash[:sections]
+    store.instance_variable_set(:@sections, {
+      state_transitions: sections[:state_transitions].map { |h| WorkflowMemories::StateTransition.from_h(h) },
+      workflow_context: sections[:workflow_context].map { |h| WorkflowMemories::Context.from_h(h) },
+      decisions: sections[:decisions].map { |h| WorkflowMemories::Decision.from_h(h) },
+      errors: sections[:errors].map { |h| WorkflowMemories::Error.from_h(h) },
+      outputs: sections[:outputs].map { |h| WorkflowMemories::Output.from_h(h) },
       checkpoints: sections[:checkpoints]
-    }
-    store.instance_variable_set(:@sections, deserialized_sections)
+    })
     
     store
-  end
-
-  # Deserialize array of hashes to objects
-  # @param data [Array<Hash>] Array of serialized objects
-  # @param klass [Class] Class to deserialize to (must have from_h method)
-  # @return [Array] Array of deserialized objects
-  def self.deserialize_array(data:, klass:)
-    data.map { |hash| klass.from_h(**hash.deep_symbolize_keys) }
   end
 
   # Query for context using the graph service
@@ -118,13 +152,15 @@ class WorkflowMemoryStore
   # @param threshold [Float] Similarity threshold (default: 0.7)
   # @return [Array<Hash>] Relevant context entries with similarity scores
   def query_context(context_type:, query_text:, threshold: 0.7)
+    raise TypeError, "query_text must be a String, got #{query_text.class}" unless query_text.is_a?(String)
+    
     service = ContextGraphService.instance
     query_embedding = VectorizationService.new.vectorize(text: query_text)
     
     service.query(
-      id: @id,  # MY id - I am a node in the graph
+      id: @id,
       context_type: context_type,
-      query_vector: query_embedding.vector,
+      query_embedding: query_embedding,
       threshold: threshold
     )
   end
@@ -260,7 +296,10 @@ class WorkflowMemoryStore
   # Get the current state from state transitions
   def current_state
     last_transition = @sections[:state_transitions].last
-    last_transition ? last_transition.to : :pending
+    return :pending unless last_transition
+    
+    raise TypeError, "Expected WorkflowMemories::StateTransition, got #{last_transition.class}" unless last_transition.is_a?(WorkflowMemories::StateTransition)
+    last_transition.to
   end
 
   # Get full state history
@@ -386,7 +425,7 @@ class WorkflowMemoryStore
   # @return [String] The checkpoint ID
   # @raise [RuntimeError] If checkpoint tracking fails or no Git repository found
   def current_checkpoint_id
-    repo_path = extract_repo_path
+    repo_path = git_workspace_path
     CheckpointTracker.instance.current_id(path: repo_path)
   end
 
@@ -414,8 +453,15 @@ class WorkflowMemoryStore
     File.write(path, JSON.pretty_generate(to_h))
   end
 
+  # Clean up the isolated git workspace for this workflow
+  # OOP: Explicit cleanup for proper resource management in tests
+  # @return [Boolean] True if workspace was cleaned up
+  def cleanup_git_workspace!
+    workspace_service = GitWorkspaceService.new
+    workspace_service.cleanup_workspace(workspace_id: @workflow_id)
+  end
+
   def calculate_duration
-    # @last_transition_at is always initialized, no nil check needed
     Time.now.utc - @last_transition_at
   end
 
@@ -424,6 +470,17 @@ class WorkflowMemoryStore
   # We need to find the parent Git repository
   # @return [String] The repository root path
   # @raise [RuntimeError] If no Git repository found
+  # Get or create an isolated git workspace for this workflow
+  # OOP: Each workflow gets its own git repository to prevent lock contention
+  # @return [String] Path to the isolated git workspace
+  def git_workspace_path
+    @git_workspace_path ||= begin
+      # Use workflow_id to ensure each workflow has its own isolated git workspace
+      workspace_service = GitWorkspaceService.new
+      workspace_service.find_or_create_workspace(workspace_id: @workflow_id)
+    end
+  end
+
   def extract_repo_path
     current = File.expand_path(@path)
     while current != "/"

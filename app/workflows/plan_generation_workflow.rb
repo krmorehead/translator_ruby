@@ -31,11 +31,11 @@ class PlanGenerationWorkflow < BaseWorkflow
   # @param goal [String] The goal to create a plan for
   # @param path [String] Codebase root for exploration
   # @param owner_id [String] Unique ID for state isolation
-  # @param parent_memory [ResearchMemoryStore, nil] Parent worker's memory
-  # @param context [Contexts::BaseContext, nil] Planning context
-  def initialize(goal:, path:, owner_id:, parent_memory: nil, context: nil)
-    validate_parameters!(goal, path, owner_id)
-    super(owner_id: owner_id, parent_memory: parent_memory)
+  # @param parent_id [String] Parent workflow/worker ID
+  # @param context [Contexts::BaseContext] Planning context (REQUIRED)
+  def initialize(goal:, path:, owner_id:, parent_id:, context:)
+    validate_parameters!(goal, path, owner_id, context)
+    super(owner_id: owner_id, parent_id: parent_id)
 
     @goal = goal
     @path = path
@@ -48,7 +48,7 @@ class PlanGenerationWorkflow < BaseWorkflow
   # @return [Planning::ExecutionPlan] Generated execution plan
   def execute
     trigger(:start)
-    initialize_workflow_memory
+    initialize_memory_store
     record_decision(
       decision: "Starting plan generation with codebase exploration",
       rationale: "Goal: #{goal}, Path: #{path}",
@@ -67,6 +67,8 @@ class PlanGenerationWorkflow < BaseWorkflow
     mark_complete(@execution_plan.to_h)
     @execution_plan
   rescue => e
+    Rails.logger.error "[PlanGenerationWorkflow] Failed: #{e.class}: #{e.message}"
+    Rails.logger.error e.backtrace.first(10).join("\n")
     mark_failed("Plan generation failed: #{e.message}")
     # Return a minimal valid plan on failure
     Planning::ExecutionPlan.new(
@@ -136,13 +138,14 @@ class PlanGenerationWorkflow < BaseWorkflow
     raise "Failed to convert plan data to ExecutionPlan: #{e.message}"
   end
 
-  def validate_parameters!(goal, path, owner_id)
+  def validate_parameters!(goal, path, owner_id, context)
     raise ArgumentError, "goal must be a String" unless goal.is_a?(String)
     raise ArgumentError, "goal cannot be empty" if goal.strip.empty?
     raise ArgumentError, "path must be a String" unless path.is_a?(String)
     raise ArgumentError, "path cannot be empty" if path.strip.empty?
     raise ArgumentError, "owner_id must be a String" unless owner_id.is_a?(String)
     raise ArgumentError, "owner_id cannot be empty" if owner_id.strip.empty?
+    raise ArgumentError, "context must be a Contexts::BaseContext" unless context.is_a?(Contexts::BaseContext)
   end
 
   # Extract context hint from BaseContext if available

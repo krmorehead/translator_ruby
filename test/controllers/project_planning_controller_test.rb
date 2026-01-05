@@ -83,23 +83,26 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
 
   # ============================================================================
   # Shared Execution Tests - All use same LLM call
+  # OOP: These tests share a single LLM call result via shared_create_request,
+  #      but the first test to run will make the actual call, which can take >60s.
+  #      Mark all as :slow to allow 120s SLA.
   # ============================================================================
 
-  speed_profile :medium
+  speed_profile :slow
   test "shared: create returns 200 with valid params" do
     resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
     assert_equal 200, resp.status
   end
 
-  speed_profile :medium
+  speed_profile :slow
   test "shared: response includes success boolean" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
     assert json.key?("success")
   end
 
-  speed_profile :medium
+  speed_profile :slow
   test "shared: response includes file paths" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
@@ -109,7 +112,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
     assert json.key?("project_plan_path")
   end
 
-  speed_profile :medium
+  speed_profile :slow
   test "shared: response includes milestones" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
@@ -118,7 +121,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
     assert_kind_of Array, json["milestones"]
   end
 
-  speed_profile :medium
+  speed_profile :slow
   test "shared: response includes research_summary" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"
@@ -126,7 +129,7 @@ class ProjectPlanningControllerTest < ActionDispatch::IntegrationTest
     assert json.key?("research_summary")
   end
 
-  speed_profile :medium
+  speed_profile :slow
   test "shared: response includes existing and planned files" do
     _resp, json = shared_create_request
     assert_equal true, json["success"], "Planning should succeed: #{json['error']}"

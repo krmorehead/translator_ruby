@@ -67,7 +67,13 @@ class SisyphusDryRunTest < ActiveSupport::TestCase
       project_name: "test_project",
       milestones: [milestone],
       existing_files: [],
-      planned_files: ["app/hello.rb"],
+      planned_files: [
+        Planning::FileReference.new(
+          path: "app/hello.rb",
+          description: "Main hello script",
+          created_in_step: "1.1"
+        )
+      ],
       file_references_content: "# No references",
       project_plan_content: "# Test plan"
     )

@@ -68,8 +68,9 @@ class SynthesisPromptTest < ActiveSupport::TestCase
 
   # ============================================================================
   # Multi-Pass Synthesis Tests - Share one LLM call
+  # OOP: Shared LLM call via multi_pass_synthesis can take >60s, mark as slow (120s SLA)
   # ============================================================================
-  speed_profile :medium
+  speed_profile :slow
   test "multi_pass: combines findings from multiple passes" do
     result = multi_pass_synthesis
 
@@ -78,7 +79,8 @@ class SynthesisPromptTest < ActiveSupport::TestCase
     assert result[:content][:summary]
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "multi_pass: validated insights is array" do
     result = multi_pass_synthesis
 
@@ -86,7 +88,8 @@ class SynthesisPromptTest < ActiveSupport::TestCase
     assert validated.is_a?(Array), "validated_insights should be an array"
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "multi_pass: has relevant validated insights" do
     result = multi_pass_synthesis
 
@@ -111,21 +114,24 @@ class SynthesisPromptTest < ActiveSupport::TestCase
     end
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "multi_pass: has conflicts or validated_insights array" do
     result = multi_pass_synthesis
 
     assert result[:content][:conflicts] || result[:content][:validated_insights]
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "multi_pass: has open_questions key" do
     result = multi_pass_synthesis
 
     assert result[:content].key?(:open_questions)
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "multi_pass: summary is non-empty string" do
     result = multi_pass_synthesis
 
@@ -139,14 +145,16 @@ class SynthesisPromptTest < ActiveSupport::TestCase
   # Leaf Combine Tests - Share one LLM call
   # ============================================================================
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "leaf_combine: returns content" do
     result = leaf_combine_synthesis
 
     assert result[:content], "Should return content"
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "leaf_combine: has combined summary" do
     result = leaf_combine_synthesis
 
@@ -158,14 +166,16 @@ class SynthesisPromptTest < ActiveSupport::TestCase
     end
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "leaf_combine: has validated_insights array" do
     result = leaf_combine_synthesis
 
     assert result[:content][:validated_insights].is_a?(Array), "Should have validated_insights"
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "leaf_combine: has open_questions from gaps" do
     result = leaf_combine_synthesis
 
@@ -176,7 +186,8 @@ class SynthesisPromptTest < ActiveSupport::TestCase
   # Edge Case Tests - Minimal LLM calls
   # ============================================================================
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "handles empty findings array" do
     result = prompt.synthesize(
       findings: [],
@@ -188,7 +199,8 @@ class SynthesisPromptTest < ActiveSupport::TestCase
     assert result[:content][:summary]
   end
 
-  speed_profile :medium
+  # OOP: LLM calls can take >60s, mark as slow (120s SLA)
+  speed_profile :slow
   test "handles empty leaf syntheses" do
     result = prompt.combine_leaf_syntheses(
       goal: "Empty research goal",

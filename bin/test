@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Test runner script with speed profile support
+# Mirrors frontend's npm test scripts for consistency
+#
+# Usage:
+#   bin/test              # Run all tests
+#   bin/test fast         # Run only fast tests
+#   bin/test medium       # Run only medium tests
+#   bin/test slow         # Run only slow tests
+#   bin/test all          # Run fast, then medium, then slow (full suite)
+
+require "fileutils"
+
+# Parse command line arguments
+speed_filter = ARGV[0]&.downcase
+
+# Validate speed filter
+valid_filters = %w[fast medium slow all]
+if speed_filter && !valid_filters.include?(speed_filter)
+  puts "❌ Invalid speed filter: #{speed_filter}"
+  puts "Valid options: #{valid_filters.join(', ')}"
+  exit 1
+end
+
+# Set up environment
+ENV["RAILS_ENV"] = "test"
+
+def run_tests(filter)
+  puts "\n" + "=" * 80
+  puts "Running #{filter.upcase} tests"
+  puts "=" * 80 + "\n"
+  
+  ENV["TEST_SPEED_FILTER"] = filter
+  
+  # Exclude research-related tests as per project conventions
+  excluded_tests = [
+    "codebase_researcher_test.rb",
+    "research_workflow_test.rb"
+  ]
+  
+  # Find all test files except excluded ones
+  test_files = Dir.glob("test/**/*_test.rb").reject do |file|
+    excluded_tests.any? { |excluded| file.include?(excluded) }
+  end
+  
+  cmd = "bundle exec rails test #{test_files.join(' ')}"
+  system(cmd) || exit($?.exitstatus)
+end
+
+case speed_filter
+when "all"
+  # Run each speed level sequentially
+  %w[fast medium slow].each do |filter|
+    run_tests(filter)
+  end
+when nil
+  # No filter - run all tests without filtering
+  ENV.delete("TEST_SPEED_FILTER")
+  system("bundle exec rails test") || exit($?.exitstatus)
+else
+  # Run specific speed level
+  run_tests(speed_filter)
+end
+
+puts "\n✅ All tests completed successfully!"
+

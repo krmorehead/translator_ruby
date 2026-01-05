@@ -27,7 +27,7 @@ module GenericLlmClient
       model_name: "./vllm/models/qwen3_32B_dense",
       port: 52003,
       max_context: 64000,
-      base_url: "LLM_URL"
+      base_url: "SISYPHUS_LLM_URL"
     },
     tool_calling: {
       model_name: "./vllm/models/qwen3_32B_dense",

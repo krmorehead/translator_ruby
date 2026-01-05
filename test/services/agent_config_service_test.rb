@@ -4,7 +4,15 @@ require "test_helper"
 
 class AgentConfigServiceTest < ActiveSupport::TestCase
   def setup
-    @service = AgentConfigService.new
+    # OOP: Each test gets its own session with config overrides
+    @owner_id = "test-owner-#{SecureRandom.hex(4)}"
+    @session_service = AgentSessionService.new(owner_id: @owner_id)
+    @session = @session_service.create_session(agent_type: "daedalus")
+    @service = AgentConfigService.new(session: @session)
+  end
+  
+  def teardown
+    # No cleanup needed - sessions are stored in class variables
   end
 
   # ============================================================================
@@ -97,7 +105,7 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
   speed_profile :fast
   test "update_config rejects empty model" do
     capabilities = {
-      "planner" => {
+      "general_llm" => {
         "model" => "",
         "provider" => "openai",
         "base_url" => "http://localhost:11434"
@@ -113,7 +121,7 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
   speed_profile :fast
   test "update_config rejects missing provider" do
     capabilities = {
-      "planner" => {
+      "general_llm" => {
         "model" => "gpt-4",
         "base_url" => "http://localhost:11434"
       }
@@ -130,50 +138,63 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
   # ============================================================================
 
   speed_profile :medium
-  test "update_config updates capability configuration" do
+  test "update_config persists capability configuration in session" do
+    # OOP: update_config stores overrides in AgentSession
     original_config = @service.get_config
-    original_model = original_config.capability(:planner).model
+    original_model = original_config.capability(:general_llm).model
     
     new_capabilities = {
-      "planner" => {
+      "general_llm" => {  # Use the capability key from CAPABILITIES
         "model" => "gpt-4-turbo",
         "provider" => "openai",
-        "base_url" => "http://localhost:11434"
+        "port" => 52003,
+        "max_context" => 64000,
+        "base_url" => "LLM_URL"
       }
     }
     
     result = @service.update_config(new_capabilities)
     
-    assert result[:success]
+    assert result[:success], "Should persist valid configuration"
     
-    updated_config = @service.get_config
-    assert_equal "gpt-4-turbo", updated_config.capability(:planner).model
+    # Verify the config was actually updated in this session
+    # Need to get the updated session from the service
+    updated_session = @session_service.get_session(session_id: @session.session_id)
+    updated_service = AgentConfigService.new(session: updated_session)
+    updated_config = updated_service.get_config
+    assert_equal "gpt-4-turbo", updated_config.capability(:general_llm).model
+    assert_equal "openai", updated_config.capability(:general_llm).provider
     
-    # Restore original for other tests
-    @service.update_config({
-      "planner" => {
-        "model" => original_model,
-        "provider" => "openai",
-        "base_url" => "http://localhost:11434"
-      }
-    })
+    # Verify another session doesn't see the override
+    other_session = @session_service.create_session(agent_type: "daedalus")
+    other_service = AgentConfigService.new(session: other_session)
+    other_config = other_service.get_config
+    assert_equal original_model, other_config.capability(:general_llm).model, "Other session should have default config"
   end
 
   speed_profile :medium
-  test "update_config returns updated config" do
+  test "update_config returns updated config after persistence" do
+    # OOP: update_config stores overrides in AgentSession
     new_capabilities = {
-      "planner" => {
+      "general_llm" => {
         "model" => "gpt-4",
         "provider" => "openai",
-        "base_url" => "http://localhost:11434"
+        "port" => 52003,
+        "max_context" => 64000,
+        "base_url" => "LLM_URL"
       }
     }
     
     result = @service.update_config(new_capabilities)
     
-    assert result[:success]
-    assert result[:config].is_a?(Configuration::AgentConfig)
-    assert_equal "gpt-4", result[:config].capability(:planner).model
+    assert result[:success], "Should persist successfully"
+    assert result[:config].is_a?(Configuration::AgentConfig), "Should return AgentConfig instance"
+    
+    # Verify by getting fresh session and checking config
+    updated_session = @session_service.get_session(session_id: @session.session_id)
+    updated_service = AgentConfigService.new(session: updated_session)
+    updated_config = updated_service.get_config
+    assert_equal "gpt-4", updated_config.capability(:general_llm).model, "Should have updated model"
   end
 
   # ============================================================================
@@ -182,7 +203,7 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "test_connection validates real LLM endpoint" do
-    result = @service.test_connection("planner")
+    result = @service.test_connection("general_llm")
     
     assert result[:success]
     assert result[:connected]
@@ -191,7 +212,7 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
 
   speed_profile :slow
   test "test_connection returns model information" do
-    result = @service.test_connection("planner")
+    result = @service.test_connection("general_llm")
     
     assert result[:success]
     assert result[:model_info].present?
@@ -210,7 +231,7 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
   test "test_connection handles timeout gracefully" do
     # This would require a capability configured with unreachable endpoint
     # For now, we test with a valid one and ensure it doesn't timeout
-    result = @service.test_connection("planner")
+    result = @service.test_connection("general_llm")
     
     # Should complete within reasonable time (handled by test timeout)
     assert result.key?(:success)
@@ -237,38 +258,30 @@ class AgentConfigServiceTest < ActiveSupport::TestCase
   test "full config lifecycle: get, update, validate, get" do
     # Get original
     original = @service.get_config
-    original_model = original.capability(:planner).model
+    original_model = original.capability(:general_llm).model
     
-    # Update
+    # Update (persists in AgentSession, doesn't write to disk)
+    # OOP: update_config stores overrides in AgentSession
     new_capabilities = {
-      "planner" => {
+      "general_llm" => {
         "model" => "test-model-temp",
         "provider" => "openai",
-        "base_url" => "http://localhost:11434"
+        "port" => 52003,
+        "max_context" => 64000,
+        "base_url" => "LLM_URL"
       }
     }
     update_result = @service.update_config(new_capabilities)
-    assert update_result[:success]
+    assert update_result[:success], "Should persist successfully"
     
-    # Validate
-    validate_result = @service.validate_capability("planner")
-    assert validate_result[:valid]
+    # Validate the updated capability
+    validate_result = @service.validate_capability("general_llm")
+    assert validate_result[:valid], "Updated capability should be valid"
     
-    # Get updated
-    updated = @service.get_config
-    assert_equal "test-model-temp", updated.capability(:planner).model
-    
-    # Restore
-    @service.update_config({
-      "planner" => {
-        "model" => original_model,
-        "provider" => "openai",
-        "base_url" => "http://localhost:11434"
-      }
-    })
-    
-    # Verify restored
-    final = @service.get_config
-    assert_equal original_model, final.capability(:planner).model
+    # Get config (should have updated values from AgentSession for this session)
+    updated_session = @session_service.get_session(session_id: @session.session_id)
+    updated_service = AgentConfigService.new(session: updated_session)
+    updated = updated_service.get_config
+    assert_equal "test-model-temp", updated.capability(:general_llm).model, "Model should be updated in this session"
   end
 end

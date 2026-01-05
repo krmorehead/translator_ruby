@@ -45,8 +45,12 @@ module ContextLeakTests
       # Advance iterations
       3.times { memory.next_iteration! }
 
-      # Create a new memory store with same owner
-      new_memory = ResearchMemoryStore.new(path: memory.path, owner_id: memory.owner_id)
+      # Load memory from disk using the correct pattern (OOP: use load_from_disk)
+      new_memory = ResearchMemoryStore.load_from_disk(
+        workflow_id: memory.workflow_id,
+        workflow_name: memory.workflow_name,
+        owner_id: memory.owner_id
+      )
 
       # Should load the persisted iteration count
       assert_equal 3, new_memory.current_iteration,
@@ -134,11 +138,27 @@ module ContextLeakTests
 
       # Add data to memory1
       memory1.push_context(sub_question: "Owner1 Question", key_insights: "Owner1 Insights")
-      memory1.update_section(name: :findings, content: "Owner1 Finding", append: true)
+      finding1 = WorkflowMemories::Finding.new(
+        id: SecureRandom.uuid,
+        text: "Owner1 Finding",
+        relevance: "direct",
+        confidence: 0.9,
+        file_path: "test.rb",
+        pass_number: 1
+      )
+      memory1.update_section(name: :findings, content: finding1, append: true)
 
       # Add different data to memory2
       memory2.push_context(sub_question: "Owner2 Question", key_insights: "Owner2 Insights")
-      memory2.update_section(name: :findings, content: "Owner2 Finding", append: true)
+      finding2 = WorkflowMemories::Finding.new(
+        id: SecureRandom.uuid,
+        text: "Owner2 Finding",
+        relevance: "direct",
+        confidence: 0.8,
+        file_path: "test.rb",
+        pass_number: 1
+      )
+      memory2.update_section(name: :findings, content: finding2, append: true)
 
       # Verify isolation
       assert_equal "Owner1 Question", memory1.get_section(:context_chain).first[:sub_question]

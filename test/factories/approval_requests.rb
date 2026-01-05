@@ -9,14 +9,15 @@ FactoryBot.define do
   # - :rejected - user rejected
   #
   # There is NO timeout status. Approvals wait forever for user action.
+  #
+  # NOTE: new() generates its own ID and timestamps automatically
+  # Only from_h() accepts an id parameter (for deserialization)
   factory :approval_request, class: "Execution::ApprovalRequest" do
     skip_create
 
     transient do
-      request_id { SecureRandom.uuid }
       exec_id { SecureRandom.uuid }
       approval_type { :step }
-      approval_status { :pending }
       step_id { "step-#{SecureRandom.hex(4)}" }
       step_title { "Test Step #{SecureRandom.hex(2)}" }
       actions { [] }
@@ -24,16 +25,14 @@ FactoryBot.define do
     end
 
     initialize_with do
+      # new() generates its own UUID - NEVER pass id
       new(
-        id: request_id,
         execution_id: exec_id,
         type: approval_type,
-        status: approval_status,
         subject_id: step_id,
         subject_title: step_title,
         planned_actions: actions,
-        estimated_changes: changes,
-        created_at: Time.now.utc.iso8601
+        estimated_changes: changes
       )
     end
 
@@ -53,31 +52,21 @@ FactoryBot.define do
       end
     end
 
-    # Status traits
+    # Status traits - new() always creates pending, these traits modify after creation
     trait :pending do
-      transient do
-        approval_status { :pending }
-      end
+      # Default - no modifications needed
     end
 
     trait :approved do
-      transient do
-        approval_status { :approved }
-      end
-
-      after(:build) do |request, _evaluator|
-        # Return an approved version
+      after(:build) do |request|
+        # approve() returns a new instance with approved status
         request.approve(resolved_by: "test_user")
       end
     end
 
     trait :rejected do
-      transient do
-        approval_status { :rejected }
-      end
-
-      after(:build) do |request, _evaluator|
-        # Return a rejected version
+      after(:build) do |request|
+        # reject() returns a new instance with rejected status
         request.reject(resolved_by: "test_user")
       end
     end

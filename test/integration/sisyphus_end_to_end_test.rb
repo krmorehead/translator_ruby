@@ -65,7 +65,7 @@ class SisyphusEndToEndTest < ActiveSupport::TestCase
     )
     
     # Create and execute workflow for single step
-    execution_workflow = StepExecutionWorkflow.new(owner_id: "test_user")
+    execution_workflow = StepExecutionWorkflow.new(owner_id: "test_user", parent_id: "root")
     execution_workflow.setup(step: @step, path: @temp_dir, context: context)
 
     # Execute - this will hit real LLM for context, planning, validation, and execution
@@ -82,7 +82,7 @@ class SisyphusEndToEndTest < ActiveSupport::TestCase
     assert step_result.key?(:actions_taken), "Should have actions_taken"
 
     # Now evaluate the step
-    evaluation_workflow = StepEvaluationWorkflow.new(owner_id: "test_user")
+    evaluation_workflow = StepEvaluationWorkflow.new(owner_id: "test_user", parent_id: "root")
     evaluation_workflow.setup(
       step: @step,
       step_result: step_result,
@@ -125,7 +125,7 @@ class SisyphusEndToEndTest < ActiveSupport::TestCase
       execution_id: SecureRandom.uuid
     )
     
-    execution_workflow = StepExecutionWorkflow.new(owner_id: "test_user")
+    execution_workflow = StepExecutionWorkflow.new(owner_id: "test_user", parent_id: "root")
     execution_workflow.setup(step: @step, path: @temp_dir, context: context)
 
     step_result = execution_workflow.execute
@@ -154,7 +154,7 @@ class SisyphusEndToEndTest < ActiveSupport::TestCase
       execution_id: SecureRandom.uuid
     )
     
-    execution_workflow = StepExecutionWorkflow.new(owner_id: "test_user")
+    execution_workflow = StepExecutionWorkflow.new(owner_id: "test_user", parent_id: "root")
     execution_workflow.setup(step: @step, path: @temp_dir, context: context)
 
     step_result = execution_workflow.execute

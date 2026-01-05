@@ -6,7 +6,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
   setup do
     @temp_path = Dir.mktmpdir
     @goal = "Create a PlanAgentWorker"
-    @owner_id = SecureRandom.uuid
+    @owner_id = "test-owner-codebase-analysis"
+    @parent_id = "test-parent-codebase-analysis"
   end
 
   teardown do
@@ -18,7 +19,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     workflow = CodebaseAnalysisWorkflow.new(
       goal: @goal,
       path: @temp_path,
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
 
     assert_not_nil workflow
@@ -34,7 +36,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
       CodebaseAnalysisWorkflow.new(
         goal: 123,
         path: @temp_path,
-        owner_id: @owner_id
+        owner_id: @owner_id,
+        parent_id: @parent_id
       )
     end
     assert_match(/goal must be a String/, error.message)
@@ -46,7 +49,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
       CodebaseAnalysisWorkflow.new(
         goal: @goal,
         path: 123,
-        owner_id: @owner_id
+        owner_id: @owner_id,
+        parent_id: @parent_id
       )
     end
     assert_match(/path must be a String/, error.message)
@@ -58,7 +62,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
       CodebaseAnalysisWorkflow.new(
         goal: @goal,
         path: @temp_path,
-        owner_id: 123
+        owner_id: 123,
+        parent_id: @parent_id
       )
     end
     assert_match(/owner_id must be a String/, error.message)
@@ -73,7 +78,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     workflow = CodebaseAnalysisWorkflow.new(
       goal: @goal,
       path: @temp_path,
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
 
     result = workflow.execute
@@ -93,7 +99,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     workflow = CodebaseAnalysisWorkflow.new(
       goal: @goal,
       path: @temp_path,
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
 
     result = workflow.execute
@@ -112,7 +119,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     workflow = CodebaseAnalysisWorkflow.new(
       goal: @goal,
       path: "/nonexistent/path",
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
 
     # Should complete but may have empty results
@@ -130,7 +138,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     workflow = CodebaseAnalysisWorkflow.new(
       goal: @goal,
       path: @temp_path,
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
 
     workflow.setup
@@ -143,7 +152,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     workflow = CodebaseAnalysisWorkflow.new(
       goal: @goal,
       path: @temp_path,
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
 
     workflow.setup
@@ -161,7 +171,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     workflow = CodebaseAnalysisWorkflow.new(
       goal: @goal,
       path: @temp_path,
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
 
     assert workflow.pending?
@@ -175,7 +186,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     workflow = CodebaseAnalysisWorkflow.new(
       goal: @goal,
       path: @temp_path,
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
 
     workflow.trigger(:start)
@@ -189,7 +201,8 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
     workflow = CodebaseAnalysisWorkflow.new(
       goal: @goal,
       path: @temp_path,
-      owner_id: @owner_id
+      owner_id: @owner_id,
+      parent_id: @parent_id
     )
 
     assert_equal CodebaseAnalysisWorkflow::DEFAULT_MAX_FILES, workflow.max_files
@@ -203,6 +216,7 @@ class CodebaseAnalysisWorkflowTest < ActiveSupport::TestCase
       goal: @goal,
       path: @temp_path,
       owner_id: @owner_id,
+      parent_id: @parent_id,
       max_files: custom_max
     )
 

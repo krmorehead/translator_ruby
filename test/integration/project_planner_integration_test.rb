@@ -32,16 +32,17 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   def teardown
     # Clean up generated project directory after tests
     if self.class.shared_computed && self.class.shared_result
-      project_path = self.class.shared_result[:project_path]
+      project_path = self.class.shared_result.project_path
       if project_path && File.exist?(project_path)
         FileUtils.rm_rf(project_path)
       end
     end
   end
 
-  # Helper to get milestones with proper key handling (symbols or strings)
+  # Helper to get milestones from result - use to_h for serialized data
   def get_milestones(result)
-    result[:milestones] || result["milestones"] || []
+    result_h = result.to_h
+    result_h[:milestones] || []
   end
 
   # Helper to get value from hash regardless of key type
@@ -56,28 +57,28 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   test "shared: full planning flow produces valid output" do
     _worker, result = shared_execution
 
-    assert result[:success], "Planning should succeed: #{result[:error]}"
-    assert_not_nil result[:project_path]
-    assert_not_nil result[:file_references_path]
-    assert_not_nil result[:project_plan_path]
+    assert result.success?, "Planning should succeed: #{result.error}"
+    assert_not_nil result.project_path
+    assert_not_nil result.file_references_path
+    assert_not_nil result.project_plan_path
   end
 
   speed_profile :slow
   test "shared: output files are created" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    assert File.exist?(result[:project_path])
-    assert File.exist?(result[:file_references_path])
-    assert File.exist?(result[:project_plan_path])
+    assert File.exist?(result.project_path)
+    assert File.exist?(result.file_references_path)
+    assert File.exist?(result.project_plan_path)
   end
 
   speed_profile :slow
   test "shared: file_references.md has expected structure" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    content = File.read(result[:file_references_path])
+    content = File.read(result.file_references_path)
 
     # Should have markdown headers
     assert_includes content, "# File References"
@@ -88,9 +89,9 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   speed_profile :slow
   test "shared: project_plan.md has correct milestone structure" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    content = File.read(result[:project_plan_path])
+    content = File.read(result.project_plan_path)
 
     # Should have project plan headers and milestone structure
     assert_includes content, "# Project Plan"
@@ -100,7 +101,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   speed_profile :slow
   test "shared: milestones have steps" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
     milestones = get_milestones(result)
     assert milestones.any?, "Should have at least one milestone"
@@ -113,7 +114,7 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   speed_profile :slow
   test "shared: steps have required fields" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
     milestones = get_milestones(result)
     assert milestones.any?, "Should have milestones"
@@ -135,9 +136,9 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   speed_profile :slow
   test "shared: existing_files are detected" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    existing_files = result[:existing_files] || result["existing_files"] || []
+    existing_files = result.existing_files || result["existing_files"] || []
     assert existing_files.any?, "Should detect existing files"
 
     # Should include calculator.rb from fixtures
@@ -149,9 +150,9 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   speed_profile :slow
   test "shared: project directory follows naming convention" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    project_dir = File.basename(result[:project_path])
+    project_dir = File.basename(result.project_path)
     # Should match pattern: MM-DD-YYYY_project_name
     assert_match(/\d{2}-\d{2}-\d{4}_calculator_logging/, project_dir)
   end
@@ -159,16 +160,16 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   speed_profile :slow
   test "shared: metadata includes workflow results" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    assert_not_nil result[:metadata]
-    assert_equal :complete, result[:metadata][:final_state]
+    assert_not_nil result.metadata
+    assert_equal :complete, result.metadata[:final_state]
   end
 
   speed_profile :slow
   test "shared: worker ends in complete state" do
     worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
     assert worker.complete?
     assert_equal :complete, worker.current_state
@@ -177,8 +178,8 @@ class ProjectPlannerIntegrationTest < ActiveSupport::TestCase
   speed_profile :slow
   test "shared: research summary is populated" do
     _worker, result = shared_execution
-    assert result[:success], "Planning should succeed: #{result[:error]}"
+    assert result.success?, "Planning should succeed: #{result.error}"
 
-    assert_not_nil result[:research_summary]
+    assert_not_nil result.research_summary
   end
 end

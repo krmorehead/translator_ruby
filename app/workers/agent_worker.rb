@@ -337,9 +337,15 @@ class AgentWorker < BaseWorker
       )
     end
 
-    # Add memory summary
-    summary = memory_store.compressed_context_summary
-    context.add(content: summary, topics: ["memory"], source: "memory") unless summary.blank?
+    # Add memory summary using intelligent serialization
+    if memory_store.respond_to?(:to_prompt_text)
+      summary = memory_store.to_prompt_text(context_type: :context_chain, max_tokens: 300)
+      context.add(content: summary, topics: ["memory"], source: "memory") unless summary.blank?
+    else
+      # Fallback for non-research memory stores
+      summary = memory_store.compressed_context_summary
+      context.add(content: summary, topics: ["memory"], source: "memory") unless summary.blank?
+    end
 
     context
   end

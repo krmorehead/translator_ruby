@@ -67,7 +67,8 @@ module Research
 
       prompt_parts << "\n## Pre-Synthesized Answers by Sub-Question:"
 
-      leaf_syntheses.each_with_index do |synthesis, idx|
+      # Limit to 10 leaf syntheses (structural limit based on cognitive load)
+      leaf_syntheses.first(10).each_with_index do |synthesis, idx|
         sub_question = synthesis[:sub_question] || synthesis["sub_question"]
         summary = synthesis[:summary] || synthesis["summary"]
         confidence = synthesis[:confidence] || synthesis["confidence"] || 0.5
@@ -77,9 +78,10 @@ module Research
         prompt_parts << "**Summary**: #{summary}"
         prompt_parts << "**Confidence**: #{confidence}"
 
+        # Take top 3 key findings (structural limit)
         if key_findings.any?
           prompt_parts << "**Key Findings**:"
-          key_findings.first(5).each do |finding|
+          key_findings.first(3).each do |finding|
             text = finding[:finding] || finding["finding"] || finding.to_s
             prompt_parts << "- #{text}"
           end
@@ -87,7 +89,8 @@ module Research
 
         gaps = synthesis[:gaps] || synthesis["gaps"] || []
         if gaps.any?
-          prompt_parts << "**Gaps**: #{gaps.join(', ')}"
+          # Take first 2 gaps (structural limit)
+          prompt_parts << "**Gaps**: #{gaps.first(2).join(', ')}"
         end
       end
 

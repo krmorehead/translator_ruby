@@ -5,6 +5,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
 
   # Use let for lazy-evaluated, memoized test fixtures
   let(:owner_id) { SecureRandom.uuid }
+  let(:parent_id) { SecureRandom.uuid }
   let(:temp_dir) do
     dir = Rails.root.join("tmp", "decomposition_test_#{Process.pid}_#{Thread.current.object_id}").to_s
     FileUtils.mkdir_p(dir)
@@ -23,6 +24,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     workflow = GoalDecompositionWorkflow.new(
       goal: "Explain the entire architecture of a web application",
       owner_id: owner_id,
+      parent_id: parent_id,
       max_depth: 2
     )
 
@@ -39,6 +41,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     workflow = GoalDecompositionWorkflow.new(
       goal: "What is the return type of the add method?",
       owner_id: owner_id,
+      parent_id: parent_id,
       max_depth: 4
     )
 
@@ -56,6 +59,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     workflow = GoalDecompositionWorkflow.new(
       goal: "Explain everything about this complex system",
       owner_id: owner_id,
+      parent_id: parent_id,
       max_depth: 1
     )
 
@@ -72,6 +76,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     workflow = GoalDecompositionWorkflow.new(
       goal: "How does authentication work?",
       owner_id: owner_id,
+      parent_id: parent_id,
       max_depth: 2
     )
 
@@ -91,6 +96,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     workflow = GoalDecompositionWorkflow.new(
       goal: "What line number is the divide method defined on?",
       owner_id: owner_id,
+      parent_id: parent_id,
       max_depth: 3
     )
 
@@ -106,6 +112,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     workflow = GoalDecompositionWorkflow.new(
       goal: "Explain the calculator class",
       owner_id: owner_id,
+      parent_id: parent_id,
       max_depth: 2
     )
 
@@ -125,6 +132,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     workflow = GoalDecompositionWorkflow.new(
       goal: "Analyze the payment system",
       owner_id: owner_id,
+      parent_id: parent_id,
       context: full_context,
       max_depth: 2
     )
@@ -136,7 +144,8 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
   test "context defaults to empty hash" do
     workflow = GoalDecompositionWorkflow.new(
       goal: "Simple goal",
-      owner_id: owner_id
+      owner_id: owner_id,
+      parent_id: parent_id
     )
 
     assert_equal({}, workflow.context)
@@ -147,6 +156,7 @@ class GoalDecompositionWorkflowTest < ActiveSupport::TestCase
     workflow = GoalDecompositionWorkflow.new(
       goal: "Goal with context",
       owner_id: owner_id,
+      parent_id: parent_id,
       context: full_context,
       max_depth: 1
     )

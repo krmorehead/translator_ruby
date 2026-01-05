@@ -9,6 +9,8 @@ require "test_helper"
 class SisyphusErrorRecoveryTest < ActiveSupport::TestCase
   def setup
     @temp_dir = Dir.mktmpdir("sisyphus_error_recovery")
+    @owner_id = "error_recovery_test"
+    @parent_id = "error_recovery_parent"
     
     # Initialize git repo
     Dir.chdir(@temp_dir) do
@@ -23,7 +25,7 @@ class SisyphusErrorRecoveryTest < ActiveSupport::TestCase
   end
 
   def teardown
-    FileUtils.rm_rf(@temp_dir) if File.exist?(@temp_dir)
+    FileUtils.rm_rf(@temp_dir) if @temp_dir && File.exist?(@temp_dir)
   end
 
   # Test that evaluation detects incomplete steps and provides feedback
@@ -69,7 +71,7 @@ class SisyphusErrorRecoveryTest < ActiveSupport::TestCase
     )
     
     # Evaluate the incomplete step
-    evaluation_workflow = StepEvaluationWorkflow.new(owner_id: "error_recovery_test")
+    evaluation_workflow = StepEvaluationWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     evaluation_workflow.setup(
       step: step,
       step_result: step_result,
@@ -102,7 +104,7 @@ class SisyphusErrorRecoveryTest < ActiveSupport::TestCase
   end
 
   # Test memory persistence through workflow execution
-  speed_profile :fast
+  speed_profile :slow
   test "workflow execution produces metadata indicating memory tracking" do
     step = Planning::Step.new(
       milestone_number: 1,
@@ -120,7 +122,7 @@ class SisyphusErrorRecoveryTest < ActiveSupport::TestCase
       execution_id: SecureRandom.uuid
     )
     
-    workflow = StepExecutionWorkflow.new(owner_id: "memory_test")
+    workflow = StepExecutionWorkflow.new(owner_id: @owner_id, parent_id: @parent_id)
     workflow.setup(step: step, path: @temp_dir, context: context)
     
     # Execute workflow (will create memory entries internally)

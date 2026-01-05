@@ -8,7 +8,7 @@
 # - Validation in constructor
 # - No hash access patterns
 class AgentSession
-  attr_reader :session_id, :owner_id, :agent_type, :started_at, :last_activity_at, :status
+  attr_reader :session_id, :owner_id, :agent_type, :started_at, :last_activity_at, :status, :config_overrides
 
   STATUS_ACTIVE = "active"
   STATUS_PAUSED = "paused"
@@ -30,7 +30,8 @@ class AgentSession
   # @param started_at [Time, String] Session start time
   # @param last_activity_at [Time, String] Last activity timestamp
   # @param status [String] Current session status
-  def initialize(session_id:, owner_id:, agent_type:, started_at:, last_activity_at:, status:)
+  # @param config_overrides [Hash] LLM configuration overrides for this session
+  def initialize(session_id:, owner_id:, agent_type:, started_at:, last_activity_at:, status:, config_overrides: {})
     raise ArgumentError, "session_id is required" if session_id.nil? || session_id.to_s.empty?
     raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
     raise ArgumentError, "agent_type is required" if agent_type.nil? || agent_type.to_s.empty?
@@ -38,6 +39,7 @@ class AgentSession
     raise ArgumentError, "Invalid status: #{status}" unless VALID_STATUSES.include?(status.to_s)
     raise ArgumentError, "started_at is required" if started_at.nil?
     raise ArgumentError, "last_activity_at is required" if last_activity_at.nil?
+    raise ArgumentError, "config_overrides must be a Hash" unless config_overrides.is_a?(Hash)
 
     @session_id = session_id.to_s
     @owner_id = owner_id.to_s
@@ -45,6 +47,7 @@ class AgentSession
     @started_at = parse_time(started_at)
     @last_activity_at = parse_time(last_activity_at)
     @status = status.to_s
+    @config_overrides = config_overrides.deep_dup.freeze
     
     freeze
   end
@@ -84,7 +87,8 @@ class AgentSession
       agent_type: @agent_type,
       started_at: @started_at,
       last_activity_at: timestamp,
-      status: @status
+      status: @status,
+      config_overrides: @config_overrides
     )
   end
 
@@ -101,7 +105,26 @@ class AgentSession
       agent_type: @agent_type,
       started_at: @started_at,
       last_activity_at: Time.now.utc,
-      status: new_status
+      status: new_status,
+      config_overrides: @config_overrides
+    )
+  end
+
+  # Update config overrides
+  # Returns a NEW instance (immutable)
+  # @param overrides [Hash] New config overrides
+  # @return [AgentSession] New instance with updated config
+  def with_config_overrides(overrides)
+    raise ArgumentError, "overrides must be a Hash" unless overrides.is_a?(Hash)
+    
+    self.class.new(
+      session_id: @session_id,
+      owner_id: @owner_id,
+      agent_type: @agent_type,
+      started_at: @started_at,
+      last_activity_at: Time.now.utc,
+      status: @status,
+      config_overrides: overrides
     )
   end
 
@@ -114,7 +137,8 @@ class AgentSession
       agent_type: @agent_type,
       started_at: @started_at.iso8601,
       last_activity_at: @last_activity_at.iso8601,
-      status: @status
+      status: @status,
+      config_overrides: @config_overrides
     }
   end
   alias_method :to_json, :to_h
@@ -131,7 +155,8 @@ class AgentSession
       agent_type: data[:agent_type] || data["agent_type"],
       started_at: data[:started_at] || data["started_at"],
       last_activity_at: data[:last_activity_at] || data["last_activity_at"],
-      status: data[:status] || data["status"]
+      status: data[:status] || data["status"],
+      config_overrides: data[:config_overrides] || data["config_overrides"] || {}
     )
   end
 

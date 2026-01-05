@@ -82,14 +82,10 @@ class CheckpointableTest < ActiveSupport::TestCase
     memory_path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), unique_owner, "workflows", "test_workflow_memory.json")
     FileUtils.mkdir_p(File.dirname(memory_path))
     
-    # Clean up any existing file from previous test runs
-    FileUtils.rm_f(memory_path)
-    
     memory_store = WorkflowMemoryStore.new(
       owner_id: unique_owner,
       workflow_id: "test_workflow",
       workflow_name: "TestWorkflow",
-      path: memory_path,
       parent_id: "test_parent"
     )
     worker = TestWorker.new(path: test_dir_2, owner_id: unique_owner, memory_store: memory_store)

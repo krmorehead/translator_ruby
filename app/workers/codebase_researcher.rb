@@ -112,8 +112,8 @@ class CodebaseResearcher < BaseWorker
     workflow = GoalDecompositionWorkflow.new(
       goal: goal,
       owner_id: owner_id,
+      parent_id: memory_store.workflow_id,
       context: { goal_tree: @goal_tree },
-      parent_memory: memory_store,
       max_depth: @max_depth
     )
 
@@ -162,8 +162,12 @@ class CodebaseResearcher < BaseWorker
 
   # Create the research memory store
   def create_memory_store
-    store_path = File.join(state_path, "research_memory.json")
-    store = ResearchMemoryStore.new(path: store_path, owner_id: @owner_id)
+    store = ResearchMemoryStore.new(
+      workflow_id: @owner_id,
+      workflow_name: "codebase_researcher",
+      parent_id: @owner_id,  # Workers are root
+      owner_id: @owner_id
+    )
 
     store.set_section(:research_goal, [
       { text: goal, status: "active", context: context, timestamp: Time.now.utc.iso8601 }
@@ -197,9 +201,9 @@ class CodebaseResearcher < BaseWorker
     workflow = ResearchWorkflow.new(
       goal: goal,
       owner_id: owner_id,
+      parent_id: memory_store.workflow_id,
       research_path: path,
       context: { goal_tree: @goal_tree },
-      parent_memory: memory_store,
       max_depth: @max_depth,
       output_modes: output_modes
     )

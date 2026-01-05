@@ -7,12 +7,18 @@ FactoryBot.define do
 
     transient do
       owner_id { SecureRandom.uuid }
+      workflow_id { SecureRandom.uuid }
+      workflow_name { "research_workflow" }
+      parent_id { SecureRandom.uuid }
     end
 
     initialize_with do
-      path = File.join(ENV.fetch("AGENT_DATA_PATH", "."), owner_id, "research_memory.json")
-      FileUtils.mkdir_p(File.dirname(path))
-      ResearchMemoryStore.new(path: path, owner_id: owner_id)
+      ResearchMemoryStore.new(
+        workflow_id: workflow_id,
+        workflow_name: workflow_name,
+        parent_id: parent_id,
+        owner_id: owner_id
+      )
     end
 
     trait :with_goal do

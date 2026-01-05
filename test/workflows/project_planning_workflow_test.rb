@@ -14,6 +14,7 @@ class ProjectPlanningWorkflowTest < ActiveSupport::TestCase
       goal: "Add feature X",
       project_name: "feature_x",
       owner_id: "test-owner-123",
+      parent_id: "root",
       research_results: { findings: [] }
     )
 
@@ -59,6 +60,7 @@ class ProjectPlanningWorkflowTest < ActiveSupport::TestCase
       goal: "Test goal",
       project_name: "test_project",
       owner_id: SecureRandom.uuid,
+      parent_id: "root",
       research_results: {}
     )
 
@@ -86,6 +88,7 @@ class ProjectPlanningWorkflowTest < ActiveSupport::TestCase
       goal: "Test goal",
       project_name: "test_project",
       owner_id: SecureRandom.uuid,
+      parent_id: "root",
       research_results: nil
     )
 

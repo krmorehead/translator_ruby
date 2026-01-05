@@ -32,16 +32,17 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
 
   speed_profile :fast
   test "research memory stores automatically register in graph when created" do
-    # Create a research memory store
-    store = ResearchMemoryStore.new(path: File.join(@temp_dir, "research.json"), owner_id: "owner-123")
+    # Create a research memory store using factory (OOP pattern)
+    store = build(:research_memory_store)
     
     # Verify it's registered
     service = ContextGraphService.instance
-    nodes = service.instance_variable_get(:@nodes)
+    node = service.find_by_id(store.id)
     
-    assert nodes.key?(store.id), "ResearchMemoryStore should be registered in graph"
-    assert_instance_of Graph::WorkerNode, nodes[store.id]
-    assert_equal store, nodes[store.id].memory_store
+    assert_not_nil node, "ResearchMemoryStore should be registered in graph"
+    # ResearchMemoryStore inherits from WorkflowMemoryStore, so it's a WorkflowNode
+    assert_instance_of Graph::WorkflowNode, node
+    assert_equal store, node.workflow_memory
   end
 
   speed_profile :fast
@@ -53,7 +54,6 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
     workflow_store = WorkflowMemoryStore.new(
       workflow_id: SecureRandom.uuid,
       workflow_name: "test_workflow",
-      path: File.join(@temp_dir, "workflow.json"),
       parent_id: parent_store.id,
       owner_id: "owner-123"
     )
@@ -92,7 +92,6 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
     workflow_store = WorkflowMemoryStore.new(
       workflow_id: workflow_id,
       workflow_name: "test_workflow",
-      path: File.join(@temp_dir, "workflow.json"),
       parent_id: parent_store.id,
       owner_id: "owner-123"
     )
@@ -120,7 +119,12 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
     # Create multiple stores
     store1 = MemoryStore.new(owner_id: "owner-1")
     store2 = MemoryStore.new(owner_id: "owner-2")
-    store3 = ResearchMemoryStore.new(path: File.join(@temp_dir, "research.json"), owner_id: "owner-3")
+    store3 = ResearchMemoryStore.new(
+      workflow_id: SecureRandom.uuid,
+      workflow_name: "test_research",
+      parent_id: "root",
+      owner_id: "owner-3"
+    )
     
     # Verify all are registered
     service = ContextGraphService.instance
@@ -143,7 +147,6 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
     parent_workflow = WorkflowMemoryStore.new(
       workflow_id: parent_wf_id,
       workflow_name: "parent_workflow",
-      path: File.join(@temp_dir, "parent_wf.json"),
       parent_id: grandparent.id,
       owner_id: "owner-123"
     )
@@ -153,7 +156,6 @@ class ContextGraphIntegrationTest < ActiveSupport::TestCase
     child_workflow = WorkflowMemoryStore.new(
       workflow_id: child_wf_id,
       workflow_name: "child_workflow",
-      path: File.join(@temp_dir, "child_wf.json"),
       parent_id: parent_wf_id,
       owner_id: "owner-123"
     )
