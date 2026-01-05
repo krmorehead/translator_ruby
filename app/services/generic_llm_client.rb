@@ -24,16 +24,16 @@ module GenericLlmClient
   # All capabilities use LLM_URL (host) with different ports
   CAPABILITIES = {
     general_llm: {
-      model_name: "./vllm/models/qwen3_32B_dense",
+      model_name: "./vllm/models/qwen2_5_coder_14B/snapshots/coder",
       port: 52003,
-      max_context: 64000,
-      base_url: "SISYPHUS_LLM_URL"
+      max_context: 20000,
+      base_url: "LLM_URL"
     },
     tool_calling: {
-      model_name: "./vllm/models/qwen3_32B_dense",
+      model_name: "./vllm/models/qwen2_5_coder_14B/snapshots/coder",
       port: 52003,
-      max_context: 64000,
-      base_url: "LLM_URL"
+      max_context: 20000,
+      base_url: "ELDER_PEBBLE_LLM_URL"
     },
     embeddings: {
       model_name: "./vllm/models/all-MiniLM-L6-v2",
