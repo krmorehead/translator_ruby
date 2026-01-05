@@ -7,7 +7,7 @@
       - generic [ref=e7]:
         - heading "🏛️ Daedalus - Master Architect" [level=1] [ref=e8]
         - paragraph [ref=e9]: Generate detailed execution plans from codebase analysis
-        - paragraph [ref=e10]: "Session: f0dd24a0-c21f-4a6d-9307-4d6889f06f5b"
+        - paragraph [ref=e10]: "Session: 918c5967-c243-4971-bd0c-1bcdfd1a80a3"
       - generic [ref=e11]:
         - combobox "Agent Mode" [ref=e12] [cursor=pointer]:
           - option "Daedalus (Planning)" [selected]
@@ -28,7 +28,7 @@
       - generic [ref=e29]:
         - generic [ref=e30]:
           - heading "💬 Conversation" [level=3] [ref=e31]
-          - generic [ref=e32]: "Session: f0dd24a0..."
+          - generic [ref=e32]: "Session: 918c5967..."
         - paragraph [ref=e35]: No messages yet. Start the conversation!
         - generic [ref=e36]:
           - textbox "Message input" [ref=e37]:

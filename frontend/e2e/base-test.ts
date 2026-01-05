@@ -52,6 +52,22 @@ const createProfiledTest = (profile: SpeedProfile) => {
     playwrightTest(testName, async ({ page, context, request, browser }) => {
       playwrightTest.setTimeout(timeout);
       
+      // Capture browser console logs and errors
+      page.on('console', msg => {
+        const type = msg.type();
+        if (type === 'error' || type === 'warning') {
+          console.log(`[Browser ${type.toUpperCase()}]`, msg.text());
+        }
+      });
+      
+      page.on('pageerror', error => {
+        console.error('[Browser Page Error]', error.message);
+      });
+      
+      page.on('requestfailed', request => {
+        console.error('[Browser Request Failed]', request.url(), request.failure()?.errorText);
+      });
+      
       const startTime = Date.now();
 
       try {

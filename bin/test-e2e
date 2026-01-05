@@ -84,7 +84,7 @@ trap cleanup EXIT INT TERM
 # Start Rails in TEST environment if not already running
 if [ "$RAILS_RUNNING" == "false" ]; then
   echo "Starting Rails server in TEST mode on port 4000..."
-  RAILS_ENV=test bundle exec rails server -p 4000 > tmp/e2e_rails.log 2>&1 &
+  LOG_LEVEL=debug RAILS_ENV=test bundle exec rails server -p 4000 > tmp/e2e_rails.log 2>&1 &
   RAILS_PID=$!
   
   echo "Waiting for Rails server to start..."

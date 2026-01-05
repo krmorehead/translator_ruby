@@ -242,9 +242,9 @@ slow("starts execution with real plan", async ({ page }) => {
   ).toBeVisible({ timeout: 5000 });
   });
 
-medium("sisyphus form accepts step approval mode", async ({ page }) => {
+fast("sisyphus form accepts step approval mode", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
+  await page.waitForSelector(".mode-selector");
     await page.locator("select.mode-selector").selectOption("sisyphus");
     
   await page.locator('.file-path-text-input').first().fill("/home/kyle/Side_Projects/translator_ruby");
