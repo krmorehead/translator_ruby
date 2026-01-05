@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# frozen_string_literal: false
+
+# Production Startup Script
+# Builds frontend and starts Rails server in production mode
+
+set -e
+
+echo "======================================================================"
+echo "Production Startup"
+echo "======================================================================"
+echo ""
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Project root
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+# Check if .env exists
+if [ ! -f ".env" ]; then
+  echo -e "${RED}❌ Error: .env file not found${NC}"
+  echo "Please create .env file from env.example:"
+  echo "  cp env.example .env"
+  echo "  # Edit .env with your production configuration"
+  exit 1
+fi
+
+# Load environment variables
+export $(grep -v '^#' .env | xargs)
+
+# Set production mode
+export RAILS_ENV=production
+export NODE_ENV=production
+
+echo "Step 1: Building Frontend"
+echo "----------------------------------------------------------------------"
+cd frontend
+
+if [ ! -d "node_modules" ]; then
+  echo "Installing frontend dependencies..."
+  npm install
+fi
+
+echo "Building frontend assets..."
+npm run build
+
+if [ $? -eq 0 ]; then
+  echo -e "${GREEN}✅ Frontend built successfully${NC}"
+else
+  echo -e "${RED}❌ Frontend build failed${NC}"
+  exit 1
+fi
+
+cd "$PROJECT_ROOT"
+
+echo ""
+echo "Step 2: Preparing Rails Application"
+echo "----------------------------------------------------------------------"
+
+# Check if bundle is installed
+if ! bundle check > /dev/null 2>&1; then
+  echo "Installing Ruby dependencies..."
+  bundle install --without development test
+fi
+
+# Setup database if needed
+echo "Checking database..."
+if ! bundle exec rails db:version > /dev/null 2>&1; then
+  echo "Setting up database..."
+  bundle exec rails db:create db:migrate
+else
+  echo "Running migrations..."
+  bundle exec rails db:migrate
+fi
+
+# Precompile assets (for any Rails assets)
+echo "Precompiling assets..."
+bundle exec rails assets:precompile 2>/dev/null || true
+
+echo -e "${GREEN}✅ Rails application ready${NC}"
+
+echo ""
+echo "Step 3: Starting Production Server"
+echo "----------------------------------------------------------------------"
+echo -e "${GREEN}Server will start on ${HOST:-0.0.0.0}:${PORT:-4000}${NC}"
+echo -e "${YELLOW}Press Ctrl+C to stop the server${NC}"
+echo "======================================================================"
+echo ""
+
+# Start Rails server in production mode
+bundle exec rails server -e production -p ${PORT:-4000} -b ${HOST:-0.0.0.0}
+

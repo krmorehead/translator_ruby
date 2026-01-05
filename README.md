@@ -2,6 +2,34 @@
 
 A Rails 8.0.2 API-only application built with Ruby 3.4.4 for translation services.
 
+## ⚡ Quick Start
+
+### Production Mode (Single Command)
+```bash
+bin/start-production
+```
+Builds frontend + starts Rails in production mode. Configure via `.env` file.
+
+### Development Mode
+```bash
+# Backend (Rails API)
+rvm use 3.4.4 && ruby lib/server.rb
+
+# Frontend (React + Vite) - in separate terminal
+cd frontend && npm run dev
+```
+
+### Testing
+```bash
+# Fast tests (~5 seconds)
+ruby lib/test_runner.rb --speed fast
+
+# All tests (~7 minutes)
+ruby lib/test_runner.rb --speed all
+```
+
+---
+
 ## 🚀 Project Overview
 
 This is a server-only Rails application designed to handle translation requests. The project is structured as an API-only application without frontend assets, but is designed to accommodate a frontend in the future.
@@ -63,6 +91,8 @@ rails db:migrate
 
 ### 4. Start the Server
 
+#### Development Mode
+
 ```bash
 # Using the custom server script (loads .env automatically, binds to 0.0.0.0:52020)
 rvm use 3.4.4 && PORT=52020 ruby lib/server.rb
@@ -73,6 +103,30 @@ rvm use 3.4.4 && rails server -p 52020 -b 0.0.0.0
 # With explicit host and port environment variables
 rvm use 3.4.4 && PORT=52020 HOST=0.0.0.0 ruby lib/server.rb
 ```
+
+#### Production Mode
+
+**Single command to build and start everything in production:**
+
+```bash
+bin/start-production
+```
+
+This production startup script will:
+- ✅ Build the frontend (React + Vite)
+- ✅ Install/verify dependencies
+- ✅ Run database migrations
+- ✅ Start Rails server in production mode on port 4000 (configurable via `.env`)
+
+**Configuration**: Edit your `.env` file to set production values:
+```bash
+RAILS_ENV=production
+PORT=4000
+HOST=0.0.0.0
+# ... other production settings
+```
+
+**Note**: The script reads configuration from `.env` file automatically.
 
 ## 🌐 API Endpoints
 
@@ -290,12 +344,47 @@ RAILS_ENV=development
 - Environment variables for configuration (not committed to git)
 - PostgreSQL with proper user authentication
 
-## 🚀 Deployment Notes
+## 🚀 Deployment
+
+### Quick Production Startup
+
+The easiest way to run in production mode:
+
+```bash
+bin/start-production
+```
+
+This single command handles:
+- Frontend build (React + Vite)
+- Dependency installation
+- Database migrations
+- Production server startup
+
+### Production Requirements
+
+- Ruby 3.4.4
+- PostgreSQL
+- Node.js (for frontend build)
+- `.env` file with production configuration
+
+### Advanced Deployment
 
 - Uses Rails 8's solid components (Cache, Queue, Cable) - requires database
-- Kamal deployment configuration included
+- Kamal deployment configuration included (`config/deploy.yml`)
 - Docker support with Dockerfile
 - PostgreSQL required in production
+
+### Environment Variables for Production
+
+Ensure your `.env` file has production values:
+```bash
+RAILS_ENV=production
+PORT=4000
+HOST=0.0.0.0
+DB_USERNAME=your_prod_user
+DB_PASSWORD=your_prod_password
+LLM_URL=your_llm_service_url
+```
 
 ## 📝 Contributing
 
