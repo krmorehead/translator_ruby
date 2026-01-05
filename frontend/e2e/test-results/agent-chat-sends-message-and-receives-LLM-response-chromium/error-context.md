@@ -7,7 +7,7 @@
       - generic [ref=e7]:
         - heading "🏛️ Daedalus - Master Architect" [level=1] [ref=e8]
         - paragraph [ref=e9]: Generate detailed execution plans from codebase analysis
-        - paragraph [ref=e10]: "Session: ee7160e4-1923-4164-b40e-1ad503354517"
+        - paragraph [ref=e10]: "Session: db709db8-7531-482a-8bc3-9ad9a857bd2e"
       - generic [ref=e11]:
         - combobox "Agent Mode" [ref=e12] [cursor=pointer]:
           - option "Daedalus (Planning)" [selected]
@@ -28,13 +28,13 @@
       - generic [ref=e29]:
         - generic [ref=e30]:
           - heading "💬 Conversation" [level=3] [ref=e31]
-          - generic [ref=e32]: "Session: ee7160e4..."
+          - generic [ref=e32]: "Session: db709db8..."
         - generic [ref=e33]:
           - paragraph [ref=e35]: No messages yet. Start the conversation!
           - generic [ref=e37]: ⏳ Agent is thinking...
         - generic [ref=e38]:
           - textbox "Message input" [disabled] [ref=e39]:
             - /placeholder: Type your message...
-            - text: Explain what a Ruby module is
+            - text: What is 2 + 2?
           - button "Send message" [disabled] [ref=e40]: 📤 Send
 ```
