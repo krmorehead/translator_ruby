@@ -40,21 +40,11 @@ PLAYWRIGHT_ARGS="$@"
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-# Check if servers are already running
+# Kill any existing process on port 4000 (ensure clean test environment)
 if lsof -i:4000 -t >/dev/null 2>&1; then
-  echo -e "${YELLOW}⚠️  Rails server already running on port 4000${NC}"
-  echo "   Will use existing server (make sure it's in TEST mode!)"
-  RAILS_RUNNING=true
-else
-  RAILS_RUNNING=false
-fi
-
-if lsof -i:5173 -t >/dev/null 2>&1; then
-  echo -e "${YELLOW}⚠️  Vite server already running on port 5173${NC}"
-  echo "   Will use existing server"
-  VITE_RUNNING=true
-else
-  VITE_RUNNING=false
+  echo -e "${YELLOW}⚠️  Killing existing process on port 4000${NC}"
+  lsof -i:4000 -t | xargs kill -9 2>/dev/null || true
+  sleep 1
 fi
 
 # Function to cleanup on exit
@@ -64,16 +54,10 @@ cleanup() {
   echo "Cleaning up..."
   echo "======================================================================"
   
-  if [ "$RAILS_RUNNING" == "false" ] && [ -n "$RAILS_PID" ]; then
+  if [ -n "$RAILS_PID" ]; then
     echo "Stopping Rails server (PID: $RAILS_PID)..."
     kill $RAILS_PID 2>/dev/null || true
     wait $RAILS_PID 2>/dev/null || true
-  fi
-  
-  if [ "$VITE_RUNNING" == "false" ] && [ -n "$VITE_PID" ]; then
-    echo "Stopping Vite server (PID: $VITE_PID)..."
-    kill $VITE_PID 2>/dev/null || true
-    wait $VITE_PID 2>/dev/null || true
   fi
   
   echo -e "${GREEN}✅ Cleanup complete${NC}"
@@ -81,53 +65,27 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-# Start Rails in TEST environment if not already running
-if [ "$RAILS_RUNNING" == "false" ]; then
-  echo "Starting Rails server in TEST mode on port 4000..."
-  LOG_LEVEL=debug RAILS_ENV=test bundle exec rails server -p 4000 > tmp/e2e_rails.log 2>&1 &
-  RAILS_PID=$!
-  
-  echo "Waiting for Rails server to start..."
-  for i in {1..30}; do
-    if curl -s http://localhost:4000/api/sisyphus/config > /dev/null 2>&1; then
-      echo -e "${GREEN}✅ Rails server ready${NC}"
-      break
-    fi
-    if [ $i -eq 30 ]; then
-      echo -e "${RED}❌ Rails server failed to start within 30 seconds${NC}"
-      echo "Check tmp/e2e_rails.log for errors"
-      exit 1
-    fi
-    sleep 1
-  done
-else
-  echo -e "${GREEN}✅ Using existing Rails server${NC}"
-fi
+# Start Rails in TEST environment
+echo "Starting Rails server in TEST mode on port 4000..."
+LOG_LEVEL=debug RAILS_ENV=test bundle exec rails server -p 4000 > tmp/e2e_rails.log 2>&1 &
+RAILS_PID=$!
 
-# Start Vite frontend if not already running
-if [ "$VITE_RUNNING" == "false" ]; then
-  echo "Starting Vite server on port 5173..."
-  cd frontend
-  npm run dev > ../tmp/e2e_vite.log 2>&1 &
-  VITE_PID=$!
-  cd ..
-  
-  echo "Waiting for Vite server to start..."
-  for i in {1..30}; do
-    if curl -s http://localhost:5173 > /dev/null 2>&1; then
-      echo -e "${GREEN}✅ Vite server ready${NC}"
-      break
-    fi
-    if [ $i -eq 30 ]; then
-      echo -e "${RED}❌ Vite server failed to start within 30 seconds${NC}"
-      echo "Check tmp/e2e_vite.log for errors"
-      exit 1
-    fi
-    sleep 1
-  done
-else
-  echo -e "${GREEN}✅ Using existing Vite server${NC}"
-fi
+echo "Waiting for Rails server to start..."
+for i in {1..30}; do
+  if curl -s http://localhost:4000/api/sisyphus/config > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Rails server ready${NC}"
+    break
+  fi
+  if [ $i -eq 30 ]; then
+    echo -e "${RED}❌ Rails server failed to start within 30 seconds${NC}"
+    echo "Check tmp/e2e_rails.log for errors"
+    exit 1
+  fi
+  sleep 1
+done
+
+echo ""
+echo "Note: Vite frontend will be managed by Playwright's webServer"
 
 echo ""
 echo "======================================================================"
@@ -141,12 +99,13 @@ echo ""
 # Run Playwright tests
 cd frontend/e2e
 
+# Playwright will manage Vite via webServer config, we manage Rails
 if [ -n "$SPEED_FILTER" ]; then
   # Use speed filter
-  SKIP_WEBSERVER=1 TEST_SPEED_FILTER="$SPEED_FILTER" npx playwright test $PLAYWRIGHT_ARGS
+  TEST_SPEED_FILTER="$SPEED_FILTER" npx playwright test $PLAYWRIGHT_ARGS
 else
   # Run all tests
-  SKIP_WEBSERVER=1 npx playwright test $PLAYWRIGHT_ARGS
+  npx playwright test $PLAYWRIGHT_ARGS
 fi
 
 TEST_EXIT_CODE=$?
