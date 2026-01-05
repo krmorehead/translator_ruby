@@ -50,9 +50,10 @@ class PlanOutputService
   # Generate directory name with timestamp and sanitized goal
   # Format: MM-DD-YYYY_sanitized_goal
   def directory_name
-    timestamp = Time.now.strftime("%m-%d-%Y")
+    timestamp = Time.now.strftime("%m-%d-%Y_%H%M%S")
+    unique_id = SecureRandom.hex(4)
     sanitized_goal = sanitize_goal(execution_plan.goal)
-    "#{timestamp}_#{sanitized_goal}"
+    "#{timestamp}_#{unique_id}_#{sanitized_goal}"
   end
 
   # Sanitize goal for use in directory name
