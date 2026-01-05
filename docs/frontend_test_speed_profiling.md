@@ -6,9 +6,13 @@ This document establishes speed profiling standards for frontend tests, matching
 
 ## Speed Profiles
 
-### Fast Tests (< 100ms)
+**Note:** Unit tests (Vitest) and E2E tests (Playwright) have different thresholds due to their nature.
 
-**Definition**: Pure unit tests with no I/O operations.
+### Fast Tests
+**Unit Tests (Vitest):** `< 100ms`  
+**E2E Tests (Playwright):** `< 5s`
+
+**Definition**: Pure unit tests with no I/O operations (Vitest) or UI-only tests with no network (E2E).
 
 **Characteristics**:
 - Tests domain models and business logic
@@ -31,9 +35,11 @@ This document establishes speed profiling standards for frontend tests, matching
 - `src/utils/__tests__/*.test.js`
 - `src/factories/__tests__/*.test.js`
 
-### Medium Tests (100ms - 1s)
+### Medium Tests
+**Unit Tests (Vitest):** `100ms - 1s`  
+**E2E Tests (Playwright):** `< 15s`
 
-**Definition**: Integration tests with minimal I/O.
+**Definition**: Integration tests with minimal I/O (Vitest) or API integration tests without LLM (E2E).
 
 **Characteristics**:
 - Component integration tests
@@ -53,9 +59,11 @@ This document establishes speed profiling standards for frontend tests, matching
 - `src/api/__tests__/*.test.js`
 - `src/components/__tests__/*.test.jsx`
 
-### Slow Tests (> 1s, < 120s)
+### Slow Tests
+**Unit Tests (Vitest):** `> 1s` (rare, usually indicates a problem)  
+**E2E Tests (Playwright):** `< 30s`
 
-**Definition**: E2E tests with full browser automation and real backend.
+**Definition**: E2E tests with full browser automation and real backend integration.
 
 **Characteristics**:
 - Full browser automation (Playwright)
@@ -77,45 +85,54 @@ This document establishes speed profiling standards for frontend tests, matching
 
 ## Thresholds
 
+### Unit Tests (Vitest)
 ```javascript
-const SPEED_THRESHOLDS = {
+const UNIT_TEST_THRESHOLDS = {
   fast: 100,      // 100ms
   medium: 1000,   // 1 second
-  slow: 120000    // 120 seconds (2 minutes) - MATCHES BACKEND
+  slow: 120000    // 120 seconds (rare, usually E2E with real LLM)
+};
+```
+
+### E2E Tests (Playwright)
+```javascript
+const E2E_TEST_THRESHOLDS = {
+  fast: 5000,     // 5 seconds (UI only, no network)
+  medium: 15000,  // 15 seconds (API calls, no LLM)
+  slow: 30000     // 30 seconds (real LLM, ONE query max)
 };
 ```
 
 ### Critical Rules
 
 1. **Tests MUST error if they exceed their threshold**
-2. **Slow tests have a hard limit of 120 seconds** (matches backend)
-3. **No optional fallbacks or backward compatibility**
-4. **Fail fast and LOUDLY** - errors must be obvious
+2. **E2E slow tests have a hard limit of 30 seconds** (enforced by unified timeout system)
+3. **No explicit timeouts allowed in E2E test code** (`{ timeout: X }` is forbidden)
+4. **No wasteful waits** (`networkidle` is forbidden)
+5. **Fail fast and LOUDLY** - errors must be obvious
 
 ### E2E Test Scope Limits
 
-To stay within the 120-second threshold for E2E test suites:
+To stay within the 30-second threshold for E2E slow tests:
 
 1. **Limit scope per test**: Test ONE feature per test case
-2. **Minimize waits**: Use `E2E_WAIT_TIME = 1000ms` (1 second) max
+2. **NO explicit waits**: Never use `{ timeout: X }` or `page.waitForLoadState("networkidle")`
 3. **Avoid redundant setup**: Share setup via `beforeEach` when possible
 4. **Single assertion focus**: Test one user journey per test
 5. **Parallel-safe design**: Tests must run safely in parallel streams
-6. **Break up long tests**: If a test suite approaches 120s, split it
+6. **Break up long tests**: If a test approaches 30s, split it
 
-**Example - Good Scoping**:
+**Example - Good Scoping (Using Unified Timeout System)**:
 
 ```javascript
-test("approve button triggers approval", async ({ page }) => {
-  // SCOPED: Single approve action + verification
-  const approval = ApprovalRequestFactory.build({ ... });
-  await service.injectApproval(approval);
-  await service.fetchPendingApproval(testExecutionId);
-  await page.waitForTimeout(E2E_WAIT_TIME);
+import { slow, expect } from "./base-test";
 
-  await page.getByRole("button", { name: /Approve/ }).click();
-  await page.waitForTimeout(E2E_WAIT_TIME);
+slow("approve button triggers approval", async ({ page }) => {
+  // SCOPED: Single approve action + verification
+  await page.goto("/agent");
+  await page.locator('button').filter({ hasText: /approve/i }).click();
   
+  // NO explicit timeout needed - speed profile handles it!
   await expect(page.getByRole("heading")).not.toBeVisible();
 });
 ```
@@ -123,14 +140,13 @@ test("approve button triggers approval", async ({ page }) => {
 **Example - Bad Scoping**:
 
 ```javascript
+// ❌ WRONG - Multiple features, explicit timeouts
 test("complete approval workflow", async ({ page }) => {
-  // TOO BROAD: Multiple features tested
   await testModalAppearance();
-  await testTimerFunctionality();
+  await page.waitForTimeout(5000); // FORBIDDEN
   await testApproveButton();
-  await testRejectButton();
-  await testExpiredState();
-  // This could exceed 120s threshold if not careful!
+  await page.waitForLoadState("networkidle"); // FORBIDDEN
+  // Will exceed 30s threshold!
 });
 ```
 
@@ -171,34 +187,61 @@ describe('ApprovalRequest', () => {
 });
 ```
 
-### E2E Tests (Playwright)
+### E2E Tests (Playwright) - Unified Timeout System
+
+**CRITICAL RULES:**
+- ✅ **ALWAYS** import `{ fast, medium, slow, expect }` from `"./base-test"`
+- ❌ **NEVER** import `test` directly from `"@playwright/test"`
+- ❌ **NEVER** use explicit timeouts: `{ timeout: X }` is FORBIDDEN
+- ❌ **NEVER** use `await page.waitForLoadState("networkidle")` - WASTEFUL
+
+**Unified Timeout System:**
+All timeouts (test, assertions, page actions) are controlled by speed profile:
+- **Fast** (`<5s`): UI only, no network, no backend needed
+- **Medium** (`<15s`): API calls, no LLM
+- **Slow** (`<30s`): Real LLM integration, ONE simple query MAX
 
 ```javascript
-import { test, expect } from "@playwright/test";
+import { fast, medium, slow, expect } from "./base-test";
 
-/**
- * SPEED PROFILE: slow (E2E tests with browser automation)
- * - Each test suite limited to < 120 seconds (matches backend slow threshold)
- * - Minimal wait times (1s max per wait)
- * - Scoped to single feature per test
- * - Tests MUST error if they exceed slow threshold
- */
+// FAST (< 5s): UI only, no network calls
+fast("renders Daedalus form", async ({ page }) => {
+  await page.goto("/agent");
+  await expect(page.locator("h1")).toContainText("Daedalus");
+  // All timeouts = 5s (test, assertions, page actions)
+});
 
-const E2E_TEST_TIMEOUT = 120000; // 120 seconds per test suite
-const E2E_WAIT_TIME = 1000; // 1 second for state updates
+// MEDIUM (< 15s): API calls, no LLM
+medium("loads configuration", async ({ page }) => {
+  await page.goto("/agent");
+  // API call to fetch config
+  await expect(page.locator(".capability-card")).toBeVisible();
+  // All timeouts = 15s
+});
 
-test.setTimeout(E2E_TEST_TIMEOUT);
-
-test.describe("Approval Modal - Integration", () => {
-  // SPEED PROFILE: slow (browser + backend API)
-  // SCOPE: Individual approval workflows (inject → poll → action)
-
-  test("approve button triggers approval", async ({ page }) => {
-    // SCOPED: Single approve action + verification
-    // Implementation...
-  });
+// SLOW (< 30s): Real LLM integration - ONE simple query MAX
+slow("generates execution plan with real LLM", async ({ page }) => {
+  await page.goto("/agent");
+  await page.locator("#goal").fill("Add health endpoint");
+  await page.locator("button").filter({ hasText: /generate/i }).click();
+  // Real LLM call happens here - NO explicit timeout needed!
+  await expect(page.locator(".plan-result")).toBeVisible();
+  // All timeouts = 30s
 });
 ```
+
+**How Unified Timeout System Works:**
+
+1. **Config Level** (`playwright.config.ts`):
+   - `expect.timeout` reads from `E2E_TEST_SPEED_FILTER` env var
+   - `actionTimeout: 0` and `navigationTimeout: 0` disable defaults
+
+2. **Test Level** (`base-test.ts`):
+   - `playwrightTest.setTimeout(timeout)` - overall test timeout
+   - `page.setDefaultTimeout(timeout)` - page action timeout
+   - `page.setDefaultNavigationTimeout(timeout)` - navigation timeout
+
+3. **Result**: Single source of truth per speed profile - NO conflicts!
 
 ## Running Tests by Speed Profile
 
@@ -317,6 +360,36 @@ Run tests and address any threshold violations.
 - Backend profiling: `docs/test_speed_profiling_quick_reference.md`
 - E2E testing guide: `docs/frontend_testing_guide.md`
 - Test organization: `docs/test_categorization_audit_2026-01-01.md`
+
+---
+
+## Current Status (January 5, 2026)
+
+### Unified Timeout System Implementation
+
+**E2E Test Suite Results:**
+- ✅ **77 tests passing** (100% success rate)
+- ✅ **44.4 seconds** total execution time for full slow suite
+- ✅ **Unified timeout system** - no conflicts between Playwright's three timeout systems
+- ✅ **Zero explicit timeouts** in test code
+- ✅ **Zero networkidle waits** (removed 41 wasteful instances)
+- ✅ **OOP principles** - unique instances prevent collisions
+
+**Architecture:**
+- Config level: `playwright.config.ts` reads `E2E_TEST_SPEED_FILTER` env var
+- Test level: `base-test.ts` sets all three timeout types uniformly (test, assertion, page action)
+- Result: Single source of truth per speed profile
+
+**Key Files:**
+- `frontend/e2e/base-test.ts` - Speed profiling functions and unified timeout enforcement
+- `frontend/e2e/playwright.config.ts` - Global timeout configuration
+- `bin/test-e2e` - Test runner script with speed filtering
+- `app/services/plan_output_service.rb` - UUID generation for unique plan directories
+
+**Speed Profile Distribution:**
+- Fast tests: UI-only, < 5s
+- Medium tests: API integration, < 15s
+- Slow tests: Real LLM, < 30s (ONE query max)
 
 ---
 

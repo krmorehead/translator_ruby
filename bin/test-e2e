@@ -2,14 +2,27 @@
 # frozen_string_literal: false
 
 # E2E Test Runner Script
-# Starts Rails backend in TEST mode and runs Playwright E2E tests
+# Manages Rails backend in TEST mode (.env.test) and runs Playwright E2E tests
+# with unified timeout system based on speed profiles.
+#
+# Speed Profiles:
+#   fast   (< 5s):  UI only, no network, no backend needed
+#   medium (< 15s): API calls, no LLM
+#   slow   (< 30s): Real LLM integration, ONE simple query max
 #
 # Usage:
 #   bin/test-e2e              # Run all E2E tests
 #   bin/test-e2e fast         # Run only fast E2E tests
 #   bin/test-e2e medium       # Run only medium E2E tests  
 #   bin/test-e2e slow         # Run only slow E2E tests (with LLM)
-#   bin/test-e2e --grep PATTERN  # Pass through to playwright
+#   bin/test-e2e slow --project=chromium  # Pass through to playwright
+#
+# Features:
+#   - Kills and restarts Rails for clean environment
+#   - Loads .env.test for test configuration
+#   - Sets E2E_TEST_SPEED_FILTER env var for unified timeout system
+#   - Playwright webServer manages Vite frontend automatically
+#   - Cleans up all processes on exit
 
 set -e
 
