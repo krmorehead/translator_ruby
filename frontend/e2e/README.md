@@ -88,19 +88,26 @@ cd frontend/e2e && SKIP_WEBSERVER=1 npx playwright test --project=chromium
 cd frontend/e2e && npx playwright show-report
 ```
 
-## Speed Profiling
+## Speed Profiling & Unified Timeout System
 
-**ALL TESTS MUST USE SPEED PROFILING** - Never use raw `test()` from Playwright.
+**CRITICAL RULES:**
+- ✅ **ALWAYS** import `{ fast, medium, slow, expect }` from `"./base-test"`
+- ❌ **NEVER** import `test` directly from `"@playwright/test"`  
+- ❌ **NEVER** use explicit timeouts: `{ timeout: X }` is FORBIDDEN
+- ❌ **NEVER** use `await page.waitForLoadState("networkidle")` - WASTEFUL
 
-### Speed Profiles
+### Speed Profiles with Unified Timeout System
+
+All timeouts (test, assertions, page actions) are controlled by speed profile:
 
 ```javascript
 import { fast, medium, slow, expect } from "./base-test";
 
-// FAST (< 5s): UI only, no network calls
+// FAST (< 5s): UI only, no network calls, no backend needed
 fast("renders Daedalus form", async ({ page }) => {
   await page.goto("/agent");
   await expect(page.locator("h1")).toContainText("Daedalus");
+  // All timeouts = 5s (test, assertions, page actions)
 });
 
 // MEDIUM (< 15s): API calls, no LLM
@@ -108,6 +115,7 @@ medium("loads configuration", async ({ page }) => {
   await page.goto("/agent");
   // API call to fetch config
   await expect(page.locator(".capability-card")).toBeVisible();
+  // All timeouts = 15s
 });
 
 // SLOW (< 30s): Real LLM integration - ONE simple query MAX
@@ -115,26 +123,41 @@ slow("generates execution plan with real LLM", async ({ page }) => {
   await page.goto("/agent");
   await page.locator("#goal").fill("Add health endpoint");
   await page.locator("button").filter({ hasText: /generate/i }).click();
-  // Real LLM call happens here
-  await expect(page.locator(".plan-result")).toBeVisible({ timeout: 25000 });
+  // Real LLM call happens here - NO explicit timeout needed!
+  await expect(page.locator(".plan-result")).toBeVisible();
+  // All timeouts = 30s
 });
 ```
 
-### Why Speed Profiling?
+### How Unified Timeout System Works
 
-1. **Enforces Timeout Limits**: Tests must complete within their profile limit
-2. **Catches Performance Issues**: Tests taking too long indicate problems
-3. **Parallel Execution**: Fast tests can run in parallel, slow ones are throttled
-4. **Clear Error Messages**: Timeout failures show expected vs actual time
+1. **Config Level** (`playwright.config.ts`):
+   - `expect.timeout` reads from `E2E_TEST_SPEED_FILTER` env var
+   - `actionTimeout: 0` and `navigationTimeout: 0` disable defaults
+
+2. **Test Level** (`base-test.ts`):
+   - `playwrightTest.setTimeout(timeout)` - overall test timeout
+   - `page.setDefaultTimeout(timeout)` - page action timeout
+   - `page.setDefaultNavigationTimeout(timeout)` - navigation timeout
+
+3. **Result**: Single source of truth per speed profile - NO conflicts!
+
+### Why This Approach?
+
+1. **Enforces Timeout Limits**: Tests must complete within profile or fail immediately
+2. **Catches Real Problems**: Timeouts indicate actual issues, not CI flakiness
+3. **Prevents Workarounds**: Can't hide problems with explicit timeouts
+4. **Clear Error Messages**: Shows expected vs actual time with helpful diagnostic info
+5. **OOP Principles**: Tests create unique instances (UUIDs), preventing collisions
 
 ### Test Speed Guidelines
 
-- **FAST tests**: No network, no file I/O, pure UI interactions
-- **MEDIUM tests**: API calls to config/status endpoints, no heavy computation
-- **SLOW tests**: LLM calls, file generation, complex workflows
-  - **Keep it minimal**: ONE simple LLM query per test
-  - **Don't chain**: Avoid multi-step LLM workflows in tests
-  - **Use fixtures**: Pre-generated plans for execution tests
+- **FAST tests** (`< 5s`): No network, no file I/O, pure UI interactions
+- **MEDIUM tests** (`< 15s`): API calls to config/status endpoints, no LLM
+- **SLOW tests** (`< 30s`): Real LLM calls, ONE simple query MAX
+  - **Keep it minimal**: Don't chain multiple LLM calls
+  - **Break it down**: Split complex workflows into multiple tests
+  - **Use proper selectors**: Wait for specific elements, not networkidle
 
 ## Test Coverage
 
@@ -508,23 +531,70 @@ test("page matches screenshot", async ({ page }) => {
 ## Troubleshooting
 
 ### Tests Timeout
-- Increase timeout in `playwright.config.js`
-- Check if backend is running
-- Check network requests in trace viewer
+
+**DO NOT increase timeout!** Timeouts indicate real problems. Instead:
+
+1. **Check if backend is running** (Rails on port 4000)
+2. **Check if LLM is accessible** (ports 52003/52004)
+3. **View trace** to see where test got stuck:
+   ```bash
+   npx playwright show-trace test-results/.../trace.zip
+   ```
+4. **Check selectors** - wrong selector = wait until timeout
+5. **Break down test** - if legitimately too slow, split into smaller tests
+6. **Remove wasteful waits** - NO `networkidle`, wait for specific elements
 
 ### Element Not Found
-- Use `page.pause()` to inspect page
-- Check if element is inside iframe
-- Verify selector is correct
 
-### Flaky Tests
-- Add explicit waits: `await page.waitForLoadState("networkidle")`
-- Use `test.setTimeout()` for slow operations
-- Avoid `page.waitForTimeout()` - use element waiters instead
+1. **Use debug mode** to inspect page:
+   ```bash
+   npx playwright test --debug
+   ```
+2. **Check if element is in iframe**:
+   ```javascript
+   const frame = page.frameLocator('iframe[name="content"]');
+   await frame.locator('.element').click();
+   ```
+3. **Verify selector** - use Playwright Inspector to test selectors
+4. **Wait for specific state**:
+   ```javascript
+   // Good - wait for specific element
+   await expect(page.locator('.result')).toBeVisible();
+   
+   // Bad - wait for everything
+   await page.waitForLoadState("networkidle"); // FORBIDDEN
+   ```
 
-### Can't Access Store
-- Ensure store is exposed globally or use API mocking
-- Consider component-level testing with Vitest for store logic
+### Flaky Tests (Test Sometimes Passes, Sometimes Fails)
+
+**Flaky tests are CODE BUGS, not test infrastructure problems!**
+
+1. **Check for race conditions** in the application code
+2. **Ensure unique test data** - use UUIDs, not hardcoded IDs
+3. **Follow OOP principles** - tests should create unique instances
+4. **Use proper element waits**:
+   ```javascript
+   // Good - wait for specific element state
+   await expect(page.locator('.loading')).toBeHidden();
+   await expect(page.locator('.content')).toBeVisible();
+   
+   // Bad - arbitrary timeout
+   await page.waitForTimeout(1000); // AVOID
+   ```
+5. **Check parallel test isolation** - tests should not share state
+
+### Backend 500 Errors
+
+1. **Check Rails logs**: `log/test.log`
+2. **Ensure `.env.test` is loaded**
+3. **Verify database is clean** between tests
+4. **Check for missing environment variables**
+
+### Store/State Issues
+
+- **Don't access store directly** - test through UI interactions
+- **Use API mocking** for controlled test scenarios
+- **Component tests** (Vitest) for store logic, E2E for user flows
 
 ---
 

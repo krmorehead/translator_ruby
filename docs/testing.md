@@ -78,6 +78,20 @@ npm run test:all
 
 **IMPORTANT:** E2E tests require Rails backend in TEST mode with `.env.test` loaded.
 
+#### Speed Profiles (Strict Enforcement)
+
+E2E tests have **strict timeout enforcement** with unified timeout system:
+
+- **Fast** (`<5s`): UI-only tests, no network calls, no backend needed
+- **Medium** (`<15s`): API integration tests, no LLM calls
+- **Slow** (`<30s`): Full integration with real LLM (ONE simple query max)
+
+**Timeout Rules:**
+- ❌ **NEVER** use explicit `{ timeout: X }` in test code
+- ❌ **NEVER** use `await page.waitForLoadState("networkidle")`
+- ✅ Speed profile controls **all** timeouts (test, assertions, page actions)
+- ✅ Tests fail immediately if timeout exceeded
+
 #### Recommended Usage (with automatic server management)
 
 From project root:
@@ -99,10 +113,10 @@ bin/test-e2e slow --project=chromium --grep "plan generation"
 ```
 
 The `bin/test-e2e` script automatically:
-- Starts Rails in TEST environment (loads `.env.test`)
-- Starts Vite frontend with API proxy to port 4000
+- Kills and restarts Rails in TEST environment (loads `.env.test`)
+- Manages Vite frontend via Playwright's webServer
 - Waits for both servers to be ready
-- Runs Playwright tests
+- Runs Playwright tests with proper speed filtering
 - Cleans up servers after tests complete
 
 #### Manual Usage (servers already running)
@@ -141,24 +155,61 @@ cd frontend/e2e && npx playwright show-report
 
 ### Implementation
 
-- Speed profiles are defined in `frontend/e2e/helpers/speedProfile.js`
-- Tests use `test.describe` with speed profile tags
-- Timeouts are automatically enforced based on profile
+**ALL E2E tests MUST use the speed-profiled test functions from `base-test.ts`:**
+
+```javascript
+// ❌ WRONG - Do NOT import test directly from playwright
+import { test } from '@playwright/test';
+
+// ✅ CORRECT - Import fast/medium/slow from base-test
+import { fast, medium, slow, expect } from './base-test';
+```
+
+- Speed profiles are enforced at the test level via `base-test.ts`
+- Unified timeout system in `playwright.config.ts` and `base-test.ts`
+- Timeouts automatically applied to test execution, assertions, and page actions
+- No explicit timeouts allowed in test code
 
 ### Example Test
 
 ```javascript
-import { test, expect } from '@playwright/test';
-import { speedProfile } from '../helpers/speedProfile';
+import { fast, medium, slow, expect } from './base-test';
 
-test.describe('My Component', () => {
-  speedProfile('fast'); // Mark entire suite as fast
-  
-  test('renders correctly', async ({ page }) => {
-    // Test that completes in < 10s
-  });
+// Fast test: UI only, no network
+fast('renders form with all fields', async ({ page }) => {
+  await page.goto('/agent');
+  await expect(page.locator('#goal')).toBeVisible();
+  await expect(page.locator('.file-path-input')).toBeVisible();
+  // Completes in < 5s
+});
+
+// Medium test: API call, no LLM
+medium('loads configuration from API', async ({ page }) => {
+  await page.goto('/agent');
+  await page.locator('button').filter({ hasText: /configuration/i }).click();
+  await expect(page.locator('.config-panel')).toBeVisible();
+  // Completes in < 15s
+});
+
+// Slow test: Real LLM integration
+slow('generates plan with real LLM', async ({ page }) => {
+  await page.goto('/agent');
+  await page.locator('#goal').fill('Add health check endpoint');
+  await page.locator('button').filter({ hasText: /generate/i }).click();
+  await expect(page.locator('.plan-result-section')).toBeVisible();
+  // Completes in < 30s
 });
 ```
+
+### E2E Test Best Practices
+
+1. **Use proper speed profile function** - `fast()`, `medium()`, or `slow()`
+2. **Never use explicit timeouts** - `{ timeout: X }` is forbidden
+3. **Never use networkidle** - `waitForLoadState("networkidle")` wastes time
+4. **Wait for specific elements** - Use `expect().toBeVisible()` instead
+5. **Follow OOP principles** - Tests should create unique instances (UUIDs)
+6. **Break down complex tests** - One slow test = ONE LLM query max
+7. **Let tests fail fast** - Timeouts indicate real problems, not CI flakiness
 
 ## CI/CD Integration
 
@@ -177,9 +228,18 @@ cd frontend && npm run e2e
 
 ### Timeouts
 
+**Backend (Rails):**
 - Fast tests timeout after 10s (fail if exceeded)
 - Medium tests timeout after 60s (fail if exceeded)
 - Slow tests timeout after 120s (fail if exceeded)
+
+**Frontend E2E (Playwright):**
+- Fast tests timeout after 5s (fail if exceeded)
+- Medium tests timeout after 15s (fail if exceeded)
+- Slow tests timeout after 30s (fail if exceeded)
+
+**Critical:** Timeouts apply to test execution, assertions, and page actions uniformly.
+No explicit timeout parameters are allowed in test code.
 
 ## Excluding Tests
 
