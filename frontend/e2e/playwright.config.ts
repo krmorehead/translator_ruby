@@ -30,8 +30,8 @@ export default defineConfig({
   
   /* Shared settings for all projects */
   use: {
-    /* Base URL for tests */
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    /* Base URL for tests - frontend is on 5173, backend API on 4000 */
+    baseURL: process.env.BASE_URL || 'http://localhost:5173',
     
     /* Collect trace on failure */
     trace: 'on-first-retry',
@@ -74,7 +74,7 @@ export default defineConfig({
   /* Run local dev server before starting tests */
   webServer: process.env.SKIP_WEBSERVER ? undefined : {
     command: 'cd .. && npm run dev',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
   },

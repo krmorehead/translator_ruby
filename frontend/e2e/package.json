@@ -4,10 +4,13 @@
   "description": "E2E tests for Sisyphus frontend",
   "private": true,
   "scripts": {
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:ui": "playwright test --ui",
+    "test:e2e": "cd ../.. && bin/test-e2e",
+    "test:e2e:fast": "cd ../.. && bin/test-e2e fast",
+    "test:e2e:medium": "cd ../.. && bin/test-e2e medium",
+    "test:e2e:slow": "cd ../.. && bin/test-e2e slow",
+    "test:e2e:headed": "SKIP_WEBSERVER=1 playwright test --headed",
+    "test:e2e:debug": "SKIP_WEBSERVER=1 playwright test --debug",
+    "test:e2e:ui": "SKIP_WEBSERVER=1 playwright test --ui",
     "test:e2e:report": "playwright show-report"
   },
   "devDependencies": {

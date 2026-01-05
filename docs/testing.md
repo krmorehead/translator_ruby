@@ -52,7 +52,7 @@ end
 
 ## Frontend Testing (React/Vitest)
 
-### Commands
+### Unit/Integration Tests
 
 ```bash
 # Run all tests (exits after completion)
@@ -76,18 +76,67 @@ npm run test:all
 
 ### E2E Tests (Playwright)
 
+**IMPORTANT:** E2E tests require Rails backend in TEST mode with `.env.test` loaded.
+
+#### Recommended Usage (with automatic server management)
+
+From project root:
 ```bash
-# Run all E2E tests
-npm run e2e
+# Run all E2E tests (script manages servers)
+bin/test-e2e
 
-# Run fast E2E tests only
-npm run e2e:fast
+# Run only fast E2E tests (UI only, no backend)
+bin/test-e2e fast
 
-# Run medium E2E tests only
-npm run e2e:medium
+# Run only medium E2E tests (API calls, no LLM)
+bin/test-e2e medium
 
-# Run slow E2E tests only
-npm run e2e:slow
+# Run only slow E2E tests (real LLM integration)
+bin/test-e2e slow
+
+# Pass additional playwright arguments
+bin/test-e2e slow --project=chromium --grep "plan generation"
+```
+
+The `bin/test-e2e` script automatically:
+- Starts Rails in TEST environment (loads `.env.test`)
+- Starts Vite frontend with API proxy to port 4000
+- Waits for both servers to be ready
+- Runs Playwright tests
+- Cleans up servers after tests complete
+
+#### Manual Usage (servers already running)
+
+If you're running servers manually in test mode:
+```bash
+# Terminal 1: Start Rails in TEST mode
+RAILS_ENV=test bundle exec rails server -p 4000
+
+# Terminal 2: Start Vite frontend
+cd frontend && npm run dev
+
+# Terminal 3: Run E2E tests
+cd frontend/e2e
+SKIP_WEBSERVER=1 npx playwright test
+
+# Or with speed filter
+SKIP_WEBSERVER=1 TEST_SPEED_FILTER=slow npx playwright test
+```
+
+#### Debug/Development Mode
+
+```bash
+# Run with headed browser (see what's happening)
+cd frontend/e2e && SKIP_WEBSERVER=1 npx playwright test --headed
+
+# Run with debug mode (step through tests)
+cd frontend/e2e && SKIP_WEBSERVER=1 npx playwright test --debug
+
+# Run with UI mode (interactive)
+cd frontend/e2e && SKIP_WEBSERVER=1 npx playwright test --ui
+
+# View test report
+cd frontend/e2e && npx playwright show-report
 ```
 
 ### Implementation

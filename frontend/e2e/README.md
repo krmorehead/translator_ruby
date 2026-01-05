@@ -1,14 +1,15 @@
-# E2E Testing Guide for Sisyphus Frontend
+# E2E Testing Guide - Daedalus & Sisyphus
 
 ## Overview
 
-This directory contains End-to-End (E2E) tests for the Sisyphus frontend using **Playwright**. These tests verify the complete user workflows in a real browser environment.
+This directory contains End-to-End (E2E) tests for both Daedalus (planning) and Sisyphus (execution) using **Playwright**. These tests verify complete user workflows with real backend API and LLM integration in a browser environment.
 
 ## Test Framework
 
 - **Playwright**: Browser automation framework
-- **Vitest**: Unit/component testing (separate, in `src/components/__tests__/`)
-- **Testing Library**: Component testing utilities
+- **Speed Profiling**: All tests must use `fast()`, `medium()`, or `slow()` from `base-test.ts`
+- **Real Integration**: Tests use actual backend APIs and LLM - NO MOCKS
+- **Test Environment**: Rails runs in TEST mode with `.env.test` configuration
 
 ## Directory Structure
 
@@ -28,38 +29,112 @@ frontend/
 
 ## Running Tests
 
-### All E2E Tests
+### Recommended: Use Test Script (Manages Servers Automatically)
+
+From project root:
 ```bash
-cd frontend
-npm run e2e
+# Run all E2E tests (script starts Rails in TEST mode + Vite)
+bin/test-e2e
+
+# Run by speed profile
+bin/test-e2e fast      # UI only, no backend (< 5s each)
+bin/test-e2e medium    # API calls, no LLM (< 15s each)
+bin/test-e2e slow      # Real LLM integration (< 30s each)
+
+# Pass additional playwright options
+bin/test-e2e slow --project=chromium --grep "plan generation"
+bin/test-e2e medium --max-failures=1
 ```
 
-### Specific Test File
+The script automatically:
+- ✅ Starts Rails in `RAILS_ENV=test` (uses `.env.test`)
+- ✅ Starts Vite frontend with proxy to backend
+- ✅ Waits for servers to be ready
+- ✅ Runs tests with proper environment
+- ✅ Cleans up servers after completion
+
+### Manual: Servers Already Running
+
+If you're managing servers yourself:
 ```bash
-npm run e2e -- sisyphus.spec.js
+# Terminal 1: Rails in TEST mode
+RAILS_ENV=test bundle exec rails server -p 4000
+
+# Terminal 2: Vite frontend  
+cd frontend && npm run dev
+
+# Terminal 3: Run tests
+cd frontend/e2e
+SKIP_WEBSERVER=1 npx playwright test
+SKIP_WEBSERVER=1 TEST_SPEED_FILTER=slow npx playwright test
 ```
 
-### Headed Mode (See Browser)
+### Development/Debug Mode
+
 ```bash
-npm run e2e -- --headed
+# Run with visible browser
+cd frontend/e2e && SKIP_WEBSERVER=1 npx playwright test --headed
+
+# Step-by-step debugging
+cd frontend/e2e && SKIP_WEBSERVER=1 npx playwright test --debug
+
+# Interactive UI mode
+cd frontend/e2e && SKIP_WEBSERVER=1 npx playwright test --ui
+
+# Specific browser
+cd frontend/e2e && SKIP_WEBSERVER=1 npx playwright test --project=chromium
+
+# View test report
+cd frontend/e2e && npx playwright show-report
 ```
 
-### Debug Mode (Step Through)
-```bash
-npm run e2e -- --debug
+## Speed Profiling
+
+**ALL TESTS MUST USE SPEED PROFILING** - Never use raw `test()` from Playwright.
+
+### Speed Profiles
+
+```javascript
+import { fast, medium, slow, expect } from "./base-test";
+
+// FAST (< 5s): UI only, no network calls
+fast("renders Daedalus form", async ({ page }) => {
+  await page.goto("/agent");
+  await expect(page.locator("h1")).toContainText("Daedalus");
+});
+
+// MEDIUM (< 15s): API calls, no LLM
+medium("loads configuration", async ({ page }) => {
+  await page.goto("/agent");
+  // API call to fetch config
+  await expect(page.locator(".capability-card")).toBeVisible();
+});
+
+// SLOW (< 30s): Real LLM integration - ONE simple query MAX
+slow("generates execution plan with real LLM", async ({ page }) => {
+  await page.goto("/agent");
+  await page.locator("#goal").fill("Add health endpoint");
+  await page.locator("button").filter({ hasText: /generate/i }).click();
+  // Real LLM call happens here
+  await expect(page.locator(".plan-result")).toBeVisible({ timeout: 25000 });
+});
 ```
 
-### UI Mode (Interactive)
-```bash
-npx playwright test --ui
-```
+### Why Speed Profiling?
 
-### Specific Browser
-```bash
-npm run e2e -- --project=chromium
-npm run e2e -- --project=firefox
-npm run e2e -- --project=webkit
-```
+1. **Enforces Timeout Limits**: Tests must complete within their profile limit
+2. **Catches Performance Issues**: Tests taking too long indicate problems
+3. **Parallel Execution**: Fast tests can run in parallel, slow ones are throttled
+4. **Clear Error Messages**: Timeout failures show expected vs actual time
+
+### Test Speed Guidelines
+
+- **FAST tests**: No network, no file I/O, pure UI interactions
+- **MEDIUM tests**: API calls to config/status endpoints, no heavy computation
+- **SLOW tests**: LLM calls, file generation, complex workflows
+  - **Keep it minimal**: ONE simple LLM query per test
+  - **Don't chain**: Avoid multi-step LLM workflows in tests
+  - **Use fixtures**: Pre-generated plans for execution tests
 
 ## Test Coverage
 

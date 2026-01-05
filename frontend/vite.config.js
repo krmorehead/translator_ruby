@@ -17,6 +17,10 @@ export default defineConfig({
       "/daedalus": {
         target: "http://localhost:4000",
         changeOrigin: true
+      },
+      "/sisyphus": {
+        target: "http://localhost:4000",
+        changeOrigin: true
       }
     }
   },
