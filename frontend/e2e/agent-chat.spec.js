@@ -11,7 +11,6 @@ medium("initializes agent session and shows chat interface", async ({ page }) =>
   console.log("\n🎯 Testing Agent Session Initialization");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Click Initialize Session button
   console.log("Step 1: Initializing agent session...");
@@ -47,7 +46,6 @@ slow("sends message and receives LLM response", async ({ page }) => {
   console.log("\n🎯 Testing Conversational Agent with Real LLM");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Initialize session
   console.log("Step 1: Initializing session...");
@@ -104,7 +102,6 @@ slow("maintains conversation context across multiple messages", async ({ page })
   console.log("\n🎯 Testing Conversation Chain with Context");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Initialize session
   console.log("Step 1: Initializing session...");
@@ -154,7 +151,6 @@ medium("switches between chat and thoughts tabs", async ({ page }) => {
   console.log("\n🎯 Testing Tab Navigation");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Initialize session
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
@@ -195,7 +191,6 @@ medium("shows session ID in chat panel", async ({ page }) => {
   console.log("\n🎯 Testing Session ID Display");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Initialize session
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();

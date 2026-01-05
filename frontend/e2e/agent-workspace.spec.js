@@ -120,7 +120,6 @@ medium("displays capability configurations", async ({ page }) => {
     
     // Open config panel
     await page.locator('button').filter({ hasText: /configuration|⚙️/i }).click();
-  await page.waitForLoadState("networkidle");
     
   // Should show config panel with capability details
     const configPanel = page.locator('.configuration-panel');
@@ -135,7 +134,6 @@ medium("test connection button exists for capabilities", async ({ page }) => {
   await page.goto("/agent");
     
     await page.locator('button').filter({ hasText: /configuration|⚙️/i }).click();
-    await page.waitForLoadState("networkidle");
     
   // Should have test connection buttons
     const testButtons = page.locator('button').filter({ hasText: /test.*connection|test/i });
@@ -147,7 +145,6 @@ medium("capability cards show model and port info", async ({ page }) => {
   await page.goto("/agent");
     
     await page.locator('button').filter({ hasText: /configuration|⚙️/i }).click();
-    await page.waitForLoadState("networkidle");
     
   // Should show capability details (model, port, etc.)
   await expect(page.locator('.capability-card').first()).toBeVisible();
@@ -160,7 +157,6 @@ medium("capability cards show model and port info", async ({ page }) => {
 
 slow("generates execution plan with real LLM", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Verify page loaded
   await expect(page.locator("h1").filter({ hasText: /daedalus/i })).toBeVisible();
@@ -229,7 +225,6 @@ slow("plan error handling with invalid path", async ({ page }) => {
 
 slow("starts execution with real plan", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
     await page.locator("select.mode-selector").selectOption("sisyphus");
     
   // Fill Sisyphus form with correct selectors
@@ -266,7 +261,6 @@ fast("sisyphus form accepts step approval mode", async ({ page }) => {
 
 slow("dry run mode prevents actual changes", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
     await page.locator("select.mode-selector").selectOption("sisyphus");
     
   await page.locator('.file-path-text-input').first().fill("/home/kyle/Side_Projects/translator_ruby");
@@ -289,7 +283,6 @@ slow("dry run mode prevents actual changes", async ({ page }) => {
 
 slow("creates plan in Daedalus then switches to Sisyphus", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
     
     // Step 1: Generate plan with Daedalus
   await page.locator('.file-path-text-input').first().fill("/home/kyle/Side_Projects/translator_ruby");

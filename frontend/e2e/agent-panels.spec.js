@@ -13,7 +13,6 @@ medium("thoughts - displays thoughts panel UI", async ({ page }) => {
   console.log("\n🧪 Testing Thoughts Panel");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Initialize session
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
@@ -37,7 +36,6 @@ medium("thoughts - displays thoughts panel UI", async ({ page }) => {
 
 medium("thoughts - auto-refresh toggle works", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -57,7 +55,6 @@ medium("thoughts - auto-refresh toggle works", async ({ page }) => {
 
 medium("thoughts - filter dropdown works", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -86,7 +83,6 @@ medium("memory - displays memory inspector UI", async ({ page }) => {
   console.log("\n🧪 Testing Memory Inspector");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -105,7 +101,6 @@ medium("memory - displays memory inspector UI", async ({ page }) => {
 
 medium("memory - shows empty state initially", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -121,7 +116,6 @@ medium("memory - shows empty state initially", async ({ page }) => {
 
 medium("memory - refresh button works", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -146,7 +140,6 @@ medium("context - displays context manager UI", async ({ page }) => {
   console.log("\n🧪 Testing Context Manager");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -165,7 +158,6 @@ medium("context - displays context manager UI", async ({ page }) => {
 
 medium("context - add entry form appears on button click", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -185,7 +177,6 @@ medium("context - add entry form appears on button click", async ({ page }) => {
 
 medium("context - can add context entry", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -210,7 +201,6 @@ medium("context - can add context entry", async ({ page }) => {
 
 medium("context - shows entry count", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -237,7 +227,6 @@ medium("timeline - displays timeline view UI", async ({ page }) => {
   console.log("\n🧪 Testing Timeline View");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -256,7 +245,6 @@ medium("timeline - displays timeline view UI", async ({ page }) => {
 
 medium("timeline - filter dropdown has options", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -279,7 +267,6 @@ medium("timeline - filter dropdown has options", async ({ page }) => {
 
 medium("timeline - shows empty state initially", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -301,7 +288,6 @@ slow("panels - can send message and check all panels", async ({ page }) => {
   console.log("\n🧪 Testing Panel Integration with Real LLM");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Initialize session
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();

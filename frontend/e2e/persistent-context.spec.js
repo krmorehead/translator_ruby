@@ -5,7 +5,6 @@ const LLM_TIMEOUT = 30000;
 
 async function initializeAgentSession(page) {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
 }
@@ -203,7 +202,6 @@ medium("persistent context persists across page refresh", async ({ page }) => {
   
   // Reload page
   await page.reload();
-  await page.waitForLoadState("networkidle");
   console.log("✓ Page reloaded");
   
   // Initialize new session

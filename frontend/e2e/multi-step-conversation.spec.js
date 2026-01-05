@@ -12,7 +12,6 @@ slow("multi-step - complex conversation with 5+ turns", async ({ page }) => {
   console.log("=" .repeat(80));
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Initialize session
   console.log("\nStep 1: Initialize session");
@@ -86,7 +85,6 @@ slow("multi-step - conversation with code examples", async ({ page }) => {
   console.log("\n🎯 Testing Conversation with Code Examples");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -127,7 +125,6 @@ slow("multi-step - error recovery in conversation", async ({ page }) => {
   console.log("\n🎯 Testing Error Recovery in Conversation");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -169,7 +166,6 @@ slow("multi-step - tab switching during conversation", async ({ page }) => {
   console.log("\n🎯 Testing Tab Switching During Conversation");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
@@ -219,7 +215,6 @@ slow("multi-step - keyboard shortcut navigation", async ({ page }) => {
   console.log("\n🎯 Testing Keyboard Shortcuts in Conversation");
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();

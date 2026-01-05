@@ -20,7 +20,6 @@ import { expect, fast, medium } from "./base-test";
 
 fast("integration - should switch between Daedalus and Sisyphus modes", async ({ page }) => {
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
 
   const heading = page.getByRole("heading", { level: 1 });
   await expect(heading).toContainText(/daedalus/i);
@@ -29,12 +28,10 @@ fast("integration - should switch between Daedalus and Sisyphus modes", async ({
   await expect(modeSelector).toBeVisible();
   await modeSelector.selectOption("sisyphus");
 
-  await page.waitForLoadState("networkidle");
 
   await expect(heading).toContainText(/sisyphus/i);
 
   await modeSelector.selectOption("daedalus");
-  await page.waitForLoadState("networkidle");
 
   await expect(heading).toContainText(/daedalus/i);
 });

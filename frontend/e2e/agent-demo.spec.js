@@ -17,7 +17,6 @@ slow("DEMO: Part 1 - Conversational AI with Context", async ({ page }) => {
   console.log("-".repeat(80));
   
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   console.log("✓ Loaded /agent workspace");
   
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
@@ -74,7 +73,6 @@ slow("DEMO: Part 2 - Tab Navigation and Code Assistance", async ({ page }) => {
   
   // Initialize session
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   await page.locator('button').filter({ hasText: /initialize.*session/i }).click();
   await expect(page.locator('.agent-tabs')).toBeVisible();
   console.log("✓ Session initialized");

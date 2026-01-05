@@ -13,7 +13,6 @@ slow("MANUAL: Complete Daedalus workflow", async ({ page }) => {
   // 1. Load the agent workspace
   console.log("Step 1: Loading /agent page...");
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Verify Daedalus mode is active
   await expect(page.locator("h1").filter({ hasText: /daedalus/i })).toBeVisible();
@@ -67,7 +66,6 @@ slow("MANUAL: Complete Sisyphus workflow", async ({ page }) => {
   // 1. Load and switch to Sisyphus
   console.log("Step 1: Loading /agent and switching to Sisyphus...");
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator("select.mode-selector").selectOption("sisyphus");
   await expect(page.locator("h1").filter({ hasText: /sisyphus/i })).toBeVisible();
@@ -119,7 +117,6 @@ slow("MANUAL: Mode switching with path persistence", async ({ page }) => {
   // 1. Start in Daedalus
   console.log("Step 1: Setting path in Daedalus mode...");
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   await page.locator('.file-path-text-input').first().fill(testPath);
   console.log(`✓ Path set: ${testPath}`);
@@ -162,7 +159,6 @@ slow("MANUAL: Configuration panel", async ({ page }) => {
   
   console.log("Step 1: Loading agent workspace...");
   await page.goto("/agent");
-  await page.waitForLoadState("networkidle");
   
   // Click config toggle
   console.log("Step 2: Opening configuration panel...");
