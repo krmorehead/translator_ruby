@@ -51,6 +51,8 @@ const createProfiledTest = (profile: SpeedProfile) => {
   return (testName: string, testFn: TestFunction) => {
     playwrightTest(testName, async ({ page, context, request, browser }) => {
       playwrightTest.setTimeout(timeout);
+      expect.configure({ timeout: timeout }); // Match assertion timeout to test timeout
+      page.setDefaultTimeout(timeout); // Match page action timeout to test timeout
       
       // Capture browser console logs and errors
       page.on('console', msg => {
