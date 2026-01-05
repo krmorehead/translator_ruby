@@ -45,6 +45,10 @@ slow("daedalus-api - should verify plan structure from real LLM", async ({ reque
 
   const result = await response.json();
   
+  if (!result.success) {
+    console.error("Daedalus API Error:", result.error || result);
+  }
+  
   expect(result.success).toBe(true);
   expect(result.execution_plan.milestones).toBeDefined();
   expect(Array.isArray(result.execution_plan.milestones)).toBe(true);
