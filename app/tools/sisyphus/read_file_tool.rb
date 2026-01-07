@@ -25,12 +25,12 @@ module Sisyphus
             description: "The root directory of the codebase (provided by workflow)"
           }
         },
-        required: ["path", "codebase_path"],
-        additionalProperties: false
+        required: ["path", "codebase_path"]
+        # Note: additionalProperties removed to allow graceful handling of unexpected params
       }
     end
 
-    def execute(path:, codebase_path:)
+    def execute(path:, codebase_path:, **_extra_params)
       # Validate codebase_path exists
       unless File.directory?(codebase_path)
         return error_result("Codebase path does not exist: #{codebase_path}")

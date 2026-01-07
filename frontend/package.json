@@ -14,12 +14,14 @@
     "test:medium": "TEST_SPEED_FILTER=medium vitest --run",
     "test:slow": "TEST_SPEED_FILTER=slow vitest --run",
     "test:all": "npm run test:fast && npm run test:medium && npm run test:slow",
-    "e2e": "playwright test",
-    "e2e:fast": "TEST_SPEED_FILTER=fast playwright test",
-    "e2e:medium": "TEST_SPEED_FILTER=medium playwright test",
-    "e2e:slow": "TEST_SPEED_FILTER=slow playwright test"
+    "e2e:clean": "rm -rf e2e/test-results e2e/e2e-results playwright-report",
+    "e2e": "npm run e2e:clean && playwright test",
+    "e2e:fast": "npm run e2e:clean && TEST_SPEED_FILTER=fast playwright test",
+    "e2e:medium": "npm run e2e:clean && TEST_SPEED_FILTER=medium playwright test",
+    "e2e:slow": "npm run e2e:clean && TEST_SPEED_FILTER=slow playwright test"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",

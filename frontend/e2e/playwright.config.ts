@@ -23,6 +23,9 @@ export default defineConfig({
   // Limit workers to prevent overwhelming LLM server (tests should handle 3-4 parallel)
   workers: process.env.TEST_SPEED_FILTER === 'slow' ? 3 : (process.env.CI ? 1 : undefined),
   
+  /* Output directory for test artifacts */
+  outputDir: 'test-results',
+  
   /* Reporter to use */
   reporter: [
     ['html', { outputFolder: 'e2e-results' }],

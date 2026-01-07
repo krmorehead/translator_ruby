@@ -2,25 +2,30 @@
 
 module Planning
   # Prompt for generating execution plans from user goals and codebase exploration.
-  # Following Cline pattern: instructs LLM to explore codebase using tools.
+  # Following Cline pattern: LLM uses actual tools to explore codebase.
   #
-  # The LLM has access to tools (file_tree, grep, read_file) and should explore
-  # the codebase as needed to understand structure before generating the plan.
+  # The LLM has access to tools (file_tree, grep, read_file) via function calling
+  # and should explore the codebase as needed to understand structure before 
+  # generating the plan.
   #
-  class PlanGenerationPrompt < BasePrompt
+  # Extends ToolCallPrompt to enable actual tool calling with the LLM.
+  #
+  class PlanGenerationPrompt < ToolCallPrompt
     attr_reader :goal, :path, :context
 
     # @param goal [String] What to accomplish
     # @param path [String] Codebase root for exploration
     # @param context [String, nil] Optional context hint
-    def initialize(goal:, path:, context: nil)
+    # @param available_tools [Array<Tool>] Tools for codebase exploration
+    def initialize(goal:, path:, context: nil, available_tools: [])
       validate_params!(goal, path)
-      
-      super()
       
       @goal = goal
       @path = path
       @context = context
+      
+      # Call super with tools - ToolCallPrompt handles tool setup
+      super(tools: available_tools)
     end
 
     def system_message
@@ -200,6 +205,17 @@ module Planning
         },
         required: ["goal", "milestones"]
       }
+    end
+
+    # Override build_parameters to include tools for function calling
+    # Includes both tools (for exploration) and response_schema (for structured output)
+    def build_parameters(messages)
+      parameters = super(messages)
+      
+      # Add tools for function calling if available
+      parameters[:tools] = serialize_tools if @tools.any?
+      
+      parameters
     end
 
     private

@@ -42,12 +42,12 @@ module Sisyphus
             description: "Enable case-insensitive matching (default: false)"
           }
         },
-        required: ["pattern", "codebase_path"],
-        additionalProperties: false
+        required: ["pattern", "codebase_path"]
+        # Note: additionalProperties removed to allow graceful handling of unexpected params
       }
     end
 
-    def execute(pattern:, codebase_path:, path: nil, extensions: nil, max_results: 100, case_insensitive: false)
+    def execute(pattern:, codebase_path:, path: nil, extensions: nil, max_results: 100, case_insensitive: false, **_extra_params)
       # Validate codebase_path exists
       unless File.directory?(codebase_path)
         return error_result("Codebase path does not exist: #{codebase_path}")

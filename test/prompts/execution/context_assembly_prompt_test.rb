@@ -6,7 +6,7 @@ module Execution
   class ContextAssemblyPromptTest < ActiveSupport::TestCase
     def setup
       @step = create_test_step
-      @codebase_root = "/path/to/code"
+      @codebase_root = "tmp/test/projects/test_codebase"
     end
 
     def create_test_step

@@ -12,7 +12,7 @@ import "./UserPreferences.css";
  * - Export/import settings
  */
 const UserPreferencesPanel = ({ onClose }) => {
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'auto');
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [fontSize, setFontSize] = useState(localStorage.getItem('fontSize') || 'medium');
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   

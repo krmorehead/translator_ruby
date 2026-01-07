@@ -52,6 +52,19 @@ class AgentSessionService
   def get_session(session_id:)
     @@sessions[session_id]
   end
+  
+  # Update existing session
+  # @param session [AgentSession] Updated session object
+  # @return [AgentSession]
+  def update_session(session)
+    raise ArgumentError, "session must be an AgentSession" unless session.is_a?(AgentSession)
+    
+    @@lock.synchronize do
+      @@sessions[session.session_id] = session
+    end
+    
+    session
+  end
 
   # Get conversation history for a session
   # @param session_id [String] Session identifier

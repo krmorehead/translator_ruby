@@ -8,7 +8,7 @@
 # - Validation in constructor
 # - No hash access patterns
 class AgentSession
-  attr_reader :session_id, :owner_id, :agent_type, :started_at, :last_activity_at, :status, :config_overrides
+  attr_reader :session_id, :owner_id, :agent_type, :project_path, :started_at, :last_activity_at, :status, :config_overrides
 
   STATUS_ACTIVE = "active"
   STATUS_PAUSED = "paused"
@@ -27,11 +27,12 @@ class AgentSession
   # @param session_id [String] Unique session identifier
   # @param owner_id [String] Owner/user identifier
   # @param agent_type [String] Type of agent (daedalus, sisyphus, etc.)
+  # @param project_path [String, nil] Path to the project/codebase
   # @param started_at [Time, String] Session start time
   # @param last_activity_at [Time, String] Last activity timestamp
   # @param status [String] Current session status
   # @param config_overrides [Hash] LLM configuration overrides for this session
-  def initialize(session_id:, owner_id:, agent_type:, started_at:, last_activity_at:, status:, config_overrides: {})
+  def initialize(session_id:, owner_id:, agent_type:, started_at:, last_activity_at:, status:, project_path: nil, config_overrides: {})
     raise ArgumentError, "session_id is required" if session_id.nil? || session_id.to_s.empty?
     raise ArgumentError, "owner_id is required" if owner_id.nil? || owner_id.to_s.empty?
     raise ArgumentError, "agent_type is required" if agent_type.nil? || agent_type.to_s.empty?
@@ -39,11 +40,13 @@ class AgentSession
     raise ArgumentError, "Invalid status: #{status}" unless VALID_STATUSES.include?(status.to_s)
     raise ArgumentError, "started_at is required" if started_at.nil?
     raise ArgumentError, "last_activity_at is required" if last_activity_at.nil?
+    raise ArgumentError, "project_path must be a String or nil" if !project_path.nil? && !project_path.is_a?(String)
     raise ArgumentError, "config_overrides must be a Hash" unless config_overrides.is_a?(Hash)
 
     @session_id = session_id.to_s
     @owner_id = owner_id.to_s
     @agent_type = agent_type.to_s
+    @project_path = project_path&.to_s
     @started_at = parse_time(started_at)
     @last_activity_at = parse_time(last_activity_at)
     @status = status.to_s
@@ -85,6 +88,7 @@ class AgentSession
       session_id: @session_id,
       owner_id: @owner_id,
       agent_type: @agent_type,
+      project_path: @project_path,
       started_at: @started_at,
       last_activity_at: timestamp,
       status: @status,
@@ -103,6 +107,7 @@ class AgentSession
       session_id: @session_id,
       owner_id: @owner_id,
       agent_type: @agent_type,
+      project_path: @project_path,
       started_at: @started_at,
       last_activity_at: Time.now.utc,
       status: new_status,
@@ -121,10 +126,30 @@ class AgentSession
       session_id: @session_id,
       owner_id: @owner_id,
       agent_type: @agent_type,
+      project_path: @project_path,
       started_at: @started_at,
       last_activity_at: Time.now.utc,
       status: @status,
       config_overrides: overrides
+    )
+  end
+
+  # Update project path
+  # Returns a NEW instance (immutable)
+  # @param new_path [String, nil] New project path
+  # @return [AgentSession] New instance with updated project path
+  def with_project_path(new_path)
+    raise ArgumentError, "project_path must be a String or nil" if !new_path.nil? && !new_path.is_a?(String)
+    
+    self.class.new(
+      session_id: @session_id,
+      owner_id: @owner_id,
+      agent_type: @agent_type,
+      project_path: new_path,
+      started_at: @started_at,
+      last_activity_at: Time.now.utc,
+      status: @status,
+      config_overrides: @config_overrides
     )
   end
 
@@ -135,6 +160,7 @@ class AgentSession
       session_id: @session_id,
       owner_id: @owner_id,
       agent_type: @agent_type,
+      project_path: @project_path,
       started_at: @started_at.iso8601,
       last_activity_at: @last_activity_at.iso8601,
       status: @status,
@@ -153,6 +179,7 @@ class AgentSession
       session_id: data[:session_id] || data["session_id"],
       owner_id: data[:owner_id] || data["owner_id"],
       agent_type: data[:agent_type] || data["agent_type"],
+      project_path: data[:project_path] || data["project_path"],
       started_at: data[:started_at] || data["started_at"],
       last_activity_at: data[:last_activity_at] || data["last_activity_at"],
       status: data[:status] || data["status"],

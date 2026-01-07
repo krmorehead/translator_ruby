@@ -37,9 +37,10 @@ class BasePrompt
     base_system_prompt
   end
 
-  # Must return a JSON schema hash, or nil for freeform text.
+  # Returns a JSON schema hash for structured responses, or nil for freeform text.
+  # Default is nil (freeform chat). Subclasses override for structured output.
   def response_schema
-    raise NotImplementedError, "#{self.class.name} must define #response_schema"
+    nil
   end
 
   # Returns the response type class to use for this prompt

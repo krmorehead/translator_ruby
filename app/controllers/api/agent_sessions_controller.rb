@@ -14,6 +14,7 @@ module Api
     # Create new agent session
     def create
       agent_type = params[:agent_type]
+      project_path = params[:project_path]
       
       unless AgentSession::VALID_AGENT_TYPES.include?(agent_type)
         return render json: {
@@ -24,10 +25,17 @@ module Api
 
       session = @service.create_session(agent_type: agent_type)
       
+      # Update with project path if provided
+      if project_path && !project_path.empty?
+        session = session.with_project_path(project_path)
+        @service.update_session(session)
+      end
+      
       render json: {
         success: true,
         session_id: session.session_id,
         agent_type: session.agent_type,
+        project_path: session.project_path,
         status: session.status
       }
     rescue => e
@@ -94,6 +102,7 @@ module Api
       role = params[:role] || "user"
       content = params[:content]
       persistent_context = params[:persistent_context]
+      project_path = params[:project_path]
 
       unless [ChatMessage::ROLE_USER, ChatMessage::ROLE_AGENT, ChatMessage::ROLE_SYSTEM].include?(role)
         return render json: {
@@ -102,8 +111,23 @@ module Api
         }, status: :unprocessable_entity
       end
 
-      # If user message, send to LLM and get response
+      # If user message, send to agent and get response
       if role == ChatMessage::ROLE_USER
+        # Get session
+        session = @service.get_session(session_id: session_id)
+        unless session
+          return render json: {
+            success: false,
+            error: "Session not found: #{session_id}"
+          }, status: :not_found
+        end
+        
+        # Update session with project path if provided
+        if project_path && project_path != session.project_path
+          session = session.with_project_path(project_path)
+          @service.update_session(session)
+        end
+        
         # Store user message
         user_message = @service.add_message(
           session_id: session_id,
@@ -111,53 +135,26 @@ module Api
           content: content
         )
 
-        # Get conversation history for context
-        conversation = @service.get_conversation(session_id: session_id)
-        messages = conversation.map { |msg| { role: msg.role, content: msg.content } }
-
-        # Prepend persistent context as a system message if provided
-        if persistent_context && !persistent_context.empty?
-          Rails.logger.info("Including persistent context in LLM request")
-          messages.unshift({
-            role: "system",
-            content: "PERSISTENT CONTEXT (always apply): #{persistent_context}"
-          })
-        end
-
-        # Send to real LLM
-        Rails.logger.info("Sending to LLM with #{messages.size} messages")
-        llm_client = GenericLlmClient.client_for(:general_llm)
-        llm_response = llm_client.chat(
-          parameters: {
-            model: GenericLlmClient::CAPABILITIES[:general_llm][:model_name],
-            messages: messages,
-            temperature: 0.7,
-            max_tokens: 2000
-          }
+        # Build context with persistent context
+        context = build_context_with_persistent(
+          persistent_context: persistent_context,
+          conversation: @service.get_conversation(session_id: session_id)
         )
-
-        Rails.logger.info("LLM response class: #{llm_response.class}, has_content?: #{llm_response.has_content?}")
         
-        # GenericLlmClient already returns an LlmResponse object
-        agent_content = llm_response.content
-        
-        # Validate we got content
-        unless agent_content && !agent_content.empty?
-          Rails.logger.error("LLM returned empty content: #{llm_response.to_h.inspect}")
-          Rails.logger.error("LLM response object: #{llm_response.inspect[0..500]}")
-          return render json: {
-            success: false,
-            error: "LLM returned empty response"
-          }, status: :internal_server_error
-        end
+        # Route to agent-specific service
+        agent_service = AgentChatService.new(session: session, context: context)
+        result = agent_service.process_message(content: content)
         
         # Store agent response
         agent_message = @service.add_message(
           session_id: session_id,
           role: ChatMessage::ROLE_AGENT,
-          content: agent_content,
+          content: result[:content],
           thoughts: nil, # TODO: Extract <think> tags
-          metadata: { model: GenericLlmClient::CAPABILITIES[:general_llm][:model_name] }
+          metadata: {
+            tool_calls: result[:tool_calls],
+            file_changes: result[:file_changes]
+          }
         )
 
         render json: {
@@ -314,6 +311,17 @@ module Api
     # Initialize service
     def set_service
       @service = AgentSessionService.new(owner_id: @owner_id)
+    end
+    
+    # Build context with persistent context and conversation history
+    # @param persistent_context [String, nil] Persistent context string
+    # @param conversation [Array<ChatMessage>] Conversation history
+    # @return [Contexts::BaseContext] Context object
+    def build_context_with_persistent(persistent_context:, conversation:)
+      # For now, return a simple BaseContext
+      # TODO: Implement context entries when needed
+      # persistent_context and conversation are available but not used yet
+      Contexts::BaseContext.new
     end
   end
 end

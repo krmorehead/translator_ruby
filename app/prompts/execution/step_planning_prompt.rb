@@ -194,7 +194,10 @@ module Execution
         "No tools available."
       else
         @available_tools.map do |tool|
-          "- **#{tool[:name] || tool['name']}**: #{tool[:description] || tool['description']}"
+          # Handle both Tool objects and hash representations
+          name = tool.respond_to?(:name) ? tool.name : (tool[:name] || tool['name'])
+          description = tool.respond_to?(:description) ? tool.description : (tool[:description] || tool['description'])
+          "- **#{name}**: #{description}"
         end.join("\n")
       end
     end

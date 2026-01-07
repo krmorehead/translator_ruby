@@ -19,6 +19,12 @@ Rails.application.routes.draw do
       end
     end
 
+    # Filesystem browsing (for directory picker)
+    scope :filesystem do
+      get "browse", to: "filesystem#browse"
+      get "home", to: "filesystem#home"
+    end
+
     # Agent configuration routes
     scope :agent do
       get "config", to: "agent_config#show"
@@ -38,24 +44,11 @@ Rails.application.routes.draw do
       end
     end
   end
-  # DnD Chat API
-  post "/dnd_chat/sessions", to: "dnd_chat#create_session"
-  get "/dnd_chat/messages", to: "dnd_chat#messages"
-  post "/dnd_chat/messages", to: "dnd_chat#create_message"
-  get "/dnd_chat/messages/contract", to: "dnd_chat#messages_contract"
-
-  get "/dnd_chat/agent", to: "dnd_chat#agent"
-  get "/dnd_chat/agent/contract", to: "dnd_chat#agent_contract"
-  get "/dnd_chat/agent/version/contract", to: "dnd_chat#agent_version_contract"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
-
-  # Project Planning routes
-  get "/project_planning", to: "project_planning#spa"
-  post "/project_planning/create", to: "project_planning#create"
 
   # Daedalus (Execution Plan Generation) routes
   get "/daedalus", to: "daedalus#spa"
@@ -93,7 +86,6 @@ Rails.application.routes.draw do
   post "/api/sisyphus/config/validate", to: "sisyphus#validate_config"
   post "/api/sisyphus/config/test", to: "sisyphus#test_connection"
   
-  # React SPA entry (built frontend/dist)
-  root to: "dnd_chat#spa"
-  get "/inspector", to: "dnd_chat#spa"
+  # React SPA entry (built frontend/dist) - UnifiedIDE for all routes
+  root to: "daedalus#spa"
 end

@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# Single command to start both Rails and Vite dev servers
+# Ctrl+C kills both cleanly
+
+set -e
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}======================================================================"
+echo -e "🚀 Starting Development Environment"
+echo -e "======================================================================${NC}"
+echo ""
+
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+# Load environment variables
+if [ -f ".env" ]; then
+  export $(grep -v '^#' .env | xargs)
+fi
+
+# Get ports from env or use defaults
+RAILS_PORT=${PORT:-4000}
+VITE_PORT=5173
+
+echo -e "${YELLOW}📦 Installing frontend dependencies...${NC}"
+cd frontend
+npm install --silent
+cd ..
+
+# Trap Ctrl+C and kill both servers
+cleanup() {
+  echo ""
+  echo -e "${YELLOW}🛑 Shutting down servers...${NC}"
+  
+  if [ ! -z "$RAILS_PID" ] && kill -0 $RAILS_PID 2>/dev/null; then
+    kill $RAILS_PID 2>/dev/null
+    echo -e "${GREEN}✅ Stopped Rails server${NC}"
+  fi
+  
+  if [ ! -z "$VITE_PID" ] && kill -0 $VITE_PID 2>/dev/null; then
+    kill $VITE_PID 2>/dev/null
+    echo -e "${GREEN}✅ Stopped Vite server${NC}"
+  fi
+  
+  # Make sure ports are freed
+  lsof -ti:$RAILS_PORT,$VITE_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
+  
+  echo ""
+  echo -e "${GREEN}✅ All servers stopped${NC}"
+  exit 0
+}
+
+trap cleanup INT TERM
+
+echo -e "${YELLOW}🚀 Starting Vite dev server on port $VITE_PORT...${NC}"
+cd frontend
+npm run dev &
+VITE_PID=$!
+cd ..
+
+# Wait for Vite to be ready
+sleep 2
+
+echo -e "${YELLOW}🚀 Starting Rails server on port $RAILS_PORT...${NC}"
+ruby lib/server.rb &
+RAILS_PID=$!
+
+# Wait a moment for Rails to start
+sleep 3
+
+echo ""
+echo -e "${GREEN}======================================================================"
+echo -e "✅ Development Environment Ready!"
+echo -e "======================================================================${NC}"
+echo ""
+echo -e "${GREEN}Frontend: ${NC}http://localhost:$VITE_PORT"
+echo -e "${GREEN}Backend:  ${NC}http://localhost:$RAILS_PORT"
+echo ""
+echo -e "${YELLOW}Press Ctrl+C to stop all servers${NC}"
+echo ""
+
+# Wait for either process to exit
+wait
+

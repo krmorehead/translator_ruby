@@ -10,7 +10,13 @@ bin/start-production
 ```
 Builds frontend + starts Rails in production mode. Configure via `.env` file.
 
-### Development Mode
+### Development Mode (Single Command)
+```bash
+bin/dev
+```
+Starts both Rails backend and Vite frontend. Press `Ctrl+C` to stop all servers.
+
+**Or run separately:**
 ```bash
 # Backend (Rails API)
 rvm use 3.4.4 && ruby lib/server.rb

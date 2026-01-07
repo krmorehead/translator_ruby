@@ -69,17 +69,20 @@ class SisyphusWorker < BaseWorker
 
   # Initialize SisyphusWorker with execution plan and configuration
   #
-  # @param execution_plan [Planning::Result] The plan to execute
+  # @param execution_plan [Planning::Result, nil] The plan to execute (nil for chat mode)
   # @param path [String] The codebase root directory
   # @param context [Contexts::BaseContext] Context object (REQUIRED)
   # @param config [Configuration::SisyphusConfig] Configuration object
-  def initialize(execution_plan:, path:, context:, config: DEFAULT_CONFIG)
-    raise TypeError, "execution_plan must be a Planning::Result, got #{execution_plan.class}" unless execution_plan.is_a?(Planning::Result)
+  def initialize(execution_plan: nil, path:, context:, config: DEFAULT_CONFIG)
+    # execution_plan is optional for chat mode
+    if execution_plan
+      raise TypeError, "execution_plan must be a Planning::Result, got #{execution_plan.class}" unless execution_plan.is_a?(Planning::Result)
+    end
     raise TypeError, "config must be a Configuration::SisyphusConfig, got #{config.class}" unless config.is_a?(Configuration::SisyphusConfig)
 
-    # Initialize parent with synthesized goal from plan
+    # Initialize parent with synthesized goal from plan or default for chat
     super(
-      goal: execution_plan.goal,
+      goal: execution_plan ? execution_plan.goal : "Execute code changes via chat",
       context: context
     )
 
@@ -92,6 +95,42 @@ class SisyphusWorker < BaseWorker
     @progress_stream = nil
     @checkpoint_service = nil
     @diff_service = nil
+  end
+
+  # Process a chat message using execution tools
+  # @param content [String] User's message
+  # @param conversation_history [Array<Hash>] Previous messages
+  # @return [Hash] Result with :content, :tool_calls, :file_changes
+  def process_message(content:, conversation_history: [])
+    # Ensure worker is initialized
+    unless @memory_store
+      @memory_store = create_memory_store
+    end
+    
+    # Use SisyphusChatPrompt with execution tools
+    prompt = Execution::SisyphusChatPrompt.new(
+      path: @path,
+      conversation_history: conversation_history
+    )
+    
+    # Prompt handles tool calling loop internally
+    result = prompt.execute_with_tools(user_message: content)
+    
+    {
+      success: true,
+      content: result[:content],
+      tool_calls: result[:tool_calls],
+      file_changes: result[:file_changes] || []
+    }
+  rescue => e
+    Rails.logger.error("SisyphusWorker message processing error: #{e.message}\n#{e.backtrace.join("\n")}")
+    {
+      success: false,
+      error: e.message,
+      content: "Error processing message: #{e.message}",
+      tool_calls: [],
+      file_changes: []
+    }
   end
 
   # Execute the complete execution plan

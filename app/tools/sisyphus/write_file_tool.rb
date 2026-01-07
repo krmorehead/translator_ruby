@@ -29,12 +29,12 @@ module Sisyphus
             description: "The root directory of the codebase (provided by workflow)"
           }
         },
-        required: ["path", "content", "codebase_path"],
-        additionalProperties: false
+        required: ["path", "content", "codebase_path"]
+        # Note: additionalProperties removed to allow graceful handling of unexpected params
       }
     end
 
-    def execute(path:, content:, codebase_path:)
+    def execute(path:, content:, codebase_path:, **_extra_params)
       # Validate codebase_path exists
       unless File.directory?(codebase_path)
         return error_result("Codebase path does not exist: #{codebase_path}")
@@ -43,16 +43,16 @@ module Sisyphus
       # Build full path
       full_path = File.join(codebase_path, path)
 
+      # Create parent directories first
+      dir = File.dirname(full_path)
+      FileUtils.mkdir_p(dir) unless File.directory?(dir)
+
       # Ensure we're not writing outside codebase
       real_codebase = File.realpath(codebase_path)
-      real_target = File.realpath(File.dirname(full_path))
+      real_target = File.realpath(dir) # Now dir exists
       unless real_target.start_with?(real_codebase)
         return error_result("Cannot write outside codebase: #{path}")
       end
-
-      # Create parent directories
-      dir = File.dirname(full_path)
-      FileUtils.mkdir_p(dir) unless File.directory?(dir)
 
       # Write file
       File.write(full_path, content)

@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: white;
+  background: var(--bg-primary);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -13,30 +13,31 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
 }
 
 .memory-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .refresh-button {
   padding: 8px 16px;
-  background: white;
-  border: 1px solid #d1d5db;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
+  color: var(--text-primary);
 }
 
 .refresh-button:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--bg-hover);
 }
 
 .refresh-button:disabled {
@@ -56,7 +57,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #6b7280;
+  color: var(--text-secondary);
   text-align: center;
   padding: 20px;
 }
@@ -74,7 +75,7 @@
 .sections-count {
   margin-bottom: 16px;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -85,17 +86,17 @@
 }
 
 .memory-section {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-primary);
   border-radius: 8px;
   overflow: hidden;
-  background: white;
+  background: var(--bg-tertiary);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   padding: 0;
 }
 
@@ -114,11 +115,11 @@
 }
 
 .section-toggle:hover {
-  background: #f3f4f6;
+  background: var(--bg-hover);
 }
 
 .toggle-icon {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 12px;
   width: 12px;
   display: inline-block;
@@ -126,36 +127,36 @@
 
 .section-name {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   font-family: monospace;
 }
 
 .section-size {
   margin-left: auto;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .clear-button {
   padding: 8px 16px;
-  background: white;
+  background: var(--bg-tertiary);
   border: none;
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid var(--border-primary);
   font-size: 13px;
-  color: #dc2626;
+  color: var(--accent-red);
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
 .clear-button:hover:not(:disabled) {
-  background: #fef2f2;
-  color: #991b1b;
+  background: var(--accent-red-bg);
+  color: var(--accent-red-hover);
 }
 
 .clear-button.confirming {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--accent-red-bg);
+  color: var(--accent-red-hover);
   font-weight: 600;
 }
 
@@ -166,20 +167,20 @@
 
 .section-content {
   padding: 16px;
-  background: white;
-  border-top: 1px solid #e5e7eb;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-primary);
 }
 
 .section-meta {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .section-empty {
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-style: italic;
   padding: 12px;
   text-align: center;
@@ -194,7 +195,7 @@
 .memory-list li {
   margin: 6px 0;
   line-height: 1.5;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .memory-json {
@@ -202,15 +203,16 @@
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
   font-size: 12px;
   line-height: 1.5;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   padding: 12px;
   border-radius: 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-primary);
   overflow-x: auto;
+  color: var(--text-primary);
 }
 
 .memory-text {
-  color: #374151;
+  color: var(--text-primary);
   line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -224,24 +226,12 @@
 }
 
 .loading-indicator {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-style: italic;
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
-
-
-
-
-
-
-
-

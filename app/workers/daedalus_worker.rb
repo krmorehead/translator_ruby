@@ -60,6 +60,40 @@ class DaedalusWorker < BaseWorker
     @output_paths = nil
   end
 
+  # Process a chat message using exploration tools
+  # @param content [String] User's message
+  # @param conversation_history [Array<Hash>] Previous messages
+  # @return [Hash] Result with :content, :tool_calls, :file_changes
+  def process_message(content:, conversation_history: [])
+    # Ensure worker is initialized
+    initialize_worker unless @research_memory
+    
+    # Use DaedalusChatPrompt with exploration tools
+    prompt = Planning::DaedalusChatPrompt.new(
+      path: @path,
+      conversation_history: conversation_history
+    )
+    
+    # Prompt handles tool calling loop internally
+    result = prompt.execute_with_tools(user_message: content)
+    
+    {
+      success: true,
+      content: result[:content],
+      tool_calls: result[:tool_calls],
+      file_changes: []
+    }
+  rescue => e
+    Rails.logger.error("DaedalusWorker message processing error: #{e.message}\n#{e.backtrace.join("\n")}")
+    {
+      success: false,
+      error: e.message,
+      content: "Error processing message: #{e.message}",
+      tool_calls: [],
+      file_changes: []
+    }
+  end
+
   # Execute the full planning pipeline
   # Following Cline: tools are used directly during planning
   # @return [Hash] Result with execution_plan, output_paths, metadata

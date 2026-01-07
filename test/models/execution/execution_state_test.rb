@@ -7,8 +7,8 @@ module Execution
     def setup
       @valid_params = {
         execution_id: "test-exec-123",
-        plan_path: "/path/to/plan.md",
-        project_path: "/path/to/project",
+        plan_path: "tmp/test/plans/test_plan.md",
+        project_path: "tmp/test/projects/test_project",
         status: ExecutionState::PENDING,
         started_at: Time.now.utc.iso8601
       }
@@ -19,8 +19,8 @@ module Execution
       state = ExecutionState.new(**@valid_params)
 
       assert_equal "test-exec-123", state.execution_id
-      assert_equal "/path/to/plan.md", state.plan_path
-      assert_equal "/path/to/project", state.project_path
+      assert_equal "tmp/test/plans/test_plan.md", state.plan_path
+      assert_equal "tmp/test/projects/test_project", state.project_path
       assert_equal :pending, state.status
     end
 
@@ -174,8 +174,8 @@ module Execution
       hash = state.to_h
 
       assert_equal "test-exec-123", hash[:execution_id]
-      assert_equal "/path/to/plan.md", hash[:plan_path]
-      assert_equal "/path/to/project", hash[:project_path]
+      assert_equal "tmp/test/plans/test_plan.md", hash[:plan_path]
+      assert_equal "tmp/test/projects/test_project", hash[:project_path]
       assert_equal :pending, hash[:status]
       assert_equal "Milestone 1", hash[:current_milestone]
       assert_equal "Step 1", hash[:current_step]

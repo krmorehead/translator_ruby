@@ -11,6 +11,8 @@ alwaysApply: true
   - Before final milestone: run all tests (ruby lib/test_runner.rb --speed all)
   - All new tests MUST declare speed_profile (:fast, :medium, or :slow)
   - Tests MUST NOT exceed their speed profile SLA (fast: 10s, medium: 60s, slow: 120s)
+  - NEVER include a timeout on tests. REMOVE any timeouts other than SLA.
+  - NO MOCKS or TIMEOUTs ever
 
 [TEST][!BACKEND-UNIT] Run backend unit tests correctly to avoid hangs:
   - FAST tests: TEST_SPEED_FILTER=fast bundle exec rails test

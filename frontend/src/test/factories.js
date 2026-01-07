@@ -43,9 +43,9 @@ export const buildExecutionPlanResult = (overrides = {}) => {
         created_at: new Date().toISOString()
       },
       output_paths: {
-        plan_path: "/path/to/plan.md",
-        json_path: "/path/to/plan.json",
-        metadata_path: "/path/to/metadata.json"
+        plan_path: "tmp/test/plans/test_plan.md",
+        json_path: "tmp/test/plans/test_plan.json",
+        metadata_path: "tmp/test/plans/test_metadata.json"
       },
       analysis_summary: {
         relevant_files: [
@@ -77,8 +77,8 @@ export const buildProjectPlanResult = (overrides = {}) => {
         success_criteria: "Environment ready"
       }
     ],
-    project_plan_path: "/path/to/plan.md",
-    file_references_path: "/path/to/references.md",
+    project_plan_path: "tmp/test/docs/project_plan.md",
+    file_references_path: "tmp/test/docs/file_references.md",
     research_summary: "Codebase uses Rails patterns",
     existing_files: ["app/models/user.rb"],
     planned_files: ["app/services/new_service.rb"]

@@ -16,7 +16,7 @@ describe("ExecutionPlan", () => {
       },
     ],
     outputPaths: {
-      plan_path: "/path/to/plan.md",
+      plan_path: "tmp/test/plans/test_plan.md",
     },
     analysisSummary: {
       relevant_files: ["file1.rb", "file2.rb"],
@@ -183,7 +183,7 @@ describe("ExecutionPlan", () => {
     expect(plan.assumptions).toEqual(["assumption1"]);
     expect(plan.risks).toEqual(["risk1"]);
     expect(plan.milestones).toHaveLength(1);
-    expect(plan.outputPaths.plan_path).toBe("/path/to/plan.md");
+    expect(plan.outputPaths.plan_path).toBe("tmp/test/plans/test_plan.md");
     expect(plan.analysisSummary.relevant_files).toEqual(["file1.rb", "file2.rb"]);
     expect(plan.metadata.milestone_count).toBe(1);
   });

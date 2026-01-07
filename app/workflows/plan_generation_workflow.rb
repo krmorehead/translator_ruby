@@ -83,10 +83,14 @@ class PlanGenerationWorkflow < BaseWorkflow
   # Generate plan using LLM with codebase exploration
   # Following Cline: LLM has access to tools and explores as needed
   def generate_plan
+    # Build exploration tools using shared service
+    tools = AgentToolBuilder.exploration_tools
+    
     prompt = Planning::PlanGenerationPrompt.new(
       goal: @goal,
       path: @path,
-      context: extract_context_hint
+      context: extract_context_hint,
+      available_tools: tools
     )
 
     record_decision(
@@ -95,12 +99,15 @@ class PlanGenerationWorkflow < BaseWorkflow
       context: { 
         goal: @goal,
         codebase_path: @path,
-        has_context_hint: extract_context_hint.present?
+        has_context_hint: extract_context_hint.present?,
+        tool_count: tools.size,
+        tools: tools.map(&:name)
       }
     )
 
-    # Execute prompt - it handles LLM call and response parsing
-    # The prompt instructs LLM to use tools (file_tree, grep, read_file) to explore
+    # Execute with tool calling support
+    # For MVP: single-turn execution with tools available
+    # TODO: Implement multi-turn conversation loop for iterative exploration
     result = prompt.execute(
       prompt: prompt.user_message,
       context: nil  # Context is already embedded in the prompt

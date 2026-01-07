@@ -87,7 +87,7 @@ function CheckpointManager() {
               type="text"
               value={pathInput}
               onChange={(e) => setPathInput(e.target.value)}
-              placeholder="/path/to/your/repository"
+              placeholder="Enter repository path (e.g., translator_ruby)"
               className="path-input"
               onKeyPress={(e) => e.key === 'Enter' && handleSetPath()}
             />

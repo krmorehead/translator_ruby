@@ -14,8 +14,8 @@ class ExecutionStateStoreTest < ActiveSupport::TestCase
     # Create sample execution state
     @state = Execution::ExecutionState.new(
       execution_id: "test-#{SecureRandom.hex(4)}",
-      plan_path: "/path/to/plan.md",
-      project_path: "/path/to/project",
+      plan_path: "tmp/test/plans/test_plan.md",
+      project_path: "tmp/test/projects/test_project",
       status: :running,
       started_at: Time.now.utc.iso8601
     )

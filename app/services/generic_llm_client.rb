@@ -10,13 +10,6 @@ module GenericLlmClient
     Net::OpenTimeout
   ].freeze
 
-  # Token thresholds for logging warnings
-  TOKEN_THRESHOLDS = {
-    info: 500,      # Log at info level above this
-    warning: 2000,  # Log warning above this
-    critical: 5000  # Log critical warning above this
-  }.freeze
-
   # Approximate characters per token (conservative estimate)
   CHARS_PER_TOKEN = 4
 
@@ -26,14 +19,14 @@ module GenericLlmClient
     general_llm: {
       model_name: "./vllm/models/qwen2_5_coder_14B/snapshots/coder",
       port: 52003,
-      max_context: 20000,
+      max_context: 64000,
       base_url: "LLM_URL"
     },
     tool_calling: {
       model_name: "./vllm/models/qwen2_5_coder_14B/snapshots/coder",
       port: 52003,
-      max_context: 20000,
-      base_url: "ELDER_PEBBLE_LLM_URL"
+      max_context: 64000,
+      base_url: "LLM_URL"
     },
     embeddings: {
       model_name: "./vllm/models/all-MiniLM-L6-v2",
@@ -178,8 +171,8 @@ module GenericLlmClient
       raise last_error
     end
 
-    # Processes response to extract and filter think tags.
-    # Returns LlmResponse object with filtered content and thoughts field.
+    # Processes response to extract and filter think tags and parse tool calls.
+    # Returns LlmResponse object with filtered content, thoughts field, and parsed tool calls.
     # ALL keys are symbolized at this boundary between LLM and application.
     #
     # Public for testing.
@@ -193,6 +186,12 @@ module GenericLlmClient
       
       # Extract content from response
       content = processed.dig(:choices, 0, :message, :content)
+      
+      # Extract and parse tool calls if present
+      tool_calls = processed.dig(:choices, 0, :message, :tool_calls)
+      if tool_calls && !tool_calls.empty?
+        processed[:choices][0][:message][:tool_calls] = parse_hermes_tool_calls(tool_calls)
+      end
       
       # If no content, return response as-is wrapped in response object
       unless content
@@ -223,6 +222,47 @@ module GenericLlmClient
 
     private
 
+    # Parse Hermes-formatted tool calls
+    # Hermes wraps arguments in <tools> XML tags with nested JSON
+    # @param tool_calls [Array<Hash>] Raw tool calls from LLM
+    # @return [Array<Hash>] Parsed tool calls with clean arguments
+    def parse_hermes_tool_calls(tool_calls)
+      tool_calls.map do |tool_call|
+        function = tool_call[:function]
+        next tool_call unless function
+        
+        arguments_str = function[:arguments]
+        next tool_call unless arguments_str.is_a?(String)
+        
+        # Parse Hermes XML wrapper: <tools>{...}</tools>
+        if arguments_str.include?("<tools>")
+          # Extract JSON from XML tags
+          json_match = arguments_str.match(/<tools>\s*(\{.+\})\s*<\/tools>/m)
+          if json_match
+            begin
+              parsed = JSON.parse(json_match[1], symbolize_names: true)
+              # Extract the actual arguments from nested structure
+              clean_arguments = parsed[:arguments] || parsed
+              
+              # Return tool call with clean arguments as JSON string
+              tool_call.merge(
+                function: function.merge(
+                  arguments: JSON.generate(clean_arguments)
+                )
+              )
+            rescue JSON::ParserError => e
+              log(:warn, "Failed to parse Hermes tool arguments: #{e.message}")
+              tool_call
+            end
+          else
+            tool_call
+          end
+        else
+          tool_call
+        end
+      end
+    end
+
     def extract_embedding_vector(response)
       raise TypeError, "Response must have data array" unless response.dig("data")
       raise TypeError, "Response data must be an Array" unless response["data"].is_a?(Array)
@@ -241,14 +281,20 @@ module GenericLlmClient
     def log_token_usage(parameters)
       tokens = estimate_tokens(parameters)
       caller_info = extract_caller_info
+      
+      # Calculate thresholds dynamically based on MAX_SAFE_CONTEXT
+      max_safe_tokens = ENV.fetch("MAX_SAFE_CONTEXT").to_i
+      info_threshold = (max_safe_tokens * 0.2).to_i
+      warn_threshold = (max_safe_tokens * 0.5).to_i
+      critical_threshold = (max_safe_tokens * 0.8).to_i
 
       log_entry = "[LLM:#{@capability}] #{caller_info} - #{tokens} input tokens"
 
-      if tokens > GenericLlmClient::TOKEN_THRESHOLDS[:critical]
+      if tokens > critical_threshold
         log(:warn, "⚠️  CRITICAL #{log_entry}")
-      elsif tokens > GenericLlmClient::TOKEN_THRESHOLDS[:warning]
+      elsif tokens > warn_threshold
         log(:warn, "⚠️  HIGH #{log_entry}")
-      elsif tokens > GenericLlmClient::TOKEN_THRESHOLDS[:info]
+      elsif tokens > info_threshold
         log(:info, log_entry)
       else
         log(:debug, log_entry)

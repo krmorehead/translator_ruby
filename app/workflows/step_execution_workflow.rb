@@ -431,39 +431,9 @@ class StepExecutionWorkflow < BaseWorkflow
   end
 
   # Get available tools for planning
+  # Uses AgentToolBuilder for consistent tool building across agents
   def get_available_tools
-    [
-      {
-        name: "read_file",
-        description: "Read a file from the codebase",
-        parameters: {
-          path: "string - The path to the file to read"
-        }
-      },
-      {
-        name: "write_file",
-        description: "Write or update a file in the codebase",
-        parameters: {
-          path: "string - The path to the file to write",
-          content: "string - The content to write to the file"
-        }
-      },
-      {
-        name: "bash",
-        description: "Execute a bash command (tests, syntax checks, etc)",
-        parameters: {
-          command: "string - The bash command to execute"
-        }
-      },
-      {
-        name: "grep",
-        description: "Search for patterns in the codebase",
-        parameters: {
-          pattern: "string - The pattern to search for",
-          path: "string (optional) - Specific path to search in"
-        }
-      }
-    ]
+    AgentToolBuilder.execution_tools
   end
 
   # Validate a single tool call using ToolValidationPrompt
@@ -499,14 +469,16 @@ class StepExecutionWorkflow < BaseWorkflow
   # Execute a tool using Sisyphus-specific implementations
   def execute_sisyphus_tool(tool_name, params)
     tool_class = case tool_name
-    when "write_file"
-      Sisyphus::WriteFileTool
-    when "bash"
-      Sisyphus::BashTool
+    when "file_tree"
+      Sisyphus::FileTreeTool  # Sisyphus-specific wrapper for path handling
     when "read_file"
       Sisyphus::ReadFileTool
     when "grep"
       Sisyphus::GrepTool
+    when "write_file"
+      Sisyphus::WriteFileTool
+    when "bash"
+      Sisyphus::BashTool
     else
       raise ArgumentError, "Unknown Sisyphus tool: #{tool_name}"
     end

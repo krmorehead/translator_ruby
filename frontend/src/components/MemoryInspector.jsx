@@ -6,7 +6,7 @@ import "./MemoryInspector.css";
  * MemoryInspector displays agent memory sections and their contents.
  * Allows viewing and clearing memory sections.
  */
-const MemoryInspector = () => {
+const MemoryInspector = React.memo(() => {
   const {
     currentSessionId,
     memory,
@@ -156,7 +156,9 @@ const MemoryInspector = () => {
       </div>
     </div>
   );
-};
+});
+
+MemoryInspector.displayName = 'MemoryInspector';
 
 export default MemoryInspector;
 

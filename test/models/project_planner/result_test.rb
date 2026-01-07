@@ -34,13 +34,13 @@ module ProjectPlanner
       result = Result.new(
         success: true,
         goal: "Add authentication",
-        path: "/path/to/project",
+        path: "tmp/test/projects/test_project",
         project_name: "user_auth",
         owner_id: "abc123",
         planning_result: @planning_result,
-        project_path: "/path/to/docs",
-        file_references_path: "/path/to/docs/file_references.md",
-        project_plan_path: "/path/to/docs/project_plan.md",
+        project_path: "tmp/test/docs/user_auth",
+        file_references_path: "tmp/test/docs/user_auth/file_references.md",
+        project_plan_path: "tmp/test/docs/user_auth/project_plan.md",
         research_summary: "Found 5 files",
         metadata: { max_depth: 2 }
       )
@@ -48,11 +48,11 @@ module ProjectPlanner
       assert result.success?
       refute result.failed?
       assert_equal "Add authentication", result.goal
-      assert_equal "/path/to/project", result.path
+      assert_equal "tmp/test/projects/test_project", result.path
       assert_equal "user_auth", result.project_name
       assert_equal "abc123", result.owner_id
       assert_equal @planning_result, result.planning_result
-      assert_equal "/path/to/docs", result.project_path
+      assert_equal "tmp/test/docs/user_auth", result.project_path
       assert_nil result.error
     end
 
@@ -61,7 +61,7 @@ module ProjectPlanner
       result = Result.new(
         success: false,
         goal: "Add authentication",
-        path: "/path/to/project",
+        path: "tmp/test/projects/test_project",
         project_name: "user_auth",
         owner_id: "abc123",
         error: "Research workflow failed",

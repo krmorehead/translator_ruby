@@ -11,7 +11,7 @@
 #   response.model          # => "gpt-4"
 #
 class LlmResponse
-  attr_reader :id, :model, :created, :content, :thoughts, :raw
+  attr_reader :id, :model, :created, :content, :thoughts, :tool_calls, :raw
 
   # Initialize a new LlmResponse from LLM API response hash
   #
@@ -29,6 +29,7 @@ class LlmResponse
     message = response.dig(:choices, 0, :message)
     @content = message ? message[:content] : nil
     @thoughts = response[:thoughts]
+    @tool_calls = message ? (message[:tool_calls] || []) : []
     
     freeze
   end
@@ -43,6 +44,12 @@ class LlmResponse
   # @return [Boolean] True if content is present
   def has_content?
     !@content.nil? && !@content.empty?
+  end
+
+  # Check if response has tool calls
+  # @return [Boolean] True if tool calls are present
+  def has_tool_calls?
+    @tool_calls && !@tool_calls.empty?
   end
 
   # Get the full message hash (for compatibility)
@@ -69,13 +76,14 @@ class LlmResponse
     @raw[:usage]
   end
 
-  # Convert to hash with content and thoughts
+  # Convert to hash with content, thoughts, and tool_calls
   # Content is returned as-is (string)
-  # @return [Hash] Hash with :content and :thoughts
+  # @return [Hash] Hash with :content, :thoughts, and :tool_calls
   def to_h
     {
       content: @content,
-      thoughts: @thoughts
+      thoughts: @thoughts,
+      tool_calls: @tool_calls
     }
   end
 end

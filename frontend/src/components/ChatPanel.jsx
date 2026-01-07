@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useAgentStore } from "../store/agentStore";
@@ -9,7 +9,7 @@ import "./ChatPanel.css";
  * Shows user and agent messages with timestamps and thoughts.
  * Renders agent messages with markdown for better code display.
  */
-const ChatPanel = () => {
+const ChatPanel = React.memo(() => {
   const [inputMessage, setInputMessage] = React.useState("");
   const sessionId = useAgentStore((state) => state.currentSessionId);
   // Subscribe to conversationThread changes - React will re-render when this changes
@@ -31,15 +31,15 @@ const ChatPanel = () => {
     }
   }, [sessionId, loadConversationHistory]);
 
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = useCallback(async (e) => {
     e.preventDefault();
     if (!inputMessage.trim() || !sessionId) return;
 
     await sendMessage(inputMessage);
     setInputMessage("");
-  };
+  }, [inputMessage, sessionId, sendMessage]);
 
-  const renderMessage = (message, index) => {
+  const renderMessage = useCallback((message, index) => {
     const isUser = message.role === "user";
     const isSystem = message.role === "system";
     const isAgent = message.role === "agent";
@@ -93,7 +93,7 @@ const ChatPanel = () => {
         )}
       </div>
     );
-  };
+  }, []);
 
   if (!sessionId) {
     return (
@@ -148,6 +148,8 @@ const ChatPanel = () => {
       </form>
     </div>
   );
-};
+});
+
+ChatPanel.displayName = 'ChatPanel';
 
 export default ChatPanel;

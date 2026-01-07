@@ -115,7 +115,6 @@ export const useAgentStore = create((set, get) => ({
     pendingApproval: null,
     approvalLoading: false,
     approvalError: "",
-    approvalPollingInterval: null,
   },
 
   setPlanPath: (path) =>
@@ -289,10 +288,14 @@ export const useAgentStore = create((set, get) => ({
     });
     try {
       const result = await sisyphusApi.getFileTree({ path, ...options });
+      
+      // API returns { data: { tree: {...} } }, we need just the tree
+      const tree = result.data?.tree || result.data;
+      
       set({
         sisyphus: {
           ...get().sisyphus,
-          fileTree: result.data,
+          fileTree: tree,
           fileLoading: false,
         },
       });
@@ -522,38 +525,6 @@ export const useAgentStore = create((set, get) => ({
     }
   },
 
-  startApprovalPolling: (executionId, intervalMs = 2000) => {
-    const state = get();
-    if (state.sisyphus.approvalPollingInterval) {
-      clearInterval(state.sisyphus.approvalPollingInterval);
-    }
-
-    const interval = setInterval(async () => {
-      const approval = await get().fetchPendingApproval(executionId);
-
-      const currentExec = get().sisyphus.currentExecution;
-      if (
-        currentExec &&
-        ["complete", "failed", "cancelled"].includes(currentExec.status)
-      ) {
-        get().stopApprovalPolling();
-      }
-    }, intervalMs);
-
-    set((state) => ({
-      sisyphus: { ...state.sisyphus, approvalPollingInterval: interval },
-    }));
-  },
-
-  stopApprovalPolling: () => {
-    const state = get();
-    if (state.sisyphus.approvalPollingInterval) {
-      clearInterval(state.sisyphus.approvalPollingInterval);
-      set((state) => ({
-        sisyphus: { ...state.sisyphus, approvalPollingInterval: null },
-      }));
-    }
-  },
 
   clearApproval: () =>
     set((state) => ({
@@ -565,11 +536,6 @@ export const useAgentStore = create((set, get) => ({
     })),
 
   resetSisyphus: () => {
-    const state = get();
-    if (state.sisyphus.approvalPollingInterval) {
-      clearInterval(state.sisyphus.approvalPollingInterval);
-    }
-
     set({
       sisyphus: {
         executions: [],
@@ -592,17 +558,11 @@ export const useAgentStore = create((set, get) => ({
         pendingApproval: null,
         approvalLoading: false,
         approvalError: "",
-        approvalPollingInterval: null,
       },
     });
   },
 
   resetSisyphusExecution: () => {
-    const state = get();
-    if (state.sisyphus.approvalPollingInterval) {
-      clearInterval(state.sisyphus.approvalPollingInterval);
-    }
-
     set((state) => ({
       sisyphus: {
         ...state.sisyphus,
@@ -612,7 +572,6 @@ export const useAgentStore = create((set, get) => ({
         pendingApproval: null,
         approvalLoading: false,
         approvalError: "",
-        approvalPollingInterval: null,
       },
     }));
   },
@@ -765,14 +724,22 @@ export const useAgentStore = create((set, get) => ({
 
   // Initialize or load session
   initializeSession: async (agentType = "daedalus") => {
+    const { projectPath } = get();
     set({ sessionLoading: true, sessionError: "" });
+    console.log("[initializeSession] Creating session with agent_type:", agentType, "project_path:", projectPath);
     try {
       const response = await fetch("/api/agent_sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent_type: agentType, owner_id: "default_user" }),
+        body: JSON.stringify({ 
+          agent_type: agentType, 
+          owner_id: "default_user",
+          project_path: projectPath || null
+        }),
       });
       const data = await response.json();
+      
+      console.log("[initializeSession] Response:", data);
       
       if (!data.success) {
         throw new Error(data.error || "Failed to create session");
@@ -787,8 +754,10 @@ export const useAgentStore = create((set, get) => ({
         sessionLoading: false,
       });
       
+      console.log("[initializeSession] Session initialized:", data.session_id);
       return data.session_id;
     } catch (error) {
+      console.error("[initializeSession] Error:", error);
       set({ sessionError: error.message, sessionLoading: false });
       throw error;
     }
@@ -826,12 +795,13 @@ export const useAgentStore = create((set, get) => ({
 
   // Send message
   sendMessage: async (content) => {
-    const { currentSessionId, persistentContext } = get();
+    const { currentSessionId, persistentContext, projectPath } = get();
     if (!currentSessionId) return;
 
     set({ chatLoading: true });
     console.log("[sendMessage] Sending message for session:", currentSessionId);
     console.log("[sendMessage] Including persistent context:", persistentContext ? "YES" : "NO");
+    console.log("[sendMessage] Including project path:", projectPath || "NO");
     try {
       const response = await fetch(`/api/agent_sessions/${currentSessionId}/messages`, {
         method: "POST",
@@ -839,7 +809,8 @@ export const useAgentStore = create((set, get) => ({
         body: JSON.stringify({ 
           role: "user", 
           content,
-          persistent_context: persistentContext || null
+          persistent_context: persistentContext || null,
+          project_path: projectPath || null
         }),
       });
       const data = await response.json();
